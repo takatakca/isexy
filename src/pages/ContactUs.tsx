@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,12 @@ import {
   Ticket
 } from "lucide-react";
 
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
 const ContactUs = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -43,17 +49,23 @@ const ContactUs = () => {
   });
   const [attachments, setAttachments] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  const categories = [
-    { value: "general", label: "General Inquiry", icon: HelpCircle },
-    { value: "technical", label: "Technical Support", icon: AlertCircle },
-    { value: "billing", label: "Billing & Payments", icon: CreditCard },
-    { value: "safety", label: "Safety & Security", icon: Shield },
-    { value: "account", label: "Account Issues", icon: Users },
-    { value: "feedback", label: "Feedback & Suggestions", icon: Heart },
-    { value: "report", label: "Report a Problem", icon: AlertCircle },
-    { value: "partnership", label: "Partnership Inquiry", icon: MessageCircle },
-  ];
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('ticket_categories')
+      .select('id, name, description')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (data) {
+      setCategories(data);
+    }
+  };
 
   const generateTicketNumber = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -116,7 +128,7 @@ const ContactUs = () => {
             email: formData.email.trim().toLowerCase(),
             ticketNumber,
             subject: formData.subject.trim(),
-            category: categories.find(c => c.value === formData.category)?.label || formData.category,
+            category: formData.category,
             priority: formData.priority,
             message: formData.message.trim()
           }
@@ -266,11 +278,8 @@ const ContactUs = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      <div className="flex items-center gap-2">
-                        <cat.icon className="w-4 h-4" />
-                        {cat.label}
-                      </div>
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

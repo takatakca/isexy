@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Search, Ticket, Clock, CheckCircle, AlertCircle, 
   MessageSquare, RefreshCw, Filter, Send, Paperclip, ExternalLink,
-  User, Mail, Calendar
+  User, Mail, Calendar, BarChart3, Tag
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -299,9 +299,19 @@ const AdminTickets = () => {
             </Link>
             <h1 className="text-xl font-bold text-foreground">Admin: Support Tickets</h1>
           </div>
-          <Button variant="ghost" size="icon" onClick={fetchTickets} disabled={isLoading}>
-            <RefreshCw className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/dashboard')}>
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/categories')}>
+              <Tag className="w-4 h-4 mr-2" />
+              Categories
+            </Button>
+            <Button variant="ghost" size="icon" onClick={fetchTickets} disabled={isLoading}>
+              <RefreshCw className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
       </div>
 

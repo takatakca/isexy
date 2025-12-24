@@ -54,6 +54,8 @@ import FAQ from "./pages/FAQ";
 import ContactUs from "./pages/ContactUs";
 import TicketTracking from "./pages/TicketTracking";
 import AdminTickets from "./pages/AdminTickets";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminCategories from "./pages/AdminCategories";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -115,6 +117,8 @@ const App = () => (
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/ticket-tracking" element={<TicketTracking />} />
             <Route path="/admin/tickets" element={<AdminTickets />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/categories" element={<AdminCategories />} />
             <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
