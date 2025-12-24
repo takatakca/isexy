@@ -6,7 +6,7 @@ interface AuthLayoutProps {
   children: ReactNode;
   showBack?: boolean;
   showClose?: boolean;
-  variant?: "gradient" | "white";
+  variant?: "gradient" | "white" | "gray";
   onBack?: () => void;
   onSave?: () => void;
   isSaving?: boolean;
@@ -31,7 +31,11 @@ export function AuthLayout({
     }
   };
 
-  const bgClass = variant === "gradient" ? "gradient-primary min-h-screen" : "bg-background min-h-screen";
+  const bgClass = variant === "gradient" 
+    ? "gradient-primary min-h-screen" 
+    : variant === "gray" 
+    ? "bg-muted min-h-screen" 
+    : "bg-background min-h-screen";
   const iconColor = variant === "gradient" ? "text-primary-foreground" : "text-foreground";
 
   return (

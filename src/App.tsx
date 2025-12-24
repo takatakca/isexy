@@ -37,6 +37,15 @@ import TopPicks from "./pages/TopPicks";
 import CommunityGuidelines from "./pages/CommunityGuidelines";
 import SafetyTips from "./pages/SafetyTips";
 import CookiePolicy from "./pages/CookiePolicy";
+import SwipeSurge from "./pages/SwipeSurge";
+import ActiveStatus from "./pages/ActiveStatus";
+import FriendsInCommon from "./pages/FriendsInCommon";
+import EmailSettings from "./pages/EmailSettings";
+import PushNotifications from "./pages/PushNotifications";
+import TeamCubaDate from "./pages/TeamCubaDate";
+import ManagePaymentAccount from "./pages/ManagePaymentAccount";
+import RestorePurchase from "./pages/RestorePurchase";
+import HelpSupport from "./pages/HelpSupport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -82,6 +91,15 @@ const App = () => (
             <Route path="/community-guidelines" element={<CommunityGuidelines />} />
             <Route path="/safety-tips" element={<SafetyTips />} />
             <Route path="/cookie-policy" element={<CookiePolicy />} />
+            <Route path="/swipe-surge" element={<SwipeSurge />} />
+            <Route path="/active-status" element={<ActiveStatus />} />
+            <Route path="/friends-in-common" element={<FriendsInCommon />} />
+            <Route path="/email-settings" element={<EmailSettings />} />
+            <Route path="/push-notifications" element={<PushNotifications />} />
+            <Route path="/team-cubadate" element={<TeamCubaDate />} />
+            <Route path="/manage-payment" element={<ManagePaymentAccount />} />
+            <Route path="/restore-purchase" element={<RestorePurchase />} />
+            <Route path="/help-support" element={<HelpSupport />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

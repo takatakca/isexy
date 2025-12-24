@@ -4,6 +4,7 @@ interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl";
   showText?: boolean;
   variant?: "light" | "dark" | "gradient";
+  className?: string;
 }
 
 const sizeClasses = {
@@ -20,7 +21,7 @@ const textSizeClasses = {
   xl: "text-5xl",
 };
 
-export function Logo({ size = "md", showText = true, variant = "light" }: LogoProps) {
+export function Logo({ size = "md", showText = true, variant = "light", className }: LogoProps) {
   const iconColor = variant === "dark" ? "text-primary" : "text-primary-foreground";
   const textColor = variant === "dark" ? "text-foreground" : "text-primary-foreground";
 
