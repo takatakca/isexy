@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Send, 
   Mail, 
@@ -25,7 +27,8 @@ import {
   CreditCard,
   Shield,
   Users,
-  Heart
+  Heart,
+  Ticket
 } from "lucide-react";
 
 const ContactUs = () => {
@@ -35,7 +38,7 @@ const ContactUs = () => {
     category: "",
     subject: "",
     message: "",
-    priority: "normal"
+    priority: "medium"
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,6 +53,15 @@ const ContactUs = () => {
     { value: "partnership", label: "Partnership Inquiry", icon: MessageCircle },
   ];
 
+  const generateTicketNumber = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "CD-";
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -58,21 +70,83 @@ const ContactUs = () => {
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast.success("Your message has been sent successfully! We'll get back to you within 24-48 hours.");
-    setFormData({
-      name: "",
-      email: "",
-      category: "",
-      subject: "",
-      message: "",
-      priority: "normal"
-    });
-    setIsSubmitting(false);
+    try {
+      const ticketNumber = generateTicketNumber();
+      
+      // Get current user if logged in
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Insert ticket into database
+      const { error: insertError } = await supabase
+        .from("support_tickets")
+        .insert({
+          ticket_number: ticketNumber,
+          user_id: user?.id || null,
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          subject: formData.subject.trim(),
+          category: formData.category,
+          priority: formData.priority,
+          message: formData.message.trim(),
+          status: "open"
+        });
+
+      if (insertError) {
+        console.error("Error inserting ticket:", insertError);
+        throw new Error("Failed to create support ticket");
+      }
+
+      // Send confirmation email via edge function
+      try {
+        const { error: emailError } = await supabase.functions.invoke("send-ticket-confirmation", {
+          body: {
+            name: formData.name.trim(),
+            email: formData.email.trim().toLowerCase(),
+            ticketNumber,
+            subject: formData.subject.trim(),
+            category: categories.find(c => c.value === formData.category)?.label || formData.category,
+            priority: formData.priority,
+            message: formData.message.trim()
+          }
+        });
+
+        if (emailError) {
+          console.error("Email sending error:", emailError);
+          // Don't throw - ticket was created, just log email failure
+        }
+      } catch (emailErr) {
+        console.error("Email function error:", emailErr);
+        // Continue - ticket was still created
+      }
+      
+      toast.success(
+        `Ticket #${ticketNumber} created successfully! Check your email for confirmation.`,
+        { duration: 6000 }
+      );
+      
+      setFormData({
+        name: "",
+        email: "",
+        category: "",
+        subject: "",
+        message: "",
+        priority: "medium"
+      });
+    } catch (error: any) {
+      console.error("Error submitting ticket:", error);
+      toast.error(error.message || "Failed to submit ticket. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -90,6 +164,15 @@ const ContactUs = () => {
             We're here to help. Send us a message and we'll respond as soon as possible.
           </p>
         </div>
+
+        {/* Ticket Tracking Link */}
+        <Link 
+          to="/ticket-tracking" 
+          className="mb-6 flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary py-3 px-4 rounded-xl transition-colors"
+        >
+          <Ticket className="w-5 h-5" />
+          <span className="font-medium">Track Your Existing Tickets</span>
+        </Link>
 
         {/* Contact Info Cards */}
         <div className="grid grid-cols-2 gap-4 mb-8">
@@ -145,6 +228,7 @@ const ContactUs = () => {
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 className="bg-background"
+                maxLength={100}
               />
             </div>
 
@@ -160,6 +244,7 @@ const ContactUs = () => {
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 className="bg-background"
+                maxLength={255}
               />
             </div>
 
@@ -192,7 +277,7 @@ const ContactUs = () => {
             <div className="space-y-2">
               <Label className="text-foreground">Priority Level</Label>
               <div className="flex gap-2">
-                {["low", "normal", "high", "urgent"].map((priority) => (
+                {["low", "medium", "high", "urgent"].map((priority) => (
                   <button
                     key={priority}
                     type="button"
@@ -203,7 +288,7 @@ const ContactUs = () => {
                           ? "bg-destructive text-white"
                           : priority === "high"
                           ? "bg-orange-500 text-white"
-                          : priority === "normal"
+                          : priority === "medium"
                           ? "bg-primary text-white"
                           : "bg-muted-foreground text-white"
                         : "bg-muted text-muted-foreground"
@@ -226,6 +311,7 @@ const ContactUs = () => {
                 value={formData.subject}
                 onChange={(e) => handleChange("subject", e.target.value)}
                 className="bg-background"
+                maxLength={200}
               />
             </div>
 
@@ -240,7 +326,11 @@ const ContactUs = () => {
                 value={formData.message}
                 onChange={(e) => handleChange("message", e.target.value)}
                 className="bg-background min-h-[150px]"
+                maxLength={2000}
               />
+              <p className="text-xs text-muted-foreground text-right">
+                {formData.message.length}/2000
+              </p>
             </div>
 
             {/* Submit Button */}
@@ -250,7 +340,7 @@ const ContactUs = () => {
               className="w-full bg-primary text-white hover:bg-primary/90 py-6"
             >
               {isSubmitting ? (
-                "Sending..."
+                "Submitting..."
               ) : (
                 <>
                   <Send className="w-5 h-5 mr-2" />
@@ -268,11 +358,11 @@ const ContactUs = () => {
             <ul className="text-sm text-muted-foreground space-y-2">
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
-                Check our <a href="/faq" className="text-primary underline">FAQ section</a> for quick answers
+                Check our <Link to="/faq" className="text-primary underline">FAQ section</Link> for quick answers
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
-                Review our <a href="/safety" className="text-primary underline">Safety Center</a> for safety-related issues
+                Review our <Link to="/safety" className="text-primary underline">Safety Center</Link> for safety-related issues
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
@@ -298,7 +388,7 @@ const ContactUs = () => {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary">4.</span>
-                You can reply to continue the conversation on your ticket
+                <Link to="/ticket-tracking" className="text-primary underline">Track your ticket status</Link> anytime
               </li>
             </ul>
           </div>
