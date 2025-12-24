@@ -527,7 +527,7 @@ export default function Settings() {
         {/* Block Contacts */}
         <section className="mb-6">
           <SettingCard>
-            <SettingRow label="Block Contacts" />
+            <SettingRow label="Block Contacts" onClick={() => navigate("/block-contacts")} />
           </SettingCard>
         </section>
 
@@ -535,7 +535,7 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Appearance</h2>
           <SettingCard>
-            <SettingRow icon={Moon} label="Use System Setting" iconColor="text-muted-foreground" />
+            <SettingRow icon={Moon} label="Use System Setting" onClick={() => navigate("/dark-mode")} iconColor="text-muted-foreground" />
           </SettingCard>
         </section>
 
@@ -543,7 +543,7 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Data Usage</h2>
           <SettingCard>
-            <SettingRow icon={Video} label="Autoplay Videos" iconColor="text-muted-foreground" />
+            <SettingRow icon={Video} label="Autoplay Videos" onClick={() => navigate("/autoplay-videos")} iconColor="text-muted-foreground" />
           </SettingCard>
         </section>
 
@@ -563,12 +563,15 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground mb-3">
               Create a username. Share your username. Have people all over the world match with you right on CubaDate.
             </p>
-            <div className="flex items-center justify-between">
+            <button 
+              onClick={() => navigate("/web-profile")}
+              className="flex items-center justify-between w-full"
+            >
               <span className="text-foreground">Username</span>
-              <button className="flex items-center gap-1 text-muted-foreground">
+              <span className="flex items-center gap-1 text-muted-foreground">
                 Claim Yours <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+              </span>
+            </button>
           </SettingCard>
         </section>
 
@@ -590,7 +593,7 @@ export default function Settings() {
           <SettingCard>
             <div className="p-4">
               <p className="font-semibold text-foreground mb-1">Manage Active Status</p>
-              <SettingRow label="Settings" />
+              <SettingRow label="Settings" onClick={() => navigate("/active-status")} />
             </div>
           </SettingCard>
         </section>
@@ -599,7 +602,7 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Connections</h2>
           <SettingCard>
-            <SettingRow label="Friends in Common" />
+            <SettingRow label="Friends in Common" onClick={() => navigate("/friends-in-common")} />
           </SettingCard>
           <p className="text-sm text-muted-foreground mt-2 px-1">
             See how many mutuals you share with a potential match.
@@ -612,10 +615,10 @@ export default function Settings() {
           <SettingCard className="divide-y divide-border">
             <div className="p-4">
               <p className="font-semibold text-foreground mb-3">Notifications</p>
-              <div className="space-y-3 pl-2">
-                <p className="text-foreground">Email</p>
-                <p className="text-foreground">Push Notifications</p>
-                <p className="text-foreground">Team CubaDate</p>
+              <div className="space-y-1">
+                <SettingRow label="Email" onClick={() => navigate("/email-settings")} />
+                <SettingRow label="Push Notifications" onClick={() => navigate("/push-notifications")} />
+                <SettingRow label="Team CubaDate" onClick={() => navigate("/team-cubadate")} />
               </div>
             </div>
           </SettingCard>
@@ -657,9 +660,9 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Payment Account</h2>
           <SettingCard className="divide-y divide-border">
-            <SettingRow icon={CreditCard} label="Manage Payment Account" iconColor="text-muted-foreground" />
+            <SettingRow icon={CreditCard} label="Manage Payment Account" onClick={() => navigate("/manage-payment-account")} iconColor="text-muted-foreground" />
             <SettingRow label="Manage Google Play Account" />
-            <SettingRow label="Restore Purchase" />
+            <SettingRow label="Restore Purchase" onClick={() => navigate("/restore-purchase")} />
           </SettingCard>
         </section>
 
@@ -667,8 +670,8 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Contact Us</h2>
           <SettingCard className="divide-y divide-border">
-            <SettingRow label="Help & Support" />
-            <SettingRow label="Report a problem" />
+            <SettingRow label="Help & Support" onClick={() => navigate("/help-support")} />
+            <SettingRow label="Report a problem" onClick={() => navigate("/help-support")} />
           </SettingCard>
         </section>
 
@@ -693,8 +696,9 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Privacy</h2>
           <SettingCard className="divide-y divide-border">
-            <SettingRow label="Cookie Policy" />
+            <SettingRow label="Cookie Policy" onClick={() => navigate("/cookie-policy")} />
             <SettingRow label="Privacy Policy" onClick={() => navigate("/privacy")} />
+            <SettingRow label="Consumer Health Data Privacy" onClick={() => navigate("/consumer-health-privacy")} />
             <SettingRow label="Privacy Preferences" />
           </SettingCard>
         </section>
@@ -703,7 +707,7 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Legal</h2>
           <SettingCard className="divide-y divide-border">
-            <SettingRow label="Licenses" />
+            <SettingRow label="Licenses" onClick={() => navigate("/licenses")} />
             <SettingRow label="Terms of Service" onClick={() => navigate("/terms")} />
           </SettingCard>
         </section>
@@ -734,7 +738,10 @@ export default function Settings() {
         {/* Delete Account */}
         <section className="mb-8">
           <SettingCard>
-            <button className="w-full p-4 text-center font-semibold text-foreground">
+            <button 
+              onClick={() => navigate("/delete-account")}
+              className="w-full p-4 text-center font-semibold text-destructive"
+            >
               Delete Account
             </button>
           </SettingCard>

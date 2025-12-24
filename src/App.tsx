@@ -78,7 +78,7 @@ const App = () => (
             <Route path="/premium" element={<Premium />} />
             <Route path="/edit-bio" element={<EditBio />} />
             <Route path="/edit-profile" element={<EditProfile />} />
-            <Route path="/super-likes" element={<GetSuperLikes />} />
+            <Route path="/get-super-likes" element={<GetSuperLikes />} />
             <Route path="/my-subscription" element={<MySubscription />} />
             <Route path="/safety" element={<Safety />} />
             <Route path="/privacy" element={<Privacy />} />
@@ -101,7 +101,7 @@ const App = () => (
             <Route path="/email-settings" element={<EmailSettings />} />
             <Route path="/push-notifications" element={<PushNotifications />} />
             <Route path="/team-cubadate" element={<TeamCubaDate />} />
-            <Route path="/manage-payment" element={<ManagePaymentAccount />} />
+            <Route path="/manage-payment-account" element={<ManagePaymentAccount />} />
             <Route path="/restore-purchase" element={<RestorePurchase />} />
             <Route path="/help-support" element={<HelpSupport />} />
             <Route path="/web-profile" element={<WebProfile />} />
