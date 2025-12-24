@@ -46,6 +46,8 @@ import TeamCubaDate from "./pages/TeamCubaDate";
 import ManagePaymentAccount from "./pages/ManagePaymentAccount";
 import RestorePurchase from "./pages/RestorePurchase";
 import HelpSupport from "./pages/HelpSupport";
+import WebProfile from "./pages/WebProfile";
+import DeleteAccount from "./pages/DeleteAccount";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -100,6 +102,8 @@ const App = () => (
             <Route path="/manage-payment" element={<ManagePaymentAccount />} />
             <Route path="/restore-purchase" element={<RestorePurchase />} />
             <Route path="/help-support" element={<HelpSupport />} />
+            <Route path="/web-profile" element={<WebProfile />} />
+            <Route path="/delete-account" element={<DeleteAccount />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
