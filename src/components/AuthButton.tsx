@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface AuthButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   icon?: ReactNode;
-  variant?: "social" | "primary" | "secondary" | "outline";
+  variant?: "social" | "primary" | "secondary" | "outline" | "dark";
 }
 
 export function AuthButton({
@@ -21,6 +21,7 @@ export function AuthButton({
     primary: "gradient-primary text-primary-foreground shadow-button hover:shadow-glow hover:opacity-95",
     secondary: "bg-secondary text-secondary-foreground hover:bg-muted",
     outline: "bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10",
+    dark: "bg-foreground text-background hover:bg-foreground/90",
   };
 
   return (
