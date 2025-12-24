@@ -1,21 +1,31 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Input } from "@/components/ui/input";
-import { Search, X, Info } from "lucide-react";
+import { Search, X, Info, HelpCircle, MessageCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 
 const HelpSupport = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [reportingOpen, setReportingOpen] = useState(false);
 
   const categories = [
-    { name: "A Guide To CubaDate", color: "bg-primary" },
-    { name: "Troubleshooting", color: "bg-orange-500" },
-    { name: "Security & Privacy", color: "bg-orange-400" },
-    { name: "Safety & Reporting", color: "bg-rose-600" },
+    { name: "A Guide To CubaDate", color: "bg-primary", path: "/faq" },
+    { name: "Troubleshooting", color: "bg-orange-500", path: "/faq" },
+    { name: "Security & Privacy", color: "bg-orange-400", path: "/safety" },
+    { name: "Safety & Reporting", color: "bg-rose-600", action: "reporting" },
   ];
+
+  const handleCategoryClick = (category: typeof categories[0]) => {
+    if (category.action === "reporting") {
+      setReportingOpen(true);
+    } else if (category.path) {
+      navigate(category.path);
+    }
+  };
 
   return (
     <AuthLayout showBack variant="white">
@@ -40,7 +50,7 @@ const HelpSupport = () => {
           {categories.map((category) => (
             <button
               key={category.name}
-              onClick={() => category.name === "Safety & Reporting" && setReportingOpen(true)}
+              onClick={() => handleCategoryClick(category)}
               className={`w-full p-6 ${category.color} text-white text-lg font-semibold text-center`}
             >
               {category.name}
@@ -48,8 +58,28 @@ const HelpSupport = () => {
           ))}
         </div>
 
+        {/* Quick Links */}
+        <div className="w-full mt-6 grid grid-cols-2 gap-3">
+          <button
+            onClick={() => navigate("/faq")}
+            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
+          >
+            <HelpCircle className="w-8 h-8 text-primary" />
+            <span className="font-medium text-foreground">FAQ</span>
+            <span className="text-xs text-muted-foreground text-center">Find quick answers</span>
+          </button>
+          <button
+            onClick={() => navigate("/contact-us")}
+            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
+          >
+            <MessageCircle className="w-8 h-8 text-primary" />
+            <span className="font-medium text-foreground">Contact Us</span>
+            <span className="text-xs text-muted-foreground text-center">Submit a ticket</span>
+          </button>
+        </div>
+
         <div className="flex gap-6 mt-8">
-          <button className="text-primary text-sm">Privacy</button>
+          <button className="text-primary text-sm" onClick={() => navigate("/privacy")}>Privacy</button>
           <button className="text-muted-foreground text-sm flex items-center gap-1">
             English (US)
             <span>▼</span>
@@ -79,11 +109,21 @@ const HelpSupport = () => {
           </div>
 
           <div className="mt-6 space-y-3">
-            <Button className="w-full bg-foreground text-background hover:bg-foreground/90 py-6 text-lg">
+            <Button 
+              onClick={() => {
+                setReportingOpen(false);
+                navigate("/contact-us");
+              }}
+              className="w-full bg-foreground text-background hover:bg-foreground/90 py-6 text-lg"
+            >
               Report a problem
             </Button>
             <Button
               variant="outline"
+              onClick={() => {
+                setReportingOpen(false);
+                navigate("/contact-us");
+              }}
               className="w-full py-6 text-lg"
             >
               Leave feedback

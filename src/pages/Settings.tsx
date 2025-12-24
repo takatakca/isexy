@@ -671,6 +671,8 @@ export default function Settings() {
           <h2 className="text-lg font-bold text-foreground mb-3">Contact Us</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Help & Support" onClick={() => navigate("/help-support")} />
+            <SettingRow label="FAQ" onClick={() => navigate("/faq")} />
+            <SettingRow label="Contact Us" onClick={() => navigate("/contact-us")} />
             <SettingRow label="Report a problem" onClick={() => navigate("/help-support")} />
           </SettingCard>
         </section>
