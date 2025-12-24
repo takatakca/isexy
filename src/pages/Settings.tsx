@@ -673,6 +673,7 @@ export default function Settings() {
             <SettingRow label="Help & Support" onClick={() => navigate("/help-support")} />
             <SettingRow label="FAQ" onClick={() => navigate("/faq")} />
             <SettingRow label="Contact Us" onClick={() => navigate("/contact-us")} />
+            <SettingRow label="Track Your Tickets" onClick={() => navigate("/ticket-tracking")} />
             <SettingRow label="Report a problem" onClick={() => navigate("/help-support")} />
           </SettingCard>
         </section>
