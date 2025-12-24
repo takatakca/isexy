@@ -24,8 +24,11 @@ import MySubscription from "./pages/MySubscription";
 import Safety from "./pages/Safety";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import LoveStories from "./pages/LoveStories";
+import About from "./pages/About";
+import News from "./pages/News";
+import Matches from "./pages/Matches";
 import NotFound from "./pages/NotFound";
-
 
 const queryClient = new QueryClient();
 
@@ -57,6 +60,10 @@ const App = () => (
             <Route path="/safety" element={<Safety />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/love-stories" element={<LoveStories />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/news" element={<News />} />
+            <Route path="/matches-list" element={<Matches />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
