@@ -1,90 +1,313 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, X, Star, RotateCcw, Zap, Send, MapPin, Sliders } from "lucide-react";
+import { Heart, X, Star, RotateCcw, Zap, Send, Sliders, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
+import { SwipeCard } from "@/components/SwipeCard";
+import { useSwipe } from "@/hooks/useSwipe";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// Mock profile data
-const mockProfiles = [
-  {
-    id: 1,
-    name: "Florence",
-    age: 28,
-    location: "Nearby",
-    distance: "9 km away",
-    bio: "Dancing through life 💃 | Coffee lover ☕ | Looking for genuine connections",
-    images: [
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=600&fit=crop",
-    ],
-  },
-  {
-    id: 2,
-    name: "Isabella",
-    age: 24,
-    location: "Nearby",
-    distance: "5 km away",
-    bio: "Music is my passion 🎵 | Beach lover 🏖️ | Let's explore together",
-    images: [
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400&h=600&fit=crop",
-    ],
-  },
-  {
-    id: 3,
-    name: "Camila",
-    age: 28,
-    location: "Nearby",
-    distance: "12 km away",
-    bio: "Chef in the making 👩‍🍳 | Adventure seeker | Looking for my partner",
-    images: [
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400&h=600&fit=crop",
-    ],
-  },
-];
+interface DiscoverProfile {
+  id: string;
+  first_name: string;
+  birth_date: string;
+  bio?: string;
+  city?: string;
+  job_title?: string;
+  company?: string;
+  school?: string;
+  is_verified?: boolean;
+  latitude?: number;
+  longitude?: number;
+  photos: string[];
+}
+
+// Calculate age from birth date
+function calculateAge(birthDate: string): number {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+// Calculate distance between two coordinates
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
 
 export default function Discover() {
   const navigate = useNavigate();
+  const { profile: userProfile } = useAuth();
+  const [profiles, setProfiles] = useState<DiscoverProfile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | "up" | null>(null);
+  const [lastSwiped, setLastSwiped] = useState<DiscoverProfile | null>(null);
 
-  const currentProfile = mockProfiles[currentIndex];
+  const currentProfile = profiles[currentIndex];
+  const nextProfile = profiles[currentIndex + 1];
 
-  const handleSwipe = (direction: "left" | "right") => {
-    if (isAnimating) return;
-    
-    setSwipeDirection(direction);
+  useEffect(() => {
+    if (userProfile) {
+      fetchProfiles();
+    }
+  }, [userProfile]);
+
+  const fetchProfiles = async () => {
+    if (!userProfile) return;
+
+    setLoading(true);
+
+    // Get profiles that the user hasn't swiped on yet
+    const { data: swipedIds } = await supabase
+      .from("swipes")
+      .select("swiped_id")
+      .eq("swiper_id", userProfile.id);
+
+    const excludeIds = [userProfile.id, ...(swipedIds?.map((s) => s.swiped_id) || [])];
+
+    // Get profiles with photos
+    const { data: profilesData, error } = await supabase
+      .from("profiles")
+      .select(`
+        id,
+        first_name,
+        birth_date,
+        bio,
+        city,
+        job_title,
+        company,
+        school,
+        is_verified,
+        latitude,
+        longitude,
+        gender,
+        interested_in
+      `)
+      .eq("is_active", true)
+      .not("id", "in", `(${excludeIds.join(",")})`)
+      .limit(20);
+
+    if (error) {
+      console.error("Error fetching profiles:", error);
+      setLoading(false);
+      return;
+    }
+
+    // Filter profiles based on preferences
+    const filteredProfiles = (profilesData || []).filter((p: any) => {
+      // Check if profile matches user's interested_in
+      if (userProfile.interested_in && userProfile.interested_in.length > 0) {
+        if (!userProfile.interested_in.includes(p.gender)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // Get photos for each profile
+    const profilesWithPhotos = await Promise.all(
+      filteredProfiles.map(async (p: any) => {
+        const { data: photos } = await supabase
+          .from("profile_photos")
+          .select("photo_url")
+          .eq("profile_id", p.id)
+          .order("position");
+
+        return {
+          ...p,
+          photos: photos?.map((photo) => photo.photo_url) || [],
+        };
+      })
+    );
+
+    // Only show profiles with at least one photo
+    const profilesWithAtLeastOnePhoto = profilesWithPhotos.filter((p) => p.photos.length > 0);
+
+    setProfiles(profilesWithAtLeastOnePhoto);
+    setCurrentIndex(0);
+    setLoading(false);
+  };
+
+  const handleSwipe = useCallback(async (action: "like" | "nope" | "super_like") => {
+    if (isAnimating || !currentProfile || !userProfile) return;
+
     setIsAnimating(true);
-    
+    setSwipeDirection(action === "like" ? "right" : action === "nope" ? "left" : "up");
+    setLastSwiped(currentProfile);
+
+    // Record the swipe
+    const { error: swipeError } = await supabase.from("swipes").insert({
+      swiper_id: userProfile.id,
+      swiped_id: currentProfile.id,
+      action,
+    });
+
+    if (swipeError) {
+      console.error("Error recording swipe:", swipeError);
+    }
+
+    // Check for match if like or super_like
+    if (action === "like" || action === "super_like") {
+      const { data: mutualSwipe } = await supabase
+        .from("swipes")
+        .select("id")
+        .eq("swiper_id", currentProfile.id)
+        .eq("swiped_id", userProfile.id)
+        .in("action", ["like", "super_like"])
+        .maybeSingle();
+
+      if (mutualSwipe) {
+        // Create a match!
+        const { error: matchError } = await supabase.from("matches").insert({
+          profile1_id: userProfile.id,
+          profile2_id: currentProfile.id,
+        });
+
+        if (!matchError) {
+          toast.success(`It's a match with ${currentProfile.first_name}! 🎉`, {
+            action: {
+              label: "Message",
+              onClick: () => navigate("/matches"),
+            },
+          });
+        }
+      }
+    }
+
     setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % mockProfiles.length);
-      setCurrentImageIndex(0);
+      setCurrentIndex((prev) => prev + 1);
       setSwipeDirection(null);
       setIsAnimating(false);
+
+      // Fetch more profiles if running low
+      if (currentIndex >= profiles.length - 3) {
+        fetchProfiles();
+      }
     }, 300);
+  }, [isAnimating, currentProfile, userProfile, currentIndex, profiles.length, navigate]);
+
+  const handleUndo = useCallback(async () => {
+    if (!lastSwiped || !userProfile) return;
+
+    // Delete the last swipe
+    await supabase
+      .from("swipes")
+      .delete()
+      .eq("swiper_id", userProfile.id)
+      .eq("swiped_id", lastSwiped.id);
+
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+    setLastSwiped(null);
+    toast.success("Undo successful!");
+  }, [lastSwiped, userProfile]);
+
+  const { dragX, dragY, rotation, handlers } = useSwipe({
+    onSwipeLeft: () => handleSwipe("nope"),
+    onSwipeRight: () => handleSwipe("like"),
+    onSwipeUp: () => handleSwipe("super_like"),
+  });
+
+  const showLikeIndicator = dragX > 50;
+  const showNopeIndicator = dragX < -50;
+  const showSuperLikeIndicator = dragY < -50 && Math.abs(dragX) < 50;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center pb-20">
+        <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+        <p className="text-muted-foreground">Finding people near you...</p>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  if (!currentProfile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col pb-20">
+        <header className="flex items-center justify-between px-4 py-3">
+          <button className="p-2">
+            <Sliders className="w-6 h-6 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button className="px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm">
+              For You
+            </button>
+          </div>
+          <button onClick={() => navigate("/premium")} className="p-2">
+            <Zap className="w-6 h-6 text-purple-500 fill-purple-500" />
+          </button>
+        </header>
+
+        <main className="flex-1 flex flex-col items-center justify-center px-8">
+          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6">
+            <Heart className="w-12 h-12 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2 text-center">
+            No more profiles
+          </h2>
+          <p className="text-muted-foreground text-center mb-6">
+            Check back later or expand your preferences to see more people.
+          </p>
+          <button
+            onClick={fetchProfiles}
+            className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-semibold"
+          >
+            Refresh
+          </button>
+        </main>
+
+        <BottomNav />
+      </div>
+    );
+  }
+
+  const formattedProfile = {
+    id: currentProfile.id,
+    first_name: currentProfile.first_name,
+    age: calculateAge(currentProfile.birth_date),
+    bio: currentProfile.bio,
+    city: currentProfile.city,
+    job_title: currentProfile.job_title,
+    company: currentProfile.company,
+    school: currentProfile.school,
+    is_verified: currentProfile.is_verified,
+    distance: userProfile?.latitude && currentProfile.latitude
+      ? calculateDistance(
+          userProfile.latitude,
+          userProfile.longitude || 0,
+          currentProfile.latitude,
+          currentProfile.longitude || 0
+        )
+      : undefined,
+    photos: currentProfile.photos,
   };
 
-  const handleImageTap = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const isRightSide = x > rect.width / 2;
-    
-    if (isRightSide) {
-      setCurrentImageIndex((prev) => Math.min(prev + 1, currentProfile.images.length - 1));
-    } else {
-      setCurrentImageIndex((prev) => Math.max(prev - 1, 0));
-    }
-  };
+  const nextFormattedProfile = nextProfile ? {
+    id: nextProfile.id,
+    first_name: nextProfile.first_name,
+    age: calculateAge(nextProfile.birth_date),
+    bio: nextProfile.bio,
+    photos: nextProfile.photos,
+  } : null;
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3">
+      <header className="flex items-center justify-between px-4 py-3 z-20">
         <button className="p-2">
           <Sliders className="w-6 h-6 text-muted-foreground" />
         </button>
@@ -98,116 +321,85 @@ export default function Discover() {
           </button>
         </div>
         
-        <button 
-          onClick={() => navigate("/premium")}
-          className="p-2"
-        >
+        <button onClick={() => navigate("/premium")} className="p-2">
           <Zap className="w-6 h-6 text-purple-500 fill-purple-500" />
         </button>
       </header>
 
       {/* Card stack */}
-      <main className="flex-1 flex items-start justify-center px-2 pt-2">
-        <div className="relative w-full max-w-sm aspect-[3/4.5]">
-          {/* Profile card */}
-          <div
-            onClick={handleImageTap}
-            className={`absolute inset-0 rounded-xl overflow-hidden shadow-medium transition-transform duration-300 cursor-pointer ${
-              swipeDirection === "left"
-                ? "-translate-x-full rotate-[-20deg] opacity-0"
-                : swipeDirection === "right"
-                ? "translate-x-full rotate-[20deg] opacity-0"
-                : ""
-            }`}
-          >
-            {/* Image segments indicator */}
-            <div className="absolute top-2 left-2 right-2 flex gap-1 z-10">
-              {currentProfile.images.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-1 flex-1 rounded-full transition-colors ${
-                    idx === currentImageIndex ? "bg-white" : "bg-white/40"
-                  }`}
-                />
-              ))}
-            </div>
-
-            <img
-              src={currentProfile.images[currentImageIndex]}
-              alt={currentProfile.name}
-              className="w-full h-full object-cover"
+      <main className="flex-1 flex items-start justify-center px-3 pt-2">
+        <div className="relative w-full max-w-sm aspect-[3/4.5]" {...handlers}>
+          {/* Next card (behind) */}
+          {nextFormattedProfile && (
+            <SwipeCard
+              profile={nextFormattedProfile}
+              style={{
+                transform: "scale(0.95)",
+                zIndex: 0,
+              }}
             />
-            
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            
-            {/* Location badge */}
-            <div className="absolute top-16 left-4 bg-foreground/80 text-background text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              {currentProfile.location}
-            </div>
-            
-            {/* Boost button */}
-            <button className="absolute bottom-28 right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg">
-              <Star className="w-6 h-6 text-primary-foreground fill-primary-foreground" />
-            </button>
-            
-            {/* Profile info */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-              <div className="flex items-end justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold">
-                    {currentProfile.name} <span className="font-normal">{currentProfile.age}</span>
-                  </h2>
-                  <p className="text-white/80 text-sm flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {currentProfile.distance}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
 
-          {/* Swipe indicators */}
-          {swipeDirection === "left" && (
-            <div className="absolute top-20 right-8 px-4 py-2 border-4 border-destructive text-destructive font-bold text-2xl rotate-12 animate-fade-in">
-              NOPE
-            </div>
-          )}
-          {swipeDirection === "right" && (
-            <div className="absolute top-20 left-8 px-4 py-2 border-4 border-green-500 text-green-500 font-bold text-2xl -rotate-12 animate-fade-in">
-              LIKE
-            </div>
-          )}
+          {/* Current card */}
+          <SwipeCard
+            profile={formattedProfile}
+            style={{
+              transform: swipeDirection === "left"
+                ? "translateX(-150%) rotate(-30deg)"
+                : swipeDirection === "right"
+                ? "translateX(150%) rotate(30deg)"
+                : swipeDirection === "up"
+                ? "translateY(-150%) scale(0.8)"
+                : `translateX(${dragX}px) translateY(${dragY}px) rotate(${rotation}deg)`,
+              transition: swipeDirection ? "transform 0.3s ease-out" : undefined,
+              zIndex: 1,
+            }}
+            showLikeIndicator={showLikeIndicator}
+            showNopeIndicator={showNopeIndicator}
+            showSuperLikeIndicator={showSuperLikeIndicator}
+          />
         </div>
       </main>
 
       {/* Action buttons */}
       <div className="flex items-center justify-center gap-3 px-6 py-4">
-        <button className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center text-yellow-500 hover:scale-110 transition-transform border border-border">
+        <button
+          onClick={handleUndo}
+          disabled={!lastSwiped}
+          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-yellow-500 hover:scale-110 transition-transform border border-border disabled:opacity-40"
+        >
           <RotateCcw className="w-5 h-5" />
         </button>
         
         <button
-          onClick={() => handleSwipe("left")}
-          className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border"
+          onClick={() => handleSwipe("nope")}
+          disabled={isAnimating}
+          className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border"
         >
           <X className="w-8 h-8 text-rose-500" />
         </button>
         
-        <button className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center text-blue-500 hover:scale-110 transition-transform border border-border">
-          <Star className="w-5 h-5" />
+        <button
+          onClick={() => handleSwipe("super_like")}
+          disabled={isAnimating}
+          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-cyan-400 hover:scale-110 transition-transform border border-border"
+        >
+          <Star className="w-5 h-5 fill-current" />
         </button>
         
         <button
-          onClick={() => handleSwipe("right")}
-          className="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border"
+          onClick={() => handleSwipe("like")}
+          disabled={isAnimating}
+          className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border"
         >
           <Heart className="w-8 h-8 text-green-500 fill-green-500" />
         </button>
         
-        <button className="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center text-blue-400 hover:scale-110 transition-transform border border-border">
-          <Send className="w-5 h-5" />
+        <button
+          onClick={() => navigate("/premium")}
+          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-purple-500 hover:scale-110 transition-transform border border-border"
+        >
+          <Zap className="w-5 h-5 fill-current" />
         </button>
       </div>
 

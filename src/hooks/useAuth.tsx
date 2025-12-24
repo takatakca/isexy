@@ -31,6 +31,8 @@ interface Profile {
   boosts_remaining: number;
   is_verified: boolean;
   is_active: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface AuthContextType {
