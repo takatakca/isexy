@@ -11,6 +11,8 @@ import CodeVerification from "./pages/CodeVerification";
 import HouseRules from "./pages/HouseRules";
 import ProfileSetup from "./pages/ProfileSetup";
 import Discover from "./pages/Discover";
+import Explore from "./pages/Explore";
+import Likes from "./pages/Likes";
 import Matches from "./pages/Matches";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -36,8 +38,9 @@ const App = () => (
             <Route path="/house-rules" element={<HouseRules />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
             <Route path="/discover" element={<Discover />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/likes" element={<Likes />} />
             <Route path="/matches" element={<Matches />} />
-            <Route path="/chat/:matchId" element={<Chat />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/premium" element={<Premium />} />
             <Route path="/safety" element={<Safety />} />
