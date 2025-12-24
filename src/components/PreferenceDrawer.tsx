@@ -16,8 +16,8 @@ interface PreferenceDrawerProps {
   title: string;
   options: string[];
   selected: string | string[];
-  onSelect: (value: string | string[]) => void;
-  multiple?: boolean;
+  onSelect: ((value: string) => void) | ((value: string[]) => void);
+  multiSelect?: boolean;
 }
 
 export function PreferenceDrawer({
@@ -27,20 +27,20 @@ export function PreferenceDrawer({
   options,
   selected,
   onSelect,
-  multiple = false,
+  multiSelect = false,
 }: PreferenceDrawerProps) {
   const selectedArray = Array.isArray(selected) ? selected : selected ? [selected] : [];
 
   const handleSelect = (option: string) => {
-    if (multiple) {
+    if (multiSelect) {
       const isSelected = selectedArray.includes(option);
       if (isSelected) {
-        onSelect(selectedArray.filter((s) => s !== option));
+        (onSelect as (value: string[]) => void)(selectedArray.filter((s) => s !== option));
       } else {
-        onSelect([...selectedArray, option]);
+        (onSelect as (value: string[]) => void)([...selectedArray, option]);
       }
     } else {
-      onSelect(selectedArray.includes(option) ? "" : option);
+      (onSelect as (value: string) => void)(selectedArray.includes(option) ? "" : option);
     }
   };
 

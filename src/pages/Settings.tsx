@@ -775,7 +775,7 @@ export default function Settings() {
         options={LANGUAGES_OPTIONS}
         selected={languages}
         onSelect={(val) => setLanguages(val as string[])}
-        multiple
+        multiSelect
       />
 
       <PreferenceDrawer
@@ -830,7 +830,7 @@ export default function Settings() {
         options={PETS_OPTIONS}
         selected={pets}
         onSelect={(val) => setPets(val as string[])}
-        multiple
+        multiSelect
       />
 
       <PreferenceDrawer

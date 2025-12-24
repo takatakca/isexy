@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Premium from "./pages/Premium";
 import EditBio from "./pages/EditBio";
+import EditProfile from "./pages/EditProfile";
 import GetSuperLikes from "./pages/GetSuperLikes";
 import MySubscription from "./pages/MySubscription";
 import Safety from "./pages/Safety";
@@ -29,6 +30,8 @@ import About from "./pages/About";
 import News from "./pages/News";
 import Matches from "./pages/Matches";
 import Interests from "./pages/Interests";
+import BlockContacts from "./pages/BlockContacts";
+import DarkMode from "./pages/DarkMode";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +59,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/premium" element={<Premium />} />
             <Route path="/edit-bio" element={<EditBio />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
             <Route path="/super-likes" element={<GetSuperLikes />} />
             <Route path="/my-subscription" element={<MySubscription />} />
             <Route path="/safety" element={<Safety />} />
@@ -66,6 +70,8 @@ const App = () => (
             <Route path="/news" element={<News />} />
             <Route path="/matches-list" element={<Matches />} />
             <Route path="/interests" element={<Interests />} />
+            <Route path="/block-contacts" element={<BlockContacts />} />
+            <Route path="/dark-mode" element={<DarkMode />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

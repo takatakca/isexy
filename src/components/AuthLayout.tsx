@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AuthLayoutProps {
@@ -8,6 +8,8 @@ interface AuthLayoutProps {
   showClose?: boolean;
   variant?: "gradient" | "white";
   onBack?: () => void;
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
 export function AuthLayout({
@@ -16,6 +18,8 @@ export function AuthLayout({
   showClose = false,
   variant = "white",
   onBack,
+  onSave,
+  isSaving = false,
 }: AuthLayoutProps) {
   const navigate = useNavigate();
   
@@ -46,15 +50,27 @@ export function AuthLayout({
           <div className="w-10" />
         )}
         
-        {showClose && (
-          <button
-            onClick={() => navigate("/")}
-            className={`${iconColor} p-2 -mr-2 hover:opacity-70 transition-opacity`}
-            aria-label="Close"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onSave && (
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-full font-semibold text-sm disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+            </button>
+          )}
+          
+          {showClose && (
+            <button
+              onClick={() => navigate("/")}
+              className={`${iconColor} p-2 -mr-2 hover:opacity-70 transition-opacity`}
+              aria-label="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Main content */}
