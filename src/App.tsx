@@ -19,6 +19,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Premium from "./pages/Premium";
 import EditBio from "./pages/EditBio";
+import GetSuperLikes from "./pages/GetSuperLikes";
+import MySubscription from "./pages/MySubscription";
 import Safety from "./pages/Safety";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
@@ -48,6 +50,8 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/premium" element={<Premium />} />
             <Route path="/edit-bio" element={<EditBio />} />
+            <Route path="/super-likes" element={<GetSuperLikes />} />
+            <Route path="/my-subscription" element={<MySubscription />} />
             <Route path="/safety" element={<Safety />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
