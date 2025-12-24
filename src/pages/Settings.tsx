@@ -605,29 +605,55 @@ export default function Settings() {
         {/* Payment Account */}
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Payment Account</h2>
-          <SettingCard>
+          <SettingCard className="divide-y divide-border">
             <SettingRow icon={CreditCard} label="Manage Payment Account" iconColor="text-muted-foreground" />
+            <SettingRow label="Manage Google Play Account" />
+            <SettingRow label="Restore Purchase" />
           </SettingCard>
         </section>
 
-        {/* Quick Links */}
-        <section className="mb-6 space-y-2">
-          <SettingCard>
-            <SettingRow
-              icon={Shield}
-              label="Safety Tips"
-              onClick={() => navigate("/safety")}
-              iconColor="text-muted-foreground"
-            />
+        {/* Contact Us */}
+        <section className="mb-6">
+          <h2 className="text-lg font-bold text-foreground mb-3">Contact Us</h2>
+          <SettingCard className="divide-y divide-border">
+            <SettingRow label="Help & Support" />
+            <SettingRow label="Report a problem" />
           </SettingCard>
-          
+        </section>
+
+        {/* Community */}
+        <section className="mb-6">
+          <h2 className="text-lg font-bold text-foreground mb-3">Community</h2>
+          <SettingCard className="divide-y divide-border">
+            <SettingRow label="Community Guidelines" onClick={() => navigate("/house-rules")} />
+            <SettingRow label="Safety Tips" onClick={() => navigate("/safety")} />
+            <SettingRow label="Safety Center" />
+          </SettingCard>
+        </section>
+
+        {/* Share */}
+        <section className="mb-6">
           <SettingCard>
-            <SettingRow
-              icon={HelpCircle}
-              label="Privacy Policy"
-              onClick={() => navigate("/privacy")}
-              iconColor="text-muted-foreground"
-            />
+            <SettingRow label="Share CubaDate" />
+          </SettingCard>
+        </section>
+
+        {/* Privacy */}
+        <section className="mb-6">
+          <h2 className="text-lg font-bold text-foreground mb-3">Privacy</h2>
+          <SettingCard className="divide-y divide-border">
+            <SettingRow label="Cookie Policy" />
+            <SettingRow label="Privacy Policy" onClick={() => navigate("/privacy")} />
+            <SettingRow label="Privacy Preferences" />
+          </SettingCard>
+        </section>
+
+        {/* Legal */}
+        <section className="mb-6">
+          <h2 className="text-lg font-bold text-foreground mb-3">Legal</h2>
+          <SettingCard className="divide-y divide-border">
+            <SettingRow label="Licenses" />
+            <SettingRow label="Terms of Service" onClick={() => navigate("/terms")} />
           </SettingCard>
         </section>
 
@@ -636,21 +662,32 @@ export default function Settings() {
           {isSaving ? "Saving..." : "Save Changes"}
         </AuthButton>
 
-        {/* Account Actions */}
-        <div className="mt-8 space-y-3">
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 py-4 text-muted-foreground font-semibold hover:text-foreground transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </button>
-          
-          <button className="w-full flex items-center justify-center gap-2 py-4 text-destructive font-semibold hover:opacity-80 transition-opacity">
-            <Trash2 className="w-5 h-5" />
-            Delete Account
-          </button>
+        {/* Logout */}
+        <section className="mt-6">
+          <SettingCard>
+            <button
+              onClick={handleSignOut}
+              className="w-full p-4 text-center font-semibold text-foreground"
+            >
+              Logout
+            </button>
+          </SettingCard>
+        </section>
+
+        {/* App Logo & Version */}
+        <div className="flex flex-col items-center py-8">
+          <div className="text-4xl mb-2">🔥</div>
+          <p className="text-sm text-muted-foreground">Version 1.0.0</p>
         </div>
+
+        {/* Delete Account */}
+        <section className="mb-8">
+          <SettingCard>
+            <button className="w-full p-4 text-center font-semibold text-foreground">
+              Delete Account
+            </button>
+          </SettingCard>
+        </section>
       </div>
 
       <BoostsModal 
