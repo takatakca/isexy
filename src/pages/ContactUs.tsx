@@ -15,6 +15,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { FileUpload } from "@/components/FileUpload";
 import { 
   Send, 
   Mail, 
@@ -40,6 +41,7 @@ const ContactUs = () => {
     message: "",
     priority: "medium"
   });
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = [
@@ -97,7 +99,8 @@ const ContactUs = () => {
           category: formData.category,
           priority: formData.priority,
           message: formData.message.trim(),
-          status: "open"
+          status: "open",
+          attachments: attachments
         });
 
       if (insertError) {
@@ -141,6 +144,7 @@ const ContactUs = () => {
         message: "",
         priority: "medium"
       });
+      setAttachments([]);
     } catch (error: any) {
       console.error("Error submitting ticket:", error);
       toast.error(error.message || "Failed to submit ticket. Please try again.");
@@ -330,6 +334,19 @@ const ContactUs = () => {
               />
               <p className="text-xs text-muted-foreground text-right">
                 {formData.message.length}/2000
+              </p>
+            </div>
+
+            {/* File Attachments */}
+            <div className="space-y-2">
+              <Label className="text-foreground">Attachments (Optional)</Label>
+              <FileUpload 
+                onFilesUploaded={setAttachments}
+                maxFiles={5}
+                maxSizeMB={10}
+              />
+              <p className="text-xs text-muted-foreground">
+                Upload screenshots or documents to help us understand your issue better.
               </p>
             </div>
 
