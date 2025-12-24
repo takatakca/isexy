@@ -58,21 +58,21 @@ export default function Welcome() {
         <div className="space-y-3">
           <AuthButton
             icon={<GoogleIcon />}
-            onClick={() => navigate("/phone")}
+            onClick={() => navigate("/auth")}
           >
             Continue with Google
           </AuthButton>
 
           <AuthButton
             icon={<FacebookIcon />}
-            onClick={() => navigate("/phone")}
+            onClick={() => navigate("/auth")}
           >
             Continue with Facebook
           </AuthButton>
 
           <AuthButton
             icon={<PhoneIcon />}
-            onClick={() => navigate("/phone")}
+            onClick={() => navigate("/auth")}
           >
             Continue with Phone Number
           </AuthButton>
