@@ -50,6 +50,42 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          updated_at: string
+          variables: string[] | null
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          subject: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           id: string
@@ -551,6 +587,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_users: {
+        Args: never
+        Returns: {
+          first_name: string
+          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
