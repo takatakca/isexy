@@ -56,6 +56,7 @@ import TicketTracking from "./pages/TicketTracking";
 import AdminTickets from "./pages/AdminTickets";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCategories from "./pages/AdminCategories";
+import AdminEmailTemplates from "./pages/AdminEmailTemplates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -119,6 +120,7 @@ const App = () => (
             <Route path="/admin/tickets" element={<AdminTickets />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/categories" element={<AdminCategories />} />
+            <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
             <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

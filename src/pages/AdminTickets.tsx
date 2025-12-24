@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Search, Ticket, Clock, CheckCircle, AlertCircle, 
   MessageSquare, RefreshCw, Filter, Send, Paperclip, ExternalLink,
-  User, Mail, Calendar, BarChart3, Tag
+  User, Mail, Calendar, BarChart3, Tag, UserPlus, FileText
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,8 +41,16 @@ interface SupportTicket {
   admin_notes: string | null;
   response: string | null;
   responded_at: string | null;
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface AdminUser {
+  user_id: string;
+  role: string;
+  first_name: string | null;
+  profile_id: string | null;
 }
 
 const AdminTickets = () => {
@@ -55,6 +63,9 @@ const AdminTickets = () => {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [responseText, setResponseText] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [selectedAssignee, setSelectedAssignee] = useState<string>("unassigned");
+  const [adminNotes, setAdminNotes] = useState("");
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
@@ -68,6 +79,7 @@ const AdminTickets = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchTickets();
+      fetchAdminUsers();
       setupRealtimeSubscription();
     }
   }, [isAdmin]);
@@ -150,6 +162,16 @@ const AdminTickets = () => {
     }
   };
 
+  const fetchAdminUsers = async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_admin_users");
+      if (error) throw error;
+      setAdminUsers((data as AdminUser[]) || []);
+    } catch (error: any) {
+      console.error("Error fetching admin users:", error);
+    }
+  };
+
   const filterTickets = () => {
     let filtered = [...tickets];
 
@@ -180,6 +202,7 @@ const AdminTickets = () => {
     setIsUpdating(true);
     try {
       const oldStatus = selectedTicket.status;
+      const oldAssignee = selectedTicket.assigned_to;
       const updateData: any = {
         updated_at: new Date().toISOString(),
       };
@@ -191,6 +214,16 @@ const AdminTickets = () => {
       if (responseText.trim()) {
         updateData.response = responseText.trim();
         updateData.responded_at = new Date().toISOString();
+      }
+
+      if (adminNotes.trim()) {
+        updateData.admin_notes = adminNotes.trim();
+      }
+
+      // Handle assignment
+      const newAssigneeId = selectedAssignee === "unassigned" ? null : selectedAssignee;
+      if (newAssigneeId !== selectedTicket.assigned_to) {
+        updateData.assigned_to = newAssigneeId;
       }
 
       const { error } = await supabase
@@ -223,6 +256,8 @@ const AdminTickets = () => {
       setSelectedTicket(null);
       setResponseText("");
       setNewStatus("");
+      setSelectedAssignee("unassigned");
+      setAdminNotes("");
       fetchTickets();
     } catch (error: any) {
       console.error("Error updating ticket:", error);
@@ -230,6 +265,12 @@ const AdminTickets = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const getAssigneeName = (userId: string | null) => {
+    if (!userId) return "Unassigned";
+    const admin = adminUsers.find(a => a.user_id === userId);
+    return admin?.first_name || "Unknown";
   };
 
   const getStatusIcon = (status: string) => {
@@ -307,6 +348,10 @@ const AdminTickets = () => {
             <Button variant="outline" size="sm" onClick={() => navigate('/admin/categories')}>
               <Tag className="w-4 h-4 mr-2" />
               Categories
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/email-templates')}>
+              <FileText className="w-4 h-4 mr-2" />
+              Templates
             </Button>
             <Button variant="ghost" size="icon" onClick={fetchTickets} disabled={isLoading}>
               <RefreshCw className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`} />
@@ -416,6 +461,8 @@ const AdminTickets = () => {
                   setSelectedTicket(ticket);
                   setNewStatus(ticket.status);
                   setResponseText(ticket.response || "");
+                  setSelectedAssignee(ticket.assigned_to || "unassigned");
+                  setAdminNotes(ticket.admin_notes || "");
                 }}
               >
                 <CardContent className="p-4">
@@ -467,6 +514,12 @@ const AdminTickets = () => {
                         <span className="text-xs text-primary flex items-center gap-1">
                           <Paperclip className="w-3 h-3" />
                           {ticket.attachments.length} files
+                        </span>
+                      )}
+                      {ticket.assigned_to && (
+                        <span className="text-xs text-green-400 flex items-center gap-1">
+                          <UserPlus className="w-3 h-3" />
+                          {getAssigneeName(ticket.assigned_to)}
                         </span>
                       )}
                     </div>
@@ -573,6 +626,27 @@ const AdminTickets = () => {
                   </div>
                 )}
 
+                {/* Assignment */}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">
+                    <UserPlus className="w-4 h-4" />
+                    Assign To
+                  </p>
+                  <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {adminUsers.map((admin) => (
+                        <SelectItem key={admin.user_id} value={admin.user_id}>
+                          {admin.first_name || "Unknown"} ({admin.role})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Update Status */}
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Update Status</p>
@@ -597,6 +671,18 @@ const AdminTickets = () => {
                     value={responseText}
                     onChange={(e) => setResponseText(e.target.value)}
                     rows={4}
+                  />
+                </div>
+
+                {/* Admin Notes */}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Admin Notes (Internal)</p>
+                  <Textarea
+                    placeholder="Internal notes not visible to user..."
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    rows={2}
+                    className="bg-yellow-500/5 border-yellow-500/30"
                   />
                 </div>
 
