@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Check, Lock, Flame } from "lucide-react";
+import { X, Check, Flame } from "lucide-react";
 import { subscriptionTiers, SubscriptionTier } from "@/lib/subscriptionTiers";
 
 interface FeatureItem {
@@ -127,34 +127,60 @@ const tierConfig: Record<SubscriptionTier, {
   bgColor: string;
   buttonGradient: string;
   startingPrice: number;
+  label: string;
+  accentColor: string;
 }> = {
   plus: {
     gradient: "from-pink-400 to-rose-500",
-    bgColor: "bg-gradient-to-br from-pink-100 to-rose-100",
-    buttonGradient: "from-pink-500 to-rose-500",
+    bgColor: "bg-gradient-to-br from-pink-50 to-rose-50",
+    buttonGradient: "from-slate-700 to-slate-900",
     startingPrice: 9.99,
+    label: "+",
+    accentColor: "text-rose-500",
   },
   gold: {
     gradient: "from-yellow-400 to-amber-500",
-    bgColor: "bg-gradient-to-br from-yellow-100 to-amber-100",
-    buttonGradient: "from-yellow-400 to-amber-500",
+    bgColor: "bg-gradient-to-br from-yellow-50 to-amber-50",
+    buttonGradient: "from-slate-700 to-slate-900",
     startingPrice: 14.99,
+    label: "GOLD",
+    accentColor: "text-amber-500",
   },
   platinum: {
     gradient: "from-slate-500 to-slate-700",
     bgColor: "bg-gradient-to-br from-slate-100 to-slate-200",
-    buttonGradient: "from-slate-600 to-slate-800",
+    buttonGradient: "from-slate-700 to-slate-900",
     startingPrice: 19.99,
+    label: "PLATINUM",
+    accentColor: "text-slate-600",
   },
 };
 
 export default function MySubscription() {
   const navigate = useNavigate();
-  const [activeTier, setActiveTier] = useState<SubscriptionTier>("plus");
+  const [activeTier, setActiveTier] = useState<SubscriptionTier>("platinum");
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const tiers: SubscriptionTier[] = ["plus", "gold", "platinum"];
 
   const config = tierConfig[activeTier];
   const sections = tierSections[activeTier];
-  const tiers: SubscriptionTier[] = ["plus", "gold", "platinum"];
+
+  // Handle scroll to update active tier
+  const handleScroll = () => {
+    if (!carouselRef.current) return;
+    const scrollLeft = carouselRef.current.scrollLeft;
+    const cardWidth = carouselRef.current.offsetWidth * 0.8;
+    const index = Math.round(scrollLeft / cardWidth);
+    setActiveTier(tiers[Math.min(index, tiers.length - 1)]);
+  };
+
+  // Scroll to platinum by default
+  useEffect(() => {
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.offsetWidth * 0.8;
+      carouselRef.current.scrollTo({ left: cardWidth * 2, behavior: "instant" });
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -167,45 +193,59 @@ export default function MySubscription() {
         <div className="w-10" />
       </div>
 
-      {/* Tier carousel */}
-      <div className="px-4 py-6">
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+      {/* Tier carousel with peek effect */}
+      <div className="relative">
+        {/* Gold accent stripe on left */}
+        <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-amber-300 to-amber-400 z-10 rounded-r-lg my-6" />
+        
+        <div 
+          ref={carouselRef}
+          onScroll={handleScroll}
+          className="flex gap-4 overflow-x-auto pb-4 pt-6 px-8 scrollbar-hide snap-x snap-mandatory"
+          style={{ scrollSnapType: "x mandatory" }}
+        >
           {tiers.map((tier) => (
             <button
               key={tier}
-              onClick={() => setActiveTier(tier)}
-              className={`flex-shrink-0 w-64 h-32 rounded-2xl border-2 transition-all snap-center ${
-                activeTier === tier
-                  ? tier === "plus"
-                    ? "border-rose-500"
-                    : tier === "gold"
-                    ? "border-amber-500"
-                    : "border-slate-600"
-                  : "border-border"
-              } ${tierConfig[tier].bgColor}`}
+              onClick={() => {
+                setActiveTier(tier);
+                const index = tiers.indexOf(tier);
+                if (carouselRef.current) {
+                  const cardWidth = carouselRef.current.offsetWidth * 0.8;
+                  carouselRef.current.scrollTo({ left: cardWidth * index, behavior: "smooth" });
+                }
+              }}
+              className={`flex-shrink-0 w-[80%] h-28 rounded-2xl transition-all snap-center flex items-center justify-center ${
+                tierConfig[tier].bgColor
+              } ${
+                activeTier === tier 
+                  ? "shadow-lg scale-100" 
+                  : "opacity-60 scale-95"
+              }`}
             >
-              <div className="flex items-center justify-center h-full">
-                <div className="flex items-center gap-2">
-                  <Flame className={`w-6 h-6 ${
-                    tier === "plus" ? "text-rose-500 fill-rose-500" :
-                    tier === "gold" ? "text-amber-500 fill-amber-500" :
-                    "text-slate-600 fill-slate-600"
-                  }`} />
-                  <span className={`font-bold text-xl ${
-                    tier === "plus" ? "text-rose-600" :
-                    tier === "gold" ? "text-amber-600" :
-                    "text-slate-700"
-                  }`}>
-                    CubaDate {tier === "plus" ? "+" : tier.toUpperCase()}
+              <div className="flex items-center gap-2">
+                <Flame className={`w-6 h-6 ${tierConfig[tier].accentColor}`} />
+                <span className={`font-bold text-xl text-foreground`}>
+                  CubaDate
+                </span>
+                {tier === "plus" ? (
+                  <span className="text-rose-500 text-2xl font-bold">+</span>
+                ) : (
+                  <span className={`${
+                    tier === "gold" 
+                      ? "bg-gradient-to-r from-yellow-500 to-amber-500" 
+                      : "bg-gradient-to-r from-slate-500 to-slate-700"
+                  } text-white text-xs px-2 py-0.5 rounded font-bold`}>
+                    {tierConfig[tier].label}
                   </span>
-                </div>
+                )}
               </div>
             </button>
           ))}
         </div>
 
         {/* Dots indicator */}
-        <div className="flex justify-center gap-1.5 py-3">
+        <div className="flex justify-center gap-1.5 py-2">
           {tiers.map((tier) => (
             <div
               key={tier}
@@ -222,25 +262,25 @@ export default function MySubscription() {
         {sections.map((section, sectionIdx) => (
           <div key={sectionIdx} className="mb-6">
             <div className="flex justify-center mb-3">
-              <span className="px-3 py-1 bg-muted rounded-full text-xs font-semibold text-muted-foreground">
+              <span className="px-4 py-1.5 bg-muted rounded-full text-xs font-semibold text-muted-foreground border border-border">
                 {section.category}
               </span>
             </div>
 
-            <div className="border border-border rounded-2xl p-4 space-y-4">
+            <div className="border border-border rounded-2xl p-4 space-y-4 bg-card">
               {section.features.map((feature, featureIdx) => (
                 <div key={featureIdx} className="flex items-start gap-3">
-                  {feature.included ? (
-                    <Check className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <Lock className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                  )}
+                  <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                    feature.included ? "text-primary" : "text-muted-foreground/30"
+                  }`} />
                   <div>
-                    <p className={`font-semibold ${feature.included ? "text-foreground" : "text-muted-foreground"}`}>
+                    <p className={`font-semibold ${feature.included ? "text-foreground" : "text-muted-foreground/50"}`}>
                       {feature.title}
                     </p>
                     {feature.description && (
-                      <p className="text-sm text-muted-foreground">{feature.description}</p>
+                      <p className={`text-sm ${feature.included ? "text-muted-foreground" : "text-muted-foreground/40"}`}>
+                        {feature.description}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -251,7 +291,7 @@ export default function MySubscription() {
       </div>
 
       {/* Fixed bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 pb-6">
         <button
           onClick={() => navigate("/premium")}
           className={`w-full py-4 rounded-full font-bold text-lg text-white transition-opacity hover:opacity-90 bg-gradient-to-r ${config.buttonGradient}`}
