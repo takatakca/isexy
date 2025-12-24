@@ -3,13 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Search, Ticket, Clock, CheckCircle, AlertCircle, 
   MessageSquare, RefreshCw, Filter, Send, Paperclip, ExternalLink,
-  User, Mail, Calendar, BarChart3, Tag, UserPlus, FileText
+  User, Mail, Calendar, BarChart3, Tag, UserPlus, FileText,
+  AlertTriangle, Timer, CheckSquare, Square, MinusSquare
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Select, 
   SelectContent, 
@@ -53,12 +55,51 @@ interface AdminUser {
   profile_id: string | null;
 }
 
+// SLA Configuration (in hours)
+const SLA_HOURS: Record<string, number> = {
+  urgent: 4,
+  high: 8,
+  medium: 24,
+  low: 48,
+};
+
+// Warning threshold (percentage of SLA time remaining to show "at risk")
+const SLA_WARNING_THRESHOLD = 0.25; // 25% of time remaining = at risk
+
+type SLAStatus = "on_time" | "at_risk" | "breached" | "resolved";
+
+const calculateSLAStatus = (ticket: SupportTicket): { status: SLAStatus; hoursRemaining: number; hoursElapsed: number; slaHours: number } => {
+  const slaHours = SLA_HOURS[ticket.priority] || 24;
+  const createdAt = new Date(ticket.created_at);
+  const now = new Date();
+  const hoursElapsed = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+  const hoursRemaining = slaHours - hoursElapsed;
+
+  // If ticket is resolved or closed, it's resolved
+  if (ticket.status === "resolved" || ticket.status === "closed") {
+    return { status: "resolved", hoursRemaining, hoursElapsed, slaHours };
+  }
+
+  // If time is up, it's breached
+  if (hoursRemaining <= 0) {
+    return { status: "breached", hoursRemaining, hoursElapsed, slaHours };
+  }
+
+  // If less than warning threshold remaining, it's at risk
+  if (hoursRemaining <= slaHours * SLA_WARNING_THRESHOLD) {
+    return { status: "at_risk", hoursRemaining, hoursElapsed, slaHours };
+  }
+
+  return { status: "on_time", hoursRemaining, hoursElapsed, slaHours };
+};
+
 const AdminTickets = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<SupportTicket[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [slaFilter, setSlaFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [responseText, setResponseText] = useState("");
@@ -68,6 +109,14 @@ const AdminTickets = () => {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Bulk selection state
+  const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
+  const [isBulkActionOpen, setIsBulkActionOpen] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [bulkAssignee, setBulkAssignee] = useState<string>("");
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -86,7 +135,7 @@ const AdminTickets = () => {
 
   useEffect(() => {
     filterTickets();
-  }, [tickets, searchQuery, statusFilter, priorityFilter]);
+  }, [tickets, searchQuery, statusFilter, priorityFilter, slaFilter]);
 
   const checkAdminAccess = async () => {
     try {
@@ -193,6 +242,13 @@ const AdminTickets = () => {
       filtered = filtered.filter(t => t.priority === priorityFilter);
     }
 
+    if (slaFilter !== "all") {
+      filtered = filtered.filter(t => {
+        const sla = calculateSLAStatus(t);
+        return sla.status === slaFilter;
+      });
+    }
+
     setFilteredTickets(filtered);
   };
 
@@ -202,7 +258,6 @@ const AdminTickets = () => {
     setIsUpdating(true);
     try {
       const oldStatus = selectedTicket.status;
-      const oldAssignee = selectedTicket.assigned_to;
       const updateData: any = {
         updated_at: new Date().toISOString(),
       };
@@ -220,7 +275,6 @@ const AdminTickets = () => {
         updateData.admin_notes = adminNotes.trim();
       }
 
-      // Handle assignment
       const newAssigneeId = selectedAssignee === "unassigned" ? null : selectedAssignee;
       if (newAssigneeId !== selectedTicket.assigned_to) {
         updateData.assigned_to = newAssigneeId;
@@ -233,7 +287,6 @@ const AdminTickets = () => {
 
       if (error) throw error;
 
-      // Send email notification if status changed
       if (newStatus && newStatus !== oldStatus) {
         try {
           await supabase.functions.invoke("send-ticket-status-update", {
@@ -264,6 +317,94 @@ const AdminTickets = () => {
       toast({ title: "Error", description: "Failed to update ticket", variant: "destructive" });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // Bulk actions
+  const handleSelectTicket = (ticketId: string, checked: boolean) => {
+    setSelectedTickets(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(ticketId);
+      } else {
+        newSet.delete(ticketId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTickets.size === filteredTickets.length) {
+      setSelectedTickets(new Set());
+    } else {
+      setSelectedTickets(new Set(filteredTickets.map(t => t.id)));
+    }
+  };
+
+  const handleBulkUpdate = async () => {
+    if (selectedTickets.size === 0) return;
+    if (!bulkStatus && !bulkAssignee) {
+      toast({ title: "Error", description: "Please select a status or assignee", variant: "destructive" });
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    try {
+      const updateData: any = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (bulkStatus) {
+        updateData.status = bulkStatus;
+      }
+
+      if (bulkAssignee) {
+        updateData.assigned_to = bulkAssignee === "unassigned" ? null : bulkAssignee;
+      }
+
+      const { error } = await supabase
+        .from("support_tickets")
+        .update(updateData)
+        .in("id", Array.from(selectedTickets));
+
+      if (error) throw error;
+
+      // Send email notifications for status changes
+      if (bulkStatus) {
+        const ticketsToNotify = tickets.filter(t => selectedTickets.has(t.id) && t.status !== bulkStatus);
+        for (const ticket of ticketsToNotify) {
+          try {
+            await supabase.functions.invoke("send-ticket-status-update", {
+              body: {
+                email: ticket.email,
+                name: ticket.name,
+                ticketNumber: ticket.ticket_number,
+                subject: ticket.subject,
+                oldStatus: ticket.status,
+                newStatus: bulkStatus,
+              }
+            });
+          } catch (emailError) {
+            console.error("Error sending status update email:", emailError);
+          }
+        }
+      }
+
+      toast({ 
+        title: "Bulk update complete", 
+        description: `Updated ${selectedTickets.size} tickets` 
+      });
+      
+      setSelectedTickets(new Set());
+      setIsBulkActionOpen(false);
+      setBulkStatus("");
+      setBulkAssignee("");
+      fetchTickets();
+    } catch (error: any) {
+      console.error("Error bulk updating tickets:", error);
+      toast({ title: "Error", description: "Failed to update tickets", variant: "destructive" });
+    } finally {
+      setIsBulkUpdating(false);
     }
   };
 
@@ -303,6 +444,51 @@ const AdminTickets = () => {
     }
   };
 
+  const getSLABadge = (ticket: SupportTicket) => {
+    const sla = calculateSLAStatus(ticket);
+    
+    const formatTime = (hours: number) => {
+      if (hours < 0) {
+        const absHours = Math.abs(hours);
+        if (absHours < 1) return `${Math.round(absHours * 60)}m overdue`;
+        return `${Math.round(absHours)}h overdue`;
+      }
+      if (hours < 1) return `${Math.round(hours * 60)}m left`;
+      return `${Math.round(hours)}h left`;
+    };
+
+    switch (sla.status) {
+      case "breached":
+        return (
+          <Badge className="bg-red-600/30 text-red-300 border-red-500/50 border animate-pulse">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            SLA Breached ({formatTime(sla.hoursRemaining)})
+          </Badge>
+        );
+      case "at_risk":
+        return (
+          <Badge className="bg-orange-500/30 text-orange-300 border-orange-500/50 border">
+            <Timer className="w-3 h-3 mr-1" />
+            At Risk ({formatTime(sla.hoursRemaining)})
+          </Badge>
+        );
+      case "on_time":
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border">
+            <Clock className="w-3 h-3 mr-1" />
+            On Time ({formatTime(sla.hoursRemaining)})
+          </Badge>
+        );
+      case "resolved":
+        return (
+          <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 border">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Resolved
+          </Badge>
+        );
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -319,7 +505,15 @@ const AdminTickets = () => {
     inProgress: tickets.filter(t => t.status === "in_progress").length,
     resolved: tickets.filter(t => t.status === "resolved").length,
     urgent: tickets.filter(t => t.priority === "urgent").length,
+    breached: tickets.filter(t => calculateSLAStatus(t).status === "breached").length,
+    atRisk: tickets.filter(t => calculateSLAStatus(t).status === "at_risk").length,
   };
+
+  const selectAllState = selectedTickets.size === 0 
+    ? "none" 
+    : selectedTickets.size === filteredTickets.length 
+      ? "all" 
+      : "some";
 
   if (!isAdmin) {
     return (
@@ -362,7 +556,7 @@ const AdminTickets = () => {
 
       <div className="max-w-6xl mx-auto p-4 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
           <Card className="bg-card/50">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-foreground">{stats.total}</p>
@@ -393,6 +587,18 @@ const AdminTickets = () => {
               <p className="text-xs text-red-400">Urgent</p>
             </CardContent>
           </Card>
+          <Card className="bg-red-600/20 border-red-600/50">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-red-300">{stats.breached}</p>
+              <p className="text-xs text-red-300">SLA Breached</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-orange-500/10 border-orange-500/30">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-orange-400">{stats.atRisk}</p>
+              <p className="text-xs text-orange-400">At Risk</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}
@@ -411,7 +617,7 @@ const AdminTickets = () => {
                 </div>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-40">
+                <SelectTrigger className="w-full md:w-36">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -423,7 +629,7 @@ const AdminTickets = () => {
                 </SelectContent>
               </Select>
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-full md:w-40">
+                <SelectTrigger className="w-full md:w-36">
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -434,9 +640,59 @@ const AdminTickets = () => {
                   <SelectItem value="urgent">Urgent</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={slaFilter} onValueChange={setSlaFilter}>
+                <SelectTrigger className="w-full md:w-36">
+                  <SelectValue placeholder="SLA Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All SLA</SelectItem>
+                  <SelectItem value="breached">Breached</SelectItem>
+                  <SelectItem value="at_risk">At Risk</SelectItem>
+                  <SelectItem value="on_time">On Time</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
+
+        {/* Bulk Actions Bar */}
+        {filteredTickets.length > 0 && (
+          <Card className="bg-card/50">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {selectAllState === "all" ? (
+                      <CheckSquare className="w-5 h-5 text-primary" />
+                    ) : selectAllState === "some" ? (
+                      <MinusSquare className="w-5 h-5 text-primary" />
+                    ) : (
+                      <Square className="w-5 h-5" />
+                    )}
+                    {selectAllState === "all" ? "Deselect All" : "Select All"}
+                  </button>
+                  {selectedTickets.size > 0 && (
+                    <span className="text-sm text-primary font-medium">
+                      {selectedTickets.size} selected
+                    </span>
+                  )}
+                </div>
+                {selectedTickets.size > 0 && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => setIsBulkActionOpen(true)}
+                  >
+                    Bulk Actions
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tickets List */}
         <div className="space-y-3">
@@ -456,19 +712,35 @@ const AdminTickets = () => {
             filteredTickets.map((ticket) => (
               <Card 
                 key={ticket.id} 
-                className="bg-card/50 border-border/50 hover:border-primary/30 transition-all duration-300 cursor-pointer"
-                onClick={() => {
-                  setSelectedTicket(ticket);
-                  setNewStatus(ticket.status);
-                  setResponseText(ticket.response || "");
-                  setSelectedAssignee(ticket.assigned_to || "unassigned");
-                  setAdminNotes(ticket.admin_notes || "");
-                }}
+                className={`bg-card/50 border-border/50 hover:border-primary/30 transition-all duration-300 ${
+                  selectedTickets.has(ticket.id) ? "border-primary/50 bg-primary/5" : ""
+                }`}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox */}
+                    <div 
+                      className="pt-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={selectedTickets.has(ticket.id)}
+                        onCheckedChange={(checked) => handleSelectTicket(ticket.id, checked as boolean)}
+                      />
+                    </div>
+                    
+                    {/* Ticket Content */}
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => {
+                        setSelectedTicket(ticket);
+                        setNewStatus(ticket.status);
+                        setResponseText(ticket.response || "");
+                        setSelectedAssignee(ticket.assigned_to || "unassigned");
+                        setAdminNotes(ticket.admin_notes || "");
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <Ticket className="w-4 h-4 text-primary flex-shrink-0" />
                         <span className="font-mono text-sm font-semibold text-primary">
                           #{ticket.ticket_number}
@@ -480,6 +752,7 @@ const AdminTickets = () => {
                         <Badge className={`${getPriorityColor(ticket.priority)} border`}>
                           {ticket.priority}
                         </Badge>
+                        {getSLABadge(ticket)}
                       </div>
                       
                       <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
@@ -502,6 +775,7 @@ const AdminTickets = () => {
                       </p>
                     </div>
                     
+                    {/* Meta Info */}
                     <div className="flex flex-col items-end gap-2 flex-shrink-0">
                       <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
                         {ticket.category}
@@ -533,7 +807,7 @@ const AdminTickets = () => {
                 <Ticket className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="font-semibold text-foreground mb-2">No tickets found</h3>
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
+                  {searchQuery || statusFilter !== "all" || priorityFilter !== "all" || slaFilter !== "all"
                     ? "Try adjusting your filters"
                     : "No support tickets yet"}
                 </p>
@@ -556,6 +830,12 @@ const AdminTickets = () => {
               </DialogHeader>
 
               <div className="space-y-4">
+                {/* SLA Status */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">SLA Status:</span>
+                  {getSLABadge(selectedTicket)}
+                </div>
+
                 {/* Ticket Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -703,6 +983,63 @@ const AdminTickets = () => {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Action Dialog */}
+      <Dialog open={isBulkActionOpen} onOpenChange={setIsBulkActionOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk Update {selectedTickets.size} Tickets</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Update Status</p>
+              <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Leave unchanged" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Assign To</p>
+              <Select value={bulkAssignee} onValueChange={setBulkAssignee}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Leave unchanged" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {adminUsers.map((admin) => (
+                    <SelectItem key={admin.user_id} value={admin.user_id}>
+                      {admin.first_name || "Unknown"} ({admin.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsBulkActionOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleBulkUpdate} disabled={isBulkUpdating || (!bulkStatus && !bulkAssignee)}>
+                {isBulkUpdating ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                )}
+                Update Tickets
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
