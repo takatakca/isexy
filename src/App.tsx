@@ -32,6 +32,11 @@ import Matches from "./pages/Matches";
 import Interests from "./pages/Interests";
 import BlockContacts from "./pages/BlockContacts";
 import DarkMode from "./pages/DarkMode";
+import AutoplayVideos from "./pages/AutoplayVideos";
+import TopPicks from "./pages/TopPicks";
+import CommunityGuidelines from "./pages/CommunityGuidelines";
+import SafetyTips from "./pages/SafetyTips";
+import CookiePolicy from "./pages/CookiePolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +77,11 @@ const App = () => (
             <Route path="/interests" element={<Interests />} />
             <Route path="/block-contacts" element={<BlockContacts />} />
             <Route path="/dark-mode" element={<DarkMode />} />
+            <Route path="/autoplay-videos" element={<AutoplayVideos />} />
+            <Route path="/top-picks" element={<TopPicks />} />
+            <Route path="/community-guidelines" element={<CommunityGuidelines />} />
+            <Route path="/safety-tips" element={<SafetyTips />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
