@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Search, Ticket, Clock, CheckCircle, AlertCircle, MessageSquare, RefreshCw } from "lucide-react";
+import { ArrowLeft, Search, Ticket, Clock, CheckCircle, AlertCircle, MessageSquare, RefreshCw, Bell, Paperclip, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
 interface SupportTicket {
   id: string;
@@ -16,6 +17,9 @@ interface SupportTicket {
   priority: string;
   status: string;
   message: string;
+  attachments: string[];
+  response: string | null;
+  responded_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +34,43 @@ const TicketTracking = () => {
 
   useEffect(() => {
     fetchUserTickets();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('user-tickets')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'support_tickets'
+        },
+        (payload) => {
+          console.log('Ticket updated:', payload);
+          const updatedTicket = payload.new as SupportTicket;
+          
+          // Update local state
+          setTickets(prev => prev.map(t => 
+            t.id === updatedTicket.id ? updatedTicket : t
+          ));
+          
+          // Update searched ticket if it's the same
+          setSearchedTicket(prev => 
+            prev?.id === updatedTicket.id ? updatedTicket : prev
+          );
+          
+          // Show notification
+          sonnerToast.success(`Ticket #${updatedTicket.ticket_number} updated!`, {
+            description: `Status: ${updatedTicket.status.replace('_', ' ')}`,
+            icon: <Bell className="w-4 h-4" />
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchUserTickets = async () => {

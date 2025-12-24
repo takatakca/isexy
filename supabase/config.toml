@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.send-ticket-confirmation]
 verify_jwt = false
+
+[functions.send-ticket-status-update]
+verify_jwt = false

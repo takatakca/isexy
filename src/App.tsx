@@ -53,6 +53,7 @@ import Licenses from "./pages/Licenses";
 import FAQ from "./pages/FAQ";
 import ContactUs from "./pages/ContactUs";
 import TicketTracking from "./pages/TicketTracking";
+import AdminTickets from "./pages/AdminTickets";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,7 @@ const App = () => (
             <Route path="/faq" element={<FAQ />} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/ticket-tracking" element={<TicketTracking />} />
+            <Route path="/admin/tickets" element={<AdminTickets />} />
             <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
