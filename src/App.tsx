@@ -28,6 +28,7 @@ import LoveStories from "./pages/LoveStories";
 import About from "./pages/About";
 import News from "./pages/News";
 import Matches from "./pages/Matches";
+import Interests from "./pages/Interests";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/news" element={<News />} />
             <Route path="/matches-list" element={<Matches />} />
+            <Route path="/interests" element={<Interests />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

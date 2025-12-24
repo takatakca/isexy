@@ -33,6 +33,8 @@ interface Profile {
   is_active: boolean;
   latitude?: number;
   longitude?: number;
+  interests?: string[];
+  prompts?: any;
 }
 
 interface AuthContextType {
