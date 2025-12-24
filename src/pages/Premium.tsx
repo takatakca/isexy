@@ -1,40 +1,125 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthLayout } from "@/components/AuthLayout";
-import { AuthButton } from "@/components/AuthButton";
-import { Crown, Check, Zap, Eye, Star, RotateCcw, Heart, Loader2 } from "lucide-react";
+import { X, Check, Loader2, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { subscriptionTiers, SubscriptionTier } from "@/lib/subscriptionTiers";
 import { toast } from "sonner";
 
-const tiers: { id: SubscriptionTier; popular?: boolean; color: string }[] = [
-  { id: "plus", color: "from-pink-500 to-rose-500" },
-  { id: "gold", color: "from-yellow-400 to-orange-500", popular: true },
-  { id: "platinum", color: "from-slate-400 to-slate-600" },
-];
+type Duration = "week" | "month" | "6months";
 
-const featureIcons: Record<string, typeof Heart> = {
-  "Unlimited Likes": Heart,
-  "5 Rewinds per day": RotateCcw,
-  "1 Boost per month": Zap,
-  "5 Super Likes per week": Star,
-  "See who likes you": Eye,
-  "Unlimited Rewinds": RotateCcw,
-  "5 Boosts per month": Zap,
-  "Unlimited Boosts": Zap,
-  "Unlimited Super Likes": Star,
-  "Priority Likes": Check,
-  "Message before matching": Check,
+interface PlanOption {
+  duration: Duration;
+  label: string;
+  popular?: boolean;
+  bestValue?: boolean;
+  weeklyPrice: number;
+  totalPrice: number;
+  savings?: number;
+}
+
+const planOptions: Record<SubscriptionTier, PlanOption[]> = {
+  plus: [
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 9.99, totalPrice: 9.99 },
+    { duration: "month", label: "1 Month", weeklyPrice: 6.62, totalPrice: 26.49, savings: 34 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 3.33, totalPrice: 79.99, savings: 67 },
+  ],
+  gold: [
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 14.99, totalPrice: 14.99 },
+    { duration: "month", label: "1 Month", weeklyPrice: 7.49, totalPrice: 29.99, savings: 33 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 4.99, totalPrice: 119.99, savings: 67 },
+  ],
+  platinum: [
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 19.99, totalPrice: 19.99 },
+    { duration: "month", label: "1 Month", weeklyPrice: 13.24, totalPrice: 52.99, savings: 34 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 6.66, totalPrice: 159.99, savings: 67 },
+  ],
+};
+
+const tierFeatures: Record<SubscriptionTier, { title: string; description?: string }[]> = {
+  plus: [
+    { title: "Unlimited Likes" },
+    { title: "Unlimited Rewinds" },
+    { title: "Unlimited Passport™ Mode", description: "Match and chat with people anywhere in the world." },
+    { title: "Control Your Profile", description: "Only show what you want them to know." },
+    { title: "Control Who Sees You", description: "Manage who you're seen by." },
+    { title: "Control Who You See", description: "Choose the type of people you want to connect with." },
+    { title: "Hide Ads" },
+  ],
+  gold: [
+    { title: "Unlimited Likes" },
+    { title: "See Who Likes You" },
+    { title: "Unlimited Rewinds" },
+    { title: "1 Free Boost per month", description: "Free monthly Boost only available for 1 month or longer subscriptions." },
+    { title: "5 Free Super Likes per week" },
+    { title: "Unlimited Passport™ Mode", description: "Match and chat with people anywhere in the world." },
+    { title: "Top Picks", description: "Browse through a daily curated selection of profiles." },
+    { title: "Control Your Profile", description: "Only show what you want them to know." },
+    { title: "Control Who Sees You", description: "Manage who you're seen by." },
+    { title: "Control Who You See", description: "Choose the type of people you want to connect with." },
+    { title: "Hide Ads" },
+  ],
+  platinum: [
+    { title: "Unlimited Likes" },
+    { title: "See Who Likes You" },
+    { title: "Priority Likes", description: "Your Likes will be seen sooner with Priority Likes." },
+    { title: "Unlimited Rewinds" },
+    { title: "1 Free Boost per month", description: "Free monthly Boost only available for 1 month or longer subscriptions." },
+    { title: "3 Free Super Likes per week" },
+    { title: "3 Free First Impressions per week", description: "Stand out with a message before matching." },
+    { title: "Unlimited Passport™ Mode", description: "Match and chat with people anywhere in the world." },
+    { title: "Top Picks", description: "Browse through a daily curated selection of profiles." },
+    { title: "Control Your Profile", description: "Only show what you want them to know." },
+    { title: "Control Who Sees You", description: "Manage who you're seen by." },
+    { title: "Control Who You See", description: "Choose the type of people you want to connect with." },
+    { title: "Hide Ads" },
+  ],
+};
+
+const tierConfig: Record<SubscriptionTier, { 
+  gradient: string; 
+  headerGradient: string;
+  buttonGradient: string;
+  badgeColor: string;
+  headline: string;
+}> = {
+  plus: {
+    gradient: "from-pink-400 to-rose-500",
+    headerGradient: "from-pink-100 to-rose-100",
+    buttonGradient: "from-pink-500 to-rose-500",
+    badgeColor: "text-rose-500",
+    headline: "Unlimited Likes. Unlimited Rewinds. Unlimited Passport™ Mode. No Ads.",
+  },
+  gold: {
+    gradient: "from-yellow-400 to-amber-500",
+    headerGradient: "from-yellow-100 to-amber-100",
+    buttonGradient: "from-yellow-400 to-amber-500",
+    badgeColor: "text-amber-600",
+    headline: "See Who Likes You and match with them instantly with CubaDate Gold™.",
+  },
+  platinum: {
+    gradient: "from-slate-600 to-slate-800",
+    headerGradient: "from-slate-100 to-slate-200",
+    buttonGradient: "from-slate-700 to-slate-900",
+    badgeColor: "text-slate-700",
+    headline: "Upgrade your Likes and Super Likes with CubaDate Platinum.",
+  },
 };
 
 export default function Premium() {
   const navigate = useNavigate();
-  const [loadingTier, setLoadingTier] = useState<SubscriptionTier | null>(null);
+  const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
+  const [selectedDuration, setSelectedDuration] = useState<Duration>("week");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubscribe = async (tierId: SubscriptionTier) => {
-    setLoadingTier(tierId);
+  const config = tierConfig[activeTier];
+  const plans = planOptions[activeTier];
+  const features = tierFeatures[activeTier];
+  const selectedPlan = plans.find((p) => p.duration === selectedDuration)!;
+
+  const handleSubscribe = async () => {
+    setLoading(true);
     try {
-      const tier = subscriptionTiers[tierId];
+      const tier = subscriptionTiers[activeTier];
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { priceId: tier.price_id },
       });
@@ -46,96 +131,179 @@ export default function Premium() {
     } catch (err: any) {
       toast.error(err.message || "Failed to create checkout session");
     } finally {
-      setLoadingTier(null);
+      setLoading(false);
     }
   };
 
   return (
-    <AuthLayout showBack variant="white">
-      <div className="flex-1 flex flex-col pb-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-            <Crown className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-foreground mb-2">
-            Get Premium
-          </h1>
-          <p className="text-muted-foreground">
-            Unlock all features and find your match faster
-          </p>
-        </div>
-
-        {/* Tiers */}
-        <div className="space-y-4 mb-8">
-          {tiers.map((tier) => {
-            const tierData = subscriptionTiers[tier.id];
-            return (
-              <div
-                key={tier.id}
-                className={`relative p-5 rounded-2xl border-2 transition-all ${
-                  tier.popular
-                    ? "border-primary bg-primary/5 shadow-glow"
-                    : "border-border bg-card"
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header gradient */}
+      <div className={`bg-gradient-to-b ${config.headerGradient} pb-6`}>
+        {/* Top bar */}
+        <div className="flex items-center justify-between p-4">
+          <button onClick={() => navigate(-1)} className="p-2">
+            <X className="w-6 h-6 text-foreground" />
+          </button>
+          
+          {/* Tier tabs */}
+          <div className="flex items-center gap-1">
+            {(["plus", "gold", "platinum"] as SubscriptionTier[]).map((tier) => (
+              <button
+                key={tier}
+                onClick={() => {
+                  setActiveTier(tier);
+                  setSelectedDuration("week");
+                }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+                  activeTier === tier
+                    ? tier === "plus"
+                      ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white"
+                      : tier === "gold"
+                      ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white"
+                      : "bg-gradient-to-r from-slate-600 to-slate-800 text-white"
+                    : "text-muted-foreground"
                 }`}
               >
-                {tier.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full">
-                    MOST POPULAR
-                  </div>
-                )}
-
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3
-                      className={`font-bold text-lg bg-gradient-to-r ${tier.color} bg-clip-text text-transparent`}
-                    >
-                      {tierData.name}
-                    </h3>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-extrabold text-foreground">
-                        ${tierData.price.toFixed(2)}
-                      </span>
-                      <span className="text-muted-foreground">/month</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  {tierData.features.map((feature, idx) => {
-                    const IconComponent = featureIcons[feature] || Check;
-                    return (
-                      <div key={idx} className="flex items-center gap-2">
-                        <IconComponent className="w-4 h-4 text-primary flex-shrink-0" />
-                        <span className="text-sm text-foreground">{feature}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <AuthButton
-                  variant={tier.popular ? "primary" : "secondary"}
-                  onClick={() => handleSubscribe(tier.id)}
-                  disabled={loadingTier !== null}
-                >
-                  {loadingTier === tier.id ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    "Subscribe"
-                  )}
-                </AuthButton>
-              </div>
-            );
-          })}
+                <Flame className={`w-4 h-4 ${activeTier === tier ? "fill-white" : ""}`} />
+                {tier === "plus" ? "+" : tier === "gold" ? "GOLD" : "PLATINUM"}
+              </button>
+            ))}
+          </div>
+          
+          <div className="w-10" />
         </div>
 
-        {/* Info */}
-        <p className="text-center text-xs text-muted-foreground">
-          Subscriptions automatically renew unless cancelled. Cancel anytime in settings.
-          <br />
-          By subscribing, you agree to our Terms of Service.
-        </p>
+        {/* Headline */}
+        <div className="px-6 pt-2">
+          <h1 className="text-2xl font-bold text-foreground leading-tight">
+            {config.headline}
+          </h1>
+        </div>
       </div>
-    </AuthLayout>
+
+      {/* Plan selection */}
+      <div className="px-4 -mt-2">
+        <h2 className="text-lg font-semibold text-foreground mb-3">Select a Plan</h2>
+        
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {plans.map((plan) => (
+            <button
+              key={plan.duration}
+              onClick={() => setSelectedDuration(plan.duration)}
+              className={`flex-shrink-0 w-32 p-4 rounded-xl border-2 transition-all relative ${
+                selectedDuration === plan.duration
+                  ? activeTier === "plus"
+                    ? "border-rose-500 bg-rose-50"
+                    : activeTier === "gold"
+                    ? "border-amber-500 bg-amber-50"
+                    : "border-slate-700 bg-slate-50"
+                  : "border-border bg-card"
+              }`}
+            >
+              {plan.popular && selectedDuration !== plan.duration && (
+                <span className={`absolute -top-2 left-2 text-xs font-semibold ${config.badgeColor}`}>
+                  Popular
+                </span>
+              )}
+              {plan.bestValue && selectedDuration !== plan.duration && (
+                <span className={`absolute -top-2 left-2 text-xs font-semibold ${config.badgeColor}`}>
+                  Best Value
+                </span>
+              )}
+              
+              {selectedDuration === plan.duration && (
+                <div className={`absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center ${
+                  activeTier === "plus"
+                    ? "bg-rose-500"
+                    : activeTier === "gold"
+                    ? "bg-amber-500"
+                    : "bg-slate-700"
+                }`}>
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+              )}
+              
+              <div className="text-left">
+                <p className="text-xl font-bold text-foreground">{plan.label}</p>
+                <p className="text-sm text-muted-foreground mt-2">${plan.weeklyPrice.toFixed(2)}/wk</p>
+                {plan.savings && (
+                  <span className="inline-block mt-2 px-2 py-0.5 bg-muted rounded-full text-xs font-semibold text-muted-foreground">
+                    Save {plan.savings}%
+                  </span>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Dots indicator */}
+        <div className="flex justify-center gap-1.5 py-3">
+          {plans.map((plan) => (
+            <div
+              key={plan.duration}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                selectedDuration === plan.duration ? "bg-foreground" : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Features list */}
+      <div className="flex-1 px-4 pb-48 overflow-y-auto">
+        <div className="border border-border rounded-2xl p-4">
+          <div className="flex justify-center mb-4">
+            <span className="px-3 py-1 bg-muted rounded-full text-xs font-semibold text-muted-foreground">
+              Included with CubaDate {activeTier.charAt(0).toUpperCase() + activeTier.slice(1)}®
+            </span>
+          </div>
+          
+          <div className="space-y-4">
+            {features.map((feature, idx) => (
+              <div key={idx} className="flex items-start gap-3">
+                <Check className="w-5 h-5 text-foreground flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-foreground">{feature.title}</p>
+                  {feature.description && (
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Fixed bottom bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 space-y-3">
+        <p className="text-xs text-muted-foreground text-center">
+          By tapping Continue, you will be charged, your subscription will auto-renew for the same price and package length until you cancel, and you agree to our <span className="underline">Terms</span>.
+        </p>
+        
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br ${config.gradient}`}>
+              <Flame className="w-5 h-5 text-white fill-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">{selectedPlan.label}</p>
+              <p className="text-sm text-foreground font-bold">${selectedPlan.totalPrice.toFixed(2)} total</p>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleSubscribe}
+            disabled={loading}
+            className={`flex-1 py-4 px-6 rounded-full font-bold text-white transition-all bg-gradient-to-r ${config.buttonGradient} hover:opacity-90 disabled:opacity-50`}
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+            ) : (
+              "Continue"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
