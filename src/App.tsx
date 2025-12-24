@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import ConsumerHealthPrivacy from "./pages/ConsumerHealthPrivacy";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -106,6 +107,7 @@ const App = () => (
             <Route path="/web-profile" element={<WebProfile />} />
             <Route path="/delete-account" element={<DeleteAccount />} />
             <Route path="/licenses" element={<Licenses />} />
+            <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
