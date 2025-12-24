@@ -13,8 +13,9 @@ import ProfileSetup from "./pages/ProfileSetup";
 import Discover from "./pages/Discover";
 import Explore from "./pages/Explore";
 import Likes from "./pages/Likes";
-import Matches from "./pages/Matches";
+import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
+import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Premium from "./pages/Premium";
 import Safety from "./pages/Safety";
@@ -40,7 +41,9 @@ const App = () => (
             <Route path="/discover" element={<Discover />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/likes" element={<Likes />} />
-            <Route path="/matches" element={<Matches />} />
+            <Route path="/matches" element={<Messages />} />
+            <Route path="/chat/:matchId" element={<Chat />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/premium" element={<Premium />} />
             <Route path="/safety" element={<Safety />} />
