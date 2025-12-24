@@ -50,6 +50,7 @@ import HelpSupport from "./pages/HelpSupport";
 import WebProfile from "./pages/WebProfile";
 import DeleteAccount from "./pages/DeleteAccount";
 import Licenses from "./pages/Licenses";
+import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -107,7 +108,9 @@ const App = () => (
             <Route path="/web-profile" element={<WebProfile />} />
             <Route path="/delete-account" element={<DeleteAccount />} />
             <Route path="/licenses" element={<Licenses />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
+            <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
