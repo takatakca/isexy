@@ -1,1 +1,13 @@
 project_id = "khvsudrwnqznuxnjurxp"
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.send-ticket-confirmation]
+verify_jwt = false
