@@ -172,96 +172,138 @@ export type Database = {
           age_min: number | null
           bio: string | null
           birth_date: string
+          blocked_contacts: string[] | null
           boosts_remaining: number | null
           city: string | null
+          communication_style: string | null
           company: string | null
           country: string
           created_at: string
           distance_preference: number | null
+          drinking: string | null
+          education: string | null
           first_name: string
           gender: string
           id: string
           interested_in: string[] | null
+          interests: string[] | null
           is_active: boolean | null
           is_premium: boolean | null
           is_verified: boolean | null
           job_title: string | null
           last_boost_at: string | null
+          latitude: number | null
           likes_remaining: number | null
+          location_enabled: boolean | null
+          longitude: number | null
           looking_for: string | null
+          love_language: string | null
+          pets: string[] | null
+          privacy_accepted: boolean | null
+          prompts: Json | null
           school: string | null
           sexual_orientation: string | null
           show_gender: boolean | null
           show_orientation: boolean | null
+          smoking: string | null
           subscription_expires_at: string | null
           subscription_tier: string | null
           super_likes_remaining: number | null
           updated_at: string
           user_id: string
+          workout: string | null
         }
         Insert: {
           age_max?: number | null
           age_min?: number | null
           bio?: string | null
           birth_date: string
+          blocked_contacts?: string[] | null
           boosts_remaining?: number | null
           city?: string | null
+          communication_style?: string | null
           company?: string | null
           country?: string
           created_at?: string
           distance_preference?: number | null
+          drinking?: string | null
+          education?: string | null
           first_name: string
           gender: string
           id?: string
           interested_in?: string[] | null
+          interests?: string[] | null
           is_active?: boolean | null
           is_premium?: boolean | null
           is_verified?: boolean | null
           job_title?: string | null
           last_boost_at?: string | null
+          latitude?: number | null
           likes_remaining?: number | null
+          location_enabled?: boolean | null
+          longitude?: number | null
           looking_for?: string | null
+          love_language?: string | null
+          pets?: string[] | null
+          privacy_accepted?: boolean | null
+          prompts?: Json | null
           school?: string | null
           sexual_orientation?: string | null
           show_gender?: boolean | null
           show_orientation?: boolean | null
+          smoking?: string | null
           subscription_expires_at?: string | null
           subscription_tier?: string | null
           super_likes_remaining?: number | null
           updated_at?: string
           user_id: string
+          workout?: string | null
         }
         Update: {
           age_max?: number | null
           age_min?: number | null
           bio?: string | null
           birth_date?: string
+          blocked_contacts?: string[] | null
           boosts_remaining?: number | null
           city?: string | null
+          communication_style?: string | null
           company?: string | null
           country?: string
           created_at?: string
           distance_preference?: number | null
+          drinking?: string | null
+          education?: string | null
           first_name?: string
           gender?: string
           id?: string
           interested_in?: string[] | null
+          interests?: string[] | null
           is_active?: boolean | null
           is_premium?: boolean | null
           is_verified?: boolean | null
           job_title?: string | null
           last_boost_at?: string | null
+          latitude?: number | null
           likes_remaining?: number | null
+          location_enabled?: boolean | null
+          longitude?: number | null
           looking_for?: string | null
+          love_language?: string | null
+          pets?: string[] | null
+          privacy_accepted?: boolean | null
+          prompts?: Json | null
           school?: string | null
           sexual_orientation?: string | null
           show_gender?: boolean | null
           show_orientation?: boolean | null
+          smoking?: string | null
           subscription_expires_at?: string | null
           subscription_tier?: string | null
           super_likes_remaining?: number | null
           updated_at?: string
           user_id?: string
+          workout?: string | null
         }
         Relationships: []
       }
