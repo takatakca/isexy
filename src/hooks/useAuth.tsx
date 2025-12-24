@@ -35,6 +35,13 @@ interface Profile {
   longitude?: number;
   interests?: string[];
   prompts?: any;
+  education?: string;
+  communication_style?: string;
+  love_language?: string;
+  pets?: string[];
+  drinking?: string;
+  smoking?: string;
+  workout?: string;
 }
 
 interface AuthContextType {

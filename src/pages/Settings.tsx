@@ -11,9 +11,25 @@ import {
   ChevronRight, Crown, Shield, LogOut, Trash2, Star, Zap, 
   EyeOff, Plane, MapPin, Globe, Users, Eye, MessageCircle, 
   Bell, Mail, Moon, Video, Link2, HelpCircle, Phone, CreditCard,
-  Languages, GraduationCap, Heart, MessageSquare, PawPrint, Wine, Cigarette, Dumbbell
+  Languages, GraduationCap, Heart, MessageSquare, PawPrint, Wine, Cigarette, Dumbbell, Baby, AtSign
 } from "lucide-react";
 import { BoostsModal } from "@/components/BoostsModal";
+import { PreferenceDrawer } from "@/components/PreferenceDrawer";
+import {
+  LOOKING_FOR_OPTIONS,
+  RELATIONSHIP_TYPE_OPTIONS,
+  ZODIAC_OPTIONS,
+  EDUCATION_OPTIONS,
+  FAMILY_PLANS_OPTIONS,
+  COMMUNICATION_STYLE_OPTIONS,
+  LOVE_LANGUAGE_OPTIONS,
+  PETS_OPTIONS,
+  DRINKING_OPTIONS,
+  SMOKING_OPTIONS,
+  WORKOUT_OPTIONS,
+  LANGUAGES_OPTIONS,
+  SOCIAL_MEDIA_OPTIONS,
+} from "@/lib/preferenceOptions";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -42,6 +58,24 @@ export default function Settings() {
   
   const [boostsModalOpen, setBoostsModalOpen] = useState(false);
 
+  // Preference states
+  const [lookingFor, setLookingFor] = useState("");
+  const [relationshipType, setRelationshipType] = useState("");
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [zodiac, setZodiac] = useState("");
+  const [education, setEducation] = useState("");
+  const [familyPlans, setFamilyPlans] = useState("");
+  const [communicationStyle, setCommunicationStyle] = useState("");
+  const [loveLanguage, setLoveLanguage] = useState("");
+  const [pets, setPets] = useState<string[]>([]);
+  const [drinking, setDrinking] = useState("");
+  const [smoking, setSmoking] = useState("");
+  const [workout, setWorkout] = useState("");
+  const [socialMedia, setSocialMedia] = useState("");
+
+  // Drawer states
+  const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
+
   useEffect(() => {
     if (profile) {
       setDistancePreference(profile.distance_preference || 80);
@@ -50,6 +84,14 @@ export default function Settings() {
       setShowGender(profile.show_gender ?? true);
       setShowOrientation(profile.show_orientation ?? false);
       setInterestedIn(profile.interested_in || []);
+      setLookingFor(profile.looking_for || "");
+      setEducation(profile.education || "");
+      setCommunicationStyle(profile.communication_style || "");
+      setLoveLanguage(profile.love_language || "");
+      setPets(profile.pets || []);
+      setDrinking(profile.drinking || "");
+      setSmoking(profile.smoking || "");
+      setWorkout(profile.workout || "");
     }
   }, [profile]);
 
@@ -66,6 +108,14 @@ export default function Settings() {
         show_gender: showGender,
         show_orientation: showOrientation,
         interested_in: interestedIn,
+        looking_for: lookingFor,
+        education,
+        communication_style: communicationStyle,
+        love_language: loveLanguage,
+        pets,
+        drinking,
+        smoking,
+        workout,
       })
       .eq("id", profile.id);
 
@@ -348,19 +398,20 @@ export default function Settings() {
             </div>
 
             {/* Preference rows */}
-            <SettingRow label="Interests" value="Select" />
-            <SettingRow icon={Eye} label="Looking for" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow icon={Heart} label="Open to..." value="Select" iconColor="text-muted-foreground" />
-            <SettingRow icon={Languages} label="Add languages" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow label="Zodiac" value="Select" />
-            <SettingRow icon={GraduationCap} label="Education" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow label="Family Plans" value="Select" />
-            <SettingRow icon={MessageSquare} label="Communication Style" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow icon={Heart} label="Love Style" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow icon={PawPrint} label="Pets" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow icon={Wine} label="Drinking" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow icon={Cigarette} label="Smoking" value="Select" iconColor="text-muted-foreground" />
-            <SettingRow icon={Dumbbell} label="Workout" value="Select" iconColor="text-muted-foreground" />
+            <SettingRow label="Interests" value={profile?.interests?.length ? `${profile.interests.length} selected` : "Select"} onClick={() => navigate("/interests")} />
+            <SettingRow icon={Eye} label="Looking for" value={lookingFor || "Select"} onClick={() => setActiveDrawer("lookingFor")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Heart} label="Open to..." value={relationshipType || "Select"} onClick={() => setActiveDrawer("relationshipType")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Languages} label="Add languages" value={languages.length ? `${languages.length} selected` : "Select"} onClick={() => setActiveDrawer("languages")} iconColor="text-muted-foreground" />
+            <SettingRow label="Zodiac" value={zodiac || "Select"} onClick={() => setActiveDrawer("zodiac")} />
+            <SettingRow icon={GraduationCap} label="Education" value={education || "Select"} onClick={() => setActiveDrawer("education")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Baby} label="Family Plans" value={familyPlans || "Select"} onClick={() => setActiveDrawer("familyPlans")} iconColor="text-muted-foreground" />
+            <SettingRow icon={MessageSquare} label="Communication Style" value={communicationStyle || "Select"} onClick={() => setActiveDrawer("communicationStyle")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Heart} label="Love Style" value={loveLanguage || "Select"} onClick={() => setActiveDrawer("loveLanguage")} iconColor="text-muted-foreground" />
+            <SettingRow icon={PawPrint} label="Pets" value={pets.length ? `${pets.length} selected` : "Select"} onClick={() => setActiveDrawer("pets")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Wine} label="Drinking" value={drinking || "Select"} onClick={() => setActiveDrawer("drinking")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Cigarette} label="Smoking" value={smoking || "Select"} onClick={() => setActiveDrawer("smoking")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Dumbbell} label="Workout" value={workout || "Select"} onClick={() => setActiveDrawer("workout")} iconColor="text-muted-foreground" />
+            <SettingRow icon={AtSign} label="Social Media" value={socialMedia || "Select"} onClick={() => setActiveDrawer("socialMedia")} iconColor="text-muted-foreground" />
           </SettingCard>
         </section>
 
@@ -696,6 +747,126 @@ export default function Settings() {
         boostsRemaining={profile?.boosts_remaining || 0}
         primetimeBoostsRemaining={0}
         onGetMoreBoosts={() => navigate("/premium")}
+      />
+
+      {/* Preference Drawers */}
+      <PreferenceDrawer
+        isOpen={activeDrawer === "lookingFor"}
+        onClose={() => setActiveDrawer(null)}
+        title="Looking for"
+        options={LOOKING_FOR_OPTIONS}
+        selected={lookingFor}
+        onSelect={(val) => setLookingFor(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "relationshipType"}
+        onClose={() => setActiveDrawer(null)}
+        title="Relationship Type"
+        options={RELATIONSHIP_TYPE_OPTIONS}
+        selected={relationshipType}
+        onSelect={(val) => setRelationshipType(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "languages"}
+        onClose={() => setActiveDrawer(null)}
+        title="Languages I Know"
+        options={LANGUAGES_OPTIONS}
+        selected={languages}
+        onSelect={(val) => setLanguages(val as string[])}
+        multiple
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "zodiac"}
+        onClose={() => setActiveDrawer(null)}
+        title="Zodiac"
+        options={ZODIAC_OPTIONS}
+        selected={zodiac}
+        onSelect={(val) => setZodiac(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "education"}
+        onClose={() => setActiveDrawer(null)}
+        title="Education"
+        options={EDUCATION_OPTIONS}
+        selected={education}
+        onSelect={(val) => setEducation(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "familyPlans"}
+        onClose={() => setActiveDrawer(null)}
+        title="Family Plans"
+        options={FAMILY_PLANS_OPTIONS}
+        selected={familyPlans}
+        onSelect={(val) => setFamilyPlans(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "communicationStyle"}
+        onClose={() => setActiveDrawer(null)}
+        title="Communication Style"
+        options={COMMUNICATION_STYLE_OPTIONS}
+        selected={communicationStyle}
+        onSelect={(val) => setCommunicationStyle(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "loveLanguage"}
+        onClose={() => setActiveDrawer(null)}
+        title="Love Style"
+        options={LOVE_LANGUAGE_OPTIONS}
+        selected={loveLanguage}
+        onSelect={(val) => setLoveLanguage(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "pets"}
+        onClose={() => setActiveDrawer(null)}
+        title="Pets"
+        options={PETS_OPTIONS}
+        selected={pets}
+        onSelect={(val) => setPets(val as string[])}
+        multiple
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "drinking"}
+        onClose={() => setActiveDrawer(null)}
+        title="Drinking"
+        options={DRINKING_OPTIONS}
+        selected={drinking}
+        onSelect={(val) => setDrinking(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "smoking"}
+        onClose={() => setActiveDrawer(null)}
+        title="Smoking"
+        options={SMOKING_OPTIONS}
+        selected={smoking}
+        onSelect={(val) => setSmoking(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "workout"}
+        onClose={() => setActiveDrawer(null)}
+        title="Workout"
+        options={WORKOUT_OPTIONS}
+        selected={workout}
+        onSelect={(val) => setWorkout(val as string)}
+      />
+
+      <PreferenceDrawer
+        isOpen={activeDrawer === "socialMedia"}
+        onClose={() => setActiveDrawer(null)}
+        title="Social Media"
+        options={SOCIAL_MEDIA_OPTIONS}
+        selected={socialMedia}
+        onSelect={(val) => setSocialMedia(val as string)}
       />
     </AuthLayout>
   );
