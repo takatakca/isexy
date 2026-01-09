@@ -614,26 +614,20 @@ export default function Licenses() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-primary px-4 py-5">
-        <button 
-          onClick={() => navigate(-1)}
-          className="text-primary-foreground flex items-center gap-1"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-primary-foreground text-xl font-medium mt-2">Licenses</h1>
+    <div className="min-h-screen bg-muted/30">
+      {/* Header - Tinder style pink */}
+      <div className="bg-primary px-4 py-6 sticky top-0 z-10">
+        <h1 className="text-primary-foreground text-2xl font-semibold">Licenses</h1>
       </div>
 
       {/* License List */}
-      <div className="pb-6">
+      <div className="pb-20">
         {licensesData.map((group, groupIndex) => (
           <div key={groupIndex}>
             {/* Author/Organization Header */}
             {group.author && (
-              <div className="px-4 py-3">
-                <h2 className="text-muted-foreground font-semibold text-sm">
+              <div className="px-4 py-3 bg-muted/30">
+                <h2 className="text-muted-foreground font-bold text-sm uppercase tracking-wide">
                   {group.author}
                 </h2>
               </div>
@@ -643,21 +637,23 @@ export default function Licenses() {
             {group.items.map((item, itemIndex) => (
               <div
                 key={`${groupIndex}-${itemIndex}`}
-                className="mx-2 mb-2 bg-card rounded-lg border border-border p-4"
+                className="bg-card border-l-4 border-l-muted mx-3 mb-1.5 rounded-md shadow-sm"
               >
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-foreground font-medium text-base flex-1 pr-4">
-                    {item.name}
-                  </h3>
-                  <span className="text-muted-foreground text-sm whitespace-nowrap">
-                    {item.version}
-                  </span>
+                <div className="px-4 py-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-foreground font-medium text-base flex-1 pr-4 leading-tight">
+                      {item.name}
+                    </h3>
+                    <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">
+                      {item.version}
+                    </span>
+                  </div>
+                  {item.license && (
+                    <p className="text-muted-foreground text-sm whitespace-pre-line">
+                      {item.license}
+                    </p>
+                  )}
                 </div>
-                {item.license && (
-                  <p className="text-primary text-sm whitespace-pre-line">
-                    {item.license}
-                  </p>
-                )}
               </div>
             ))}
           </div>
