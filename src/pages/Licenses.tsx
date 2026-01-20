@@ -1,7 +1,19 @@
-import { ChevronLeft, Search, X } from "lucide-react";
+import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface LicenseItem {
   name: string;
@@ -13,6 +25,95 @@ interface LicenseGroup {
   author?: string;
   items: LicenseItem[];
 }
+
+// Full license texts for expandable details
+const licenseTexts: Record<string, string> = {
+  "MIT License": `MIT License
+
+Copyright (c) [year] [copyright holders]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`,
+  "Apache Version 2.0": `Apache License
+Version 2.0, January 2004
+http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+"License" shall mean the terms and conditions for use, reproduction, and distribution as defined by Sections 1 through 9 of this document.
+
+"Licensor" shall mean the copyright owner or entity authorized by the copyright owner that is granting the License.
+
+"Legal Entity" shall mean the union of the acting entity and all other entities that control, are controlled by, or are under common control with that entity.
+
+2. Grant of Copyright License.
+Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare Derivative Works of, publicly display, publicly perform, sublicense, and distribute the Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License.
+Subject to the terms and conditions of this License, each Contributor hereby grants to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Work.
+
+4. Redistribution.
+You may reproduce and distribute copies of the Work or Derivative Works thereof in any medium, with or without modifications, and in Source or Object form, provided that You meet the conditions set forth in this License.
+
+5. Submission of Contributions.
+Unless You explicitly state otherwise, any Contribution intentionally submitted for inclusion in the Work by You to the Licensor shall be under the terms and conditions of this License.
+
+6. Trademarks.
+This License does not grant permission to use the trade names, trademarks, service marks, or product names of the Licensor.
+
+7. Disclaimer of Warranty.
+Unless required by applicable law or agreed to in writing, Licensor provides the Work (and each Contributor provides its Contributions) on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
+8. Limitation of Liability.
+In no event and under no legal theory shall any Contributor be liable to You for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this License or out of the use or inability to use the Work.
+
+9. Accepting Warranty or Additional Liability.
+While redistributing the Work or Derivative Works thereof, You may choose to offer, and charge a fee for, acceptance of support, warranty, indemnity, or other liability obligations.`,
+  "BSD 3-Clause License": `BSD 3-Clause License
+
+Copyright (c) [year], [copyright holder]
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.`,
+  "ISC License": `ISC License
+
+Copyright (c) [year], [copyright holder]
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.`,
+  "Eclipse Public License v. 2.0\nGNU General Public License version 2 with the GNU Classpath Exception\nApache Version 2.0": `This software is available under multiple licenses:
+
+1. Eclipse Public License v. 2.0
+2. GNU General Public License version 2 with the GNU Classpath Exception  
+3. Apache License Version 2.0
+
+You may choose which license applies to your use of this software.`,
+};
 
 const licensesData: LicenseGroup[] = [
   {
@@ -162,54 +263,83 @@ const licensesData: LicenseGroup[] = [
       { name: "Compose Navigation", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Compose Runtime", version: "1.9.0", license: "Apache Version 2.0" },
       { name: "Compose Saveable", version: "1.9.0", license: "Apache Version 2.0" },
+      { name: "Compose Tooling Data", version: "1.9.0", license: "Apache Version 2.0" },
       { name: "Compose UI", version: "1.9.0", license: "Apache Version 2.0" },
       { name: "Compose UI Preview Tooling", version: "1.9.0", license: "Apache Version 2.0" },
       { name: "Compose UI Text", version: "1.9.0", license: "Apache Version 2.0" },
       { name: "Compose UI Tooling", version: "1.9.0", license: "Apache Version 2.0" },
       { name: "Compose UI Unit", version: "1.9.0", license: "Apache Version 2.0" },
       { name: "Compose UI Util", version: "1.9.0", license: "Apache Version 2.0" },
-      { name: "Core", version: "1.15.0", license: "Apache Version 2.0" },
-      { name: "Core Kotlin Extensions", version: "1.15.0", license: "Apache Version 2.0" },
+      { name: "Compose Unit", version: "1.9.0", license: "Apache Version 2.0" },
+      { name: "Compose Util", version: "1.9.0", license: "Apache Version 2.0" },
+      { name: "ConstraintLayout for Jetpack Compose", version: "1.0.1", license: "Apache Version 2.0" },
+      { name: "Core", version: "1.16.0", license: "Apache Version 2.0" },
+      { name: "Core Kotlin Extensions", version: "1.16.0", license: "Apache Version 2.0" },
       { name: "CoordinatorLayout", version: "1.2.0", license: "Apache Version 2.0" },
-      { name: "DataStore Core", version: "1.1.1", license: "Apache Version 2.0" },
-      { name: "DataStore Preferences", version: "1.1.1", license: "Apache Version 2.0" },
+      { name: "Credentials", version: "1.3.0", license: "Apache Version 2.0" },
+      { name: "Credentials Play Services Auth", version: "1.3.0", license: "Apache Version 2.0" },
+      { name: "DataStore", version: "1.1.3", license: "Apache Version 2.0" },
+      { name: "DataStore Core", version: "1.1.3", license: "Apache Version 2.0" },
+      { name: "DataStore Core Okio", version: "1.1.3", license: "Apache Version 2.0" },
+      { name: "DataStore Preferences", version: "1.1.3", license: "Apache Version 2.0" },
       { name: "DocumentFile", version: "1.0.1", license: "Apache Version 2.0" },
       { name: "Emoji2", version: "1.4.0", license: "Apache Version 2.0" },
+      { name: "Emoji2 Views", version: "1.4.0", license: "Apache Version 2.0" },
       { name: "Emoji2 Views Helper", version: "1.4.0", license: "Apache Version 2.0" },
       { name: "ExifInterface", version: "1.3.7", license: "Apache Version 2.0" },
+      { name: "exoplayer", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-common", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-core", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-dash", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-database", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-datasource", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-decoder", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-extractor", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-hls", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-rtsp", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-smoothstreaming", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "exoplayer-ui", version: "2.18.7", license: "Apache Version 2.0" },
+      { name: "Experimental annotation", version: "1.4.1", license: "Apache Version 2.0" },
+      { name: "extension-okhttp", version: "2.18.7", license: "Apache Version 2.0" },
       { name: "Fragment", version: "1.8.5", license: "Apache Version 2.0" },
-      { name: "Fragment Kotlin Extensions", version: "1.8.5", license: "Apache Version 2.0" },
+      { name: "Fragment Kotlin Extensions", version: "1.6.2", license: "Apache Version 2.0" },
       { name: "Hilt Android", version: "2.51.1", license: "Apache Version 2.0" },
       { name: "Hilt Core", version: "2.51.1", license: "Apache Version 2.0" },
       { name: "Interpolator", version: "1.0.0", license: "Apache Version 2.0" },
       { name: "Lifecycle Common", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle LiveData", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle LiveData Core", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle Process", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle Runtime", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle Runtime Compose", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle Service", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle ViewModel", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle ViewModel Compose", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle ViewModel Kotlin Extensions", version: "2.8.7", license: "Apache Version 2.0" },
-      { name: "Lifecycle ViewModel SavedState", version: "2.8.7", license: "Apache Version 2.0" },
+      { name: "Lifecycle Kotlin Extensions", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle LiveData", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle LiveData Core", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle Process", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle Reactivestreams", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle ReactiveStreams Kotlin Extensions", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle Runtime", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle Runtime Compose", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle Service", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle ViewModel", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle ViewModel Compose", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle ViewModel Kotlin Extensions", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle ViewModel with SavedState", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle-Common", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "Lifecycle-Common for Java 8", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "LiveData Core Kotlin Extensions", version: "2.8.6", license: "Apache Version 2.0" },
+      { name: "LiveData Kotlin Extensions", version: "2.8.6", license: "Apache Version 2.0" },
       { name: "LocalBroadcastManager", version: "1.1.0", license: "Apache Version 2.0" },
+      { name: "Material Components for Android", version: "1.12.0", license: "Apache Version 2.0" },
       { name: "Media", version: "1.7.0", license: "Apache Version 2.0" },
-      { name: "Media3 Common", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 Container", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 Database", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 Datasource", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 Decoder", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 ExoPlayer", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 ExoPlayer Dash", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 ExoPlayer HLS", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 ExoPlayer RTSP", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 ExoPlayer Smoothstreaming", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 Extractor", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 Session", version: "1.4.1", license: "Apache Version 2.0" },
-      { name: "Media3 UI", version: "1.4.1", license: "Apache Version 2.0" },
+      { name: "Media3 common module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 Container module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 database module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 DataSource module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 decoder module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 ExoPlayer HLS module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 ExoPlayer module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 Extractor module", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 Session", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Media3 UI", version: "1.5.1", license: "Apache Version 2.0" },
       { name: "Navigation Common", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Navigation Common Kotlin Extensions", version: "2.8.9", license: "Apache Version 2.0" },
+      { name: "Navigation Compose Hilt Integration", version: "1.2.0", license: "Apache Version 2.0" },
       { name: "Navigation Fragment", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Navigation Fragment Kotlin Extensions", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Navigation Runtime", version: "2.8.9", license: "Apache Version 2.0" },
@@ -250,170 +380,82 @@ const licensesData: LicenseGroup[] = [
     ]
   },
   {
-    author: "Apache Software Foundation",
+    author: "Braze",
     items: [
-      { name: "Apache Commons Codec", version: "1.15", license: "Apache Version 2.0" },
-      { name: "Apache Commons IO", version: "2.11.0", license: "Apache Version 2.0" },
-      { name: "Apache Commons Lang", version: "3.12.0", license: "Apache Version 2.0" },
-      { name: "Apache Commons Logging", version: "1.2", license: "Apache Version 2.0" },
-      { name: "Apache Commons Text", version: "1.10.0", license: "Apache Version 2.0" },
-      { name: "Apache HttpClient", version: "4.5.14", license: "Apache Version 2.0" },
-      { name: "Apache HttpCore", version: "4.4.16", license: "Apache Version 2.0" },
+      { name: "Braze Android SDK", version: "28.0.0", license: "MIT License" },
+      { name: "Braze Content Cards UI", version: "28.0.0", license: "MIT License" },
     ]
   },
   {
-    author: "Atlassian",
+    author: "Bump Technologies",
     items: [
-      { name: "AndroidDeveloperOptions", version: "1.1.3", license: "Apache Version 2.0" },
+      { name: "Glide", version: "4.16.0", license: "BSD 3-Clause License" },
+      { name: "Glide Compose", version: "4.16.0", license: "BSD 3-Clause License" },
+      { name: "Glide Disk LRU Cache", version: "4.16.0", license: "BSD 3-Clause License" },
+      { name: "Glide GIF Decoder", version: "4.16.0", license: "BSD 3-Clause License" },
     ]
   },
   {
-    author: "Ben Manes",
+    author: "Cloudinary",
     items: [
-      { name: "Caffeine", version: "3.1.8", license: "Apache Version 2.0" },
+      { name: "cloudinary_java", version: "1.32.2", license: "MIT License" },
     ]
   },
   {
-    author: "Braze Inc.",
+    author: "Codehaus",
     items: [
-      { name: "Braze Android SDK", version: "31.1.0", license: "MIT License" },
-      { name: "Braze Android UI", version: "31.1.0", license: "MIT License" },
-    ]
-  },
-  {
-    author: "Bumptech",
-    items: [
-      { name: "Glide", version: "4.16.0", license: "BSD, Part MIT and Apache Version 2.0" },
-      { name: "Glide Annotations", version: "4.16.0", license: "BSD, Part MIT and Apache Version 2.0" },
-      { name: "Glide DiskLRUCache", version: "4.16.0", license: "BSD, Part MIT and Apache Version 2.0" },
-      { name: "Glide GIF Decoder", version: "4.16.0", license: "BSD, Part MIT and Apache Version 2.0" },
-      { name: "Glide Compose", version: "1.0.0", license: "BSD, Part MIT and Apache Version 2.0" },
-    ]
-  },
-  {
-    author: "CameraX",
-    items: [
-      { name: "CameraX Core", version: "1.4.0", license: "Apache Version 2.0" },
-      { name: "CameraX Lifecycle", version: "1.4.0", license: "Apache Version 2.0" },
-      { name: "CameraX View", version: "1.4.0", license: "Apache Version 2.0" },
-      { name: "CameraX Camera2", version: "1.4.0", license: "Apache Version 2.0" },
-    ]
-  },
-  {
-    author: "Chris Banes",
-    items: [
-      { name: "PhotoView", version: "2.3.0", license: "Apache Version 2.0" },
-    ]
-  },
-  {
-    author: "Cloudflare",
-    items: [
-      { name: "Cloudflare Turnstile", version: "0.1.0", license: "Apache Version 2.0" },
-    ]
-  },
-  {
-    author: "Dagger Team",
-    items: [
-      { name: "Dagger", version: "2.51.1", license: "Apache Version 2.0" },
-      { name: "Dagger Android", version: "2.51.1", license: "Apache Version 2.0" },
-      { name: "Dagger Android Support", version: "2.51.1", license: "Apache Version 2.0" },
-      { name: "Hilt Android", version: "2.51.1", license: "Apache Version 2.0" },
-      { name: "Hilt Android Compiler", version: "2.51.1", license: "Apache Version 2.0" },
-      { name: "Hilt Core", version: "2.51.1", license: "Apache Version 2.0" },
-      { name: "Hilt Navigation Compose", version: "1.2.0", license: "Apache Version 2.0" },
+      { name: "Moshi", version: "1.15.0", license: "Apache Version 2.0" },
+      { name: "Moshi Kotlin", version: "1.15.0", license: "Apache Version 2.0" },
     ]
   },
   {
     author: "Facebook",
     items: [
-      { name: "Facebook Android SDK", version: "16.3.0", license: "MIT License" },
-      { name: "Facebook Core SDK", version: "16.3.0", license: "MIT License" },
-      { name: "Facebook Login SDK", version: "16.3.0", license: "MIT License" },
-      { name: "Facebook Share SDK", version: "16.3.0", license: "MIT License" },
       { name: "Fresco", version: "3.1.3", license: "MIT License" },
-      { name: "Fresco DraweeBackend", version: "3.1.3", license: "MIT License" },
-      { name: "Fresco ImagePipeline", version: "3.1.3", license: "MIT License" },
-      { name: "Fresco ImagePipeline Base", version: "3.1.3", license: "MIT License" },
-      { name: "Fresco Native ImageTranscoder", version: "3.1.3", license: "MIT License" },
-      { name: "Shimmer", version: "0.5.0", license: "BSD License" },
-      { name: "SoLoader", version: "0.11.0", license: "Apache Version 2.0" },
+      { name: "Shimmer", version: "0.5.0", license: "BSD 3-Clause License" },
+      { name: "SoLoader", version: "0.10.5", license: "Apache Version 2.0" },
     ]
   },
   {
     author: "Google",
     items: [
-      { name: "Android Ads Identifier", version: "18.0.1", license: "Apache Version 2.0" },
-      { name: "Android GMS Base", version: "18.0.1", license: "Apache Version 2.0" },
-      { name: "Android GMS Location", version: "21.0.1", license: "Apache Version 2.0" },
-      { name: "Android GMS Maps", version: "18.2.0", license: "Apache Version 2.0" },
-      { name: "Android GMS Tasks", version: "18.0.2", license: "Apache Version 2.0" },
-      { name: "Android GMS Wallet", version: "19.3.0", license: "Apache Version 2.0" },
-      { name: "Android Play App Update", version: "2.1.0", license: "Apache Version 2.0" },
-      { name: "Android Play Core", version: "1.10.3", license: "Apache Version 2.0" },
-      { name: "Android Play Review", version: "2.0.1", license: "Apache Version 2.0" },
-      { name: "Android Play Services Auth", version: "21.2.0", license: "Apache Version 2.0" },
-      { name: "Android Play Services Auth API Phone", version: "18.1.0", license: "Apache Version 2.0" },
-      { name: "Android Play Services Basement", version: "18.4.0", license: "Apache Version 2.0" },
-      { name: "Android Play Services Identity", version: "18.1.0", license: "Apache Version 2.0" },
-      { name: "Android Play Services InstallReferrer", version: "2.2", license: "Apache Version 2.0" },
-      { name: "ErrorProne Annotations", version: "2.27.1", license: "Apache Version 2.0" },
-      { name: "ExoPlayer", version: "2.19.1", license: "Apache Version 2.0" },
-      { name: "Firebase Analytics", version: "21.6.2", license: "Apache Version 2.0" },
-      { name: "Firebase Auth", version: "23.1.0", license: "Apache Version 2.0" },
-      { name: "Firebase Cloud Messaging", version: "24.1.0", license: "Apache Version 2.0" },
-      { name: "Firebase Common", version: "21.0.0", license: "Apache Version 2.0" },
-      { name: "Firebase Config", version: "22.0.1", license: "Apache Version 2.0" },
-      { name: "Firebase Crashlytics", version: "19.3.0", license: "Apache Version 2.0" },
-      { name: "Firebase Dynamic Links", version: "22.1.0", license: "Apache Version 2.0" },
-      { name: "Firebase IID", version: "21.1.0", license: "Apache Version 2.0" },
-      { name: "Firebase Installations", version: "18.0.0", license: "Apache Version 2.0" },
-      { name: "Firebase Perf", version: "21.0.3", license: "Apache Version 2.0" },
-      { name: "Google Material Components", version: "1.12.0", license: "Apache Version 2.0" },
+      { name: "Accompanist Permissions", version: "0.34.0", license: "Apache Version 2.0" },
+      { name: "Accompanist System UI Controller", version: "0.34.0", license: "Apache Version 2.0" },
+      { name: "Accompanist WebView", version: "0.34.0", license: "Apache Version 2.0" },
+      { name: "Auto Service Annotations", version: "1.1.1", license: "Apache Version 2.0" },
+      { name: "Dagger", version: "2.51.1", license: "Apache Version 2.0" },
+      { name: "Error Prone Annotations", version: "2.28.0", license: "Apache Version 2.0" },
+      { name: "flexbox-layout", version: "3.0.0", license: "Apache Version 2.0" },
+      { name: "Google Auth Library for Java", version: "1.24.0", license: "BSD 3-Clause License" },
+      { name: "Google Play In-App Review", version: "2.0.1", license: "Apache Version 2.0" },
+      { name: "Google Play In-App Update", version: "2.1.0", license: "Apache Version 2.0" },
+      { name: "Google Play Services Auth", version: "21.0.0", license: "Apache Version 2.0" },
+      { name: "Google Play Services Auth API Phone", version: "18.0.2", license: "Apache Version 2.0" },
+      { name: "Google Play Services Base", version: "18.3.0", license: "Apache Version 2.0" },
+      { name: "Google Play Services Basement", version: "18.3.0", license: "Apache Version 2.0" },
+      { name: "Google Play Services Identity", version: "18.0.1", license: "Apache Version 2.0" },
+      { name: "Google Play Services Location", version: "21.2.0", license: "Apache Version 2.0" },
+      { name: "Google Play Services Maps", version: "18.2.0", license: "Apache Version 2.0" },
       { name: "Gson", version: "2.10.1", license: "Apache Version 2.0" },
       { name: "Guava", version: "33.0.0-android", license: "Apache Version 2.0" },
-      { name: "LibPhoneNumber", version: "8.13.31", license: "Apache Version 2.0" },
-      { name: "ML Kit Barcode Scanning", version: "17.3.0", license: "Apache Version 2.0" },
-      { name: "ML Kit Face Detection", version: "16.1.7", license: "Apache Version 2.0" },
-      { name: "ML Kit Vision Common", version: "17.3.0", license: "Apache Version 2.0" },
-      { name: "Protocol Buffers Lite", version: "3.25.1", license: "BSD 3-Clause" },
-      { name: "Tink", version: "1.14.1", license: "Apache Version 2.0" },
-      { name: "Truth", version: "1.4.2", license: "Apache Version 2.0" },
-      { name: "Zxing Core", version: "3.5.3", license: "Apache Version 2.0" },
+      { name: "J2ObjC Annotations", version: "2.8", license: "Apache Version 2.0" },
+      { name: "libphonenumber", version: "8.13.35", license: "Apache Version 2.0" },
+      { name: "ML Kit Barcode Scanning", version: "17.2.0", license: "Apache Version 2.0" },
+      { name: "Protocol Buffers", version: "3.25.3", license: "BSD 3-Clause License" },
+      { name: "zxing", version: "3.5.3", license: "Apache Version 2.0" },
     ]
   },
   {
-    author: "Greenrobot",
+    author: "Jetbrains",
     items: [
-      { name: "EventBus", version: "3.3.1", license: "Apache Version 2.0" },
-    ]
-  },
-  {
-    author: "Jake Wharton",
-    items: [
-      { name: "Butter Knife", version: "10.2.3", license: "Apache Version 2.0" },
-      { name: "DiskLruCache", version: "2.0.2", license: "Apache Version 2.0" },
-      { name: "RxBinding", version: "4.0.0", license: "Apache Version 2.0" },
-      { name: "ThreeTenABP", version: "1.4.7", license: "Apache Version 2.0" },
-      { name: "Timber", version: "5.0.1", license: "Apache Version 2.0" },
-    ]
-  },
-  {
-    author: "JetBrains",
-    items: [
-      { name: "Kotlin Coroutines Android", version: "1.8.1", license: "Apache Version 2.0" },
-      { name: "Kotlin Coroutines Core", version: "1.8.1", license: "Apache Version 2.0" },
-      { name: "Kotlin Coroutines Reactive", version: "1.8.1", license: "Apache Version 2.0" },
-      { name: "Kotlin Coroutines RxJava2", version: "1.8.1", license: "Apache Version 2.0" },
-      { name: "Kotlin Coroutines RxJava3", version: "1.8.1", license: "Apache Version 2.0" },
-      { name: "Kotlin Reflect", version: "1.9.24", license: "Apache Version 2.0" },
-      { name: "Kotlin StdLib", version: "1.9.24", license: "Apache Version 2.0" },
-      { name: "Kotlin StdLib Common", version: "1.9.24", license: "Apache Version 2.0" },
-      { name: "Kotlin StdLib JDK7", version: "1.9.24", license: "Apache Version 2.0" },
-      { name: "Kotlin StdLib JDK8", version: "1.9.24", license: "Apache Version 2.0" },
-      { name: "KotlinX Collections Immutable", version: "0.3.7", license: "Apache Version 2.0" },
-      { name: "KotlinX DateTime", version: "0.6.1", license: "Apache Version 2.0" },
-      { name: "KotlinX Serialization Core", version: "1.7.3", license: "Apache Version 2.0" },
-      { name: "KotlinX Serialization JSON", version: "1.7.3", license: "Apache Version 2.0" },
+      { name: "Kotlin Coroutines Android", version: "1.8.0", license: "Apache Version 2.0" },
+      { name: "Kotlin Coroutines Core", version: "1.8.0", license: "Apache Version 2.0" },
+      { name: "Kotlin Coroutines Reactive", version: "1.8.0", license: "Apache Version 2.0" },
+      { name: "Kotlin Coroutines RxJava2", version: "1.8.0", license: "Apache Version 2.0" },
+      { name: "Kotlin Standard Library", version: "1.9.23", license: "Apache Version 2.0" },
+      { name: "Kotlin Standard Library Common", version: "1.9.23", license: "Apache Version 2.0" },
+      { name: "Kotlin Standard Library JDK7", version: "1.9.23", license: "Apache Version 2.0" },
+      { name: "Kotlin Standard Library JDK8", version: "1.9.23", license: "Apache Version 2.0" },
     ]
   },
   {
@@ -424,52 +466,24 @@ const licensesData: LicenseGroup[] = [
     ]
   },
   {
-    author: "Mockito",
-    items: [
-      { name: "Mockito Android", version: "5.11.0", license: "MIT License" },
-      { name: "Mockito Core", version: "5.11.0", license: "MIT License" },
-      { name: "Mockito Kotlin", version: "5.3.1", license: "MIT License" },
-    ]
-  },
-  {
     author: "OkHttp",
     items: [
       { name: "OkHttp", version: "4.12.0", license: "Apache Version 2.0" },
       { name: "OkHttp Logging Interceptor", version: "4.12.0", license: "Apache Version 2.0" },
-      { name: "OkHttp TLS", version: "4.12.0", license: "Apache Version 2.0" },
       { name: "OkIO", version: "3.9.0", license: "Apache Version 2.0" },
     ]
   },
   {
-    author: "Open AI",
+    author: "Realm",
     items: [
-      { name: "OpenAI SDK", version: "3.7.0", license: "MIT License" },
-    ]
-  },
-  {
-    author: "React Native",
-    items: [
-      { name: "React Native", version: "0.74.5", license: "MIT License" },
-      { name: "React Native Animated", version: "0.74.5", license: "MIT License" },
-      { name: "React Native Async Storage", version: "1.24.0", license: "MIT License" },
-      { name: "React Native CLI", version: "14.1.1", license: "MIT License" },
-      { name: "React Native Gesture Handler", version: "2.20.2", license: "MIT License" },
-      { name: "React Native Navigation", version: "6.1.18", license: "MIT License" },
-      { name: "React Native Permissions", version: "4.1.5", license: "MIT License" },
-      { name: "React Native Reanimated", version: "3.16.2", license: "MIT License" },
-      { name: "React Native Safe Area Context", version: "4.14.0", license: "MIT License" },
-      { name: "React Native Screens", version: "4.0.0", license: "MIT License" },
-      { name: "React Native SVG", version: "15.8.0", license: "MIT License" },
-      { name: "React Native Vector Icons", version: "10.2.0", license: "MIT License" },
-      { name: "React Native WebView", version: "14.0.3", license: "MIT License" },
+      { name: "Realm Database", version: "10.18.0", license: "Apache Version 2.0" },
     ]
   },
   {
     author: "ReactiveX",
     items: [
       { name: "RxAndroid", version: "3.0.2", license: "Apache Version 2.0" },
-      { name: "RxJava", version: "3.1.9", license: "Apache Version 2.0" },
-      { name: "RxJava2", version: "2.2.21", license: "Apache Version 2.0" },
+      { name: "RxJava", version: "3.1.8", license: "Apache Version 2.0" },
       { name: "RxKotlin", version: "3.0.1", license: "Apache Version 2.0" },
     ]
   },
@@ -478,169 +492,160 @@ const licensesData: LicenseGroup[] = [
     items: [
       { name: "Retrofit", version: "2.11.0", license: "Apache Version 2.0" },
       { name: "Retrofit Converter Gson", version: "2.11.0", license: "Apache Version 2.0" },
-      { name: "Retrofit Converter Jackson", version: "2.11.0", license: "Apache Version 2.0" },
       { name: "Retrofit Converter Moshi", version: "2.11.0", license: "Apache Version 2.0" },
-      { name: "Retrofit Converter Scalars", version: "2.11.0", license: "Apache Version 2.0" },
-      { name: "Retrofit RxJava2 Adapter", version: "2.11.0", license: "Apache Version 2.0" },
       { name: "Retrofit RxJava3 Adapter", version: "2.11.0", license: "Apache Version 2.0" },
     ]
   },
   {
-    author: "Sentry",
+    author: "Segment",
     items: [
-      { name: "Sentry Android", version: "7.14.0", license: "MIT License" },
-      { name: "Sentry Android Core", version: "7.14.0", license: "MIT License" },
-      { name: "Sentry Android NDK", version: "7.14.0", license: "MIT License" },
-      { name: "Sentry Android OkHttp", version: "7.14.0", license: "MIT License" },
-      { name: "Sentry Android Timber", version: "7.14.0", license: "MIT License" },
-    ]
-  },
-  {
-    author: "Squareup",
-    items: [
-      { name: "Curtains", version: "1.2.5", license: "Apache Version 2.0" },
-      { name: "LeakCanary", version: "2.14", license: "Apache Version 2.0" },
-      { name: "Moshi", version: "1.15.1", license: "Apache Version 2.0" },
-      { name: "Moshi Kotlin", version: "1.15.1", license: "Apache Version 2.0" },
-      { name: "Picasso", version: "2.8", license: "Apache Version 2.0" },
-      { name: "SQLDelight", version: "2.0.2", license: "Apache Version 2.0" },
+      { name: "Analytics-Android", version: "4.11.3", license: "MIT License" },
     ]
   },
   {
     author: "Stripe",
     items: [
-      { name: "Stripe Android SDK", version: "20.48.6", license: "MIT License" },
-      { name: "Stripe Payments UI", version: "20.48.6", license: "MIT License" },
+      { name: "Stripe Android SDK", version: "20.38.0", license: "MIT License" },
+      { name: "Stripe Identity", version: "20.38.0", license: "MIT License" },
     ]
   },
   {
-    author: "TanStack",
+    author: "Timber",
     items: [
-      { name: "React Query", version: "5.83.0", license: "MIT License" },
-      { name: "React Query DevTools", version: "5.83.0", license: "MIT License" },
-    ]
-  },
-  {
-    author: "Twilio",
-    items: [
-      { name: "Twilio Conversations", version: "4.1.0", license: "MIT License" },
-      { name: "Twilio Video", version: "7.7.2", license: "MIT License" },
-      { name: "Twilio Voice", version: "6.6.2", license: "MIT License" },
-    ]
-  },
-  {
-    author: "Uber",
-    items: [
-      { name: "AutoDispose", version: "2.2.1", license: "Apache Version 2.0" },
-      { name: "Nullaway", version: "0.11.0", license: "MIT License" },
-      { name: "RIBs", version: "0.14.1", license: "Apache Version 2.0" },
-    ]
-  },
-  {
-    author: "Vercel",
-    items: [
-      { name: "AI SDK", version: "3.4.33", license: "MIT License" },
-      { name: "AI SDK React", version: "0.0.70", license: "MIT License" },
-      { name: "SWR", version: "2.2.5", license: "MIT License" },
-    ]
-  },
-  {
-    author: "Zod",
-    items: [
-      { name: "Zod", version: "3.25.76", license: "MIT License" },
-    ]
-  },
-  {
-    author: "Zustand",
-    items: [
-      { name: "Zustand", version: "4.5.5", license: "MIT License" },
-    ]
-  },
-  {
-    author: "Other Libraries",
-    items: [
-      { name: "@fontsource/nunito", version: "5.2.7", license: "OFL-1.1" },
-      { name: "@hookform/resolvers", version: "3.10.0", license: "MIT License" },
-      { name: "@radix-ui/react-accordion", version: "1.2.11", license: "MIT License" },
-      { name: "@radix-ui/react-alert-dialog", version: "1.1.14", license: "MIT License" },
-      { name: "@radix-ui/react-aspect-ratio", version: "1.1.7", license: "MIT License" },
-      { name: "@radix-ui/react-avatar", version: "1.1.10", license: "MIT License" },
-      { name: "@radix-ui/react-checkbox", version: "1.3.2", license: "MIT License" },
-      { name: "@radix-ui/react-collapsible", version: "1.1.11", license: "MIT License" },
-      { name: "@radix-ui/react-context-menu", version: "2.2.15", license: "MIT License" },
-      { name: "@radix-ui/react-dialog", version: "1.1.14", license: "MIT License" },
-      { name: "@radix-ui/react-dropdown-menu", version: "2.1.15", license: "MIT License" },
-      { name: "@radix-ui/react-hover-card", version: "1.1.14", license: "MIT License" },
-      { name: "@radix-ui/react-label", version: "2.1.7", license: "MIT License" },
-      { name: "@radix-ui/react-menubar", version: "1.1.15", license: "MIT License" },
-      { name: "@radix-ui/react-navigation-menu", version: "1.2.13", license: "MIT License" },
-      { name: "@radix-ui/react-popover", version: "1.1.14", license: "MIT License" },
-      { name: "@radix-ui/react-progress", version: "1.1.7", license: "MIT License" },
-      { name: "@radix-ui/react-radio-group", version: "1.3.7", license: "MIT License" },
-      { name: "@radix-ui/react-scroll-area", version: "1.2.9", license: "MIT License" },
-      { name: "@radix-ui/react-select", version: "2.2.5", license: "MIT License" },
-      { name: "@radix-ui/react-separator", version: "1.1.7", license: "MIT License" },
-      { name: "@radix-ui/react-slider", version: "1.3.5", license: "MIT License" },
-      { name: "@radix-ui/react-slot", version: "1.2.3", license: "MIT License" },
-      { name: "@radix-ui/react-switch", version: "1.2.5", license: "MIT License" },
-      { name: "@radix-ui/react-tabs", version: "1.1.12", license: "MIT License" },
-      { name: "@radix-ui/react-toast", version: "1.2.14", license: "MIT License" },
-      { name: "@radix-ui/react-toggle", version: "1.1.9", license: "MIT License" },
-      { name: "@radix-ui/react-toggle-group", version: "1.1.10", license: "MIT License" },
-      { name: "@radix-ui/react-tooltip", version: "1.2.7", license: "MIT License" },
-      { name: "@supabase/supabase-js", version: "2.89.0", license: "MIT License" },
-      { name: "class-variance-authority", version: "0.7.1", license: "Apache Version 2.0" },
-      { name: "clsx", version: "2.1.1", license: "MIT License" },
-      { name: "cmdk", version: "1.1.1", license: "MIT License" },
-      { name: "date-fns", version: "3.6.0", license: "MIT License" },
-      { name: "embla-carousel-react", version: "8.6.0", license: "MIT License" },
-      { name: "input-otp", version: "1.4.2", license: "MIT License" },
-      { name: "lucide-react", version: "0.462.0", license: "ISC License" },
-      { name: "next-themes", version: "0.3.0", license: "MIT License" },
-      { name: "react", version: "18.3.1", license: "MIT License" },
-      { name: "react-day-picker", version: "8.10.1", license: "MIT License" },
-      { name: "react-dom", version: "18.3.1", license: "MIT License" },
-      { name: "react-hook-form", version: "7.61.1", license: "MIT License" },
-      { name: "react-resizable-panels", version: "2.1.9", license: "MIT License" },
-      { name: "react-router-dom", version: "6.30.1", license: "MIT License" },
-      { name: "recharts", version: "2.15.4", license: "MIT License" },
-      { name: "sonner", version: "1.7.4", license: "MIT License" },
-      { name: "tailwind-merge", version: "2.6.0", license: "MIT License" },
-      { name: "tailwindcss-animate", version: "1.0.7", license: "MIT License" },
-      { name: "vaul", version: "0.9.9", license: "MIT License" },
+      { name: "Timber", version: "5.0.1", license: "Apache Version 2.0" },
     ]
   },
 ];
+
+type SortOption = 'author' | 'alphabetical' | 'license';
 
 export default function Licenses() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<SortOption>('author');
+  const [licenseFilter, setLicenseFilter] = useState<string>('all');
 
-  // Filter licenses based on search query
-  const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return licensesData;
-    
+  // Get unique license types for filter dropdown
+  const licenseTypes = useMemo(() => {
+    const types = new Set<string>();
+    licensesData.forEach(group => {
+      group.items.forEach(item => {
+        if (item.license) {
+          // Get the primary license type
+          const primaryLicense = item.license.split('\n')[0].trim();
+          types.add(primaryLicense);
+        }
+      });
+    });
+    return Array.from(types).sort();
+  }, []);
+
+  // Filter and sort data
+  const processedData = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return licensesData
-      .map(group => ({
-        ...group,
-        items: group.items.filter(item =>
+    
+    // First filter by search and license type
+    let filteredGroups: LicenseGroup[] = licensesData.map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        const matchesSearch = !query || 
           item.name.toLowerCase().includes(query) ||
           item.license.toLowerCase().includes(query) ||
           item.version.toLowerCase().includes(query) ||
-          (group.author && group.author.toLowerCase().includes(query))
-        )
-      }))
-      .filter(group => group.items.length > 0);
-  }, [searchQuery]);
+          (group.author && group.author.toLowerCase().includes(query));
+        
+        const matchesLicense = licenseFilter === 'all' || 
+          item.license.toLowerCase().includes(licenseFilter.toLowerCase());
+        
+        return matchesSearch && matchesLicense;
+      })
+    })).filter(group => group.items.length > 0);
 
-  // Count total results
-  const totalResults = filteredData.reduce((acc, group) => acc + group.items.length, 0);
+    // Then apply sorting
+    if (sortBy === 'alphabetical') {
+      // Flatten all items and sort alphabetically
+      const allItems = filteredGroups.flatMap(g => 
+        g.items.map(item => ({ ...item, author: g.author }))
+      );
+      allItems.sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Group by first letter
+      const letterGroups = new Map<string, LicenseItem[]>();
+      allItems.forEach(item => {
+        const letter = item.name[0].toUpperCase();
+        if (!letterGroups.has(letter)) {
+          letterGroups.set(letter, []);
+        }
+        letterGroups.get(letter)!.push(item);
+      });
+      
+      return Array.from(letterGroups.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([letter, items]) => ({
+          author: letter,
+          items
+        }));
+    } else if (sortBy === 'license') {
+      // Group by license type
+      const licenseGroups = new Map<string, LicenseItem[]>();
+      filteredGroups.forEach(group => {
+        group.items.forEach(item => {
+          const primaryLicense = item.license.split('\n')[0].trim() || 'No License';
+          if (!licenseGroups.has(primaryLicense)) {
+            licenseGroups.set(primaryLicense, []);
+          }
+          licenseGroups.get(primaryLicense)!.push(item);
+        });
+      });
+      
+      return Array.from(licenseGroups.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([license, items]) => ({
+          author: license,
+          items: items.sort((a, b) => a.name.localeCompare(b.name))
+        }));
+    }
+    
+    // Default: sort by author
+    return filteredGroups.sort((a, b) => {
+      const authorA = a.author || '';
+      const authorB = b.author || '';
+      return authorA.localeCompare(authorB);
+    });
+  }, [searchQuery, sortBy, licenseFilter]);
+
+  const totalResults = processedData.reduce((sum, group) => sum + group.items.length, 0);
+
+  const toggleExpanded = (itemKey: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemKey)) {
+        newSet.delete(itemKey);
+      } else {
+        newSet.add(itemKey);
+      }
+      return newSet;
+    });
+  };
+
+  const getLicenseText = (license: string): string => {
+    // Check for exact match first
+    if (licenseTexts[license]) {
+      return licenseTexts[license];
+    }
+    // Check for primary license
+    const primaryLicense = license.split('\n')[0].trim();
+    if (licenseTexts[primaryLicense]) {
+      return licenseTexts[primaryLicense];
+    }
+    return `Full license text for "${license}" is available from the respective project repository.`;
+  };
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header - Tinder style pink */}
+    <div className="min-h-screen bg-background">
+      {/* Header */}
       <div className="bg-primary px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <button 
@@ -682,28 +687,78 @@ export default function Licenses() {
         )}
       </div>
 
-      {/* Results count */}
-      {searchQuery && (
-        <div className="px-4 py-2 bg-muted/50 border-b">
-          <p className="text-sm text-muted-foreground">
-            {totalResults} {totalResults === 1 ? 'result' : 'results'} found
+      {/* Filter & Sort Controls */}
+      <div className="px-4 py-3 bg-muted/30 border-b flex flex-wrap gap-2 items-center">
+        {/* Sort By */}
+        <div className="flex items-center gap-2">
+          <SortAsc className="w-4 h-4 text-muted-foreground" />
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-[140px] h-8 text-xs bg-background">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-50">
+              <SelectItem value="author">
+                <div className="flex items-center gap-2">
+                  <List className="w-3 h-3" />
+                  By Author
+                </div>
+              </SelectItem>
+              <SelectItem value="alphabetical">
+                <div className="flex items-center gap-2">
+                  <SortAsc className="w-3 h-3" />
+                  A-Z
+                </div>
+              </SelectItem>
+              <SelectItem value="license">
+                <div className="flex items-center gap-2">
+                  <Grid3X3 className="w-3 h-3" />
+                  By License
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* License Filter */}
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select value={licenseFilter} onValueChange={setLicenseFilter}>
+            <SelectTrigger className="w-[160px] h-8 text-xs bg-background">
+              <SelectValue placeholder="Filter license" />
+            </SelectTrigger>
+            <SelectContent className="bg-background z-50 max-h-[300px]">
+              <SelectItem value="all">All Licenses</SelectItem>
+              {licenseTypes.map(type => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Results count */}
+        <div className="ml-auto">
+          <p className="text-xs text-muted-foreground">
+            {totalResults} {totalResults === 1 ? 'library' : 'libraries'}
           </p>
         </div>
-      )}
+      </div>
 
       {/* License List */}
       <div className="pb-20">
-        {filteredData.length === 0 ? (
+        {processedData.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
             <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground text-center">
-              No licenses found matching "{searchQuery}"
+              No licenses found {searchQuery && `matching "${searchQuery}"`}
+              {licenseFilter !== 'all' && ` with license type "${licenseFilter}"`}
             </p>
           </div>
         ) : (
-          filteredData.map((group, groupIndex) => (
+          processedData.map((group, groupIndex) => (
             <div key={groupIndex}>
-              {/* Author/Organization Header */}
+              {/* Author/Organization/Category Header */}
               {group.author && (
                 <div className="px-4 py-3 bg-muted/30 sticky top-[60px] z-[5]">
                   <h2 className="text-muted-foreground font-bold text-sm uppercase tracking-wide">
@@ -713,28 +768,58 @@ export default function Licenses() {
               )}
 
               {/* License Items */}
-              {group.items.map((item, itemIndex) => (
-                <div
-                  key={`${groupIndex}-${itemIndex}`}
-                  className="bg-card border-l-4 border-l-primary/30 mx-3 mb-1.5 rounded-md shadow-sm"
-                >
-                  <div className="px-4 py-3">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="text-foreground font-medium text-sm flex-1 pr-4 leading-tight">
-                        {item.name}
-                      </h3>
-                      <span className="text-muted-foreground text-xs font-medium whitespace-nowrap bg-muted/50 px-2 py-0.5 rounded">
-                        {item.version}
-                      </span>
+              {group.items.map((item, itemIndex) => {
+                const itemKey = `${groupIndex}-${itemIndex}-${item.name}`;
+                const isExpanded = expandedItems.has(itemKey);
+                
+                return (
+                  <Collapsible
+                    key={itemKey}
+                    open={isExpanded}
+                    onOpenChange={() => toggleExpanded(itemKey)}
+                  >
+                    <div className="bg-card border-l-4 border-l-primary/30 mx-3 mb-1.5 rounded-md shadow-sm overflow-hidden">
+                      <CollapsibleTrigger className="w-full text-left">
+                        <div className="px-4 py-3">
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="text-foreground font-medium text-sm flex-1 pr-4 leading-tight">
+                              {item.name}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground text-xs font-medium whitespace-nowrap bg-muted/50 px-2 py-0.5 rounded">
+                                {item.version}
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              )}
+                            </div>
+                          </div>
+                          {item.license && (
+                            <p className="text-primary text-xs whitespace-pre-line font-medium">
+                              {item.license}
+                            </p>
+                          )}
+                        </div>
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent>
+                        <div className="px-4 pb-4 pt-2 border-t border-muted/50">
+                          <div className="bg-muted/20 rounded-lg p-3">
+                            <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
+                              License Text
+                            </h4>
+                            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed max-h-[300px] overflow-y-auto">
+                              {getLicenseText(item.license)}
+                            </pre>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
                     </div>
-                    {item.license && (
-                      <p className="text-primary text-xs whitespace-pre-line font-medium">
-                        {item.license}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  </Collapsible>
+                );
+              })}
             </div>
           ))
         )}
