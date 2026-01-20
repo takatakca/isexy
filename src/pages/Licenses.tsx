@@ -1,5 +1,7 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
 
 interface LicenseItem {
   name: string;
@@ -612,52 +614,130 @@ const licensesData: LicenseGroup[] = [
 
 export default function Licenses() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Filter licenses based on search query
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return licensesData;
+    
+    const query = searchQuery.toLowerCase();
+    return licensesData
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item =>
+          item.name.toLowerCase().includes(query) ||
+          item.license.toLowerCase().includes(query) ||
+          item.version.toLowerCase().includes(query) ||
+          (group.author && group.author.toLowerCase().includes(query))
+        )
+      }))
+      .filter(group => group.items.length > 0);
+  }, [searchQuery]);
+
+  // Count total results
+  const totalResults = filteredData.reduce((acc, group) => acc + group.items.length, 0);
 
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header - Tinder style pink */}
-      <div className="bg-primary px-4 py-6 sticky top-0 z-10">
-        <h1 className="text-primary-foreground text-2xl font-semibold">Licenses</h1>
+      <div className="bg-primary px-4 py-4 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => navigate(-1)}
+            className="text-primary-foreground p-1 -ml-1"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-primary-foreground text-xl font-semibold">Licenses</h1>
+          <button 
+            onClick={() => setShowSearch(!showSearch)}
+            className="text-primary-foreground p-1 -mr-1"
+          >
+            {showSearch ? <X className="w-6 h-6" /> : <Search className="w-6 h-6" />}
+          </button>
+        </div>
+        
+        {/* Search Input */}
+        {showSearch && (
+          <div className="mt-3 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search libraries, licenses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-white/95 border-0 text-foreground placeholder:text-muted-foreground"
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Results count */}
+      {searchQuery && (
+        <div className="px-4 py-2 bg-muted/50 border-b">
+          <p className="text-sm text-muted-foreground">
+            {totalResults} {totalResults === 1 ? 'result' : 'results'} found
+          </p>
+        </div>
+      )}
 
       {/* License List */}
       <div className="pb-20">
-        {licensesData.map((group, groupIndex) => (
-          <div key={groupIndex}>
-            {/* Author/Organization Header */}
-            {group.author && (
-              <div className="px-4 py-3 bg-muted/30">
-                <h2 className="text-muted-foreground font-bold text-sm uppercase tracking-wide">
-                  {group.author}
-                </h2>
-              </div>
-            )}
-
-            {/* License Items */}
-            {group.items.map((item, itemIndex) => (
-              <div
-                key={`${groupIndex}-${itemIndex}`}
-                className="bg-card border-l-4 border-l-muted mx-3 mb-1.5 rounded-md shadow-sm"
-              >
-                <div className="px-4 py-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-foreground font-medium text-base flex-1 pr-4 leading-tight">
-                      {item.name}
-                    </h3>
-                    <span className="text-muted-foreground text-sm font-medium whitespace-nowrap">
-                      {item.version}
-                    </span>
-                  </div>
-                  {item.license && (
-                    <p className="text-muted-foreground text-sm whitespace-pre-line">
-                      {item.license}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+        {filteredData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground text-center">
+              No licenses found matching "{searchQuery}"
+            </p>
           </div>
-        ))}
+        ) : (
+          filteredData.map((group, groupIndex) => (
+            <div key={groupIndex}>
+              {/* Author/Organization Header */}
+              {group.author && (
+                <div className="px-4 py-3 bg-muted/30 sticky top-[60px] z-[5]">
+                  <h2 className="text-muted-foreground font-bold text-sm uppercase tracking-wide">
+                    {group.author}
+                  </h2>
+                </div>
+              )}
+
+              {/* License Items */}
+              {group.items.map((item, itemIndex) => (
+                <div
+                  key={`${groupIndex}-${itemIndex}`}
+                  className="bg-card border-l-4 border-l-primary/30 mx-3 mb-1.5 rounded-md shadow-sm"
+                >
+                  <div className="px-4 py-3">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="text-foreground font-medium text-sm flex-1 pr-4 leading-tight">
+                        {item.name}
+                      </h3>
+                      <span className="text-muted-foreground text-xs font-medium whitespace-nowrap bg-muted/50 px-2 py-0.5 rounded">
+                        {item.version}
+                      </span>
+                    </div>
+                    {item.license && (
+                      <p className="text-primary text-xs whitespace-pre-line font-medium">
+                        {item.license}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
