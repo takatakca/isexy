@@ -1,7 +1,9 @@
-import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3 } from "lucide-react";
+import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3, Copy, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -342,41 +344,94 @@ const licensesData: LicenseGroup[] = [
       { name: "Navigation Compose Hilt Integration", version: "1.2.0", license: "Apache Version 2.0" },
       { name: "Navigation Fragment", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Navigation Fragment Kotlin Extensions", version: "2.8.9", license: "Apache Version 2.0" },
+      { name: "Navigation Hilt Extension", version: "1.2.0", license: "Apache Version 2.0" },
       { name: "Navigation Runtime", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Navigation Runtime Kotlin Extensions", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Navigation UI", version: "2.8.9", license: "Apache Version 2.0" },
       { name: "Navigation UI Kotlin Extensions", version: "2.8.9", license: "Apache Version 2.0" },
-      { name: "Paging Common", version: "3.3.6", license: "Apache Version 2.0" },
-      { name: "Paging Common Kotlin Extensions", version: "3.3.6", license: "Apache Version 2.0" },
-      { name: "Paging Runtime", version: "3.3.6", license: "Apache Version 2.0" },
-      { name: "Paging Runtime Kotlin Extensions", version: "3.3.6", license: "Apache Version 2.0" },
+      { name: "Paging-Common", version: "3.2.1", license: "Apache Version 2.0" },
+      { name: "Paging-Common Kotlin Extensions", version: "3.2.1", license: "Apache Version 2.0" },
+      { name: "Paging-Compose", version: "3.2.1", license: "Apache Version 2.0" },
+      { name: "Paging-Runtime", version: "3.2.1", license: "Apache Version 2.0" },
+      { name: "Paging-RXJava2", version: "3.2.1", license: "Apache Version 2.0" },
       { name: "Palette", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Preferences DataStore", version: "1.1.3", license: "Apache Version 2.0" },
+      { name: "Preferences DataStore Core", version: "1.1.3", license: "Apache Version 2.0" },
       { name: "Print", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Privacy Sandbox for Ad Services", version: "1.0.0-beta05", license: "Apache Version 2.0" },
+      { name: "Profile Installer", version: "1.4.0", license: "Apache Version 2.0" },
       { name: "ProfileInstaller", version: "1.4.1", license: "Apache Version 2.0" },
       { name: "RecyclerView", version: "1.4.0", license: "Apache Version 2.0" },
-      { name: "Room Common", version: "2.7.0", license: "Apache Version 2.0" },
-      { name: "Room Runtime", version: "2.7.0", license: "Apache Version 2.0" },
-      { name: "Room Kotlin Extensions", version: "2.7.0", license: "Apache Version 2.0" },
+      { name: "Room Common", version: "2.6.1", license: "Apache Version 2.0" },
+      { name: "Room Runtime", version: "2.6.1", license: "Apache Version 2.0" },
+      { name: "Room Kotlin Extensions", version: "2.6.1", license: "Apache Version 2.0" },
+      { name: "Saved State", version: "1.3.0", license: "Apache Version 2.0" },
+      { name: "Saved State Compose", version: "1.3.0", license: "Apache Version 2.0" },
       { name: "SavedState", version: "1.3.0", license: "Apache Version 2.0" },
       { name: "SavedState Kotlin Extensions", version: "1.3.0", license: "Apache Version 2.0" },
       { name: "Security Crypto", version: "1.0.0", license: "Apache Version 2.0" },
       { name: "SlidingPaneLayout", version: "1.2.0", license: "Apache Version 2.0" },
+      { name: "SplashScreen", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "SQLite", version: "2.4.0", license: "Apache Version 2.0" },
+      { name: "SQLite Framework Integration", version: "2.4.0", license: "Apache Version 2.0" },
+      { name: "SQLite Kotlin Extensions", version: "2.4.0", license: "Apache Version 2.0" },
       { name: "Sqlite Framework", version: "2.5.0", license: "Apache Version 2.0" },
       { name: "Startup Runtime", version: "1.2.0", license: "Apache Version 2.0" },
+      { name: "Support AnimatedVectorDrawable", version: "1.1.0", license: "Apache Version 2.0" },
+      { name: "Support Async Layout Inflater", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support CardView v7", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support Coordinator Layout", version: "1.2.0", license: "Apache Version 2.0" },
+      { name: "Support core UI", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support core utils", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support Cursor Adapter", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support Custom View", version: "1.1.0", license: "Apache Version 2.0" },
+      { name: "Support Document File", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support Drawer Layout", version: "1.1.1", license: "Apache Version 2.0" },
+      { name: "Support DynamicAnimation", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support ExifInterface", version: "1.3.6", license: "Apache Version 2.0" },
+      { name: "Support fragment", version: "1.6.2", license: "Apache Version 2.0" },
+      { name: "Support Grid Layout", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support Interpolators", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support loader", version: "1.1.0", license: "Apache Version 2.0" },
+      { name: "Support Local Broadcast Manager", version: "1.1.0", license: "Apache Version 2.0" },
+      { name: "Support media compat", version: "1.6.0", license: "Apache Version 2.0" },
+      { name: "Support Palette v7", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support Print", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support Sliding Pane Layout", version: "1.2.0", license: "Apache Version 2.0" },
+      { name: "Support v4", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Support VectorDrawable", version: "1.1.0", license: "Apache Version 2.0" },
+      { name: "Support View Pager", version: "1.0.0", license: "Apache Version 2.0" },
       { name: "SwipeRefreshLayout", version: "1.1.0", license: "Apache Version 2.0" },
       { name: "Tracing", version: "1.3.0", license: "Apache Version 2.0" },
-      { name: "Transition", version: "1.5.1", license: "Apache Version 2.0" },
+      { name: "Tracing Kotlin Extensions", version: "1.3.0", license: "Apache Version 2.0" },
+      { name: "Transition", version: "1.5.0", license: "Apache Version 2.0" },
       { name: "Transition Kotlin Extensions", version: "1.5.1", license: "Apache Version 2.0" },
       { name: "VectorDrawable", version: "1.2.0", license: "Apache Version 2.0" },
       { name: "VectorDrawable Animated", version: "1.2.0", license: "Apache Version 2.0" },
-      { name: "VersionedParcelable", version: "1.2.0", license: "Apache Version 2.0" },
+      { name: "VersionedParcelable", version: "1.1.1", license: "Apache Version 2.0" },
       { name: "ViewPager", version: "1.0.0", license: "Apache Version 2.0" },
-      { name: "ViewPager2", version: "1.1.0", license: "Apache Version 2.0" },
+      { name: "ViewPager2", version: "1.1.0-beta02", license: "Apache Version 2.0" },
+      { name: "WebKit", version: "1.12.1", license: "Apache Version 2.0" },
       { name: "Window", version: "1.3.0", license: "Apache Version 2.0" },
       { name: "Window Extensions", version: "1.3.0", license: "Apache Version 2.0" },
       { name: "Work Manager", version: "2.10.0", license: "Apache Version 2.0" },
       { name: "Work Manager Kotlin Extensions", version: "2.10.0", license: "Apache Version 2.0" },
       { name: "Work Manager Runtime Kotlin Extensions", version: "2.10.0", license: "Apache Version 2.0" },
+      { name: "WorkManager Kotlin Extensions", version: "2.10.0", license: "Apache Version 2.0" },
+      { name: "WorkManager Runtime", version: "2.10.0", license: "Apache Version 2.0" },
+      { name: "WorkManager RxJava2", version: "2.10.0", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Ben Christensen",
+    items: [
+      { name: "rxkotlin", version: "2.3.0", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Branch Metrics",
+    items: [
+      { name: "Branch Android SDK", version: "5.20.3", license: "Apache Version 2.0" },
     ]
   },
   {
@@ -396,6 +451,24 @@ const licensesData: LicenseGroup[] = [
     ]
   },
   {
+    author: "Cash App",
+    items: [
+      { name: "paging-common", version: "3.1.1-0.3.1", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "CashApp",
+    items: [
+      { name: "wire-runtime", version: "5.3.5", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Chris Banes",
+    items: [
+      { name: "Insetter", version: "0.6.1", license: "Apache Version 2.0" },
+    ]
+  },
+  {
     author: "Cloudinary",
     items: [
       { name: "cloudinary_java", version: "1.32.2", license: "MIT License" },
@@ -406,6 +479,12 @@ const licensesData: LicenseGroup[] = [
     items: [
       { name: "Moshi", version: "1.15.0", license: "Apache Version 2.0" },
       { name: "Moshi Kotlin", version: "1.15.0", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "David Karnok",
+    items: [
+      { name: "RxJava", version: "2.2.21", license: "Apache Version 2.0" },
     ]
   },
   {
@@ -526,6 +605,24 @@ export default function Licenses() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('author');
   const [licenseFilter, setLicenseFilter] = useState<string>('all');
+  const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
+
+  const copyToClipboard = async (text: string, itemKey: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItems(prev => new Set(prev).add(itemKey));
+      toast.success("License text copied to clipboard!");
+      setTimeout(() => {
+        setCopiedItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(itemKey);
+          return newSet;
+        });
+      }, 2000);
+    } catch (err) {
+      toast.error("Failed to copy to clipboard");
+    }
+  };
 
   // Get unique license types for filter dropdown
   const licenseTypes = useMemo(() => {
@@ -807,9 +904,32 @@ export default function Licenses() {
                       <CollapsibleContent>
                         <div className="px-4 pb-4 pt-2 border-t border-muted/50">
                           <div className="bg-muted/20 rounded-lg p-3">
-                            <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
-                              License Text
-                            </h4>
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                                License Text
+                              </h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 gap-1.5 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyToClipboard(getLicenseText(item.license), itemKey);
+                                }}
+                              >
+                                {copiedItems.has(itemKey) ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-green-500" />
+                                    <span className="text-green-500">Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                             <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed max-h-[300px] overflow-y-auto">
                               {getLicenseText(item.license)}
                             </pre>
