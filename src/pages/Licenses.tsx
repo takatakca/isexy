@@ -1,6 +1,6 @@
-import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3, Copy, Check, Maximize2, Minimize2 } from "lucide-react";
+import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3, Copy, Check, Maximize2, Minimize2, ArrowUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -606,6 +606,44 @@ export default function Licenses() {
   const [sortBy, setSortBy] = useState<SortOption>('author');
   const [licenseFilter, setLicenseFilter] = useState<string>('all');
   const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle scroll for Back to Top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+F or Cmd+F to open search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+      }
+      // Escape to close search or clear search query
+      if (e.key === 'Escape') {
+        if (searchQuery) {
+          setSearchQuery("");
+        } else if (showSearch) {
+          setShowSearch(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSearch, searchQuery]);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const copyToClipboard = async (text: string, itemKey: string) => {
     try {
@@ -786,8 +824,9 @@ export default function Licenses() {
           <div className="mt-3 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               type="text"
-              placeholder="Search libraries, licenses..."
+              placeholder="Search libraries, licenses... (Ctrl+F)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 bg-white/95 border-0 text-foreground placeholder:text-muted-foreground"
@@ -987,6 +1026,17 @@ export default function Licenses() {
           ))
         )}
       </div>
+
+      {/* Back to Top Floating Button */}
+      {showBackToTop && (
+        <Button
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-4 z-50 h-12 w-12 rounded-full shadow-lg bg-primary hover:bg-primary/90 p-0"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
     </div>
   );
 }
