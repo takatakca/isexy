@@ -1,4 +1,4 @@
-import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3, Copy, Check } from "lucide-react";
+import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3, Copy, Check, Maximize2, Minimize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
@@ -715,6 +715,19 @@ export default function Licenses() {
 
   const totalResults = processedData.reduce((sum, group) => sum + group.items.length, 0);
 
+  // Generate all item keys for expand/collapse all functionality
+  const allItemKeys = useMemo(() => {
+    const keys: string[] = [];
+    processedData.forEach((group, groupIndex) => {
+      group.items.forEach((item, itemIndex) => {
+        keys.push(`${groupIndex}-${itemIndex}-${item.name}`);
+      });
+    });
+    return keys;
+  }, [processedData]);
+
+  const allExpanded = allItemKeys.length > 0 && allItemKeys.every(key => expandedItems.has(key));
+
   const toggleExpanded = (itemKey: string) => {
     setExpandedItems(prev => {
       const newSet = new Set(prev);
@@ -725,6 +738,14 @@ export default function Licenses() {
       }
       return newSet;
     });
+  };
+
+  const expandAll = () => {
+    setExpandedItems(new Set(allItemKeys));
+  };
+
+  const collapseAll = () => {
+    setExpandedItems(new Set());
   };
 
   const getLicenseText = (license: string): string => {
@@ -831,8 +852,30 @@ export default function Licenses() {
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
+        </Select>
         </div>
+
+        {/* Expand/Collapse All Button */}
+        {totalResults > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            onClick={allExpanded ? collapseAll : expandAll}
+          >
+            {allExpanded ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                Collapse All
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5" />
+                Expand All
+              </>
+            )}
+          </Button>
+        )}
 
         {/* Results count */}
         <div className="ml-auto">
