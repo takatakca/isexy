@@ -33,13 +33,16 @@ export default function Privacy() {
               <h2 className="text-xl font-bold mb-4">2. Who We Are</h2>
               <p className="text-muted-foreground mb-4">
                 CubaDate is operated by CubaDate Inc., a company registered in Canada. We are the data controller 
-                responsible for your personal data. If you have any questions about this privacy policy, please 
-                contact our Data Protection Officer at:
+                responsible for your personal data in accordance with the Personal Information Protection and 
+                Electronic Documents Act (PIPEDA) and applicable Cuban privacy laws. If you have any questions 
+                about this privacy policy, please contact our Data Protection Officer at:
               </p>
               <div className="bg-muted p-4 rounded-xl mb-4">
                 <p className="text-foreground font-medium">Data Protection Officer</p>
-                <p className="text-muted-foreground">Email: privacy@cubadate.com</p>
-                <p className="text-muted-foreground">Address: Toronto, Ontario, Canada</p>
+                <p className="text-muted-foreground">Email: cubaresort.ca@gmail.com</p>
+                <p className="text-muted-foreground">Canada: +1 450 999 4999</p>
+                <p className="text-muted-foreground">Cuba WhatsApp: +53 5307 1185</p>
+                <p className="text-muted-foreground">Address: Montreal, Quebec, Canada</p>
               </div>
             </section>
 

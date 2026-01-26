@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Input } from "@/components/ui/input";
-import { Search, X, Info, HelpCircle, MessageCircle } from "lucide-react";
+import { Search, X, Info, HelpCircle, MessageCircle, BookOpen } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
+import { LiveChatWidget } from "@/components/LiveChatWidget";
 
 const HelpSupport = () => {
   const navigate = useNavigate();
@@ -59,22 +60,27 @@ const HelpSupport = () => {
         </div>
 
         {/* Quick Links */}
-        <div className="w-full mt-6 grid grid-cols-2 gap-3">
+        <div className="w-full mt-6 grid grid-cols-3 gap-3">
+          <button
+            onClick={() => navigate("/knowledge-base")}
+            className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
+          >
+            <BookOpen className="w-8 h-8 text-primary" />
+            <span className="font-medium text-foreground text-sm">Knowledge Base</span>
+          </button>
           <button
             onClick={() => navigate("/faq")}
             className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
           >
             <HelpCircle className="w-8 h-8 text-primary" />
-            <span className="font-medium text-foreground">FAQ</span>
-            <span className="text-xs text-muted-foreground text-center">Find quick answers</span>
+            <span className="font-medium text-foreground text-sm">FAQ</span>
           </button>
           <button
             onClick={() => navigate("/contact-us")}
             className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
           >
             <MessageCircle className="w-8 h-8 text-primary" />
-            <span className="font-medium text-foreground">Contact Us</span>
-            <span className="text-xs text-muted-foreground text-center">Submit a ticket</span>
+            <span className="font-medium text-foreground text-sm">Contact Us</span>
           </button>
         </div>
 
@@ -131,6 +137,8 @@ const HelpSupport = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <LiveChatWidget />
     </AuthLayout>
   );
 };

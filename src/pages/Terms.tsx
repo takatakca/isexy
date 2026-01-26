@@ -520,13 +520,13 @@ export default function Terms() {
               21. Governing Law
             </h2>
             <p className="text-muted-foreground mb-4">
-              These Terms and any dispute arising out of or related to these Terms or the Services shall be governed by and construed in accordance with the laws of the State of Florida, United States, without regard to its conflict of law principles.
+              These Terms and any dispute arising out of or related to these Terms or the Services shall be governed by and construed in accordance with the laws of the Province of Quebec and the federal laws of Canada applicable therein, as well as applicable Cuban regulations for users in Cuba, without regard to conflict of law principles.
             </p>
             <p className="text-muted-foreground mb-4">
-              For any disputes not subject to arbitration, you and CubaDate agree to submit to the personal and exclusive jurisdiction of the state and federal courts located in Miami-Dade County, Florida.
+              For any disputes not subject to arbitration, you and CubaDate agree to submit to the personal and exclusive jurisdiction of the courts located in Montreal, Quebec, Canada.
             </p>
             <p className="text-muted-foreground">
-              <strong>International Users:</strong> If you access the Services from outside the United States, you do so at your own risk and are responsible for compliance with local laws.
+              <strong>International Users:</strong> If you access the Services from Cuba or other countries, you do so subject to compliance with both Canadian privacy laws (PIPEDA) and applicable local laws and regulations.
             </p>
           </section>
 
@@ -584,11 +584,10 @@ export default function Terms() {
             <div className="bg-card p-4 rounded-xl border border-border">
               <p className="text-foreground font-semibold mb-2">CubaDate Inc.</p>
               <p className="text-muted-foreground text-sm mb-1">Legal Department</p>
-              <p className="text-muted-foreground text-sm mb-1">1234 Brickell Avenue, Suite 500</p>
-              <p className="text-muted-foreground text-sm mb-1">Miami, FL 33131</p>
-              <p className="text-muted-foreground text-sm mb-1">United States</p>
-              <p className="text-muted-foreground text-sm mt-3">Email: legal@cubadate.com</p>
-              <p className="text-muted-foreground text-sm">Support: support@cubadate.com</p>
+              <p className="text-muted-foreground text-sm mb-1">Montreal, Quebec, Canada</p>
+              <p className="text-muted-foreground text-sm mt-3">Email: cubaresort.ca@gmail.com</p>
+              <p className="text-muted-foreground text-sm">Canada Support: +1 450 999 4999</p>
+              <p className="text-muted-foreground text-sm">Cuba WhatsApp: +53 5307 1185</p>
             </div>
           </section>
 

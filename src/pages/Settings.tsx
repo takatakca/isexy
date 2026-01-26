@@ -577,11 +577,11 @@ export default function Settings() {
 
         {/* Feature Settings */}
         <section className="mb-6 space-y-3">
-          {["Q&A Events", "Matchmaker", "Top Picks", "Double Date", "Swipe Surge™"].map((feature) => (
+          {["Q&A Events", "Matchmaker", "Top Picks", "Swipe Surge™"].map((feature) => (
             <SettingCard key={feature}>
               <div className="p-4">
                 <p className="font-semibold text-foreground mb-1">Manage {feature}</p>
-                <SettingRow label="Settings" />
+                <SettingRow label="Settings" onClick={() => navigate(`/${feature.toLowerCase().replace(/[™\s&]/g, '-').replace(/--+/g, '-')}`)} />
               </div>
             </SettingCard>
           ))}

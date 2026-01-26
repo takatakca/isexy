@@ -111,15 +111,31 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const profiles = [];
-    const photoUrls = [
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400",
-      "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=400",
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400",
+    // Diverse Latino/Cuban photo URLs from Unsplash
+    const malePhotoUrls = [
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400", // Latino man
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400", // Hispanic man
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400", // Cuban style
+      "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=400", // Dark hair man
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400", // Casual man
+      "https://images.unsplash.com/photo-1463453091185-61582044d556?w=400", // Beach man
+      "https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=400", // Cuban vibe
+      "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=400", // Latino style
+      "https://images.unsplash.com/photo-1548372290-8d01b6c8e78c?w=400", // Beach guy
+      "https://images.unsplash.com/photo-1531891437562-4301cf35b7e4?w=400", // Latin man
+    ];
+    
+    const femalePhotoUrls = [
+      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400", // Latina woman
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400", // Hispanic beauty
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400", // Cuban style
+      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400", // Dark hair woman
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400", // Beach woman
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400", // Latina beauty
+      "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=400", // Cuban woman
+      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400", // Caribbean look
+      "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=400", // Tropical vibe
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400", // Natural beauty
     ];
 
     // Generate 1000 profiles - NO user_id since these are demo profiles
@@ -210,11 +226,16 @@ Deno.serve(async (req) => {
       .limit(500);
 
     if (insertedProfiles) {
-      const photos = insertedProfiles.map((profile: any, index: number) => ({
-        profile_id: profile.id,
-        photo_url: photoUrls[index % photoUrls.length],
-        position: 0,
-      }));
+      const photos = insertedProfiles.map((profile: any, index: number) => {
+        // Determine gender from profile to select appropriate photo
+        const isMale = index % 2 === 0; // Alternate for variety
+        const photoPool = isMale ? malePhotoUrls : femalePhotoUrls;
+        return {
+          profile_id: profile.id,
+          photo_url: photoPool[index % photoPool.length],
+          position: 0,
+        };
+      });
 
       for (let i = 0; i < photos.length; i += 100) {
         const batch = photos.slice(i, i + 100);
