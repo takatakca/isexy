@@ -70,6 +70,9 @@ import PhotoVerification from "./pages/PhotoVerification";
 import DoubleDate from "./pages/DoubleDate";
 import QAEvents from "./pages/QAEvents";
 import Matchmaker from "./pages/Matchmaker";
+import LoyaltyRewards from "./pages/LoyaltyRewards";
+import CubanCashout from "./pages/CubanCashout";
+import BlockReportFlow from "./pages/BlockReportFlow";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -148,6 +151,9 @@ const App = () => (
               <Route path="/double-date" element={<DoubleDate />} />
               <Route path="/qa-events" element={<QAEvents />} />
               <Route path="/matchmaker" element={<Matchmaker />} />
+              <Route path="/loyalty-rewards" element={<LoyaltyRewards />} />
+              <Route path="/cuban-cashout" element={<CubanCashout />} />
+              <Route path="/block-report/:userId" element={<BlockReportFlow />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </LanguageProvider>
