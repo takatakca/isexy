@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Star, Flame } from "lucide-react";
+import { X, Star, Flame, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Package {
   id: string;
@@ -20,20 +22,45 @@ const packages: Package[] = [
 export default function GetSuperLikes() {
   const navigate = useNavigate();
   const [selectedPackage, setSelectedPackage] = useState<string>("15");
+  const [loading, setLoading] = useState(false);
 
   const selected = packages.find((p) => p.id === selectedPackage)!;
   const total = selected.quantity * selected.pricePerItem;
 
+  const handlePurchase = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
+        body: {
+          productName: `${selected.quantity} Super Likes`,
+          quantity: 1,
+          unitAmount: Math.round(total * 100), // Convert to cents
+          description: `Get ${selected.quantity} Super Likes to stand out from the crowd`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (error) {
+      console.error("Purchase error:", error);
+      toast.error("Failed to start checkout. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-b from-blue-100 to-background pb-4">
+      <div className="bg-gradient-to-b from-cyan-500/20 to-background pb-4">
         <div className="flex items-center justify-between p-4">
-          <button onClick={() => navigate(-1)} className="p-2">
+          <button onClick={() => navigate(-1)} className="p-2 hover:bg-muted/50 rounded-full">
             <X className="w-6 h-6 text-foreground" />
           </button>
           <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-blue-500 fill-blue-500" />
+            <Star className="w-5 h-5 text-cyan-500 fill-cyan-500" />
             <span className="font-bold text-foreground">Get Super Likes</span>
           </div>
           <div className="w-10" />
@@ -58,17 +85,17 @@ export default function GetSuperLikes() {
               onClick={() => setSelectedPackage(pkg.id)}
               className={`flex-shrink-0 w-36 p-4 rounded-xl border-2 transition-all relative ${
                 selectedPackage === pkg.id
-                  ? "border-blue-500 bg-blue-50"
+                  ? "border-cyan-500 bg-cyan-500/10"
                   : "border-border bg-card"
               }`}
             >
               {pkg.popular && (
-                <span className="absolute -top-2 left-2 text-xs font-semibold text-blue-500">
+                <span className="absolute -top-2 left-2 text-xs font-semibold text-cyan-500">
                   Popular
                 </span>
               )}
               {pkg.bestValue && (
-                <span className="absolute -top-2 left-2 text-xs font-semibold text-blue-500">
+                <span className="absolute -top-2 left-2 text-xs font-semibold text-cyan-500">
                   Best Value
                 </span>
               )}
@@ -81,21 +108,21 @@ export default function GetSuperLikes() {
                   ${pkg.pricePerItem.toFixed(2)}/ea
                 </p>
                 {pkg.savings && (
-                  <span className="inline-block mt-2 px-2 py-0.5 bg-muted rounded-full text-xs font-semibold text-muted-foreground">
+                  <span className="inline-block mt-2 px-2 py-0.5 bg-cyan-500/20 rounded-full text-xs font-semibold text-cyan-600">
                     Save {pkg.savings}%
                   </span>
                 )}
               </div>
 
-              <button
-                className={`w-full mt-4 py-3 rounded-full font-bold text-sm transition-colors ${
+              <div
+                className={`w-full mt-4 py-3 rounded-full font-bold text-sm text-center transition-colors ${
                   selectedPackage === pkg.id
-                    ? "bg-blue-500 text-white"
-                    : "bg-blue-500 text-white"
+                    ? "bg-cyan-500 text-white"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 Select
-              </button>
+              </div>
             </button>
           ))}
         </div>
@@ -106,7 +133,7 @@ export default function GetSuperLikes() {
             <div
               key={pkg.id}
               className={`w-2 h-2 rounded-full transition-colors ${
-                selectedPackage === pkg.id ? "bg-foreground" : "bg-muted"
+                selectedPackage === pkg.id ? "bg-cyan-500" : "bg-muted"
               }`}
             />
           ))}
@@ -143,8 +170,19 @@ export default function GetSuperLikes() {
 
       {/* Bottom purchase button */}
       <div className="mt-auto p-4 border-t border-border">
-        <button className="w-full py-4 bg-blue-500 text-white rounded-full font-bold text-lg hover:bg-blue-600 transition-colors">
-          Continue for ${total.toFixed(2)}
+        <button 
+          onClick={handlePurchase}
+          disabled={loading}
+          className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-full font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            `Continue for $${total.toFixed(2)} CAD`
+          )}
         </button>
       </div>
     </div>

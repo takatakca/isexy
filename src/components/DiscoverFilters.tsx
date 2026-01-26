@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sliders, X, Zap } from "lucide-react";
+import { Sliders, X, Zap, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -21,9 +21,15 @@ import { toast } from "sonner";
 
 interface DiscoverFiltersProps {
   onFiltersChange?: () => void;
+  showVerifiedOnly: boolean;
+  setShowVerifiedOnly: (value: boolean) => void;
 }
 
-export function DiscoverFilters({ onFiltersChange }: DiscoverFiltersProps) {
+export function DiscoverFilters({ 
+  onFiltersChange, 
+  showVerifiedOnly, 
+  setShowVerifiedOnly 
+}: DiscoverFiltersProps) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   
@@ -73,8 +79,8 @@ export function DiscoverFilters({ onFiltersChange }: DiscoverFiltersProps) {
       {/* Filters Sheet */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <button className="p-2">
-            <Sliders className="w-6 h-6 text-muted-foreground" />
+          <button className="p-2 hover:bg-muted/50 rounded-full transition-colors">
+            <Sliders className="w-6 h-6 text-foreground" />
           </button>
         </SheetTrigger>
         <SheetContent side="left" className="w-[320px] sm:w-[400px]">
@@ -86,6 +92,23 @@ export function DiscoverFilters({ onFiltersChange }: DiscoverFiltersProps) {
           </SheetHeader>
           
           <div className="py-6 space-y-8">
+            {/* Verified Only Filter */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="w-5 h-5 text-primary" />
+                  <Label className="text-base font-medium">Verified Only</Label>
+                </div>
+                <Switch
+                  checked={showVerifiedOnly}
+                  onCheckedChange={setShowVerifiedOnly}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Only show verified profiles for safer connections
+              </p>
+            </div>
+
             {/* Distance Preference */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -163,7 +186,7 @@ export function DiscoverFilters({ onFiltersChange }: DiscoverFiltersProps) {
                 Cancel
               </Button>
             </SheetClose>
-            <Button onClick={handleApply} className="flex-1">
+            <Button onClick={handleApply} className="flex-1 gradient-primary">
               Apply
             </Button>
           </SheetFooter>
@@ -171,7 +194,10 @@ export function DiscoverFilters({ onFiltersChange }: DiscoverFiltersProps) {
       </Sheet>
       
       {/* Boost Button */}
-      <button onClick={() => navigate("/premium")} className="p-2">
+      <button 
+        onClick={() => navigate("/get-boosts")} 
+        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+      >
         <Zap className="w-6 h-6 text-purple-500 fill-purple-500" />
       </button>
     </div>
