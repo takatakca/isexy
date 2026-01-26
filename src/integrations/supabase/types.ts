@@ -52,7 +52,10 @@ export type Database = {
       }
       cuban_verifications: {
         Row: {
+          audio_url: string | null
           audio_verified: boolean
+          carnet_back_url: string | null
+          carnet_front_url: string | null
           carnet_id: string
           carnet_verified: boolean
           created_at: string
@@ -64,12 +67,16 @@ export type Database = {
           verification_status: string
           verified_at: string | null
           verified_by: string | null
+          video_url: string | null
           video_verified: boolean
           whatsapp_number: string
           whatsapp_verified: boolean
         }
         Insert: {
+          audio_url?: string | null
           audio_verified?: boolean
+          carnet_back_url?: string | null
+          carnet_front_url?: string | null
           carnet_id: string
           carnet_verified?: boolean
           created_at?: string
@@ -81,12 +88,16 @@ export type Database = {
           verification_status?: string
           verified_at?: string | null
           verified_by?: string | null
+          video_url?: string | null
           video_verified?: boolean
           whatsapp_number: string
           whatsapp_verified?: boolean
         }
         Update: {
+          audio_url?: string | null
           audio_verified?: boolean
+          carnet_back_url?: string | null
+          carnet_front_url?: string | null
           carnet_id?: string
           carnet_verified?: boolean
           created_at?: string
@@ -98,6 +109,7 @@ export type Database = {
           verification_status?: string
           verified_at?: string | null
           verified_by?: string | null
+          video_url?: string | null
           video_verified?: boolean
           whatsapp_number?: string
           whatsapp_verified?: boolean
@@ -321,6 +333,41 @@ export type Database = {
             columns: ["profile2_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_translations: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string | null
+          source_language: string
+          target_language: string
+          translated_content: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          source_language: string
+          target_language: string
+          translated_content: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          source_language?: string
+          target_language?: string
+          translated_content?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_translations_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
@@ -758,6 +805,33 @@ export type Database = {
           is_active?: boolean
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          auto_translate: boolean
+          created_at: string
+          id: string
+          preferred_language: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_translate?: boolean
+          created_at?: string
+          id?: string
+          preferred_language?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_translate?: boolean
+          created_at?: string
+          id?: string
+          preferred_language?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
