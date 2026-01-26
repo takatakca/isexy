@@ -112,15 +112,23 @@ export default function Auth() {
             : "Create Account"}
         </AuthButton>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-3">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-primary font-semibold hover:opacity-80 transition-opacity"
+            className="text-primary font-semibold hover:opacity-80 transition-opacity block w-full"
           >
             {isLogin
               ? "Don't have an account? Sign up"
               : "Already have an account? Sign in"}
           </button>
+          {isLogin && (
+            <button
+              onClick={() => navigate("/reset-password")}
+              className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+            >
+              Forgot your password?
+            </button>
+          )}
         </div>
       </div>
     </AuthLayout>
