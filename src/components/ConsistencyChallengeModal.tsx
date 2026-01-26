@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, Flame, Gift, Trophy, Star } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { X, Smartphone } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 
 interface ConsistencyChallengeModalProps {
@@ -14,107 +17,82 @@ export function ConsistencyChallengeModal({
   onClose, 
   currentStreak 
 }: ConsistencyChallengeModalProps) {
-  const [claimed, setClaimed] = useState(false);
-
-  const rewards = [
-    { day: 3, reward: "1 Free Super Like", icon: Star, claimed: currentStreak >= 3 },
-    { day: 5, reward: "1 Free Boost", icon: Flame, claimed: currentStreak >= 5 },
-    { day: 7, reward: "3 Free Super Likes", icon: Trophy, claimed: currentStreak >= 7 },
-  ];
-
-  const handleClaim = () => {
-    setClaimed(true);
-    localStorage.setItem("streak_reward_claimed", new Date().toDateString());
-    setTimeout(() => {
-      onClose();
-    }, 1500);
+  const handleStartChallenge = () => {
+    localStorage.setItem("challenge_started", new Date().toISOString());
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background border-primary/20">
-        <div className="relative">
-          {/* Header with gradient */}
-          <div className="gradient-primary p-6 text-center text-white">
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-white/80 hover:text-white"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
-              <Flame className="w-12 h-12 text-white" />
-            </div>
-            
-            <h2 className="text-2xl font-bold mb-1">
-              {currentStreak} Day Streak! 🔥
-            </h2>
-            <p className="text-white/90 text-sm">
-              You're on fire! Keep the momentum going.
-            </p>
-          </div>
+    <Drawer open={isOpen} onOpenChange={onClose}>
+      <DrawerContent className="bg-card border-t border-border">
+        <div className="p-6 pb-10">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-6 h-6" />
+          </button>
 
-          {/* Rewards section */}
-          <div className="p-6 space-y-4">
-            <h3 className="font-bold text-foreground text-center mb-4">
-              Daily Streak Rewards
-            </h3>
+          {/* Header */}
+          <h2 className="text-2xl font-bold text-center text-foreground mb-8">
+            Consistency Challenge
+          </h2>
 
-            <div className="space-y-3">
-              {rewards.map(({ day, reward, icon: Icon, claimed: isEarned }) => (
-                <div
-                  key={day}
-                  className={`flex items-center gap-4 p-3 rounded-xl border transition-all ${
-                    isEarned
-                      ? "bg-primary/10 border-primary/30"
-                      : "bg-muted/50 border-border opacity-60"
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isEarned ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                  }`}>
-                    <Icon className="w-5 h-5" />
+          {/* Phone illustration */}
+          <div className="flex justify-center mb-8">
+            <div className="relative">
+              <div className="w-24 h-40 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-20 h-36 bg-white rounded-xl p-1">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg grid grid-cols-4 gap-1 p-2">
+                    {[...Array(12)].map((_, i) => (
+                      <div 
+                        key={i} 
+                        className={`w-3 h-3 rounded-sm ${
+                          i === 0 ? 'bg-primary' : 
+                          [1,2,5,7,10].includes(i) ? 'bg-pink-300' :
+                          [3,4,6,8].includes(i) ? 'bg-blue-300' : 
+                          'bg-green-300'
+                        }`}
+                      />
+                    ))}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">{day} Days</p>
-                    <p className="text-sm text-muted-foreground">{reward}</p>
-                  </div>
-                  {isEarned && (
-                    <span className="text-xs font-semibold text-primary px-2 py-1 bg-primary/10 rounded-full">
-                      Earned!
-                    </span>
-                  )}
                 </div>
-              ))}
-            </div>
-
-            {/* Claim button */}
-            {currentStreak >= 3 && !claimed && (
-              <Button
-                onClick={handleClaim}
-                className="w-full py-6 text-lg font-bold gradient-primary hover:opacity-90"
-              >
-                <Gift className="w-5 h-5 mr-2" />
-                Claim Your Reward
-              </Button>
-            )}
-
-            {claimed && (
-              <div className="text-center py-4">
-                <p className="text-primary font-bold text-lg">🎉 Reward Claimed!</p>
               </div>
-            )}
-
-            {currentStreak < 3 && (
-              <p className="text-center text-sm text-muted-foreground">
-                Come back {3 - currentStreak} more day{3 - currentStreak !== 1 ? 's' : ''} to earn your first reward!
-              </p>
-            )}
+              {/* Hand illustration */}
+              <div className="absolute -bottom-4 -right-4 w-16 h-20 bg-gradient-to-br from-red-400 to-red-500 rounded-full transform rotate-12 opacity-80" />
+              {/* Notification dots */}
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+              <div className="absolute top-4 -right-4 w-3 h-3 bg-red-400 rounded-full animate-pulse delay-75" />
+              <div className="absolute top-10 -right-2 w-2 h-2 bg-red-300 rounded-full animate-pulse delay-150" />
+            </div>
           </div>
+
+          {/* Title */}
+          <h3 className="text-xl font-bold text-foreground text-center mb-2">
+            Improve your chances of matching
+          </h3>
+          
+          {/* Challenge description */}
+          <p className="text-muted-foreground text-center mb-4">
+            Challenge: Show up 7 days in a row to earn a reward!
+          </p>
+
+          {/* Pro tip */}
+          <p className="text-sm text-muted-foreground text-center mb-8">
+            <span className="font-semibold text-foreground">Pro tip:</span> The more you use CubaDate, the better your chances of matching are.
+          </p>
+
+          {/* CTA Button */}
+          <Button
+            onClick={handleStartChallenge}
+            className="w-full py-6 text-lg font-bold bg-white text-foreground border border-border hover:bg-muted rounded-full"
+          >
+            Start the Challenge
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -127,7 +105,8 @@ export function useStreakTracker() {
     const today = new Date().toDateString();
     const lastVisit = localStorage.getItem("last_visit_date");
     const storedStreak = parseInt(localStorage.getItem("current_streak") || "0", 10);
-    const lastRewardClaim = localStorage.getItem("streak_reward_claimed");
+    const challengeStarted = localStorage.getItem("challenge_started");
+    const modalShownToday = localStorage.getItem("modal_shown_date") === today;
 
     if (lastVisit) {
       const lastDate = new Date(lastVisit);
@@ -139,11 +118,6 @@ export function useStreakTracker() {
         const newStreak = storedStreak + 1;
         setCurrentStreak(newStreak);
         localStorage.setItem("current_streak", newStreak.toString());
-        
-        // Show modal at milestone days (3, 5, 7)
-        if ([3, 5, 7].includes(newStreak) && lastRewardClaim !== today) {
-          setShowModal(true);
-        }
       } else if (diffDays === 0) {
         // Same day visit
         setCurrentStreak(storedStreak);
@@ -156,6 +130,12 @@ export function useStreakTracker() {
       // First visit
       setCurrentStreak(1);
       localStorage.setItem("current_streak", "1");
+    }
+
+    // Show modal on first visit or if challenge not started and not shown today
+    if (!challengeStarted && !modalShownToday) {
+      setShowModal(true);
+      localStorage.setItem("modal_shown_date", today);
     }
 
     localStorage.setItem("last_visit_date", today);

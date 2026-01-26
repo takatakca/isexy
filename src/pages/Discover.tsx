@@ -70,16 +70,32 @@ export default function Discover() {
   const currentProfile = profiles[currentIndex];
   const nextProfile = profiles[currentIndex + 1];
 
+  // Detect if text contains Spanish characters/patterns
+  const detectsAsSpanish = (text: string): boolean => {
+    const spanishPatterns = /[áéíóúüñ¿¡]|(\b(el|la|los|las|de|en|que|es|un|una|por|con|para|del|al|como|más|su|se|le|lo|me|te|mi|tu|nos|hola|amor|busco|soy|quiero|gusta|vida|tiempo|mucho|siempre|nunca|también|muy|bien|cuando|donde|porque|aunque|entre|sobre)\b)/i;
+    return spanishPatterns.test(text);
+  };
+
   // Translate bio when profile changes or language changes
   const translateBio = useCallback(async (profileId: string, bio: string) => {
-    if (!bio || !autoTranslate || language.code === 'en') return;
+    if (!bio || !autoTranslate) return;
+    
+    // Auto-translate if bio appears to be in different language than user's preference
+    const bioAppearsSpanish = detectsAsSpanish(bio);
+    const userWantsEnglish = language.code === 'en';
+    const userWantsSpanish = language.code === 'es';
+    
+    // Skip translation if bio matches user's language
+    if ((bioAppearsSpanish && userWantsSpanish) || (!bioAppearsSpanish && userWantsEnglish)) {
+      return;
+    }
     
     try {
       const response = await supabase.functions.invoke("translate-message", {
         body: { text: bio, targetLanguage: language.code }
       });
       
-      if (response.data?.translatedText) {
+      if (response.data?.translatedText && response.data.translatedText !== bio) {
         setTranslatedBios(prev => ({
           ...prev,
           [profileId]: response.data.translatedText

@@ -64,6 +64,8 @@ import AdminEmailTemplates from "./pages/AdminEmailTemplates";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import AgentDashboard from "./pages/AgentDashboard";
 import TouristSignup from "./pages/TouristSignup";
+import WhoLikedYou from "./pages/WhoLikedYou";
+import PassportMode from "./pages/PassportMode";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -136,6 +138,8 @@ const App = () => (
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/tourist-signup" element={<TouristSignup />} />
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
+              <Route path="/who-liked-you" element={<WhoLikedYou />} />
+              <Route path="/passport-mode" element={<PassportMode />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </LanguageProvider>
