@@ -1,6 +1,7 @@
 import { Logo } from "@/components/Logo";
 import { AuthButton } from "@/components/AuthButton";
 import { useNavigate, Link } from "react-router-dom";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 // Social icons as inline SVGs
 const GoogleIcon = () => (
@@ -28,7 +29,12 @@ export default function Welcome() {
   const navigate = useNavigate();
 
   return (
-    <div className="gradient-primary min-h-screen flex flex-col">
+    <div className="gradient-primary min-h-screen flex flex-col relative">
+      {/* Language selector in top right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSelector variant="icon" className="text-white hover:bg-white/20" />
+      </div>
+
       {/* Logo section */}
       <div className="flex-1 flex items-center justify-center pt-16 pb-8">
         <Logo size="xl" variant="light" />

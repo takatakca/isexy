@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
@@ -7,7 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Check, Phone, CreditCard, Video, Mic, Shield } from "lucide-react";
+import { Check, Phone, CreditCard, Video, Mic, Shield, Upload, Camera, X, Image } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -32,18 +33,33 @@ export default function CubanSignup() {
   const [whatsappError, setWhatsappError] = useState("");
   const [whatsappCode, setWhatsappCode] = useState("");
   const [whatsappVerified, setWhatsappVerified] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
   
   const [carnetId, setCarnetId] = useState("");
   const [carnetError, setCarnetError] = useState("");
+  const [carnetFront, setCarnetFront] = useState<File | null>(null);
+  const [carnetBack, setCarnetBack] = useState<File | null>(null);
+  const [carnetFrontPreview, setCarnetFrontPreview] = useState<string | null>(null);
+  const [carnetBackPreview, setCarnetBackPreview] = useState<string | null>(null);
   
-  const [videoVerified, setVideoVerified] = useState(false);
-  const [audioVerified, setAudioVerified] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioPreview, setAudioPreview] = useState<string | null>(null);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const audioRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     if (!loading && user && profile) {
-      // Check if already verified
       checkVerification();
     }
   }, [user, profile, loading]);
@@ -103,10 +119,25 @@ export default function CubanSignup() {
       return;
     }
     setWhatsappError("");
+    setSendingCode(true);
     
-    // Simulate sending code
-    toast.success("Verification code sent to WhatsApp!");
-    // In production, integrate with WhatsApp Business API
+    try {
+      const response = await supabase.functions.invoke("send-whatsapp-otp", {
+        body: { phoneNumber: whatsappNumber, action: "send" }
+      });
+
+      if (response.error) throw response.error;
+      
+      toast.success("Verification code sent to WhatsApp!");
+      
+      // If dev code is returned (for testing), auto-fill it
+      if (response.data?.devCode) {
+        setWhatsappCode(response.data.devCode);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send code");
+    }
+    setSendingCode(false);
   };
 
   const handleVerifyWhatsApp = async () => {
@@ -115,10 +146,43 @@ export default function CubanSignup() {
       return;
     }
     
-    // Simulate verification (in production, verify with backend)
-    setWhatsappVerified(true);
-    toast.success("WhatsApp verified!");
-    setStep("carnet");
+    try {
+      const response = await supabase.functions.invoke("send-whatsapp-otp", {
+        body: { phoneNumber: whatsappNumber, action: "verify", code: whatsappCode }
+      });
+
+      if (response.error) throw response.error;
+      
+      if (response.data?.verified) {
+        setWhatsappVerified(true);
+        toast.success("WhatsApp verified!");
+        setStep("carnet");
+      } else {
+        toast.error(response.data?.error || "Verification failed");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Verification failed");
+    }
+  };
+
+  const handleImageUpload = (type: 'front' | 'back') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    
+    if (type === 'front') {
+      setCarnetFront(file);
+      setCarnetFrontPreview(preview);
+    } else {
+      setCarnetBack(file);
+      setCarnetBackPreview(preview);
+    }
   };
 
   const handleCarnetSubmit = () => {
@@ -127,33 +191,181 @@ export default function CubanSignup() {
       setCarnetError(result.error.errors[0].message);
       return;
     }
+    if (!carnetFront || !carnetBack) {
+      toast.error("Please upload both front and back of your Carnet");
+      return;
+    }
     setCarnetError("");
     setStep("video");
   };
 
-  const handleVideoVerification = () => {
-    // In production, this would open video capture
-    setVideoVerified(true);
-    toast.success("Video verification recorded!");
+  const startVideoRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        const file = new File([blob], 'verification-video.webm', { type: 'video/webm' });
+        setVideoFile(file);
+        setVideoPreview(URL.createObjectURL(blob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecordingVideo(true);
+
+      // Auto-stop after 15 seconds
+      setTimeout(() => {
+        if (mediaRecorderRef.current?.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          setIsRecordingVideo(false);
+        }
+      }, 15000);
+    } catch (error: any) {
+      toast.error("Could not access camera: " + error.message);
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecordingVideo(false);
+    }
+  };
+
+  const handleVideoNext = () => {
+    if (!videoFile) {
+      toast.error("Please record a video first");
+      return;
+    }
     setStep("audio");
   };
 
-  const handleAudioVerification = () => {
-    // In production, this would open audio capture
-    setAudioVerified(true);
-    toast.success("Audio verification recorded!");
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const mediaRecorder = new MediaRecorder(stream);
+      audioRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const file = new File([blob], 'verification-audio.webm', { type: 'audio/webm' });
+        setAudioFile(file);
+        setAudioPreview(URL.createObjectURL(blob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecordingAudio(true);
+
+      // Auto-stop after 30 seconds
+      setTimeout(() => {
+        if (audioRecorderRef.current?.state === 'recording') {
+          audioRecorderRef.current.stop();
+          setIsRecordingAudio(false);
+        }
+      }, 30000);
+    } catch (error: any) {
+      toast.error("Could not access microphone: " + error.message);
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (audioRecorderRef.current?.state === 'recording') {
+      audioRecorderRef.current.stop();
+      setIsRecordingAudio(false);
+    }
+  };
+
+  const handleAudioNext = () => {
+    if (!audioFile) {
+      toast.error("Please record an audio first");
+      return;
+    }
     setStep("complete");
   };
 
+  const uploadFile = async (file: File, path: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from('cuban-verifications')
+      .upload(path, file);
+
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('cuban-verifications')
+      .getPublicUrl(path);
+
+    return urlData.publicUrl;
+  };
+
   const handleSubmitVerification = async () => {
-    if (!profile) {
+    if (!profile || !user) {
       toast.error("Please complete account setup first");
       return;
     }
 
     setIsSubmitting(true);
+    setUploadProgress(0);
 
     try {
+      const userId = user.id;
+      let carnetFrontUrl = null;
+      let carnetBackUrl = null;
+      let videoUrl = null;
+      let audioUrl = null;
+
+      // Upload carnet front
+      if (carnetFront) {
+        setUploadProgress(10);
+        carnetFrontUrl = await uploadFile(carnetFront, `${userId}/carnet-front.jpg`);
+      }
+
+      // Upload carnet back
+      if (carnetBack) {
+        setUploadProgress(30);
+        carnetBackUrl = await uploadFile(carnetBack, `${userId}/carnet-back.jpg`);
+      }
+
+      // Upload video
+      if (videoFile) {
+        setUploadProgress(50);
+        videoUrl = await uploadFile(videoFile, `${userId}/verification-video.webm`);
+      }
+
+      // Upload audio
+      if (audioFile) {
+        setUploadProgress(70);
+        audioUrl = await uploadFile(audioFile, `${userId}/verification-audio.webm`);
+      }
+
+      setUploadProgress(85);
+
       // Update profile as Cuban
       await supabase
         .from("profiles")
@@ -166,12 +378,17 @@ export default function CubanSignup() {
         whatsapp_number: whatsappNumber,
         whatsapp_verified: whatsappVerified,
         carnet_id: carnetId,
-        video_verified: videoVerified,
-        audio_verified: audioVerified,
+        carnet_front_url: carnetFrontUrl,
+        carnet_back_url: carnetBackUrl,
+        video_url: videoUrl,
+        video_verified: !!videoFile,
+        audio_url: audioUrl,
+        audio_verified: !!audioFile,
       } as any);
 
       if (error) throw error;
 
+      setUploadProgress(100);
       toast.success("Verification submitted! We'll review your application within 24 hours.");
       navigate("/profile-setup");
     } catch (error: any) {
@@ -259,9 +476,10 @@ export default function CubanSignup() {
                 </div>
                 <button
                   onClick={handleSendWhatsAppCode}
-                  className="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold whitespace-nowrap hover:bg-green-600 transition h-12"
+                  disabled={sendingCode}
+                  className="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold whitespace-nowrap hover:bg-green-600 transition h-12 disabled:opacity-50"
                 >
-                  Send Code
+                  {sendingCode ? "Sending..." : "Send Code"}
                 </button>
               </div>
 
@@ -309,7 +527,7 @@ export default function CubanSignup() {
             </div>
 
             <p className="text-muted-foreground mb-6">
-              Enter your Cuban ID number (Carnet de Identidad) for verification.
+              Enter your Cuban ID number and upload photos of your Carnet (front and back).
             </p>
 
             <div className="space-y-4 mb-6">
@@ -321,6 +539,67 @@ export default function CubanSignup() {
                 error={carnetError}
                 maxLength={11}
               />
+
+              {/* Carnet Front Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Front of Carnet</label>
+                <div className="relative">
+                  {carnetFrontPreview ? (
+                    <div className="relative rounded-xl overflow-hidden">
+                      <img src={carnetFrontPreview} alt="Carnet front" className="w-full h-40 object-cover" />
+                      <button
+                        onClick={() => { setCarnetFront(null); setCarnetFrontPreview(null); }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-xl cursor-pointer hover:bg-muted/50 transition">
+                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                      <span className="text-sm text-muted-foreground">Upload front photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleImageUpload('front')}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Carnet Back Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Back of Carnet</label>
+                <div className="relative">
+                  {carnetBackPreview ? (
+                    <div className="relative rounded-xl overflow-hidden">
+                      <img src={carnetBackPreview} alt="Carnet back" className="w-full h-40 object-cover" />
+                      <button
+                        onClick={() => { setCarnetBack(null); setCarnetBackPreview(null); }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-xl cursor-pointer hover:bg-muted/50 transition">
+                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                      <span className="text-sm text-muted-foreground">Upload back photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleImageUpload('back')}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               <p className="text-xs text-muted-foreground">
                 Your ID is securely encrypted and only used for verification purposes.
               </p>
@@ -329,7 +608,7 @@ export default function CubanSignup() {
             <AuthButton
               variant="primary"
               onClick={handleCarnetSubmit}
-              disabled={carnetId.length !== 11}
+              disabled={carnetId.length !== 11 || !carnetFront || !carnetBack}
             >
               Continue
             </AuthButton>
@@ -350,29 +629,49 @@ export default function CubanSignup() {
             </div>
 
             <p className="text-muted-foreground mb-6">
-              Record a short video saying your name and showing your face clearly. This helps us prevent scams.
+              Record a short video (max 15 seconds) saying your name and showing your face clearly.
             </p>
 
-            <div className="bg-muted rounded-xl p-6 mb-6 text-center">
-              <Video className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-sm text-muted-foreground mb-4">
-                Click the button below to start recording
-              </p>
-              
-              {videoVerified ? (
-                <div className="flex items-center justify-center gap-2 text-green-600">
-                  <Check className="w-5 h-5" />
-                  <span className="font-semibold">Video Recorded!</span>
+            <div className="bg-muted rounded-xl p-4 mb-6">
+              {videoPreview ? (
+                <div className="relative">
+                  <video src={videoPreview} controls className="w-full rounded-lg" />
+                  <button
+                    onClick={() => { setVideoFile(null); setVideoPreview(null); }}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : isRecordingVideo ? (
+                <div className="space-y-4">
+                  <video ref={videoRef} muted className="w-full rounded-lg" />
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-red-500 font-medium">Recording...</span>
+                  </div>
+                  <Button onClick={stopVideoRecording} variant="destructive" className="w-full">
+                    Stop Recording
+                  </Button>
                 </div>
               ) : (
-                <button
-                  onClick={handleVideoVerification}
-                  className="px-6 py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition"
-                >
-                  Start Recording
-                </button>
+                <div className="text-center py-8">
+                  <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <Button onClick={startVideoRecording} className="bg-purple-500 hover:bg-purple-600">
+                    <Video className="w-4 h-4 mr-2" />
+                    Start Recording
+                  </Button>
+                </div>
               )}
             </div>
+
+            <AuthButton
+              variant="primary"
+              onClick={handleVideoNext}
+              disabled={!videoFile}
+            >
+              Continue
+            </AuthButton>
           </>
         );
 
@@ -390,29 +689,48 @@ export default function CubanSignup() {
             </div>
 
             <p className="text-muted-foreground mb-6">
-              Record a short audio message introducing yourself. This adds an extra layer of verification.
+              Record a short audio message (max 30 seconds) introducing yourself.
             </p>
 
-            <div className="bg-muted rounded-xl p-6 mb-6 text-center">
-              <Mic className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-sm text-muted-foreground mb-4">
-                Click the button below to start recording
-              </p>
-              
-              {audioVerified ? (
-                <div className="flex items-center justify-center gap-2 text-green-600">
-                  <Check className="w-5 h-5" />
-                  <span className="font-semibold">Audio Recorded!</span>
+            <div className="bg-muted rounded-xl p-4 mb-6">
+              {audioPreview ? (
+                <div className="relative">
+                  <audio src={audioPreview} controls className="w-full" />
+                  <button
+                    onClick={() => { setAudioFile(null); setAudioPreview(null); }}
+                    className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : isRecordingAudio ? (
+                <div className="space-y-4 text-center py-8">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-red-500 font-medium">Recording...</span>
+                  </div>
+                  <Button onClick={stopAudioRecording} variant="destructive">
+                    Stop Recording
+                  </Button>
                 </div>
               ) : (
-                <button
-                  onClick={handleAudioVerification}
-                  className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition"
-                >
-                  Start Recording
-                </button>
+                <div className="text-center py-8">
+                  <Mic className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <Button onClick={startAudioRecording} className="bg-orange-500 hover:bg-orange-600">
+                    <Mic className="w-4 h-4 mr-2" />
+                    Start Recording
+                  </Button>
+                </div>
               )}
             </div>
+
+            <AuthButton
+              variant="primary"
+              onClick={handleAudioNext}
+              disabled={!audioFile}
+            >
+              Continue
+            </AuthButton>
           </>
         );
 
@@ -436,7 +754,7 @@ export default function CubanSignup() {
               </div>
               <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
                 <Check className="w-5 h-5 text-green-600" />
-                <span>Carnet ID Submitted</span>
+                <span>Carnet ID Uploaded (Front & Back)</span>
               </div>
               <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
                 <Check className="w-5 h-5 text-green-600" />
@@ -447,6 +765,20 @@ export default function CubanSignup() {
                 <span>Audio Recorded</span>
               </div>
             </div>
+
+            {isSubmitting && (
+              <div className="mb-4">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 text-center">
+                  Uploading files... {uploadProgress}%
+                </p>
+              </div>
+            )}
 
             <AuthButton
               variant="primary"

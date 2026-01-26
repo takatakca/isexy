@@ -122,17 +122,15 @@ Deno.serve(async (req) => {
       "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400",
     ];
 
-    // Generate 1000 profiles
+    // Generate 1000 profiles - NO user_id since these are demo profiles
     for (let i = 0; i < 1000; i++) {
       const isMale = Math.random() > 0.5;
       const city = getRandomElement(cubanCities);
       const age = getRandomAge();
       
-      // Generate a fake user_id (UUID format)
-      const userId = crypto.randomUUID();
-      
       profiles.push({
-        user_id: userId,
+        // Use a placeholder user_id that doesn't reference auth.users
+        // This creates orphaned profiles for demo purposes only
         first_name: isMale ? getRandomElement(maleNames) : getRandomElement(femaleNames),
         birth_date: getRandomBirthDate(age),
         gender: isMale ? "Male" : "Female",
@@ -154,13 +152,53 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Insert in batches of 100
-    for (let i = 0; i < profiles.length; i += 100) {
-      const batch = profiles.slice(i, i + 100);
-      const { error } = await supabase.from("profiles").insert(batch);
-      if (error) {
-        console.error(`Batch ${i / 100} error:`, error);
-        throw error;
+    // First, we need to create fake auth users using service role
+    // Since profiles.user_id has a FK constraint, we need to work around this
+    
+    // Option: Insert profiles with generated UUIDs for user_id 
+    // Since we're using service role, we can bypass RLS
+    // But the FK constraint still applies - we need to create auth users first
+
+    // Create auth users and profiles together
+    let successCount = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < profiles.length; i++) {
+      const profile = profiles[i];
+      const email = `demo${i}@cubadate.test`;
+      const password = crypto.randomUUID();
+
+      try {
+        // Create auth user
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+        });
+
+        if (authError || !authData.user) {
+          errors.push(`User ${i}: ${authError?.message || 'Unknown error'}`);
+          continue;
+        }
+
+        // Insert profile with the real user_id
+        const { error: profileError } = await supabase.from("profiles").insert({
+          ...profile,
+          user_id: authData.user.id,
+        });
+
+        if (profileError) {
+          errors.push(`Profile ${i}: ${profileError.message}`);
+        } else {
+          successCount++;
+        }
+      } catch (err: any) {
+        errors.push(`Batch ${i}: ${err.message}`);
+      }
+
+      // Add small delay every 50 profiles to avoid rate limits
+      if (i > 0 && i % 50 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
@@ -185,7 +223,11 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: `Created ${profiles.length} sample profiles` }),
+      JSON.stringify({ 
+        success: true, 
+        message: `Created ${successCount} sample profiles`,
+        errors: errors.slice(0, 10) // Return first 10 errors for debugging
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

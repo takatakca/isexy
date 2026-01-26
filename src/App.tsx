@@ -5,9 +5,11 @@ import ConsumerHealthPrivacy from "./pages/ConsumerHealthPrivacy";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { LanguageProvider } from "@/hooks/useLanguage";
 import Welcome from "./pages/Welcome";
 import Auth from "./pages/Auth";
 import CubanSignup from "./pages/CubanSignup";
+import AdminVerifications from "./pages/AdminVerifications";
 import PhoneAuth from "./pages/PhoneAuth";
 import CodeVerification from "./pages/CodeVerification";
 import HouseRules from "./pages/HouseRules";
@@ -69,63 +71,66 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Welcome />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/cuban-signup" element={<CubanSignup />} />
-            <Route path="/phone" element={<PhoneAuth />} />
-            <Route path="/verify" element={<CodeVerification />} />
-            <Route path="/house-rules" element={<HouseRules />} />
-            <Route path="/profile-setup" element={<ProfileSetup />} />
-            <Route path="/discover" element={<Discover />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/likes" element={<Likes />} />
-            <Route path="/matches" element={<Messages />} />
-            <Route path="/chat/:matchId" element={<Chat />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/premium" element={<Premium />} />
-            <Route path="/edit-bio" element={<EditBio />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            <Route path="/get-super-likes" element={<GetSuperLikes />} />
-            <Route path="/my-subscription" element={<MySubscription />} />
-            <Route path="/safety" element={<Safety />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/love-stories" element={<LoveStories />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/news" element={<News />} />
-            <Route path="/matches-list" element={<Matches />} />
-            <Route path="/interests" element={<Interests />} />
-            <Route path="/block-contacts" element={<BlockContacts />} />
-            <Route path="/dark-mode" element={<DarkMode />} />
-            <Route path="/autoplay-videos" element={<AutoplayVideos />} />
-            <Route path="/top-picks" element={<TopPicks />} />
-            <Route path="/community-guidelines" element={<CommunityGuidelines />} />
-            <Route path="/safety-tips" element={<SafetyTips />} />
-            <Route path="/cookie-policy" element={<CookiePolicy />} />
-            <Route path="/swipe-surge" element={<SwipeSurge />} />
-            <Route path="/active-status" element={<ActiveStatus />} />
-            <Route path="/friends-in-common" element={<FriendsInCommon />} />
-            <Route path="/email-settings" element={<EmailSettings />} />
-            <Route path="/push-notifications" element={<PushNotifications />} />
-            <Route path="/team-cubadate" element={<TeamCubaDate />} />
-            <Route path="/manage-payment-account" element={<ManagePaymentAccount />} />
-            <Route path="/restore-purchase" element={<RestorePurchase />} />
-            <Route path="/help-support" element={<HelpSupport />} />
-            <Route path="/web-profile" element={<WebProfile />} />
-            <Route path="/delete-account" element={<DeleteAccount />} />
-            <Route path="/licenses" element={<Licenses />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/contact-us" element={<ContactUs />} />
-            <Route path="/ticket-tracking" element={<TicketTracking />} />
-            <Route path="/admin/tickets" element={<AdminTickets />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/categories" element={<AdminCategories />} />
-            <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
-            <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <LanguageProvider>
+            <Routes>
+              <Route path="/" element={<Welcome />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/cuban-signup" element={<CubanSignup />} />
+              <Route path="/phone" element={<PhoneAuth />} />
+              <Route path="/verify" element={<CodeVerification />} />
+              <Route path="/house-rules" element={<HouseRules />} />
+              <Route path="/profile-setup" element={<ProfileSetup />} />
+              <Route path="/discover" element={<Discover />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/likes" element={<Likes />} />
+              <Route path="/matches" element={<Messages />} />
+              <Route path="/chat/:matchId" element={<Chat />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/premium" element={<Premium />} />
+              <Route path="/edit-bio" element={<EditBio />} />
+              <Route path="/edit-profile" element={<EditProfile />} />
+              <Route path="/get-super-likes" element={<GetSuperLikes />} />
+              <Route path="/my-subscription" element={<MySubscription />} />
+              <Route path="/safety" element={<Safety />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/love-stories" element={<LoveStories />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/news" element={<News />} />
+              <Route path="/matches-list" element={<Matches />} />
+              <Route path="/interests" element={<Interests />} />
+              <Route path="/block-contacts" element={<BlockContacts />} />
+              <Route path="/dark-mode" element={<DarkMode />} />
+              <Route path="/autoplay-videos" element={<AutoplayVideos />} />
+              <Route path="/top-picks" element={<TopPicks />} />
+              <Route path="/community-guidelines" element={<CommunityGuidelines />} />
+              <Route path="/safety-tips" element={<SafetyTips />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/swipe-surge" element={<SwipeSurge />} />
+              <Route path="/active-status" element={<ActiveStatus />} />
+              <Route path="/friends-in-common" element={<FriendsInCommon />} />
+              <Route path="/email-settings" element={<EmailSettings />} />
+              <Route path="/push-notifications" element={<PushNotifications />} />
+              <Route path="/team-cubadate" element={<TeamCubaDate />} />
+              <Route path="/manage-payment-account" element={<ManagePaymentAccount />} />
+              <Route path="/restore-purchase" element={<RestorePurchase />} />
+              <Route path="/help-support" element={<HelpSupport />} />
+              <Route path="/web-profile" element={<WebProfile />} />
+              <Route path="/delete-account" element={<DeleteAccount />} />
+              <Route path="/licenses" element={<Licenses />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/contact-us" element={<ContactUs />} />
+              <Route path="/ticket-tracking" element={<TicketTracking />} />
+              <Route path="/admin/tickets" element={<AdminTickets />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/categories" element={<AdminCategories />} />
+              <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
+              <Route path="/admin/verifications" element={<AdminVerifications />} />
+              <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -5,6 +5,7 @@ import { Shield, Settings, Pencil, Star, Zap, Flame, Check, Lock, Image, FileTex
 import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 interface ProfileCompletion {
   photos: number;
@@ -136,8 +137,9 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Settings */}
-          <div className="flex items-center gap-2">
+          {/* Settings and Language */}
+          <div className="flex items-center gap-1">
+            <LanguageSelector variant="icon" />
             <button className="p-2">
               <Shield className="w-6 h-6 text-muted-foreground" />
             </button>
