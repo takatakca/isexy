@@ -11,7 +11,8 @@ import {
   ChevronRight, Crown, Shield, LogOut, Trash2, Star, Zap, 
   EyeOff, Plane, MapPin, Globe, Users, Eye, MessageCircle, 
   Bell, Mail, Moon, Video, Link2, HelpCircle, Phone, CreditCard,
-  Languages, GraduationCap, Heart, MessageSquare, PawPrint, Wine, Cigarette, Dumbbell, Baby, AtSign
+  Languages, GraduationCap, Heart, MessageSquare, PawPrint, Wine, Cigarette, Dumbbell, Baby, AtSign,
+  Gift, Coins
 } from "lucide-react";
 import { BoostsModal } from "@/components/BoostsModal";
 import { PreferenceDrawer } from "@/components/PreferenceDrawer";
@@ -691,20 +692,42 @@ export default function Settings() {
           </SettingCard>
         </section>
 
+        {/* Rewards & Loyalty */}
+        <section className="mb-6">
+          <h2 className="text-lg font-bold text-foreground mb-3">Rewards & Loyalty</h2>
+          <SettingCard className="divide-y divide-border">
+            <SettingRow 
+              icon={Gift} 
+              label="Loyalty Rewards" 
+              onClick={() => navigate("/loyalty-rewards")} 
+              iconColor="text-primary"
+            />
+            {profile?.country === "Cuba" && (
+              <SettingRow 
+                icon={Coins} 
+                label="Cash Out (CUP)" 
+                onClick={() => navigate("/cuban-cashout")} 
+                iconColor="text-green-500"
+              />
+            )}
+            <SettingRow label="Refer a Friend" onClick={() => navigate("/loyalty-rewards")} />
+          </SettingCard>
+        </section>
+
         {/* Community */}
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Community</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Community Guidelines" onClick={() => navigate("/house-rules")} />
             <SettingRow label="Safety Tips" onClick={() => navigate("/safety")} />
-            <SettingRow label="Safety Center" />
+            <SettingRow label="Safety Center" onClick={() => navigate("/safety")} />
           </SettingCard>
         </section>
 
         {/* Share */}
         <section className="mb-6">
           <SettingCard>
-            <SettingRow label="Share CubaDate" />
+            <SettingRow label="Share CubaDate" onClick={() => navigate("/loyalty-rewards")} />
           </SettingCard>
         </section>
 
