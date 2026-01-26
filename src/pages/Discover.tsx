@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, X, Star, RotateCcw, Zap, Loader2 } from "lucide-react";
+import { Heart, X, Star, RotateCcw, Zap, Loader2, Flame } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { SwipeCard } from "@/components/SwipeCard";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { DiscoverCampaigns } from "@/components/DiscoverCampaigns";
+import { ConsistencyChallengeModal, useStreakTracker } from "@/components/ConsistencyChallengeModal";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -53,7 +55,9 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 export default function Discover() {
   const navigate = useNavigate();
   const { profile: userProfile } = useAuth();
-  const { language } = useLanguage();
+  const { language, autoTranslate } = useLanguage();
+  const { currentStreak, showModal, setShowModal } = useStreakTracker();
+  
   const [profiles, setProfiles] = useState<DiscoverProfile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -61,13 +65,14 @@ export default function Discover() {
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | "up" | null>(null);
   const [lastSwiped, setLastSwiped] = useState<DiscoverProfile | null>(null);
   const [translatedBios, setTranslatedBios] = useState<Record<string, string>>({});
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
 
   const currentProfile = profiles[currentIndex];
   const nextProfile = profiles[currentIndex + 1];
 
   // Translate bio when profile changes or language changes
   const translateBio = useCallback(async (profileId: string, bio: string) => {
-    if (!bio || language.code === 'en') return;
+    if (!bio || !autoTranslate || language.code === 'en') return;
     
     try {
       const response = await supabase.functions.invoke("translate-message", {
@@ -83,7 +88,7 @@ export default function Discover() {
     } catch (error) {
       console.error("Translation error:", error);
     }
-  }, [language.code]);
+  }, [language.code, autoTranslate]);
 
   useEffect(() => {
     if (currentProfile?.bio && !translatedBios[currentProfile.id]) {
@@ -302,6 +307,13 @@ export default function Discover() {
   const showNopeIndicator = dragX < -50;
   const showSuperLikeIndicator = dragY < -50 && Math.abs(dragX) < 50;
 
+  // Filter profiles based on verified-only setting
+  const filteredProfiles = showVerifiedOnly 
+    ? profiles.filter(p => p.is_verified) 
+    : profiles;
+  const displayProfile = filteredProfiles[currentIndex];
+  const displayNextProfile = filteredProfiles[currentIndex + 1];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center pb-20">
@@ -312,17 +324,20 @@ export default function Discover() {
     );
   }
 
-  if (!currentProfile) {
+  if (!displayProfile) {
     return (
       <div className="min-h-screen bg-background flex flex-col pb-20">
         <header className="flex items-center justify-between px-4 py-3">
-          <DiscoverFilters onFiltersChange={fetchProfiles} />
+          <DiscoverFilters 
+            onFiltersChange={fetchProfiles} 
+            showVerifiedOnly={showVerifiedOnly}
+            setShowVerifiedOnly={setShowVerifiedOnly}
+          />
           <div className="flex items-center gap-2">
-            <button className="px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm">
-              For You
-            </button>
+            <Flame className="w-5 h-5 text-primary" />
+            <span className="font-bold text-foreground">CubaDate</span>
           </div>
-          <div className="w-10" /> {/* Spacer to balance the header */}
+          <LanguageSelector variant="icon" />
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center px-8">
@@ -337,7 +352,7 @@ export default function Discover() {
           </p>
           <button
             onClick={fetchProfiles}
-            className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-semibold"
+            className="px-6 py-3 gradient-primary text-white rounded-full font-semibold"
           >
             Refresh
           </button>
@@ -349,50 +364,63 @@ export default function Discover() {
   }
 
   const formattedProfile = {
-    id: currentProfile.id,
-    first_name: currentProfile.first_name,
-    age: calculateAge(currentProfile.birth_date),
-    bio: currentProfile.bio,
-    translatedBio: translatedBios[currentProfile.id],
-    city: currentProfile.city,
-    job_title: currentProfile.job_title,
-    company: currentProfile.company,
-    school: currentProfile.school,
-    is_verified: currentProfile.is_verified,
-    distance: userProfile?.latitude && currentProfile.latitude
+    id: displayProfile.id,
+    first_name: displayProfile.first_name,
+    age: calculateAge(displayProfile.birth_date),
+    bio: displayProfile.bio,
+    translatedBio: translatedBios[displayProfile.id],
+    city: displayProfile.city,
+    job_title: displayProfile.job_title,
+    company: displayProfile.company,
+    school: displayProfile.school,
+    is_verified: displayProfile.is_verified,
+    distance: userProfile?.latitude && displayProfile.latitude
       ? calculateDistance(
           userProfile.latitude,
           userProfile.longitude || 0,
-          currentProfile.latitude,
-          currentProfile.longitude || 0
+          displayProfile.latitude,
+          displayProfile.longitude || 0
         )
       : undefined,
-    photos: currentProfile.photos,
+    photos: displayProfile.photos,
   };
 
-  const nextFormattedProfile = nextProfile ? {
-    id: nextProfile.id,
-    first_name: nextProfile.first_name,
-    age: calculateAge(nextProfile.birth_date),
-    bio: nextProfile.bio,
-    translatedBio: translatedBios[nextProfile.id],
-    photos: nextProfile.photos,
+  const nextFormattedProfile = displayNextProfile ? {
+    id: displayNextProfile.id,
+    first_name: displayNextProfile.first_name,
+    age: calculateAge(displayNextProfile.birth_date),
+    bio: displayNextProfile.bio,
+    translatedBio: translatedBios[displayNextProfile.id],
+    photos: displayNextProfile.photos,
   } : null;
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20">
+      {/* Consistency Challenge Modal */}
+      <ConsistencyChallengeModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        currentStreak={currentStreak}
+      />
+
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 z-20">
-        <DiscoverFilters onFiltersChange={fetchProfiles} />
+      <header className="flex items-center justify-between px-4 py-3 z-20 border-b border-border/50">
+        <DiscoverFilters 
+          onFiltersChange={fetchProfiles}
+          showVerifiedOnly={showVerifiedOnly}
+          setShowVerifiedOnly={setShowVerifiedOnly}
+        />
         
         <div className="flex items-center gap-2">
-          <button className="px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm">
-            For You
-          </button>
+          <Flame className="w-5 h-5 text-primary" />
+          <span className="font-bold text-foreground">CubaDate</span>
         </div>
         
         <LanguageSelector variant="icon" />
       </header>
+
+      {/* Campaigns */}
+      <DiscoverCampaigns className="py-3" />
 
       {/* Card stack */}
       <main className="flex-1 flex items-start justify-center px-3 pt-2">

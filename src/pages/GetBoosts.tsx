@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Zap, Timer, Sparkles, Flame } from "lucide-react";
+import { X, Zap, Timer, Sparkles, Flame, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type BoostType = "boost" | "primetime" | "super";
 
@@ -44,8 +46,8 @@ const boostTypeConfig: Record<BoostType, {
   boost: {
     title: "Boost",
     description: "Be a top profile in your area for 30 minutes to get more Likes.",
-    icon: <Zap className="w-6 h-6 text-purple-500" />,
-    headerColor: "from-purple-500 to-purple-600",
+    icon: <Zap className="w-6 h-6 text-white" />,
+    headerColor: "from-purple-500 to-pink-500",
     packages: boostPackages,
     buttonColor: "bg-gradient-to-r from-purple-500 to-pink-500",
     goldUpsell: "1 free Boost a month",
@@ -53,7 +55,7 @@ const boostTypeConfig: Record<BoostType, {
   primetime: {
     title: "Primetime Boost",
     description: "We boost you when the most users are active, so you're seen by more potential matches.",
-    icon: <Timer className="w-6 h-6 text-purple-500" />,
+    icon: <Timer className="w-6 h-6 text-white" />,
     headerColor: "from-purple-400 to-purple-600",
     packages: primetimePackages,
     buttonColor: "bg-gradient-to-r from-purple-500 to-pink-500",
@@ -62,7 +64,7 @@ const boostTypeConfig: Record<BoostType, {
   super: {
     title: "Super Boost",
     description: "Super Boost keeps you front and center for longer, giving you more opportunities to connect.",
-    icon: <Sparkles className="w-6 h-6 text-pink-400" />,
+    icon: <Sparkles className="w-6 h-6 text-white" />,
     headerColor: "from-purple-500 to-pink-500",
     packages: superBoostPackages,
     buttonColor: "bg-gradient-to-r from-purple-500 to-pink-500",
@@ -76,6 +78,7 @@ export default function GetBoosts() {
   const [selectedPackage, setSelectedPackage] = useState<string>(
     activeType === "super" ? "6h" : "10"
   );
+  const [loading, setLoading] = useState(false);
 
   const config = boostTypeConfig[activeType];
   const packages = config.packages;
@@ -95,11 +98,39 @@ export default function GetBoosts() {
     }
   };
 
+  const handlePurchase = async () => {
+    setLoading(true);
+    try {
+      const productName = activeType === "super" 
+        ? `Super Boost (${selected.duration})`
+        : `${selected.quantity} ${config.title}${selected.quantity > 1 ? 's' : ''}`;
+
+      const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
+        body: {
+          productName,
+          quantity: 1,
+          unitAmount: Math.round(total * 100), // Convert to cents
+          description: config.description,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (error) {
+      console.error("Purchase error:", error);
+      toast.error("Failed to start checkout. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4">
-        <button onClick={() => navigate(-1)} className="p-2">
+      <div className="flex items-center justify-between p-4 border-b border-border/50">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-muted/50 rounded-full">
           <X className="w-6 h-6 text-foreground" />
         </button>
         <h1 className="font-bold text-xl text-foreground">Choose your Boost</h1>
@@ -107,18 +138,18 @@ export default function GetBoosts() {
       </div>
 
       {/* Type tabs */}
-      <div className="flex items-center gap-2 px-4 pb-4">
+      <div className="flex items-center gap-2 px-4 py-4 overflow-x-auto scrollbar-hide">
         {(["boost", "primetime", "super"] as BoostType[]).map((type) => (
           <button
             key={type}
             onClick={() => handleTypeChange(type)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
               activeType === type
-                ? "bg-foreground text-background"
-                : "text-muted-foreground border border-border"
+                ? "gradient-primary text-white"
+                : "text-muted-foreground border border-border hover:bg-muted/50"
             }`}
           >
-            {type === "boost" ? "Boost" : type === "primetime" ? "Primetime Boost" : "Super Boost"}
+            {type === "boost" ? "Boost" : type === "primetime" ? "Primetime" : "Super Boost"}
           </button>
         ))}
       </div>
@@ -145,19 +176,19 @@ export default function GetBoosts() {
               onClick={() => setSelectedPackage(pkg.id)}
               className={`w-full p-4 rounded-xl border-2 transition-all relative ${
                 selectedPackage === pkg.id
-                  ? "border-purple-500"
-                  : "border-border"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   {pkg.popular && (
-                    <span className="text-xs font-semibold text-purple-500 mb-1 block">
+                    <span className="text-xs font-semibold text-primary mb-1 block">
                       Popular
                     </span>
                   )}
                   {pkg.bestValue && (
-                    <span className="text-xs font-semibold text-purple-500 mb-1 block">
+                    <span className="text-xs font-semibold text-primary mb-1 block">
                       Best Value
                     </span>
                   )}
@@ -169,7 +200,7 @@ export default function GetBoosts() {
                 </div>
                 <div className="text-right">
                   {pkg.savings && (
-                    <span className="inline-block px-2 py-0.5 bg-muted rounded-full text-xs font-semibold text-muted-foreground mb-1">
+                    <span className="inline-block px-2 py-0.5 bg-primary/10 rounded-full text-xs font-semibold text-primary mb-1">
                       Save {pkg.savings}%
                     </span>
                   )}
@@ -213,8 +244,19 @@ export default function GetBoosts() {
 
       {/* Bottom purchase button */}
       <div className="p-4 border-t border-border">
-        <button className={`w-full py-4 text-white rounded-full font-bold text-lg hover:opacity-90 transition-opacity ${config.buttonColor}`}>
-          Continue for ${total.toFixed(2)} total
+        <button 
+          onClick={handlePurchase}
+          disabled={loading}
+          className={`w-full py-4 text-white rounded-full font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 ${config.buttonColor}`}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            `Continue for $${total.toFixed(2)} CAD`
+          )}
         </button>
       </div>
     </div>
