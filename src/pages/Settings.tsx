@@ -241,16 +241,22 @@ export default function Settings() {
           </SettingCard>
 
           <SettingCard className="p-4">
-            <button className="w-full flex flex-col items-center gap-2">
+            <button 
+              onClick={() => navigate("/who-liked-you")}
+              className="w-full flex flex-col items-center gap-2"
+            >
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                 <EyeOff className="w-6 h-6 text-foreground" />
               </div>
-              <span className="text-sm font-medium text-foreground">Go Incognito</span>
+              <span className="text-sm font-medium text-foreground">Who Liked You</span>
             </button>
           </SettingCard>
 
           <SettingCard className="p-4">
-            <button className="w-full flex flex-col items-center gap-2">
+            <button 
+              onClick={() => navigate("/passport-mode")}
+              className="w-full flex flex-col items-center gap-2"
+            >
               <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
                 <Plane className="w-6 h-6 text-primary" />
               </div>
