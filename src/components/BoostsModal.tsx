@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { X, Zap, Timer } from "lucide-react";
 
 interface BoostsModalProps {
@@ -5,7 +6,7 @@ interface BoostsModalProps {
   onClose: () => void;
   boostsRemaining: number;
   primetimeBoostsRemaining: number;
-  onGetMoreBoosts: () => void;
+  onGetMoreBoosts?: () => void;
 }
 
 export function BoostsModal({
@@ -13,9 +14,15 @@ export function BoostsModal({
   onClose,
   boostsRemaining,
   primetimeBoostsRemaining,
-  onGetMoreBoosts,
 }: BoostsModalProps) {
+  const navigate = useNavigate();
+  
   if (!isOpen) return null;
+
+  const handleGetMoreBoosts = () => {
+    onClose();
+    navigate("/get-boosts");
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50">
@@ -68,7 +75,7 @@ export function BoostsModal({
 
           {/* Get more button */}
           <button
-            onClick={onGetMoreBoosts}
+            onClick={handleGetMoreBoosts}
             className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
           >
             Get more Boosts
