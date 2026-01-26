@@ -197,7 +197,7 @@ const ContactUs = () => {
               <Mail className="w-6 h-6 text-primary" />
             </div>
             <h3 className="font-semibold text-foreground text-sm">Email</h3>
-            <p className="text-xs text-muted-foreground mt-1">support@cubadate.com</p>
+            <p className="text-xs text-muted-foreground mt-1">cubaresort.ca@gmail.com</p>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-4 text-center">
@@ -212,16 +212,24 @@ const ContactUs = () => {
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
               <MapPin className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-semibold text-foreground text-sm">Headquarters</h3>
-            <p className="text-xs text-muted-foreground mt-1">Miami, FL, USA</p>
+            <h3 className="font-semibold text-foreground text-sm">Canada Office</h3>
+            <p className="text-xs text-muted-foreground mt-1">Montreal, QC, Canada</p>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-4 text-center">
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
               <Phone className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-semibold text-foreground text-sm">Phone</h3>
-            <p className="text-xs text-muted-foreground mt-1">+1 (305) 555-DATE</p>
+            <h3 className="font-semibold text-foreground text-sm">Canada Support</h3>
+            <p className="text-xs text-muted-foreground mt-1">+1 450 999 4999</p>
+          </div>
+
+          <div className="bg-card border border-border rounded-xl p-4 text-center col-span-2">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Phone className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="font-semibold text-foreground text-sm">Cuba WhatsApp</h3>
+            <p className="text-xs text-muted-foreground mt-1">+53 5307 1185</p>
           </div>
         </div>
 

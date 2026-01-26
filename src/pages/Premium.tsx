@@ -19,19 +19,19 @@ interface PlanOption {
 
 const planOptions: Record<SubscriptionTier, PlanOption[]> = {
   plus: [
-    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 9.99, totalPrice: 9.99 },
-    { duration: "month", label: "1 Month", weeklyPrice: 6.62, totalPrice: 26.49, savings: 34 },
-    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 3.33, totalPrice: 79.99, savings: 67 },
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 3.75, totalPrice: 3.75 },
+    { duration: "month", label: "1 Month", weeklyPrice: 3.75, totalPrice: 14.99, savings: 0 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 2.50, totalPrice: 59.99, savings: 33 },
   ],
   gold: [
-    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 14.99, totalPrice: 14.99 },
-    { duration: "month", label: "1 Month", weeklyPrice: 7.49, totalPrice: 29.99, savings: 33 },
-    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 4.99, totalPrice: 119.99, savings: 67 },
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 7.50, totalPrice: 7.50 },
+    { duration: "month", label: "1 Month", weeklyPrice: 7.50, totalPrice: 29.99, savings: 0 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 5.00, totalPrice: 119.99, savings: 33 },
   ],
   platinum: [
-    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 19.99, totalPrice: 19.99 },
-    { duration: "month", label: "1 Month", weeklyPrice: 13.24, totalPrice: 52.99, savings: 34 },
-    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 6.66, totalPrice: 159.99, savings: 67 },
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 10.00, totalPrice: 10.00 },
+    { duration: "month", label: "1 Month", weeklyPrice: 10.00, totalPrice: 39.99, savings: 0 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 6.67, totalPrice: 159.99, savings: 33 },
   ],
 };
 
