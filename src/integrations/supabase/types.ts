@@ -124,6 +124,173 @@ export type Database = {
           },
         ]
       }
+      double_date_matches: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          matched_at: string
+          pair1_id: string
+          pair2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          matched_at?: string
+          pair1_id: string
+          pair2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          matched_at?: string
+          pair1_id?: string
+          pair2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_date_matches_pair1_id_fkey"
+            columns: ["pair1_id"]
+            isOneToOne: false
+            referencedRelation: "double_date_pairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "double_date_matches_pair2_id_fkey"
+            columns: ["pair2_id"]
+            isOneToOne: false
+            referencedRelation: "double_date_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      double_date_pairs: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invited_at: string
+          status: string
+          updated_at: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_at?: string
+          status?: string
+          updated_at?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_at?: string
+          status?: string
+          updated_at?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_date_pairs_user1_id_fkey"
+            columns: ["user1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "double_date_pairs_user2_id_fkey"
+            columns: ["user2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      double_date_settings: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          show_double_date_profiles: boolean | null
+          show_friends_on_profile: boolean | null
+          show_me_on_friend_profile: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          show_double_date_profiles?: boolean | null
+          show_friends_on_profile?: boolean | null
+          show_me_on_friend_profile?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          show_double_date_profiles?: boolean | null
+          show_friends_on_profile?: boolean | null
+          show_me_on_friend_profile?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_date_settings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      double_date_swipes: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          swiped_pair_id: string
+          swiper_pair_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          swiped_pair_id: string
+          swiper_pair_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          swiped_pair_id?: string
+          swiper_pair_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_date_swipes_swiped_pair_id_fkey"
+            columns: ["swiped_pair_id"]
+            isOneToOne: false
+            referencedRelation: "double_date_pairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "double_date_swipes_swiper_pair_id_fkey"
+            columns: ["swiper_pair_id"]
+            isOneToOne: false
+            referencedRelation: "double_date_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body_html: string

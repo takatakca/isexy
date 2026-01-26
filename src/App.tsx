@@ -78,7 +78,10 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import VideoCall from "./pages/VideoCall";
+import DatingRegulations from "./pages/DatingRegulations";
 import NotFound from "./pages/NotFound";
+
+import { StreakProvider } from "./components/StreakProvider";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +93,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LanguageProvider>
+            <StreakProvider>
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/auth" element={<Auth />} />
@@ -164,8 +168,10 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/video-call/:matchId" element={<VideoCall />} />
+              <Route path="/dating-regulations" element={<DatingRegulations />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </StreakProvider>
           </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>
