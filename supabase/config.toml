@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.send-ticket-status-update]
 verify_jwt = false
+
+[functions.send-email-otp]
+verify_jwt = false
+
+[functions.send-notification-email]
+verify_jwt = false
+
+[functions.send-verification-notification]
+verify_jwt = false

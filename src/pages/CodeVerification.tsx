@@ -2,18 +2,27 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthButton } from "@/components/AuthButton";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function CodeVerification() {
   const navigate = useNavigate();
   const location = useLocation();
-  const phone = location.state?.phone || "+15144584587";
+  const { signUp } = useAuth();
+  const email = location.state?.email || "";
+  const type = location.state?.type || "verification";
+  const expectedOtp = location.state?.otp || "";
   
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isComplete, setIsComplete] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    // Focus first input on mount
     inputRefs.current[0]?.focus();
   }, []);
 
@@ -21,14 +30,18 @@ export default function CodeVerification() {
     setIsComplete(code.every((digit) => digit !== ""));
   }, [code]);
 
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
-
     const newCode = [...code];
     newCode[index] = value.slice(-1);
     setCode(newCode);
-
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -51,26 +64,80 @@ export default function CodeVerification() {
     inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
   };
 
-  const handleSubmit = () => {
-    if (isComplete) {
-      navigate("/house-rules");
+  const handleResend = async () => {
+    if (countdown > 0 || !email) return;
+    setIsResending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-otp", {
+        body: { email, type },
+      });
+      if (error) throw error;
+      navigate(".", { state: { ...location.state, otp: data.otp }, replace: true });
+      toast.success("New code sent!");
+      setCountdown(60);
+      setCode(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
+    } catch {
+      toast.error("Failed to resend code");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!isComplete) return;
+    const enteredCode = code.join("");
+    setIsVerifying(true);
+
+    try {
+      if (enteredCode !== expectedOtp) {
+        toast.error("Invalid code. Please try again.");
+        setCode(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+        setIsVerifying(false);
+        return;
+      }
+
+      toast.success("Email verified successfully!");
+      
+      if (type === "password_reset") {
+        navigate("/update-password", { state: { email, verified: true } });
+      } else if (type === "verification") {
+        // Complete signup
+        const pending = sessionStorage.getItem("pending_signup");
+        if (pending) {
+          const { email: signupEmail, password } = JSON.parse(pending);
+          await signUp(signupEmail, password);
+          sessionStorage.removeItem("pending_signup");
+        }
+        navigate("/profile-setup");
+      } else {
+        navigate("/house-rules");
+      }
+    } catch {
+      toast.error("Verification failed");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const getTitle = () => {
+    switch (type) {
+      case "password_reset": return "Reset Password";
+      case "login": return "Login Verification";
+      default: return "Verify Your Email";
     }
   };
 
   return (
     <AuthLayout showBack variant="white">
       <div className="flex-1 flex flex-col">
-        {/* Header */}
         <div className="space-y-2 mb-8">
-          <h1 className="text-3xl font-extrabold text-foreground">
-            Enter your code
-          </h1>
-          <p className="text-muted-foreground font-medium">
-            {phone}
-          </p>
+          <h1 className="text-3xl font-extrabold text-foreground">{getTitle()}</h1>
+          <p className="text-muted-foreground font-medium">Enter the 6-digit code sent to</p>
+          <p className="text-foreground font-semibold">{email || "your email"}</p>
         </div>
 
-        {/* Code inputs */}
         <div className="flex justify-center gap-3 mb-6">
           {code.map((digit, index) => (
             <input
@@ -83,30 +150,27 @@ export default function CodeVerification() {
               onChange={(e) => handleChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
               onPaste={handlePaste}
+              disabled={isVerifying}
               className={`w-12 h-16 text-center text-2xl font-bold border-b-2 bg-transparent outline-none transition-all ${
-                digit
-                  ? "border-primary text-foreground"
-                  : "border-muted text-muted-foreground"
-              } focus:border-primary`}
+                digit ? "border-primary text-foreground" : "border-muted text-muted-foreground"
+              } focus:border-primary disabled:opacity-50`}
             />
           ))}
         </div>
 
-        {/* Resend text */}
         <p className="text-muted-foreground text-sm mb-8">
-          Didn't get anything? No worries, let's try again.{" "}
-          <button className="text-primary font-semibold hover:opacity-80 transition-opacity">
-            Resend
-          </button>
+          Didn't get the code?{" "}
+          {countdown > 0 ? (
+            <span>Resend in {countdown}s</span>
+          ) : (
+            <button onClick={handleResend} disabled={isResending} className="text-primary font-semibold hover:opacity-80 disabled:opacity-50">
+              {isResending ? "Sending..." : "Resend"}
+            </button>
+          )}
         </p>
 
-        {/* Submit button */}
-        <AuthButton
-          variant={isComplete ? "primary" : "secondary"}
-          onClick={handleSubmit}
-          disabled={!isComplete}
-        >
-          Next
+        <AuthButton variant={isComplete ? "primary" : "secondary"} onClick={handleSubmit} disabled={!isComplete || isVerifying}>
+          {isVerifying ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify"}
         </AuthButton>
       </div>
     </AuthLayout>

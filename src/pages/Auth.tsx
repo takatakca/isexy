@@ -4,7 +4,10 @@ import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
 import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -62,9 +65,35 @@ export default function Auth() {
         // Navigation handled by useEffect
       }
     } else {
-      const { error } = await signUp(email, password);
-      if (!error) {
-        navigate("/profile-setup");
+      // For signup, first send OTP verification
+      try {
+        const { data, error: otpError } = await supabase.functions.invoke("send-email-otp", {
+          body: { 
+            email, 
+            type: "verification",
+            firstName: email.split("@")[0]
+          },
+        });
+
+        if (otpError) {
+          toast.error("Failed to send verification code");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Store credentials temporarily and navigate to verification
+        sessionStorage.setItem("pending_signup", JSON.stringify({ email, password }));
+        
+        toast.success("Verification code sent to your email!");
+        navigate("/verify", { 
+          state: { 
+            email, 
+            type: "verification",
+            otp: data.otp
+          } 
+        });
+      } catch (err) {
+        toast.error("Failed to send verification code");
       }
     }
 
