@@ -66,6 +66,10 @@ import AgentDashboard from "./pages/AgentDashboard";
 import TouristSignup from "./pages/TouristSignup";
 import WhoLikedYou from "./pages/WhoLikedYou";
 import PassportMode from "./pages/PassportMode";
+import PhotoVerification from "./pages/PhotoVerification";
+import DoubleDate from "./pages/DoubleDate";
+import QAEvents from "./pages/QAEvents";
+import Matchmaker from "./pages/Matchmaker";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -140,6 +144,10 @@ const App = () => (
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
               <Route path="/who-liked-you" element={<WhoLikedYou />} />
               <Route path="/passport-mode" element={<PassportMode />} />
+              <Route path="/photo-verification" element={<PhotoVerification />} />
+              <Route path="/double-date" element={<DoubleDate />} />
+              <Route path="/qa-events" element={<QAEvents />} />
+              <Route path="/matchmaker" element={<Matchmaker />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </LanguageProvider>

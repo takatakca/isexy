@@ -583,14 +583,21 @@ export default function Settings() {
 
         {/* Feature Settings */}
         <section className="mb-6 space-y-3">
-          {["Q&A Events", "Matchmaker", "Top Picks", "Swipe Surge™"].map((feature) => (
-            <SettingCard key={feature}>
-              <div className="p-4">
-                <p className="font-semibold text-foreground mb-1">Manage {feature}</p>
-                <SettingRow label="Settings" onClick={() => navigate(`/${feature.toLowerCase().replace(/[™\s&]/g, '-').replace(/--+/g, '-')}`)} />
-              </div>
-            </SettingCard>
-          ))}
+          <SettingCard>
+            <SettingRow label="Manage Double Date" onClick={() => navigate("/double-date")} />
+          </SettingCard>
+          <SettingCard>
+            <SettingRow label="Manage Q&A Events" onClick={() => navigate("/qa-events")} />
+          </SettingCard>
+          <SettingCard>
+            <SettingRow label="Manage Matchmaker" onClick={() => navigate("/matchmaker")} />
+          </SettingCard>
+          <SettingCard>
+            <SettingRow label="Manage Top Picks" onClick={() => navigate("/top-picks")} />
+          </SettingCard>
+          <SettingCard>
+            <SettingRow label="Manage Swipe Surge™" onClick={() => navigate("/swipe-surge")} />
+          </SettingCard>
         </section>
 
         {/* Active Status */}

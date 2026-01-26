@@ -6,6 +6,8 @@ import { SwipeCard } from "@/components/SwipeCard";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { DiscoverCampaigns } from "@/components/DiscoverCampaigns";
+import { TopPicksCarousel } from "@/components/TopPicksCarousel";
+import { SwipeSurgeNotification, useSwipeSurge } from "@/components/SwipeSurgeNotification";
 import { ConsistencyChallengeModal, useStreakTracker } from "@/components/ConsistencyChallengeModal";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useAuth } from "@/hooks/useAuth";
@@ -57,6 +59,7 @@ export default function Discover() {
   const { profile: userProfile } = useAuth();
   const { language, autoTranslate } = useLanguage();
   const { currentStreak, showModal, setShowModal } = useStreakTracker();
+  const swipeSurge = useSwipeSurge();
   
   const [profiles, setProfiles] = useState<DiscoverProfile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,6 +69,7 @@ export default function Discover() {
   const [lastSwiped, setLastSwiped] = useState<DiscoverProfile | null>(null);
   const [translatedBios, setTranslatedBios] = useState<Record<string, string>>({});
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
+  const [showTopPicks, setShowTopPicks] = useState(true);
 
   const currentProfile = profiles[currentIndex];
   const nextProfile = profiles[currentIndex + 1];
@@ -412,6 +416,13 @@ export default function Discover() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20">
+      {/* Swipe Surge Notification */}
+      <SwipeSurgeNotification
+        isActive={swipeSurge.isActive}
+        multiplier={swipeSurge.multiplier}
+        usersActive={swipeSurge.usersActive}
+      />
+
       {/* Consistency Challenge Modal */}
       <ConsistencyChallengeModal
         isOpen={showModal}
@@ -436,7 +447,10 @@ export default function Discover() {
       </header>
 
       {/* Campaigns */}
-      <DiscoverCampaigns className="py-3" />
+      <DiscoverCampaigns className="py-2" />
+
+      {/* Top Picks Carousel */}
+      {showTopPicks && <TopPicksCarousel className="py-2" />}
 
       {/* Card stack */}
       <main className="flex-1 flex items-start justify-center px-3 pt-2">
