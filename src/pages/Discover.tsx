@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, X, Star, RotateCcw, Zap, Send, Sliders, Loader2 } from "lucide-react";
+import { Heart, X, Star, RotateCcw, Zap, Sliders, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { SwipeCard } from "@/components/SwipeCard";
+import { DiscoverFilters } from "@/components/DiscoverFilters";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -239,17 +240,13 @@ export default function Discover() {
     return (
       <div className="min-h-screen bg-background flex flex-col pb-20">
         <header className="flex items-center justify-between px-4 py-3">
-          <button className="p-2">
-            <Sliders className="w-6 h-6 text-muted-foreground" />
-          </button>
+          <DiscoverFilters onFiltersChange={fetchProfiles} />
           <div className="flex items-center gap-2">
             <button className="px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm">
               For You
             </button>
           </div>
-          <button onClick={() => navigate("/premium")} className="p-2">
-            <Zap className="w-6 h-6 text-purple-500 fill-purple-500" />
-          </button>
+          <div className="w-10" /> {/* Spacer to balance the header */}
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center px-8">
@@ -308,9 +305,7 @@ export default function Discover() {
     <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 z-20">
-        <button className="p-2">
-          <Sliders className="w-6 h-6 text-muted-foreground" />
-        </button>
+        <DiscoverFilters onFiltersChange={fetchProfiles} />
         
         <div className="flex items-center gap-2">
           <button className="px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm">
@@ -321,9 +316,7 @@ export default function Discover() {
           </button>
         </div>
         
-        <button onClick={() => navigate("/premium")} className="p-2">
-          <Zap className="w-6 h-6 text-purple-500 fill-purple-500" />
-        </button>
+        <div className="w-10" /> {/* Spacer to balance header */}
       </header>
 
       {/* Card stack */}

@@ -1,4 +1,4 @@
-import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3, Copy, Check, Maximize2, Minimize2, ArrowUp } from "lucide-react";
+import { ChevronLeft, Search, X, ChevronDown, ChevronUp, SortAsc, Filter, List, Grid3X3, Copy, Check, Maximize2, Minimize2, ArrowUp, Download, Moon, Sun, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LicenseItem {
   name: string;
@@ -567,6 +573,12 @@ const licensesData: LicenseGroup[] = [
     ]
   },
   {
+    author: "Reactive Streams SIG",
+    items: [
+      { name: "reactive-streams", version: "1.0.4", license: "MIT No Attribution" },
+    ]
+  },
+  {
     author: "Retrofit",
     items: [
       { name: "Retrofit", version: "2.11.0", license: "Apache Version 2.0" },
@@ -576,9 +588,75 @@ const licensesData: LicenseGroup[] = [
     ]
   },
   {
+    author: "Roberto Tyley",
+    items: [
+      { name: "Spongy Castle", version: "1.58.0.0", license: "Bouncy Castle Licence" },
+    ]
+  },
+  {
+    author: "Ryan Brooks, Hector Dearman",
+    items: [
+      { name: "Emerge Tools Reaper SDK", version: "1.0.1", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Sam Judd",
+    items: [
+      { name: "Glide", version: "5.0.0-rc01", license: "Apache Version 2.0" },
+      { name: "Glide Annotations", version: "5.0.0-rc01", license: "Apache Version 2.0" },
+      { name: "Glide Compose Integration", version: "1.0.0-beta01", license: "Apache Version 2.0" },
+      { name: "Glide Disk LRU Cache Library", version: "5.0.0-rc01", license: "Apache Version 2.0" },
+      { name: "Glide GIF Decoder Library", version: "5.0.0-rc01", license: "Apache Version 2.0" },
+      { name: "Glide Kotlin Extensions", version: "1.0.0-beta01", license: "Apache Version 2.0" },
+      { name: "Glide OkHttp 3.x Integration", version: "4.16.0", license: "Apache Version 2.0" },
+      { name: "Glide RecyclerView Integration", version: "5.0.0-rc01", license: "Apache Version 2.0" },
+    ]
+  },
+  {
     author: "Segment",
     items: [
       { name: "Analytics-Android", version: "4.11.3", license: "MIT License" },
+    ]
+  },
+  {
+    author: "Sentry Team and Contributors",
+    items: [
+      { name: "Sentry SDK", version: "8.27.1", license: "MIT License" },
+    ]
+  },
+  {
+    author: "Spring",
+    items: [
+      { name: "spring-boot-dependencies", version: "2.7.18", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Square, Inc",
+    items: [
+      { name: "okio", version: "3.16.1", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Square, Inc.",
+    items: [
+      { name: "Adapter: RxJava 2", version: "3.0.0", license: "Apache Version 2.0" },
+      { name: "Converter: Moshi", version: "3.0.0", license: "Apache Version 2.0" },
+      { name: "Converter: Protocol Buffers", version: "3.0.0", license: "Apache Version 2.0" },
+      { name: "Copper", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "Copper (RxJava 2)", version: "1.0.0", license: "Apache Version 2.0" },
+      { name: "moshi", version: "1.15.2", license: "Apache Version 2.0" },
+      { name: "moshi-adapters", version: "1.15.2", license: "Apache Version 2.0" },
+      { name: "okhttp", version: "4.12.0", license: "Apache Version 2.0" },
+      { name: "okio", version: "3.16.1", license: "Apache Version 2.0" },
+      { name: "Picasso", version: "2.8", license: "Apache Version 2.0" },
+      { name: "Retrofit", version: "3.0.0", license: "Apache Version 2.0" },
+      { name: "SQLDelight Android Driver", version: "2.0.2", license: "Apache Version 2.0" },
+      { name: "SQLDelight AndroidX Paging Extensions", version: "2.0.2", license: "Apache Version 2.0" },
+      { name: "SQLDelight Async Driver Extensions", version: "2.0.2", license: "Apache Version 2.0" },
+      { name: "SQLDelight Coroutines Extensions", version: "2.0.2", license: "Apache Version 2.0" },
+      { name: "SQLDelight Multiplatform Runtime", version: "2.0.2", license: "Apache Version 2.0" },
+      { name: "SQLDelight Primitive Column Adapter", version: "2.0.2", license: "Apache Version 2.0" },
+      { name: "SQLDelight RxJava2 Extensions", version: "2.0.2", license: "Apache Version 2.0" },
     ]
   },
   {
@@ -589,9 +667,86 @@ const licensesData: LicenseGroup[] = [
     ]
   },
   {
+    author: "Tatu Saloranta",
+    items: [
+      { name: "Jackson BOM", version: "2.13.5", license: "Apache Version 2.0" },
+      { name: "Jackson-annotations", version: "2.13.5", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "TensorFlow Authors",
+    items: [
+      { name: "TensorFlow Lite Support", version: "1.4.0", license: "Apache Version 2.0" },
+      { name: "TensorFlow Lite Support API", version: "1.4.0", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "The Volley Team",
+    items: [
+      { name: "Volley", version: "1.2.1", license: "Apache Version 2.0" },
+    ]
+  },
+  {
     author: "Timber",
     items: [
       { name: "Timber", version: "5.0.1", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Tinder",
+    items: [
+      { name: "Scissors Library", version: "2.2.0", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Tinder Open Source",
+    items: [
+      { name: "Lifecyle: Android", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "Message Adapter: Built-in", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "Message Adapter: ProtoBuf", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "Scarlet", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "Scarlet Core Internal", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "Scarlet(Core)", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "StateMachine", version: "0.2.0", license: "BSD 3-Clause New or Revised License" },
+      { name: "Stream Adapter: Built-In", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "Stream Adapter: RxJava2", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+      { name: "Websocket OkHttp Plugin", version: "0.1.12", license: "BSD 3-Clause New or Revised License" },
+    ]
+  },
+  {
+    author: "TokBox Clients",
+    items: [
+      { name: "opentok-android-sdk", version: "2.31.1", license: "Software Development Kit (SDK) License Agreement" },
+    ]
+  },
+  {
+    author: "Tom Ball",
+    items: [
+      { name: "j2objc-annotations", version: "2.8", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Niklas Baudy",
+    items: [
+      { name: "Lint Rules RxJava 2", version: "0.13.0", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Piotr Wittchen",
+    items: [
+      { name: "reactivenetwork", version: "3.0.8", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Prateek Srivastava",
+    items: [
+      { name: "RxPreferences", version: "4f0d5087ab", license: "Apache Version 2.0" },
+    ]
+  },
+  {
+    author: "Protocol Buffers",
+    items: [
+      { name: "Protocol Buffers [BOM]", version: "3.25.1", license: "BSD 3-Clause New or Revised License" },
     ]
   },
 ];
@@ -607,8 +762,105 @@ export default function Licenses() {
   const [licenseFilter, setLicenseFilter] = useState<string>('all');
   const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.classList.contains('dark');
+  });
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Toggle dark mode
+  const toggleDarkMode = useCallback(() => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  // Export licenses as text file
+  const exportAsText = useCallback(() => {
+    let textContent = "CubaDate - Open Source Licenses\n";
+    textContent += "=" .repeat(50) + "\n\n";
+    
+    licensesData.forEach(group => {
+      if (group.author) {
+        textContent += `\n${group.author}\n`;
+        textContent += "-".repeat(group.author.length) + "\n";
+      }
+      group.items.forEach(item => {
+        textContent += `\n${item.name} (${item.version})\n`;
+        textContent += `License: ${item.license}\n`;
+      });
+    });
+    
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'cubadate-licenses.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Licenses exported as text file!");
+  }, []);
+
+  // Export licenses as HTML (printable/PDF)
+  const exportAsPDF = useCallback(() => {
+    let htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CubaDate - Open Source Licenses</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #e94057; border-bottom: 2px solid #e94057; padding-bottom: 10px; }
+    h2 { color: #333; margin-top: 30px; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    .library { margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 6px; }
+    .library-name { font-weight: 600; color: #333; }
+    .library-version { color: #666; font-size: 12px; }
+    .library-license { color: #e94057; font-size: 13px; margin-top: 5px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <h1>CubaDate - Open Source Licenses</h1>
+  <p>This application uses the following open source libraries:</p>
+`;
+    
+    licensesData.forEach(group => {
+      if (group.author) {
+        htmlContent += `<h2>${group.author}</h2>`;
+      }
+      group.items.forEach(item => {
+        htmlContent += `
+  <div class="library">
+    <span class="library-name">${item.name}</span>
+    <span class="library-version">${item.version}</span>
+    <div class="library-license">${item.license}</div>
+  </div>`;
+      });
+    });
+    
+    htmlContent += `
+</body>
+</html>`;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+    toast.success("Print dialog opened - save as PDF!");
+  }, []);
 
   // Handle scroll for Back to Top button visibility
   useEffect(() => {
@@ -811,12 +1063,43 @@ export default function Licenses() {
             <ChevronLeft className="w-6 h-6" />
           </button>
           <h1 className="text-primary-foreground text-xl font-semibold">Licenses</h1>
-          <button 
-            onClick={() => setShowSearch(!showSearch)}
-            className="text-primary-foreground p-1 -mr-1"
-          >
-            {showSearch ? <X className="w-6 h-6" /> : <Search className="w-6 h-6" />}
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Dark Mode Toggle */}
+            <button 
+              onClick={toggleDarkMode}
+              className="text-primary-foreground p-1.5"
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="text-primary-foreground p-1.5">
+                  <Download className="w-5 h-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background">
+                <DropdownMenuItem onClick={exportAsText} className="gap-2 cursor-pointer">
+                  <FileText className="w-4 h-4" />
+                  Export as Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportAsPDF} className="gap-2 cursor-pointer">
+                  <Download className="w-4 h-4" />
+                  Export as PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Search Toggle */}
+            <button 
+              onClick={() => setShowSearch(!showSearch)}
+              className="text-primary-foreground p-1.5 -mr-1"
+            >
+              {showSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
         
         {/* Search Input */}
@@ -829,7 +1112,7 @@ export default function Licenses() {
               placeholder="Search libraries, licenses... (Ctrl+F)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white/95 border-0 text-foreground placeholder:text-muted-foreground"
+              className="pl-9 bg-white/95 dark:bg-background border-0 text-foreground placeholder:text-muted-foreground"
               autoFocus
             />
             {searchQuery && (
