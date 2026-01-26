@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Welcome from "./pages/Welcome";
 import Auth from "./pages/Auth";
+import CubanSignup from "./pages/CubanSignup";
 import PhoneAuth from "./pages/PhoneAuth";
 import CodeVerification from "./pages/CodeVerification";
 import HouseRules from "./pages/HouseRules";
@@ -71,6 +72,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Welcome />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/cuban-signup" element={<CubanSignup />} />
             <Route path="/phone" element={<PhoneAuth />} />
             <Route path="/verify" element={<CodeVerification />} />
             <Route path="/house-rules" element={<HouseRules />} />
