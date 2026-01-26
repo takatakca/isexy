@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, MoreVertical, Languages, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Check, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { TypingIndicator } from "@/components/TypingIndicator";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ interface Message {
   sender_id: string;
   created_at: string;
   is_read: boolean;
+  read_at?: string;
   translatedContent?: string;
   isTranslating?: boolean;
 }
@@ -36,7 +38,10 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [translationsEnabled, setTranslationsEnabled] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherIsTyping, setOtherIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (matchId && profile) {
@@ -49,18 +54,19 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
-  // Translate messages when language changes or messages are fetched
+  // Translate messages when language changes
   useEffect(() => {
     if (translationsEnabled && autoTranslate && messages.length > 0) {
       translateAllMessages();
     }
   }, [language.code, translationsEnabled, autoTranslate]);
 
-  // Subscribe to new messages
+  // Subscribe to new messages and typing indicators
   useEffect(() => {
-    if (!matchId) return;
+    if (!matchId || !profile) return;
 
-    const channel = supabase
+    // Messages channel
+    const messagesChannel = supabase
       .channel(`messages-${matchId}`)
       .on(
         "postgres_changes",
@@ -73,7 +79,6 @@ export default function Chat() {
         async (payload) => {
           const newMsg = payload.new as Message;
           
-          // If translation is enabled and it's not our message, translate it
           if (translationsEnabled && autoTranslate && newMsg.sender_id !== profile?.id) {
             const translatedContent = await translateMessage(newMsg.content);
             newMsg.translatedContent = translatedContent;
@@ -81,16 +86,56 @@ export default function Chat() {
           
           setMessages((prev) => [...prev, newMsg]);
           
-          // Mark as read if we're the recipient
           if (newMsg.sender_id !== profile?.id) {
             markAsRead(newMsg.id);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          const updatedMsg = payload.new as Message;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m))
+          );
+        }
+      )
+      .subscribe();
+
+    // Typing indicator channel
+    const typingChannel = supabase
+      .channel(`typing-${matchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "matches",
+          filter: `id=eq.${matchId}`,
+        },
+        (payload) => {
+          const match = payload.new as any;
+          if (match.typing_user_id && match.typing_user_id !== profile?.id) {
+            const typingTime = new Date(match.typing_at).getTime();
+            const now = Date.now();
+            if (now - typingTime < 5000) {
+              setOtherIsTyping(true);
+              setTimeout(() => setOtherIsTyping(false), 3000);
+            }
           }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(typingChannel);
     };
   }, [matchId, profile, translationsEnabled, autoTranslate, language.code]);
 
@@ -119,7 +164,6 @@ export default function Chat() {
       ? match.profile2 
       : match.profile1;
 
-    // Get photo
     const { data: photos } = await supabase
       .from("profile_photos")
       .select("photo_url")
@@ -148,7 +192,6 @@ export default function Chat() {
     } else {
       setMessages(data || []);
       
-      // Mark unread messages as read
       const unreadIds = (data || [])
         .filter((m) => !m.is_read && m.sender_id !== profile?.id)
         .map((m) => m.id);
@@ -156,7 +199,7 @@ export default function Chat() {
       if (unreadIds.length > 0) {
         await supabase
           .from("messages")
-          .update({ is_read: true })
+          .update({ is_read: true, read_at: new Date().toISOString() })
           .in("id", unreadIds);
       }
     }
@@ -178,21 +221,18 @@ export default function Chat() {
   };
 
   const translateAllMessages = async () => {
-    // Only translate messages from the other person
     const messagesToTranslate = messages.filter(
       m => m.sender_id !== profile?.id && !m.translatedContent
     );
 
     if (messagesToTranslate.length === 0) return;
 
-    // Mark messages as translating
     setMessages(prev => prev.map(m => 
       messagesToTranslate.find(mt => mt.id === m.id) 
         ? { ...m, isTranslating: true }
         : m
     ));
 
-    // Translate each message
     for (const msg of messagesToTranslate) {
       const translated = await translateMessage(msg.content);
       setMessages(prev => prev.map(m => 
@@ -206,8 +246,30 @@ export default function Chat() {
   const markAsRead = async (messageId: string) => {
     await supabase
       .from("messages")
-      .update({ is_read: true })
+      .update({ is_read: true, read_at: new Date().toISOString() })
       .eq("id", messageId);
+  };
+
+  const sendTypingIndicator = useCallback(async () => {
+    // Typing indicators use real-time broadcast instead of database updates
+    // This is a UI-only feature using local state
+  }, [matchId, profile]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    if (!isTyping) {
+      setIsTyping(true);
+      sendTypingIndicator();
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 2000);
   };
 
   const handleSend = async () => {
@@ -216,6 +278,7 @@ export default function Chat() {
     setSending(true);
     const content = newMessage.trim();
     setNewMessage("");
+    setIsTyping(false);
 
     const { error } = await supabase.from("messages").insert({
       match_id: matchId,
@@ -227,7 +290,6 @@ export default function Chat() {
       console.error("Error sending message:", error);
       setNewMessage(content);
     } else {
-      // Update last_message_at on match
       await supabase
         .from("matches")
         .update({ last_message_at: new Date().toISOString() })
@@ -250,6 +312,24 @@ export default function Chat() {
       translateAllMessages();
     }
     toast.success(translationsEnabled ? "Translations disabled" : "Translations enabled");
+  };
+
+  const handleVideoCall = () => {
+    if (!profile?.is_premium && profile?.subscription_tier !== "gold" && profile?.subscription_tier !== "platinum") {
+      toast.error("Video calling requires a premium subscription");
+      navigate("/premium");
+      return;
+    }
+    navigate(`/video-call/${matchId}`);
+  };
+
+  const renderReadReceipt = (message: Message) => {
+    if (message.sender_id !== profile?.id) return null;
+    
+    if (message.read_at || message.is_read) {
+      return <CheckCheck className="w-4 h-4 text-primary" />;
+    }
+    return <Check className="w-4 h-4 text-muted-foreground" />;
   };
 
   return (
@@ -277,9 +357,23 @@ export default function Chat() {
                 </div>
               )}
             </div>
-            <span className="font-bold text-foreground">{otherProfile.first_name}</span>
+            <div>
+              <span className="font-bold text-foreground block">{otherProfile.first_name}</span>
+              {otherIsTyping && (
+                <span className="text-xs text-primary">typing...</span>
+              )}
+            </div>
           </div>
         )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleVideoCall}
+          className="text-primary"
+        >
+          <Video className="w-5 h-5" />
+        </Button>
 
         <Button
           variant="ghost"
@@ -333,10 +427,8 @@ export default function Chat() {
                       : "bg-muted text-foreground rounded-bl-md"
                   }`}
                 >
-                  {/* Original message */}
                   <p className="whitespace-pre-wrap break-words">{message.content}</p>
                   
-                  {/* Translated message */}
                   {message.isTranslating && (
                     <div className="flex items-center gap-1 mt-2 pt-2 border-t border-foreground/10">
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -350,18 +442,31 @@ export default function Chat() {
                     </div>
                   )}
                   
-                  <p
-                    className={`text-xs mt-1 ${
-                      isMe ? "text-primary-foreground/70" : "text-muted-foreground"
-                    }`}
-                  >
-                    {format(new Date(message.created_at), "h:mm a")}
-                  </p>
+                  <div className={`flex items-center gap-1 mt-1 ${isMe ? "justify-end" : ""}`}>
+                    <p
+                      className={`text-xs ${
+                        isMe ? "text-primary-foreground/70" : "text-muted-foreground"
+                      }`}
+                    >
+                      {format(new Date(message.created_at), "h:mm a")}
+                    </p>
+                    {renderReadReceipt(message)}
+                  </div>
                 </div>
               </div>
             );
           })
         )}
+        
+        {/* Typing indicator at bottom */}
+        {otherIsTyping && otherProfile && (
+          <div className="flex justify-start">
+            <div className="bg-muted px-4 py-2 rounded-2xl rounded-bl-md">
+              <TypingIndicator name={otherProfile.first_name} />
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </main>
 
@@ -371,7 +476,7 @@ export default function Chat() {
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
             className="flex-1 px-4 py-3 bg-muted rounded-full outline-none focus:ring-2 focus:ring-primary"

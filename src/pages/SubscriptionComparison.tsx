@@ -145,7 +145,7 @@ export default function SubscriptionComparison() {
                 <TableCell key={tier} className="text-center">
                   <div>
                     <span className="text-xl font-bold text-foreground">
-                      ${subscriptionTiers[tier].price}
+                      ${subscriptionTiers[tier].plans[1].totalPrice.toFixed(2)}
                     </span>
                     <span className="text-xs text-muted-foreground">/mo</span>
                   </div>
@@ -161,7 +161,7 @@ export default function SubscriptionComparison() {
               {(["plus", "gold", "platinum"] as SubscriptionTier[]).map((tier) => (
                 <TableCell key={tier} className="text-center">
                   <span className="text-sm text-foreground">
-                    ${subscriptionTiers[tier].weeklyPrice.toFixed(2)}/wk
+                    ${subscriptionTiers[tier].plans[0].weeklyPrice.toFixed(2)}/wk
                   </span>
                 </TableCell>
               ))}

@@ -75,6 +75,9 @@ import CubanCashout from "./pages/CubanCashout";
 import BlockReportFlow from "./pages/BlockReportFlow";
 import SubscriptionComparison from "./pages/SubscriptionComparison";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import ResetPassword from "./pages/ResetPassword";
+import UpdatePassword from "./pages/UpdatePassword";
+import VideoCall from "./pages/VideoCall";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -158,6 +161,9 @@ const App = () => (
               <Route path="/loyalty-rewards" element={<LoyaltyRewards />} />
               <Route path="/cuban-cashout" element={<CubanCashout />} />
               <Route path="/block-report/:userId" element={<BlockReportFlow />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
+              <Route path="/video-call/:matchId" element={<VideoCall />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </LanguageProvider>
