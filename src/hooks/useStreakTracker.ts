@@ -23,6 +23,7 @@ export function useStreakTracker() {
   const [showModal, setShowModal] = useState(false);
   const [earnedBadges, setEarnedBadges] = useState<Badge[]>([]);
   const [newBadge, setNewBadge] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchBadges = useCallback(async () => {
@@ -55,14 +56,18 @@ export function useStreakTracker() {
 
           if (!error) {
             setNewBadge(threshold.type);
+            setShowConfetti(true);
             fetchBadges();
-            // Clear the new badge notification after 3 seconds
-            setTimeout(() => setNewBadge(null), 3000);
           }
         }
       }
     }
   }, [profile?.id, earnedBadges, fetchBadges]);
+
+  const clearNewBadge = useCallback(() => {
+    setNewBadge(null);
+    setShowConfetti(false);
+  }, []);
 
   const updateLastActive = useCallback(async () => {
     if (!profile?.id) return;
@@ -138,6 +143,8 @@ export function useStreakTracker() {
     setShowModal,
     earnedBadges,
     newBadge,
+    showConfetti,
+    clearNewBadge,
     loading,
     hasBadge: (type: string) => earnedBadges.some(b => b.badge_type === type),
   };

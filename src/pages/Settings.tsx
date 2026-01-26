@@ -755,6 +755,7 @@ export default function Settings() {
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Licenses" onClick={() => navigate("/licenses")} />
             <SettingRow label="Terms of Service" onClick={() => navigate("/terms")} />
+            <SettingRow label="Dating Regulations (Canada & Cuba)" onClick={() => navigate("/dating-regulations")} />
           </SettingCard>
         </section>
 
