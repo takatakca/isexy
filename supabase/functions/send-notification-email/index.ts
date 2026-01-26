@@ -14,6 +14,7 @@ interface NotificationEmailRequest {
     senderName?: string;
     messagePreview?: string;
     firstName?: string;
+    recipientEmail?: string;
   };
 }
 

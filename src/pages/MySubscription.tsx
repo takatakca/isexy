@@ -126,30 +126,34 @@ const tierConfig: Record<SubscriptionTier, {
   gradient: string;
   bgColor: string;
   buttonGradient: string;
+  buttonColor: string;
   startingPrice: number;
   label: string;
   accentColor: string;
 }> = {
   plus: {
     gradient: "from-pink-400 to-rose-500",
-    bgColor: "bg-gradient-to-br from-pink-50 to-rose-50",
-    buttonGradient: "from-slate-700 to-slate-900",
+    bgColor: "bg-gradient-to-br from-pink-100 to-rose-100",
+    buttonGradient: "from-rose-500 to-pink-600",
+    buttonColor: "bg-gradient-to-r from-rose-500 to-pink-600",
     startingPrice: 9.99,
     label: "+",
     accentColor: "text-rose-500",
   },
   gold: {
     gradient: "from-yellow-400 to-amber-500",
-    bgColor: "bg-gradient-to-br from-yellow-50 to-amber-50",
-    buttonGradient: "from-slate-700 to-slate-900",
+    bgColor: "bg-gradient-to-br from-yellow-100 to-amber-100",
+    buttonGradient: "from-yellow-500 to-amber-500",
+    buttonColor: "bg-gradient-to-r from-yellow-500 to-amber-500",
     startingPrice: 14.99,
     label: "GOLD",
-    accentColor: "text-amber-500",
+    accentColor: "text-amber-600",
   },
   platinum: {
-    gradient: "from-slate-500 to-slate-700",
-    bgColor: "bg-gradient-to-br from-slate-100 to-slate-200",
-    buttonGradient: "from-slate-700 to-slate-900",
+    gradient: "from-slate-400 to-slate-600",
+    bgColor: "bg-gradient-to-br from-slate-200 to-slate-300",
+    buttonGradient: "from-slate-500 to-slate-700",
+    buttonColor: "bg-gradient-to-r from-slate-500 to-slate-700",
     startingPrice: 19.99,
     label: "PLATINUM",
     accentColor: "text-slate-600",
@@ -294,7 +298,7 @@ export default function MySubscription() {
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 pb-6">
         <button
           onClick={() => navigate("/premium")}
-          className={`w-full py-4 rounded-full font-bold text-lg text-white transition-opacity hover:opacity-90 bg-gradient-to-r ${config.buttonGradient}`}
+          className={`w-full py-4 rounded-full font-bold text-lg text-white transition-opacity hover:opacity-90 ${config.buttonColor}`}
         >
           STARTING AT ${config.startingPrice.toFixed(2)}
         </button>

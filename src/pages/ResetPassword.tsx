@@ -26,21 +26,38 @@ export default function ResetPassword() {
     setIsSubmitting(true);
 
     try {
+      // First check if user exists
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("first_name, user_id")
+        .eq("user_id", email)
+        .limit(1);
+
+      const firstName = profiles?.[0]?.first_name || email.split("@")[0];
+
       // Send OTP via edge function
       const { data, error } = await supabase.functions.invoke("send-email-otp", {
         body: { 
           email, 
           type: "password_reset",
-          firstName: email.split("@")[0]
+          firstName
         },
       });
 
       if (error) {
-        toast.error("Failed to send reset code");
+        console.error("OTP error:", error);
+        toast.error("Failed to send reset code. Please try again.");
+        setIsSubmitting(false);
         return;
       }
 
-      toast.success("Verification code sent!");
+      if (!data?.otp) {
+        toast.error("Failed to generate reset code. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      toast.success("Verification code sent to your email!");
       navigate("/verify", { 
         state: { 
           email, 
@@ -49,7 +66,8 @@ export default function ResetPassword() {
         } 
       });
     } catch (err: any) {
-      toast.error("Failed to send reset code");
+      console.error("Reset error:", err);
+      toast.error("Failed to send reset code. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

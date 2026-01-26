@@ -294,6 +294,34 @@ export default function Chat() {
         .from("matches")
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", matchId);
+
+      // Send email notification to the recipient
+      if (otherProfile) {
+        try {
+          // Get recipient's email through their profile
+          const { data: otherUser } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .eq("id", otherProfile.id)
+            .single();
+
+          if (otherUser?.user_id) {
+            await supabase.functions.invoke("send-notification-email", {
+              body: {
+                email: otherUser.user_id, // Will be resolved in the edge function
+                type: "new_message",
+                data: {
+                  senderName: profile.first_name,
+                  messagePreview: content.substring(0, 50) + (content.length > 50 ? "..." : ""),
+                  firstName: otherProfile.first_name,
+                },
+              },
+            });
+          }
+        } catch (err) {
+          console.error("Failed to send message notification:", err);
+        }
+      }
     }
 
     setSending(false);
@@ -307,11 +335,15 @@ export default function Chat() {
   };
 
   const toggleTranslations = () => {
-    setTranslationsEnabled(!translationsEnabled);
-    if (!translationsEnabled) {
+    const newValue = !translationsEnabled;
+    setTranslationsEnabled(newValue);
+    if (newValue) {
       translateAllMessages();
+    } else {
+      // Clear translations when disabled
+      setMessages(prev => prev.map(m => ({ ...m, translatedContent: undefined })));
     }
-    toast.success(translationsEnabled ? "Translations disabled" : "Translations enabled");
+    toast.success(newValue ? "Translations enabled" : "Translations disabled");
   };
 
   const handleVideoCall = () => {

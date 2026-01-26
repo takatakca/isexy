@@ -286,6 +286,26 @@ export default function Discover() {
               onClick: () => navigate("/matches"),
             },
           });
+
+          // Send email notification to both users about the new match
+          try {
+            // Get current user's email
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email) {
+              await supabase.functions.invoke("send-notification-email", {
+                body: {
+                  email: user.email,
+                  type: "new_match",
+                  data: {
+                    matchName: currentProfile.first_name,
+                    firstName: userProfile.first_name,
+                  },
+                },
+              });
+            }
+          } catch (err) {
+            console.error("Failed to send match notification:", err);
+          }
         }
       }
     }
