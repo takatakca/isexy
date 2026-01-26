@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Users } from "lucide-react";
+import Forum from "@/components/Forum";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ExploreCategory {
   id: string;
@@ -53,6 +56,8 @@ const categories: { section: string; description: string; items: ExploreCategory
 ];
 
 export default function Explore() {
+  const [activeTab, setActiveTab] = useState("discover");
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -60,35 +65,48 @@ export default function Explore() {
         <h1 className="text-3xl font-extrabold text-foreground">Explore</h1>
       </div>
 
-      {/* Categories */}
-      <div className="px-4 space-y-8">
-        {categories.map((section) => (
-          <div key={section.section}>
-            <h2 className="text-lg font-bold text-foreground mb-1">{section.section}</h2>
-            <p className="text-sm text-muted-foreground mb-4">{section.description}</p>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {section.items.map((item) => (
-                <button
-                  key={item.id}
-                  className={`${item.color} relative rounded-2xl p-4 h-40 flex flex-col justify-end text-left transition-transform active:scale-95`}
-                >
-                  {/* User count badge */}
-                  <div className="absolute top-3 right-3 bg-foreground/80 text-background text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {item.count}
-                  </div>
-                  
-                  {/* Emoji */}
-                  <div className="text-5xl mb-2">{item.emoji}</div>
-                  
-                  {/* Title */}
-                  <h3 className="text-white font-bold text-lg leading-tight">{item.title}</h3>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+      {/* Tabs */}
+      <div className="px-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="discover">Discover</TabsTrigger>
+            <TabsTrigger value="forum">Forum</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="discover" className="space-y-8">
+            {categories.map((section) => (
+              <div key={section.section}>
+                <h2 className="text-lg font-bold text-foreground mb-1">{section.section}</h2>
+                <p className="text-sm text-muted-foreground mb-4">{section.description}</p>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  {section.items.map((item) => (
+                    <button
+                      key={item.id}
+                      className={`${item.color} relative rounded-2xl p-4 h-40 flex flex-col justify-end text-left transition-transform active:scale-95`}
+                    >
+                      {/* User count badge */}
+                      <div className="absolute top-3 right-3 bg-foreground/80 text-background text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {item.count}
+                      </div>
+                      
+                      {/* Emoji */}
+                      <div className="text-5xl mb-2">{item.emoji}</div>
+                      
+                      {/* Title */}
+                      <h3 className="text-white font-bold text-lg leading-tight">{item.title}</h3>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="forum">
+            <Forum />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <BottomNav />

@@ -78,8 +78,21 @@ export default function Welcome() {
           </AuthButton>
         </div>
 
+        {/* Cuban signup option */}
+        <div className="mt-4 p-4 bg-white/10 rounded-xl border border-white/20">
+          <p className="text-primary-foreground/90 text-sm mb-3 text-center">
+            🇨🇺 Are you from Cuba? Sign up for FREE with verification!
+          </p>
+          <button
+            onClick={() => navigate("/cuban-signup")}
+            className="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors"
+          >
+            Cuban Registration (Free)
+          </button>
+        </div>
+
         {/* Trouble signing in */}
-        <button className="w-full text-center text-primary-foreground font-semibold py-2 hover:opacity-80 transition-opacity">
+        <button className="w-full text-center text-primary-foreground font-semibold py-2 hover:opacity-80 transition-opacity mt-4">
           Trouble signing in?
         </button>
       </div>

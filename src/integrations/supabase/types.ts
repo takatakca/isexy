@@ -50,6 +50,68 @@ export type Database = {
           },
         ]
       }
+      cuban_verifications: {
+        Row: {
+          audio_verified: boolean
+          carnet_id: string
+          carnet_verified: boolean
+          created_at: string
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          submitted_at: string
+          updated_at: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+          video_verified: boolean
+          whatsapp_number: string
+          whatsapp_verified: boolean
+        }
+        Insert: {
+          audio_verified?: boolean
+          carnet_id: string
+          carnet_verified?: boolean
+          created_at?: string
+          id?: string
+          profile_id: string
+          rejection_reason?: string | null
+          submitted_at?: string
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          video_verified?: boolean
+          whatsapp_number: string
+          whatsapp_verified?: boolean
+        }
+        Update: {
+          audio_verified?: boolean
+          carnet_id?: string
+          carnet_verified?: boolean
+          created_at?: string
+          id?: string
+          profile_id?: string
+          rejection_reason?: string | null
+          submitted_at?: string
+          updated_at?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          video_verified?: boolean
+          whatsapp_number?: string
+          whatsapp_verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuban_verifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body_html: string
@@ -85,6 +147,141 @@ export type Database = {
           variables?: string[] | null
         }
         Relationships: []
+      }
+      forum_categories: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          emoji: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      forum_posts: {
+        Row: {
+          author_id: string | null
+          author_name: string
+          category_id: string
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          reply_count: number
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          author_id?: string | null
+          author_name: string
+          category_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          reply_count?: number
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string
+          category_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          reply_count?: number
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "forum_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_replies: {
+        Row: {
+          author_id: string | null
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name: string
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_replies_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_replies_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matches: {
         Row: {
@@ -224,6 +421,7 @@ export type Database = {
           interested_in: string[] | null
           interests: string[] | null
           is_active: boolean | null
+          is_cuban: boolean | null
           is_premium: boolean | null
           is_verified: boolean | null
           job_title: string | null
@@ -270,6 +468,7 @@ export type Database = {
           interested_in?: string[] | null
           interests?: string[] | null
           is_active?: boolean | null
+          is_cuban?: boolean | null
           is_premium?: boolean | null
           is_verified?: boolean | null
           job_title?: string | null
@@ -316,6 +515,7 @@ export type Database = {
           interested_in?: string[] | null
           interests?: string[] | null
           is_active?: boolean | null
+          is_cuban?: boolean | null
           is_premium?: boolean | null
           is_verified?: boolean | null
           job_title?: string | null
