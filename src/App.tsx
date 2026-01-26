@@ -60,6 +60,9 @@ import AdminTickets from "./pages/AdminTickets";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCategories from "./pages/AdminCategories";
 import AdminEmailTemplates from "./pages/AdminEmailTemplates";
+import KnowledgeBase from "./pages/KnowledgeBase";
+import AgentDashboard from "./pages/AgentDashboard";
+import TouristSignup from "./pages/TouristSignup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -127,6 +130,9 @@ const App = () => (
               <Route path="/admin/categories" element={<AdminCategories />} />
               <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
               <Route path="/admin/verifications" element={<AdminVerifications />} />
+              <Route path="/admin/agent" element={<AgentDashboard />} />
+              <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              <Route path="/tourist-signup" element={<TouristSignup />} />
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

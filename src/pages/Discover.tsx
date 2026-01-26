@@ -68,79 +68,122 @@ export default function Discover() {
   }, [userProfile]);
 
   const fetchProfiles = async () => {
-    if (!userProfile) return;
-
     setLoading(true);
 
-    // Get profiles that the user hasn't swiped on yet
-    const { data: swipedIds } = await supabase
-      .from("swipes")
-      .select("swiped_id")
-      .eq("swiper_id", userProfile.id);
+    try {
+      // Get profiles that the user hasn't swiped on yet
+      const excludeIds: string[] = [];
+      
+      if (userProfile) {
+        excludeIds.push(userProfile.id);
+        
+        const { data: swipedIds } = await supabase
+          .from("swipes")
+          .select("swiped_id")
+          .eq("swiper_id", userProfile.id);
 
-    const excludeIds = [userProfile.id, ...(swipedIds?.map((s) => s.swiped_id) || [])];
-
-    // Get profiles with photos
-    const { data: profilesData, error } = await supabase
-      .from("profiles")
-      .select(`
-        id,
-        first_name,
-        birth_date,
-        bio,
-        city,
-        job_title,
-        company,
-        school,
-        is_verified,
-        latitude,
-        longitude,
-        gender,
-        interested_in
-      `)
-      .eq("is_active", true)
-      .not("id", "in", `(${excludeIds.join(",")})`)
-      .limit(20);
-
-    if (error) {
-      console.error("Error fetching profiles:", error);
-      setLoading(false);
-      return;
-    }
-
-    // Filter profiles based on preferences
-    const filteredProfiles = (profilesData || []).filter((p: any) => {
-      // Check if profile matches user's interested_in
-      if (userProfile.interested_in && userProfile.interested_in.length > 0) {
-        if (!userProfile.interested_in.includes(p.gender)) {
-          return false;
+        if (swipedIds) {
+          excludeIds.push(...swipedIds.map((s) => s.swiped_id));
         }
       }
-      return true;
-    });
 
-    // Get photos for each profile
-    const profilesWithPhotos = await Promise.all(
-      filteredProfiles.map(async (p: any) => {
-        const { data: photos } = await supabase
-          .from("profile_photos")
-          .select("photo_url")
-          .eq("profile_id", p.id)
-          .order("position");
+      // Build base query
+      let query = supabase
+        .from("profiles")
+        .select(`
+          id,
+          first_name,
+          birth_date,
+          bio,
+          city,
+          job_title,
+          company,
+          school,
+          is_verified,
+          latitude,
+          longitude,
+          gender,
+          interested_in
+        `)
+        .eq("is_active", true);
 
-        return {
-          ...p,
-          photos: photos?.map((photo) => photo.photo_url) || [],
-        };
-      })
-    );
+      // Only exclude if we have IDs to exclude
+      if (excludeIds.length > 0) {
+        query = query.not("id", "in", `(${excludeIds.join(",")})`);
+      }
 
-    // Only show profiles with at least one photo
-    const profilesWithAtLeastOnePhoto = profilesWithPhotos.filter((p) => p.photos.length > 0);
+      const { data: profilesData, error } = await query.limit(50);
 
-    setProfiles(profilesWithAtLeastOnePhoto);
-    setCurrentIndex(0);
-    setLoading(false);
+      if (error) {
+        console.error("Error fetching profiles:", error);
+        setLoading(false);
+        return;
+      }
+
+      // Filter profiles based on preferences (with flexible gender matching)
+      let filteredProfiles = profilesData || [];
+      
+      if (userProfile?.interested_in && userProfile.interested_in.length > 0) {
+        const userInterestedIn = userProfile.interested_in.map(g => g.toLowerCase());
+        
+        filteredProfiles = filteredProfiles.filter((p: any) => {
+          const profileGender = (p.gender || "").toLowerCase();
+          // Match various gender formats
+          const genderMatches = 
+            userInterestedIn.includes(profileGender) ||
+            userInterestedIn.includes(profileGender.replace("female", "women").replace("woman", "women")) ||
+            userInterestedIn.includes(profileGender.replace("male", "men").replace("man", "men")) ||
+            (userInterestedIn.includes("women") && ["female", "woman"].includes(profileGender)) ||
+            (userInterestedIn.includes("men") && ["male", "man"].includes(profileGender));
+          
+          return genderMatches;
+        });
+      }
+
+      // If no matching profiles after filter, show all profiles
+      if (filteredProfiles.length === 0 && (profilesData?.length || 0) > 0) {
+        filteredProfiles = profilesData || [];
+      }
+
+      // Get photos for each profile (parallel fetch for performance)
+      const profilesWithPhotos = await Promise.all(
+        filteredProfiles.map(async (p: any) => {
+          const { data: photos } = await supabase
+            .from("profile_photos")
+            .select("photo_url")
+            .eq("profile_id", p.id)
+            .order("position");
+
+          return {
+            ...p,
+            photos: photos?.map((photo) => photo.photo_url) || [],
+          };
+        })
+      );
+
+      // Show profiles with photos first, but also include those without
+      const sortedProfiles = profilesWithPhotos.sort((a, b) => {
+        // Prioritize profiles with photos
+        if (a.photos.length > 0 && b.photos.length === 0) return -1;
+        if (a.photos.length === 0 && b.photos.length > 0) return 1;
+        
+        // Then prioritize nearby profiles if user has location
+        if (userProfile?.latitude && a.latitude && b.latitude) {
+          const distA = calculateDistance(userProfile.latitude, userProfile.longitude || 0, a.latitude, a.longitude || 0);
+          const distB = calculateDistance(userProfile.latitude, userProfile.longitude || 0, b.latitude, b.longitude || 0);
+          return distA - distB;
+        }
+        
+        return 0;
+      });
+
+      setProfiles(sortedProfiles);
+      setCurrentIndex(0);
+    } catch (err) {
+      console.error("Error in fetchProfiles:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSwipe = useCallback(async (action: "like" | "nope" | "super_like") => {
