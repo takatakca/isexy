@@ -73,6 +73,8 @@ import Matchmaker from "./pages/Matchmaker";
 import LoyaltyRewards from "./pages/LoyaltyRewards";
 import CubanCashout from "./pages/CubanCashout";
 import BlockReportFlow from "./pages/BlockReportFlow";
+import SubscriptionComparison from "./pages/SubscriptionComparison";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -142,7 +144,9 @@ const App = () => (
               <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
               <Route path="/admin/verifications" element={<AdminVerifications />} />
               <Route path="/admin/agent" element={<AgentDashboard />} />
+              <Route path="/admin/analytics" element={<AdminAnalytics />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              <Route path="/compare-plans" element={<SubscriptionComparison />} />
               <Route path="/tourist-signup" element={<TouristSignup />} />
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
               <Route path="/who-liked-you" element={<WhoLikedYou />} />

@@ -356,7 +356,7 @@ const AdminDashboard = () => {
         </Tabs>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Button onClick={() => navigate('/admin/tickets')} className="w-full">
             <TicketIcon className="h-4 w-4 mr-2" />
             Manage Tickets
@@ -368,6 +368,10 @@ const AdminDashboard = () => {
           <Button variant="outline" onClick={() => navigate('/admin/verifications')} className="w-full">
             <Shield className="h-4 w-4 mr-2" />
             Cuban Verifications
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/admin/analytics')} className="w-full">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Full Analytics
           </Button>
         </div>
       </div>
