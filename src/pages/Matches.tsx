@@ -2,16 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Flame } from "lucide-react";
+import { Heart, MessageCircle, Flame, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
+import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 
 interface Match {
   id: string;
   matched_at: string;
   last_message_at: string | null;
+  unread_count: number;
+  last_message_read: boolean;
   other_profile: {
     id: string;
     first_name: string;
+    last_active_at: string | null;
     photos: { photo_url: string }[];
   };
 }
@@ -50,25 +54,41 @@ export default function Matches() {
       return;
     }
 
-    // Get photos for each match
+    // Get photos, last_active, and unread messages for each match
     const matchesWithPhotos = await Promise.all(
       (data || []).map(async (match: any) => {
         const otherProfile = match.profile1.id === profile.id ? match.profile2 : match.profile1;
         
-        const { data: photos } = await supabase
-          .from("profile_photos")
-          .select("photo_url")
-          .eq("profile_id", otherProfile.id)
-          .order("position")
-          .limit(1);
+        const [photosResult, profileResult, unreadResult] = await Promise.all([
+          supabase
+            .from("profile_photos")
+            .select("photo_url")
+            .eq("profile_id", otherProfile.id)
+            .order("position")
+            .limit(1),
+          supabase
+            .from("profiles")
+            .select("last_active_at")
+            .eq("id", otherProfile.id)
+            .single(),
+          supabase
+            .from("messages")
+            .select("id, is_read")
+            .eq("match_id", match.id)
+            .neq("sender_id", profile.id)
+            .eq("is_read", false),
+        ]);
 
         return {
           id: match.id,
           matched_at: match.matched_at,
           last_message_at: match.last_message_at,
+          unread_count: unreadResult.data?.length || 0,
+          last_message_read: (unreadResult.data?.length || 0) === 0,
           other_profile: {
             ...otherProfile,
-            photos: photos || [],
+            last_active_at: profileResult.data?.last_active_at || null,
+            photos: photosResult.data || [],
           },
         };
       })
@@ -155,6 +175,21 @@ export default function Matches() {
                       </span>
                     </div>
                   )}
+                  {/* Online status indicator */}
+                  <div className="absolute top-2 right-2">
+                    <OnlineStatusIndicator 
+                      lastActiveAt={match.other_profile.last_active_at} 
+                      size="sm"
+                    />
+                  </div>
+                  {/* Unread badge */}
+                  {match.unread_count > 0 && (
+                    <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">
+                        {match.unread_count > 9 ? "9+" : match.unread_count}
+                      </span>
+                    </div>
+                  )}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 p-2">
                     <p className="text-white text-sm font-semibold truncate">
                       {match.other_profile.first_name}
@@ -172,7 +207,7 @@ export default function Matches() {
                   onClick={() => navigate(`/chat/${match.id}`)}
                   className="w-full flex items-center gap-3 p-3 bg-card rounded-xl border border-border hover:bg-muted/50 transition-colors"
                 >
-                  <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
+                  <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
                     {match.other_profile.photos[0] ? (
                       <img
                         src={match.other_profile.photos[0].photo_url}
@@ -186,18 +221,40 @@ export default function Matches() {
                         </span>
                       </div>
                     )}
+                    {/* Online indicator on avatar */}
+                    <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-card rounded-full">
+                      <OnlineStatusIndicator 
+                        lastActiveAt={match.other_profile.last_active_at} 
+                        size="sm"
+                      />
+                    </div>
                   </div>
-                  <div className="flex-1 text-left">
-                    <h3 className="font-bold text-foreground">
-                      {match.other_profile.first_name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {match.last_message_at
-                        ? `Last message ${format(new Date(match.last_message_at), "MMM d")}`
-                        : "Say hi! 👋"}
-                    </p>
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-foreground truncate">
+                        {match.other_profile.first_name}
+                      </h3>
+                      {match.unread_count > 0 && (
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">
+                            {match.unread_count > 9 ? "9+" : match.unread_count}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      {/* Read receipt indicator */}
+                      {match.last_message_at && match.last_message_read && (
+                        <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      )}
+                      <span className="truncate">
+                        {match.last_message_at
+                          ? `Last message ${format(new Date(match.last_message_at), "MMM d")}`
+                          : "Say hi! 👋"}
+                      </span>
+                    </div>
                   </div>
-                  <MessageCircle className="w-5 h-5 text-primary" />
+                  <MessageCircle className="w-5 h-5 text-primary flex-shrink-0" />
                 </button>
               ))}
             </div>

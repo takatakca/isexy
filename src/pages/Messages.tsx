@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Shield, Search, Smile, X, CreditCard, Smartphone, AlertTriangle } from "lucide-react";
+import { Shield, Search, Smile, X, CreditCard, Smartphone, AlertTriangle, CheckCheck } from "lucide-react";
 import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 
 interface Match {
   id: string;
@@ -12,8 +13,10 @@ interface Match {
     id: string;
     first_name: string;
     photo_url?: string;
+    last_active_at?: string | null;
   };
   last_message_at: string | null;
+  unread_count: number;
 }
 
 const safetySlides = [
@@ -88,28 +91,37 @@ export default function Messages() {
         (data || []).map(async (match) => {
           const otherProfileId = match.profile1_id === profile.id ? match.profile2_id : match.profile1_id;
           
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("id, first_name")
-            .eq("id", otherProfileId)
-            .single();
-
-          const { data: photoData } = await supabase
-            .from("profile_photos")
-            .select("photo_url")
-            .eq("profile_id", otherProfileId)
-            .order("position")
-            .limit(1)
-            .single();
+          const [profileResult, photoResult, unreadResult] = await Promise.all([
+            supabase
+              .from("profiles")
+              .select("id, first_name, last_active_at")
+              .eq("id", otherProfileId)
+              .single(),
+            supabase
+              .from("profile_photos")
+              .select("photo_url")
+              .eq("profile_id", otherProfileId)
+              .order("position")
+              .limit(1)
+              .single(),
+            supabase
+              .from("messages")
+              .select("id")
+              .eq("match_id", match.id)
+              .neq("sender_id", profile.id)
+              .eq("is_read", false),
+          ]);
 
           return {
             id: match.id,
             other_profile: {
               id: otherProfileId,
-              first_name: profileData?.first_name || "Unknown",
-              photo_url: photoData?.photo_url,
+              first_name: profileResult.data?.first_name || "Unknown",
+              photo_url: photoResult.data?.photo_url,
+              last_active_at: profileResult.data?.last_active_at,
             },
             last_message_at: match.last_message_at,
+            unread_count: unreadResult.data?.length || 0,
           };
         })
       );
@@ -282,7 +294,7 @@ export default function Messages() {
                 onClick={() => navigate(`/chat/${match.id}`)}
                 className="w-full flex items-center gap-3 p-3 hover:bg-muted rounded-xl transition-colors"
               >
-                <div className="w-14 h-14 rounded-full bg-muted overflow-hidden">
+                <div className="relative w-14 h-14 rounded-full bg-muted overflow-hidden">
                   {match.other_profile.photo_url ? (
                     <img
                       src={match.other_profile.photo_url}
@@ -294,10 +306,32 @@ export default function Messages() {
                       {match.other_profile.first_name[0]}
                     </div>
                   )}
+                  {/* Online indicator */}
+                  <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-background rounded-full">
+                    <OnlineStatusIndicator 
+                      lastActiveAt={match.other_profile.last_active_at || null} 
+                      size="sm"
+                    />
+                  </div>
                 </div>
-                <div className="flex-1 text-left">
-                  <h3 className="font-semibold text-foreground">{match.other_profile.first_name}</h3>
-                  <p className="text-sm text-muted-foreground">Say something!</p>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground truncate">
+                      {match.other_profile.first_name}
+                    </h3>
+                    {match.unread_count > 0 && (
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <span className="text-xs font-bold text-white">
+                          {match.unread_count > 9 ? "9+" : match.unread_count}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {match.unread_count > 0 
+                      ? `${match.unread_count} new message${match.unread_count > 1 ? "s" : ""}`
+                      : "Say something!"}
+                  </p>
                 </div>
               </button>
             ))}

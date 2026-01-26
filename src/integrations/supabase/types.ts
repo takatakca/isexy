@@ -593,6 +593,7 @@ export type Database = {
           is_premium: boolean | null
           is_verified: boolean | null
           job_title: string | null
+          last_active_at: string | null
           last_boost_at: string | null
           latitude: number | null
           likes_remaining: number | null
@@ -640,6 +641,7 @@ export type Database = {
           is_premium?: boolean | null
           is_verified?: boolean | null
           job_title?: string | null
+          last_active_at?: string | null
           last_boost_at?: string | null
           latitude?: number | null
           likes_remaining?: number | null
@@ -687,6 +689,7 @@ export type Database = {
           is_premium?: boolean | null
           is_verified?: boolean | null
           job_title?: string | null
+          last_active_at?: string | null
           last_boost_at?: string | null
           latitude?: number | null
           likes_remaining?: number | null
@@ -750,6 +753,38 @@ export type Database = {
           {
             foreignKeyName: "reports_reporter_id_fkey"
             columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      streak_badges: {
+        Row: {
+          badge_type: string
+          earned_at: string
+          id: string
+          profile_id: string
+          streak_count: number
+        }
+        Insert: {
+          badge_type: string
+          earned_at?: string
+          id?: string
+          profile_id: string
+          streak_count?: number
+        }
+        Update: {
+          badge_type?: string
+          earned_at?: string
+          id?: string
+          profile_id?: string
+          streak_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streak_badges_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
