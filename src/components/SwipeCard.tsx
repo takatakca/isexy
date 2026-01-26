@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { MapPin, Briefcase, GraduationCap, Heart, BadgeCheck } from "lucide-react";
+import { MapPin, Briefcase, GraduationCap, BadgeCheck, Languages } from "lucide-react";
 
 interface Profile {
   id: string;
   first_name: string;
   age: number;
   bio?: string;
+  translatedBio?: string;
   city?: string;
   job_title?: string;
   company?: string;
@@ -146,8 +147,14 @@ export function SwipeCard({
             className="mt-2 text-left"
           >
             <p className={`text-white/90 text-sm ${showInfo ? "" : "line-clamp-2"}`}>
-              {profile.bio}
+              {profile.translatedBio || profile.bio}
             </p>
+            {profile.translatedBio && (
+              <div className="flex items-center gap-1 mt-1 text-white/60 text-xs">
+                <Languages className="w-3 h-3" />
+                <span>Translated</span>
+              </div>
+            )}
           </button>
         )}
       </div>

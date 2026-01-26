@@ -25,6 +25,7 @@ import Premium from "./pages/Premium";
 import EditBio from "./pages/EditBio";
 import EditProfile from "./pages/EditProfile";
 import GetSuperLikes from "./pages/GetSuperLikes";
+import GetBoosts from "./pages/GetBoosts";
 import MySubscription from "./pages/MySubscription";
 import Safety from "./pages/Safety";
 import Privacy from "./pages/Privacy";
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="/edit-bio" element={<EditBio />} />
               <Route path="/edit-profile" element={<EditProfile />} />
               <Route path="/get-super-likes" element={<GetSuperLikes />} />
+              <Route path="/get-boosts" element={<GetBoosts />} />
               <Route path="/my-subscription" element={<MySubscription />} />
               <Route path="/safety" element={<Safety />} />
               <Route path="/privacy" element={<Privacy />} />

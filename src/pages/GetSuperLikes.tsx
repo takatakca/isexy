@@ -14,7 +14,7 @@ interface Package {
 const packages: Package[] = [
   { id: "3", quantity: 3, pricePerItem: 3.99 },
   { id: "15", quantity: 15, pricePerItem: 3.26, popular: true, savings: 18 },
-  { id: "30", quantity: 30, pricePerItem: 2.49, bestValue: true, savings: 38 },
+  { id: "30", quantity: 30, pricePerItem: 2.49, bestValue: true, savings: 37 },
 ];
 
 export default function GetSuperLikes() {

@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, X, Star, RotateCcw, Zap, Sliders, Loader2 } from "lucide-react";
+import { Heart, X, Star, RotateCcw, Zap, Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { SwipeCard } from "@/components/SwipeCard";
 import { DiscoverFilters } from "@/components/DiscoverFilters";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -51,15 +53,46 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 export default function Discover() {
   const navigate = useNavigate();
   const { profile: userProfile } = useAuth();
+  const { language } = useLanguage();
   const [profiles, setProfiles] = useState<DiscoverProfile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | "up" | null>(null);
   const [lastSwiped, setLastSwiped] = useState<DiscoverProfile | null>(null);
+  const [translatedBios, setTranslatedBios] = useState<Record<string, string>>({});
 
   const currentProfile = profiles[currentIndex];
   const nextProfile = profiles[currentIndex + 1];
+
+  // Translate bio when profile changes or language changes
+  const translateBio = useCallback(async (profileId: string, bio: string) => {
+    if (!bio || language.code === 'en') return;
+    
+    try {
+      const response = await supabase.functions.invoke("translate-message", {
+        body: { text: bio, targetLanguage: language.code }
+      });
+      
+      if (response.data?.translatedText) {
+        setTranslatedBios(prev => ({
+          ...prev,
+          [profileId]: response.data.translatedText
+        }));
+      }
+    } catch (error) {
+      console.error("Translation error:", error);
+    }
+  }, [language.code]);
+
+  useEffect(() => {
+    if (currentProfile?.bio && !translatedBios[currentProfile.id]) {
+      translateBio(currentProfile.id, currentProfile.bio);
+    }
+    if (nextProfile?.bio && !translatedBios[nextProfile.id]) {
+      translateBio(nextProfile.id, nextProfile.bio);
+    }
+  }, [currentProfile, nextProfile, translateBio, translatedBios]);
 
   useEffect(() => {
     if (userProfile) {
@@ -320,6 +353,7 @@ export default function Discover() {
     first_name: currentProfile.first_name,
     age: calculateAge(currentProfile.birth_date),
     bio: currentProfile.bio,
+    translatedBio: translatedBios[currentProfile.id],
     city: currentProfile.city,
     job_title: currentProfile.job_title,
     company: currentProfile.company,
@@ -341,6 +375,7 @@ export default function Discover() {
     first_name: nextProfile.first_name,
     age: calculateAge(nextProfile.birth_date),
     bio: nextProfile.bio,
+    translatedBio: translatedBios[nextProfile.id],
     photos: nextProfile.photos,
   } : null;
 
@@ -354,12 +389,9 @@ export default function Discover() {
           <button className="px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm">
             For You
           </button>
-          <button className="px-4 py-2 text-muted-foreground font-semibold text-sm border border-border rounded-full">
-            Double Date
-          </button>
         </div>
         
-        <div className="w-10" /> {/* Spacer to balance header */}
+        <LanguageSelector variant="icon" />
       </header>
 
       {/* Card stack */}
