@@ -213,6 +213,13 @@ export default function Settings() {
               <p className="text-sm text-muted-foreground">Unlimited Likes & More!</p>
             </button>
           </SettingCard>
+
+          <button 
+            onClick={() => navigate("/compare-plans")}
+            className="w-full text-center text-primary font-semibold mt-2 hover:underline"
+          >
+            Compare all plans →
+          </button>
         </section>
 
         {/* Feature Buttons Grid */}

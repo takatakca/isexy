@@ -276,6 +276,12 @@ export default function Premium() {
 
       {/* Fixed bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 space-y-3">
+        <button 
+          onClick={() => navigate("/compare-plans")}
+          className="w-full text-center text-sm text-primary font-semibold hover:underline"
+        >
+          Compare all plans →
+        </button>
         <p className="text-xs text-muted-foreground text-center">
           By tapping Continue, you will be charged, your subscription will auto-renew for the same price and package length until you cancel, and you agree to our <span className="underline">Terms</span>.
         </p>

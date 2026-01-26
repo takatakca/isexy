@@ -5,11 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthLayout } from "@/components/AuthLayout";
 import { DraggablePhotoUpload } from "@/components/DraggablePhotoUpload";
 import { PreferenceDrawer } from "@/components/PreferenceDrawer";
+import { ProfilePromptEditor } from "@/components/ProfilePromptEditor";
+import { PromptAnswer } from "@/lib/profilePrompts";
 import { toast } from "sonner";
 import { 
   ChevronRight, Camera, User, Briefcase, GraduationCap, MapPin, 
   FileText, Heart, MessageSquare, PawPrint, Wine, Cigarette, 
-  Dumbbell, Baby, Languages, AtSign, Eye, Sparkles
+  Dumbbell, Baby, Languages, AtSign, Eye, Sparkles, Quote
 } from "lucide-react";
 import {
   LOOKING_FOR_OPTIONS,
@@ -63,6 +65,7 @@ export default function EditProfile() {
   const [smoking, setSmoking] = useState("");
   const [workout, setWorkout] = useState("");
   const [socialMedia, setSocialMedia] = useState("");
+  const [prompts, setPrompts] = useState<PromptAnswer[]>([]);
   
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
 
@@ -82,6 +85,20 @@ export default function EditProfile() {
       setDrinking(profile.drinking || "");
       setSmoking(profile.smoking || "");
       setWorkout(profile.workout || "");
+      
+      // Load prompts from profile
+      if (profile.prompts) {
+        try {
+          const parsedPrompts = typeof profile.prompts === 'string' 
+            ? JSON.parse(profile.prompts) 
+            : profile.prompts;
+          if (Array.isArray(parsedPrompts)) {
+            setPrompts(parsedPrompts);
+          }
+        } catch (e) {
+          console.error('Failed to parse prompts:', e);
+        }
+      }
       
       fetchPhotos();
     }
@@ -122,6 +139,7 @@ export default function EditProfile() {
         drinking,
         smoking,
         workout,
+        prompts: JSON.parse(JSON.stringify(prompts)),
       })
       .eq("id", profile.id);
 
@@ -306,6 +324,22 @@ export default function EditProfile() {
           <PreferenceRow icon={Cigarette} label="Smoking" value={smoking} onClick={() => setActiveDrawer("smoking")} />
           <PreferenceRow icon={Dumbbell} label="Workout" value={workout} onClick={() => setActiveDrawer("workout")} />
           <PreferenceRow icon={AtSign} label="Social Media" value={socialMedia} onClick={() => setActiveDrawer("socialMedia")} />
+        </div>
+
+        {/* Profile Prompts */}
+        <SectionHeader title="Prompts" />
+        <div className="mb-2">
+          <div className="flex items-center gap-2 mb-3">
+            <Quote className="w-5 h-5 text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Add prompts to help start conversations
+            </p>
+          </div>
+          <ProfilePromptEditor
+            prompts={prompts}
+            onChange={setPrompts}
+            maxPrompts={3}
+          />
         </div>
 
         {/* Interests Link */}
