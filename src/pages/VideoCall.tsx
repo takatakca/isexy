@@ -1,12 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Video, VideoOff, Mic, MicOff, Phone, 
-  RotateCcw, Maximize2, MessageCircle, X 
+  RotateCcw, Maximize2, MessageCircle, X, Coins, AlertCircle 
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const CREDIT_COST_PER_MINUTE = 1;
 
 export default function VideoCall() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -17,27 +30,51 @@ export default function VideoCall() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [otherProfile, setOtherProfile] = useState<{ first_name: string; photo_url?: string } | null>(null);
+  const [creditsUsed, setCreditsUsed] = useState(0);
+  const [userCredits, setUserCredits] = useState(0);
+  const [lowCreditsWarning, setLowCreditsWarning] = useState(false);
+  const [otherProfile, setOtherProfile] = useState<{ first_name: string; photo_url?: string; id: string } | null>(null);
+  const [callSessionId, setCallSessionId] = useState<string | null>(null);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const creditTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!profile?.is_premium && profile?.subscription_tier !== "gold" && profile?.subscription_tier !== "platinum") {
-      toast.error("Video calling requires a premium subscription");
-      navigate(-1);
-      return;
-    }
-    
+    fetchUserCredits();
     fetchOtherProfile();
-    initializeCall();
     
     return () => {
       endCall();
     };
   }, [matchId, profile]);
+
+  const fetchUserCredits = async () => {
+    if (!profile?.id) return;
+
+    const { data } = await supabase
+      .from("user_credits")
+      .select("credits")
+      .eq("profile_id", profile.id)
+      .maybeSingle();
+
+    if (data) {
+      setUserCredits(data.credits);
+      if (data.credits < 5) {
+        setLowCreditsWarning(true);
+      }
+    } else {
+      // Create credits record if doesn't exist
+      await supabase.from("user_credits").insert({
+        profile_id: profile.id,
+        credits: 0,
+      });
+      setLowCreditsWarning(true);
+    }
+  };
 
   const fetchOtherProfile = async () => {
     if (!profile || !matchId) return;
@@ -64,14 +101,92 @@ export default function VideoCall() {
         .limit(1);
 
       setOtherProfile({
+        id: (other as any).id,
         first_name: (other as any).first_name,
         photo_url: photos?.[0]?.photo_url,
       });
+
+      if (userCredits >= 1) {
+        initializeCall();
+      }
     }
   };
 
+  const createCallSession = async () => {
+    if (!profile?.id || !matchId || !otherProfile?.id) return null;
+
+    const { data, error } = await supabase
+      .from("video_call_sessions")
+      .insert({
+        match_id: matchId,
+        caller_id: profile.id,
+        receiver_id: otherProfile.id,
+        status: "connecting",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to create call session:", error);
+      return null;
+    }
+
+    setCallSessionId(data.id);
+    return data.id;
+  };
+
+  const deductCredit = useCallback(async () => {
+    if (!profile?.id) return false;
+
+    // Get current credits
+    const { data: creditData } = await supabase
+      .from("user_credits")
+      .select("credits")
+      .eq("profile_id", profile.id)
+      .single();
+
+    if (!creditData || creditData.credits < CREDIT_COST_PER_MINUTE) {
+      toast.error("Insufficient credits! Call ending.");
+      handleEndCall();
+      return false;
+    }
+
+    // Deduct credit
+    const { error: updateError } = await supabase
+      .from("user_credits")
+      .update({ credits: creditData.credits - CREDIT_COST_PER_MINUTE })
+      .eq("profile_id", profile.id);
+
+    if (updateError) {
+      console.error("Failed to deduct credit:", updateError);
+      return false;
+    }
+
+    // Record transaction
+    await supabase.from("credit_transactions").insert({
+      profile_id: profile.id,
+      type: "video_call",
+      amount: -CREDIT_COST_PER_MINUTE,
+      description: `Video call minute`,
+      video_call_id: callSessionId,
+    });
+
+    setCreditsUsed(prev => prev + CREDIT_COST_PER_MINUTE);
+    setUserCredits(prev => prev - CREDIT_COST_PER_MINUTE);
+
+    // Warn at 3 credits remaining
+    if (creditData.credits - CREDIT_COST_PER_MINUTE <= 3) {
+      toast.warning(`Only ${creditData.credits - CREDIT_COST_PER_MINUTE} credits remaining!`);
+    }
+
+    return true;
+  }, [profile?.id, callSessionId]);
+
   const initializeCall = async () => {
     try {
+      // Create call session first
+      await createCallSession();
+
       // Get local media stream
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -84,14 +199,54 @@ export default function VideoCall() {
         localVideoRef.current.srcObject = stream;
       }
 
-      // Simulate connection (in real app, use WebRTC signaling)
+      // Initialize WebRTC peer connection
+      const configuration: RTCConfiguration = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ],
+      };
+
+      peerConnectionRef.current = new RTCPeerConnection(configuration);
+
+      // Add local tracks to peer connection
+      stream.getTracks().forEach(track => {
+        peerConnectionRef.current?.addTrack(track, stream);
+      });
+
+      // Handle remote stream
+      peerConnectionRef.current.ontrack = (event) => {
+        if (remoteVideoRef.current && event.streams[0]) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      // Handle ICE candidates
+      peerConnectionRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          // In production, send candidate to signaling server
+          console.log("ICE candidate:", event.candidate);
+        }
+      };
+
+      // Simulate connection (in production, use signaling server)
       setTimeout(() => {
         setCallStatus("ringing");
         
         // Simulate answer after 3 seconds
-        setTimeout(() => {
+        setTimeout(async () => {
           setCallStatus("connected");
+          
+          // Update session status
+          if (callSessionId) {
+            await supabase
+              .from("video_call_sessions")
+              .update({ status: "connected" })
+              .eq("id", callSessionId);
+          }
+
           startTimer();
+          startCreditDeduction();
         }, 3000);
       }, 1000);
 
@@ -108,13 +263,44 @@ export default function VideoCall() {
     }, 1000);
   };
 
-  const endCall = () => {
+  const startCreditDeduction = () => {
+    // Deduct immediately for first minute
+    deductCredit();
+
+    // Then deduct every minute
+    creditTimerRef.current = setInterval(() => {
+      deductCredit();
+    }, 60000); // Every minute
+  };
+
+  const endCall = async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
     
+    if (creditTimerRef.current) {
+      clearInterval(creditTimerRef.current);
+    }
+    
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+    }
+
+    // Update call session
+    if (callSessionId) {
+      await supabase
+        .from("video_call_sessions")
+        .update({
+          status: "ended",
+          ended_at: new Date().toISOString(),
+          duration_seconds: callDuration,
+          credits_used: creditsUsed,
+        })
+        .eq("id", callSessionId);
     }
     
     setCallStatus("ended");
@@ -148,6 +334,34 @@ export default function VideoCall() {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
+
+  // Low credits warning dialog
+  if (lowCreditsWarning && userCredits < 1) {
+    return (
+      <AlertDialog open={true}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-amber-500" />
+              Insufficient Credits
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Video calls cost {CREDIT_COST_PER_MINUTE} credit per minute. You need at least 1 credit to start a call.
+              <div className="mt-4 p-3 bg-muted rounded-lg">
+                <p className="text-foreground font-medium">Your balance: {userCredits} credits</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => navigate(-1)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => navigate("/buy-credits")}>
+              Buy Credits
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex flex-col relative">
@@ -186,12 +400,23 @@ export default function VideoCall() {
           </div>
         )}
 
-        {/* Call duration */}
+        {/* Credits & Duration display */}
         {callStatus === "connected" && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 rounded-full">
-            <span className="text-white font-medium">{formatDuration(callDuration)}</span>
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+            <div className="px-4 py-2 bg-black/50 rounded-full flex items-center gap-2">
+              <span className="text-white font-medium">{formatDuration(callDuration)}</span>
+            </div>
+            <div className="px-4 py-2 bg-amber-500/80 rounded-full flex items-center gap-2">
+              <Coins className="w-4 h-4 text-white" />
+              <span className="text-white font-medium">{userCredits} credits</span>
+            </div>
           </div>
         )}
+
+        {/* Cost indicator */}
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 text-white/60 text-xs">
+          ${CREDIT_COST_PER_MINUTE}/min
+        </div>
 
         {/* Close button */}
         <button

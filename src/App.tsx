@@ -82,9 +82,13 @@ import DatingRegulations from "./pages/DatingRegulations";
 import BuyCredits from "./pages/BuyCredits";
 import GroupChat from "./pages/GroupChat";
 import CategorySwipe from "./pages/CategorySwipe";
+import Referrals from "./pages/Referrals";
+import ModeratorLogin from "./pages/ModeratorLogin";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
+import { AIChatWidget } from "./components/AIChatWidget";
 
 const queryClient = new QueryClient();
 
@@ -175,8 +179,13 @@ const App = () => (
               <Route path="/buy-credits" element={<BuyCredits />} />
               <Route path="/group-chat/:groupId" element={<GroupChat />} />
               <Route path="/explore/:category" element={<CategorySwipe />} />
+              <Route path="/referrals" element={<Referrals />} />
+              <Route path="/staff-login" element={<ModeratorLogin />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/agent-dashboard" element={<AgentDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <AIChatWidget />
             </StreakProvider>
           </LanguageProvider>
         </AuthProvider>
