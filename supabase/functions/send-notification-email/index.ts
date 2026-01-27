@@ -8,13 +8,14 @@ const corsHeaders = {
 
 interface NotificationEmailRequest {
   email: string;
-  type: "new_match" | "new_message" | "super_like" | "profile_boost" | "welcome";
+  type: "new_match" | "new_message" | "super_like" | "profile_boost" | "welcome" | "video_call_request";
   data?: {
     matchName?: string;
     senderName?: string;
     messagePreview?: string;
     firstName?: string;
     recipientEmail?: string;
+    fromName?: string;
   };
 }
 
@@ -134,6 +135,39 @@ const handler = async (req: Request): Promise<Response> => {
                     <a href="https://cubadate.com/likes" class="button">See Who →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px;">Super Likes are 3x more likely to lead to a match!</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `;
+        break;
+
+      case "video_call_request":
+        subject = `📹 Video call request on CubaDate`;
+        htmlContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #9C27B0, #673AB7); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
+                .content { background: #fff; padding: 40px; border-radius: 0 0 16px 16px; border: 1px solid #e0e0e0; }
+                .button { display: inline-block; background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>📹 Video Call</h1>
+                </div>
+                <div class="content">
+                  <p style="font-size: 18px;">Hey ${firstName}!</p>
+                  <p><strong>${data.fromName || data.senderName || "Your match"}</strong> wants to video chat with you! Don't miss the chance to connect face-to-face.</p>
+                  <center>
+                    <a href="https://cubadate.com/matches" class="button">Open App →</a>
+                  </center>
+                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Video calls help you build real connections faster!</p>
                 </div>
               </div>
             </body>

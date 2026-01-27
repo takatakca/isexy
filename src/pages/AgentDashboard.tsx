@@ -10,7 +10,8 @@ import {
   Phone,
   MoreVertical,
   AlertCircle,
-  Loader2
+  Loader2,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,11 +216,21 @@ export default function AgentDashboard() {
       {/* Sidebar */}
       <div className="w-80 border-r border-border flex flex-col">
         <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-muted rounded-full">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl font-bold">Agent Dashboard</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate(-1)} className="p-2 hover:bg-muted rounded-full">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h1 className="text-xl font-bold">Agent Dashboard</h1>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/admin/knowledge-base")}
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Knowledge Base
+            </Button>
           </div>
           
           {/* Stats */}
