@@ -128,7 +128,7 @@ export default function Profile() {
             
             <div className="flex items-center gap-2">
               <button
-                onClick={() => navigate("/profile-setup")}
+                onClick={() => navigate("/edit-profile")}
                 className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm"
               >
                 <Pencil className="w-4 h-4" />
@@ -171,29 +171,44 @@ export default function Profile() {
 
       {/* Action Cards */}
       <div className="p-4 space-y-3">
-        {actionCards.map((card) => (
-          <button
-            key={card.id}
-            onClick={() => navigate("/profile-setup")}
-            className="w-full flex items-center gap-4 p-4 bg-background rounded-2xl shadow-sm"
-          >
-            <div className={`relative ${card.iconBg} p-3 rounded-xl`}>
-              <card.icon className={`w-6 h-6 ${card.iconColor}`} />
-              <span className="absolute -bottom-1 -right-1 text-xs font-bold text-rose-500">
-                {card.boost}
-              </span>
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="font-semibold text-foreground">{card.title}</h3>
-              <p className="text-sm text-muted-foreground">{card.description}</p>
-            </div>
-            {card.completed ? (
-              <Check className="w-5 h-5 text-green-500" />
-            ) : (
-              <div className="w-8 h-8 border-2 border-muted-foreground/20 rounded-full" />
-            )}
-          </button>
-        ))}
+        {actionCards.map((card) => {
+          const getActionPath = () => {
+            switch (card.id) {
+              case "photos":
+                return "/edit-profile";
+              case "bio":
+                return "/edit-bio";
+              case "verified":
+                return "/photo-verification";
+              default:
+                return "/edit-profile";
+            }
+          };
+          
+          return (
+            <button
+              key={card.id}
+              onClick={() => navigate(getActionPath())}
+              className="w-full flex items-center gap-4 p-4 bg-background rounded-2xl shadow-sm"
+            >
+              <div className={`relative ${card.iconBg} p-3 rounded-xl`}>
+                <card.icon className={`w-6 h-6 ${card.iconColor}`} />
+                <span className="absolute -bottom-1 -right-1 text-xs font-bold text-rose-500">
+                  {card.boost}
+                </span>
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="font-semibold text-foreground">{card.title}</h3>
+                <p className="text-sm text-muted-foreground">{card.description}</p>
+              </div>
+              {card.completed ? (
+                <Check className="w-5 h-5 text-green-500" />
+              ) : (
+                <div className="w-8 h-8 border-2 border-muted-foreground/20 rounded-full" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Quick Actions */}

@@ -86,6 +86,7 @@ import Referrals from "./pages/Referrals";
 import ModeratorLogin from "./pages/ModeratorLogin";
 import Onboarding from "./pages/Onboarding";
 import WebSignup from "./pages/WebSignup";
+import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -160,6 +161,7 @@ const App = () => (
               <Route path="/admin/verifications" element={<AdminVerifications />} />
               <Route path="/admin/agent" element={<AgentDashboard />} />
               <Route path="/admin/analytics" element={<AdminAnalytics />} />
+              <Route path="/admin/knowledge-base" element={<AdminKnowledgeBase />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/compare-plans" element={<SubscriptionComparison />} />
               <Route path="/tourist-signup" element={<TouristSignup />} />
