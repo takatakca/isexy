@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageCircle, X, Send, Loader2, Bot, User, ArrowRight } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Bot, User, ArrowRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,24 +14,39 @@ interface Message {
   created_at: string;
 }
 
-interface KnowledgeArticle {
-  title: string;
-  content: string;
+interface QuickQuestion {
+  label: string;
+  icon: string;
+  query: string;
 }
 
-// Predefined responses based on keywords
+const quickQuestions: QuickQuestion[] = [
+  { label: "Billing", icon: "💳", query: "How do subscription plans and billing work?" },
+  { label: "Credits", icon: "🪙", query: "How do credits work for video calls?" },
+  { label: "Privacy", icon: "🔒", query: "How can I control my privacy settings?" },
+  { label: "Safety", icon: "🛡️", query: "How do I report or block someone?" },
+  { label: "Matches", icon: "💕", query: "How can I get more matches?" },
+  { label: "Verification", icon: "✓", query: "How do I verify my profile?" },
+];
+
+// Comprehensive knowledge base responses
 const knowledgeResponses: Record<string, string> = {
-  "premium": "CubaDate offers three subscription tiers:\n\n**Gold** - $14.99/month: Unlimited likes, see who likes you, 5 Super Likes/day\n\n**Platinum** - $29.99/month: All Gold features plus priority profile, read receipts, and advanced filters\n\n**Diamond** - $49.99/month: All Platinum features plus Passport mode, profile boosts, and video calls\n\nWould you like help subscribing?",
-  "subscription": "To manage your subscription:\n1. Go to Settings\n2. Tap 'My Subscription'\n3. Choose your plan or modify existing one\n\nYou can cancel anytime and your benefits continue until the end of the billing period.",
-  "credits": "Credits are used for video calls ($1/minute) and special features.\n\n**How to get credits:**\n- Purchase directly in Buy Credits\n- Refer friends (10 credits each)\n- Loyalty rewards\n\nWould you like to buy credits now?",
-  "video": "Video calls cost 1 credit per minute. To start a video call:\n1. Open a chat with your match\n2. Tap the video icon\n3. Both users need credits to participate\n\nMake sure you have a stable internet connection!",
-  "match": "When both you and another user swipe right on each other, you'll get a match! You can then:\n- Send messages\n- Make video calls\n- Share photos\n\nTip: Complete your profile to get more matches!",
-  "block": "To block someone:\n1. Go to their profile\n2. Tap the menu (three dots)\n3. Select 'Block'\n\nBlocked users can't see your profile or contact you.",
-  "report": "To report inappropriate behavior:\n1. Go to the user's profile\n2. Tap the menu (three dots)\n3. Select 'Report'\n4. Choose a reason\n\nOur team reviews all reports within 24 hours.",
-  "delete": "To delete your account:\n1. Go to Settings\n2. Scroll to 'Delete Account'\n3. Confirm your decision\n\n⚠️ This action is permanent and cannot be undone.",
-  "photo": "Photo requirements:\n- Clear photos showing your face\n- No group photos as main\n- No explicit content\n- Minimum 2 photos required\n\nTip: Profiles with 4+ photos get 70% more matches!",
-  "verify": "Photo verification helps prove you're real:\n1. Go to Settings > Photo Verification\n2. Take a selfie matching the pose shown\n3. Our team verifies within 24 hours\n\nVerified profiles get a blue checkmark!",
-  "password": "To reset your password:\n1. Tap 'Forgot Password' on login\n2. Enter your email\n3. Check your inbox for reset link\n4. Create a new password\n\nIf you don't receive the email, check spam folder.",
+  "premium": "CubaDate offers three subscription tiers:\n\n**Plus** - $9.99/week:\n• Unlimited Likes & Rewinds\n• Passport Mode\n• Hide Ads\n\n**Gold** - $14.99/week:\n• All Plus features\n• See Who Likes You\n• 1 Free Boost/month\n• 5 Super Likes/week\n\n**Platinum** - $19.99/week:\n• All Gold features\n• Priority Likes\n• Unlimited Super Likes\n• Message before matching\n\nWould you like help subscribing?",
+  "subscription": "To manage your subscription:\n1. Go to Settings\n2. Tap 'My Subscription'\n3. Choose your plan or modify existing one\n\nYou can cancel anytime and your benefits continue until the end of the billing period.\n\nFor refunds, contact support within 14 days of purchase.",
+  "billing": "**Billing & Payments**\n\nWe accept:\n• Credit/Debit cards\n• Apple Pay / Google Pay\n\n**Subscription Plans:**\n• Plus: $9.99/week\n• Gold: $14.99/week  \n• Platinum: $19.99/week\n\n**Credits for Video Calls:**\n• 100 credits - $9.99\n• 500 credits - $39.99\n• 1000 credits - $69.99\n\nRefunds available within 14 days.",
+  "credits": "**Credits System**\n\nCredits are used for video calls at $1/minute.\n\n**How to get credits:**\n• Purchase in Buy Credits section\n• Refer friends (10 credits each)\n• Loyalty rewards program\n\n**Credit Packages:**\n• 100 credits - $9.99\n• 500 credits - $39.99\n• 1000 credits - $69.99\n\nCredits never expire!",
+  "video": "**Video Calls**\n\nVideo calls cost 1 credit per minute.\n\n**To start a video call:**\n1. Open a chat with your match\n2. Tap the video icon in the header\n3. Both users need credits to participate\n\n**Tips:**\n• Ensure stable internet connection\n• Good lighting helps!\n• Credits are deducted per minute\n\nPremium subscribers get priority connections.",
+  "match": "**Getting More Matches**\n\nTips to increase your matches:\n\n1. **Add 4+ photos** - 70% more matches\n2. **Write a bio** - 25% more matches\n3. **Get verified** - Builds trust\n4. **Be active daily** - Higher visibility\n5. **Use Super Likes** - 3x higher match rate\n6. **Complete your profile** - More prompts = more conversations\n\nComplete your profile to stand out!",
+  "block": "**Blocking Someone**\n\nTo block a user:\n1. Go to their profile\n2. Tap the menu (three dots)\n3. Select 'Block'\n\nBlocked users:\n• Can't see your profile\n• Can't contact you\n• Won't appear in your stack\n\nYou can unblock anytime in Settings > Blocked Users.",
+  "report": "**Reporting Users**\n\nTo report inappropriate behavior:\n1. Go to the user's profile\n2. Tap the menu (three dots)\n3. Select 'Report'\n4. Choose a reason\n5. Add details (optional)\n\nOur safety team reviews all reports within 24 hours.\n\nYou can also block them simultaneously for immediate protection.",
+  "safety": "**Safety Features**\n\n• **Photo Verification** - Verify your identity\n• **Block & Report** - Protect yourself\n• **Hide Profile** - Control visibility\n• **Block Contacts** - Hide from people you know\n\n**Safety Tips:**\n• Never share financial info\n• Meet in public places first\n• Tell a friend about dates\n• Trust your instincts\n\nReport any suspicious behavior!",
+  "delete": "**Delete Account**\n\nTo delete your account:\n1. Go to Settings\n2. Scroll to 'Delete Account'\n3. Confirm your decision\n\n⚠️ **Warning:** This action is permanent!\n• All matches are lost\n• Messages are deleted\n• Subscription is cancelled\n• Credits are forfeited\n\nConsider pausing instead if you need a break.",
+  "photo": "**Photo Requirements**\n\n✅ Required:\n• Clear photos showing your face\n• At least 2 photos\n• Recent photos\n\n❌ Not allowed:\n• Group photos as main\n• Explicit content\n• Celebrities/others\n• Heavy filters\n\n💡 **Tip:** Profiles with 4+ photos get 70% more matches!",
+  "verify": "**Photo Verification**\n\nGet the blue checkmark:\n\n1. Go to Settings > Photo Verification\n2. Take a selfie matching the pose shown\n3. Our team verifies within 24 hours\n4. Get your verification badge!\n\n**Benefits:**\n• Blue checkmark on profile\n• 30% more matches\n• Higher trust from others\n• Priority in stacks",
+  "password": "**Password & Login**\n\nForgot your password?\n1. Tap 'Forgot Password' on login\n2. Enter your email\n3. Check inbox for reset link\n4. Create new password\n\n**Troubleshooting:**\n• Check spam folder\n• Wait a few minutes\n• Try different email\n• Contact support if stuck",
+  "privacy": "**Privacy Settings**\n\nControl your privacy:\n\n1. **Web Profile** - Toggle public visibility\n2. **Active Status** - Hide online status\n3. **Block Contacts** - Hide from phone contacts\n4. **Read Receipts** - Premium feature\n5. **Location** - Control sharing\n\nFind all options in Settings > Privacy.\n\nYour exact location is never shared!",
+  "refund": "**Refund Policy**\n\nRefund eligibility:\n• Available within 14 days of purchase\n• Unused credits are refundable\n• Pro-rated for subscriptions\n\n**To request a refund:**\n1. Contact support\n2. Provide order details\n3. State reason\n\nProcessing time: 5-10 business days\n\nNote: Features used cannot be refunded.",
+  "account": "**Account Management**\n\n• **Edit Profile** - Update photos, bio, interests\n• **Settings** - Privacy, notifications, preferences\n• **Subscription** - Manage your plan\n• **Delete Account** - Permanently remove\n\n**Account Recovery:**\n• Use forgot password\n• Check spam folder\n• Contact support with ID",
 };
 
 const findBestResponse = (message: string): string | null => {
@@ -46,7 +61,7 @@ const findBestResponse = (message: string): string | null => {
   return null;
 };
 
-const defaultResponse = "I'm here to help! I can answer questions about:\n\n• Subscriptions & Premium features\n• Credits & Video calls\n• Matching & Messaging\n• Account settings\n• Safety & Privacy\n\nWhat would you like to know more about?";
+const defaultResponse = "I'm here to help! I can answer questions about:\n\n• 💳 **Billing** - Subscriptions & payments\n• 🪙 **Credits** - Video call credits\n• 🔒 **Privacy** - Control your visibility\n• 🛡️ **Safety** - Report & block users\n• 💕 **Matches** - Get more matches\n• ✓ **Verification** - Verify your profile\n\nClick a topic above or type your question!";
 
 export function AIChatWidget() {
   const { user, profile } = useAuth();
@@ -57,6 +72,7 @@ export function AIChatWidget() {
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [transferring, setTransferring] = useState(false);
+  const [showQuickQuestions, setShowQuickQuestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -72,7 +88,6 @@ export function AIChatWidget() {
     
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create conversation record
     const { data, error } = await supabase
       .from("chatbot_conversations")
       .insert({
@@ -91,17 +106,15 @@ export function AIChatWidget() {
 
     setConversationId(data.id);
 
-    // Add welcome message
     const welcomeMessage: Message = {
       id: `welcome_${Date.now()}`,
       role: "assistant",
-      content: "👋 Hi! I'm CubaDate's AI assistant. I can help you with questions about the app, subscriptions, matching, and more.\n\nHow can I help you today?",
+      content: "👋 Hi! I'm CubaDate's AI assistant.\n\nI can help you with subscriptions, credits, matching, privacy, and more.\n\n**Quick Topics:**",
       created_at: new Date().toISOString(),
     };
 
     setMessages([welcomeMessage]);
 
-    // Save to database
     await supabase.from("chatbot_messages").insert({
       conversation_id: data.id,
       role: "assistant",
@@ -111,14 +124,15 @@ export function AIChatWidget() {
     setConnecting(false);
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !conversationId) return;
-
-    const userContent = newMessage.trim();
+  const handleQuickQuestion = async (question: QuickQuestion) => {
+    setShowQuickQuestions(false);
+    setNewMessage(question.query);
+    
+    // Simulate sending the message
+    const userContent = question.query;
     setNewMessage("");
     setLoading(true);
 
-    // Add user message to UI
     const userMessage: Message = {
       id: `user_${Date.now()}`,
       role: "user",
@@ -127,24 +141,69 @@ export function AIChatWidget() {
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Save user message
+    if (conversationId) {
+      await supabase.from("chatbot_messages").insert({
+        conversation_id: conversationId,
+        role: "user",
+        content: userContent,
+      });
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const aiContent = findBestResponse(userContent) || defaultResponse;
+
+    const aiMessage: Message = {
+      id: `ai_${Date.now()}`,
+      role: "assistant",
+      content: aiContent,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, aiMessage]);
+
+    if (conversationId) {
+      await supabase.from("chatbot_messages").insert({
+        conversation_id: conversationId,
+        role: "assistant",
+        content: aiContent,
+      });
+    }
+
+    setLoading(false);
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !conversationId) return;
+
+    setShowQuickQuestions(false);
+    const userContent = newMessage.trim();
+    setNewMessage("");
+    setLoading(true);
+
+    const userMessage: Message = {
+      id: `user_${Date.now()}`,
+      role: "user",
+      content: userContent,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, userMessage]);
+
     await supabase.from("chatbot_messages").insert({
       conversation_id: conversationId,
       role: "user",
       content: userContent,
     });
 
-    // Generate AI response
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate thinking
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     let aiContent = findBestResponse(userContent);
     
     if (!aiContent) {
-      // Check if user wants to talk to human
       if (userContent.toLowerCase().includes("agent") || 
           userContent.toLowerCase().includes("human") ||
           userContent.toLowerCase().includes("person") ||
-          userContent.toLowerCase().includes("support")) {
+          userContent.toLowerCase().includes("support") ||
+          userContent.toLowerCase().includes("talk to")) {
         aiContent = "I'll connect you with a support agent. Please wait...";
         setTransferring(true);
       } else {
@@ -160,17 +219,14 @@ export function AIChatWidget() {
     };
     setMessages(prev => [...prev, aiMessage]);
 
-    // Save AI message
     await supabase.from("chatbot_messages").insert({
       conversation_id: conversationId,
       role: "assistant",
       content: aiContent,
     });
 
-    // Handle transfer to agent
     if (transferring) {
       setTimeout(async () => {
-        // Create live chat session
         const { data: liveSession } = await supabase
           .from("live_chat_sessions")
           .insert({
@@ -181,13 +237,11 @@ export function AIChatWidget() {
           .single();
 
         if (liveSession) {
-          // Update chatbot conversation
           await supabase
             .from("chatbot_conversations")
             .update({ status: "transferred" })
             .eq("id", conversationId);
 
-          // Add transfer message
           await supabase.from("live_chat_messages").insert({
             session_id: liveSession.id,
             sender_type: "system",
@@ -221,7 +275,6 @@ export function AIChatWidget() {
     
     setTransferring(true);
     
-    // Create live chat session
     const { data: liveSession } = await supabase
       .from("live_chat_sessions")
       .insert({
@@ -250,6 +303,7 @@ export function AIChatWidget() {
     setTransferring(false);
   };
 
+  // Closed state - positioned above bottom nav
   if (!isOpen) {
     return (
       <button
@@ -257,7 +311,8 @@ export function AIChatWidget() {
           setIsOpen(true);
           if (!conversationId) startConversation();
         }}
-        className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-primary to-pink-500 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+        className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-br from-primary to-pink-500 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+        aria-label="Open chat support"
       >
         <Bot className="w-7 h-7" />
       </button>
@@ -265,15 +320,15 @@ export function AIChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 w-80 h-[450px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-x-4 bottom-20 z-40 max-w-sm mx-auto h-[60vh] max-h-[500px] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-pink-500 text-white p-4 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-primary to-pink-500 text-white p-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
             <Bot className="w-5 h-5" />
           </div>
           <div>
-            <p className="font-semibold">AI Assistant</p>
+            <p className="font-semibold">AI Support</p>
             <p className="text-xs text-white/80">Online • Instant replies</p>
           </div>
         </div>
@@ -306,13 +361,30 @@ export function AIChatWidget() {
                 </div>
               </div>
             ))}
+            
+            {/* Quick Questions - shown after welcome message */}
+            {showQuickQuestions && messages.length === 1 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {quickQuestions.map((q) => (
+                  <button
+                    key={q.label}
+                    onClick={() => handleQuickQuestion(q)}
+                    className="px-3 py-2 bg-muted hover:bg-muted/80 rounded-full text-xs font-medium text-foreground flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>{q.icon}</span>
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         )}
       </ScrollArea>
 
       {/* Transfer button */}
-      <div className="px-4 py-2 border-t border-border">
+      <div className="px-4 py-2 border-t border-border flex-shrink-0">
         <button
           onClick={transferToAgent}
           disabled={transferring}
@@ -333,7 +405,7 @@ export function AIChatWidget() {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-border flex gap-2">
+      <div className="p-3 border-t border-border flex gap-2 flex-shrink-0">
         <Input
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}

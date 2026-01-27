@@ -85,6 +85,7 @@ import CategorySwipe from "./pages/CategorySwipe";
 import Referrals from "./pages/Referrals";
 import ModeratorLogin from "./pages/ModeratorLogin";
 import Onboarding from "./pages/Onboarding";
+import WebSignup from "./pages/WebSignup";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -183,6 +184,7 @@ const App = () => (
               <Route path="/staff-login" element={<ModeratorLogin />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/agent-dashboard" element={<AgentDashboard />} />
+              <Route path="/signup" element={<WebSignup />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
