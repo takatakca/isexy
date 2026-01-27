@@ -50,6 +50,76 @@ export type Database = {
           },
         ]
       }
+      chatbot_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          status: string
+          transferred_to: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          status?: string
+          transferred_to?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          status?: string
+          transferred_to?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_conversations_transferred_to_fkey"
+            columns: ["transferred_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chatbot_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chatbot_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chatbot_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -922,6 +992,7 @@ export type Database = {
           pets: string[] | null
           privacy_accepted: boolean | null
           prompts: Json | null
+          referral_code: string | null
           school: string | null
           sexual_orientation: string | null
           show_gender: boolean | null
@@ -970,6 +1041,7 @@ export type Database = {
           pets?: string[] | null
           privacy_accepted?: boolean | null
           prompts?: Json | null
+          referral_code?: string | null
           school?: string | null
           sexual_orientation?: string | null
           show_gender?: boolean | null
@@ -1018,6 +1090,7 @@ export type Database = {
           pets?: string[] | null
           privacy_accepted?: boolean | null
           prompts?: Json | null
+          referral_code?: string | null
           school?: string | null
           sexual_orientation?: string | null
           show_gender?: boolean | null
@@ -1031,6 +1104,54 @@ export type Database = {
           workout?: string | null
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          bonus_credits: number | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          bonus_credits?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          bonus_credits?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string | null
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reports: {
         Row: {
@@ -1458,6 +1579,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_referral_code: { Args: never; Returns: string }
       get_admin_users: {
         Args: never
         Returns: {
