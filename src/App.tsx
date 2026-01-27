@@ -79,6 +79,9 @@ import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import VideoCall from "./pages/VideoCall";
 import DatingRegulations from "./pages/DatingRegulations";
+import BuyCredits from "./pages/BuyCredits";
+import GroupChat from "./pages/GroupChat";
+import CategorySwipe from "./pages/CategorySwipe";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -169,6 +172,9 @@ const App = () => (
               <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/video-call/:matchId" element={<VideoCall />} />
               <Route path="/dating-regulations" element={<DatingRegulations />} />
+              <Route path="/buy-credits" element={<BuyCredits />} />
+              <Route path="/group-chat/:groupId" element={<GroupChat />} />
+              <Route path="/explore/:category" element={<CategorySwipe />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </StreakProvider>

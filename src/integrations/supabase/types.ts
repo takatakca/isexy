@@ -50,6 +50,47 @@ export type Database = {
           },
         ]
       }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          profile_id: string
+          stripe_session_id: string | null
+          type: string
+          video_call_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          profile_id: string
+          stripe_session_id?: string | null
+          type: string
+          video_call_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          profile_id?: string
+          stripe_session_id?: string | null
+          type?: string
+          video_call_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cuban_verifications: {
         Row: {
           audio_url: string | null
@@ -458,6 +499,116 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_chat_members: {
+        Row: {
+          group_chat_id: string
+          id: string
+          joined_at: string
+          profile_id: string
+        }
+        Insert: {
+          group_chat_id: string
+          id?: string
+          joined_at?: string
+          profile_id: string
+        }
+        Update: {
+          group_chat_id?: string
+          id?: string
+          joined_at?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chat_members_group_chat_id_fkey"
+            columns: ["group_chat_id"]
+            isOneToOne: false
+            referencedRelation: "group_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_chats: {
+        Row: {
+          created_at: string
+          double_date_match_id: string | null
+          id: string
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          double_date_match_id?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          double_date_match_id?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chats_double_date_match_id_fkey"
+            columns: ["double_date_match_id"]
+            isOneToOne: false
+            referencedRelation: "double_date_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_messages: {
+        Row: {
+          content: string
+          created_at: string
+          group_chat_id: string
+          id: string
+          is_read: boolean | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_chat_id: string
+          id?: string
+          is_read?: boolean | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_chat_id?: string
+          id?: string
+          is_read?: boolean | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_messages_group_chat_id_fkey"
+            columns: ["group_chat_id"]
+            isOneToOne: false
+            referencedRelation: "group_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1155,6 +1306,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          last_purchase_at: string | null
+          lifetime_credits: number
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          id?: string
+          last_purchase_at?: string | null
+          lifetime_credits?: number
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          last_purchase_at?: string | null
+          lifetime_credits?: number
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_credits_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_preferences: {
         Row: {
           auto_translate: boolean
@@ -1202,6 +1391,67 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_call_sessions: {
+        Row: {
+          caller_id: string
+          created_at: string
+          credits_used: number | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          match_id: string
+          receiver_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          caller_id: string
+          created_at?: string
+          credits_used?: number | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          match_id: string
+          receiver_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          caller_id?: string
+          created_at?: string
+          credits_used?: number | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          match_id?: string
+          receiver_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_call_sessions_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_call_sessions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_call_sessions_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
