@@ -76,6 +76,14 @@ export function DiscoverFilters({
   
   return (
     <div className="flex items-center gap-2">
+      {/* Safety Button */}
+      <button 
+        onClick={() => navigate("/safety-tips")}
+        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+      >
+        <BadgeCheck className="w-6 h-6 text-cyan-500" />
+      </button>
+
       {/* Filters Sheet */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>

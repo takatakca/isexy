@@ -242,10 +242,16 @@ export default function Messages() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-extrabold text-foreground">Chat</h1>
           <div className="flex items-center gap-3">
-            <button className="p-2">
+            <button 
+              onClick={() => setShowSafetyModal(true)}
+              className="p-2"
+            >
               <Shield className="w-6 h-6 text-muted-foreground" />
             </button>
-            <button className="p-2 relative">
+            <button 
+              onClick={() => navigate("/referrals")}
+              className="p-2 relative"
+            >
               <Smile className="w-6 h-6 text-muted-foreground" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
             </button>
