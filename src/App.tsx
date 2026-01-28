@@ -59,6 +59,7 @@ import ContactUs from "./pages/ContactUs";
 import TicketTracking from "./pages/TicketTracking";
 import AdminTickets from "./pages/AdminTickets";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboardFull from "./pages/AdminDashboardFull";
 import AdminCategories from "./pages/AdminCategories";
 import AdminEmailTemplates from "./pages/AdminEmailTemplates";
 import KnowledgeBase from "./pages/KnowledgeBase";
@@ -148,6 +149,7 @@ const App = () => (
               <Route path="/manage-payment-account" element={<ManagePaymentAccount />} />
               <Route path="/restore-purchase" element={<RestorePurchase />} />
               <Route path="/help-support" element={<HelpSupport />} />
+              <Route path="/web-profile/:userId" element={<WebProfile />} />
               <Route path="/web-profile" element={<WebProfile />} />
               <Route path="/delete-account" element={<DeleteAccount />} />
               <Route path="/licenses" element={<Licenses />} />
@@ -155,6 +157,7 @@ const App = () => (
               <Route path="/contact-us" element={<ContactUs />} />
               <Route path="/ticket-tracking" element={<TicketTracking />} />
               <Route path="/admin/tickets" element={<AdminTickets />} />
+              <Route path="/admin" element={<AdminDashboardFull />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/categories" element={<AdminCategories />} />
               <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />

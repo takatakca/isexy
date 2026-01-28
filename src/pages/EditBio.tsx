@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Check, Lightbulb, Pencil } from "lucide-react";
+import { ArrowLeft, Check, Lightbulb, Pencil } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const MAX_CHARS = 500;
 
@@ -12,15 +15,36 @@ const bioTips = [
 
 export default function EditBio() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [bio, setBio] = useState("");
   const [currentTip, setCurrentTip] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   const charsRemaining = MAX_CHARS - bio.length;
   const isOverLimit = charsRemaining < 0;
 
-  const handleSave = () => {
-    if (!isOverLimit && bio.trim()) {
-      // TODO: Save bio to profile
+  useEffect(() => {
+    if (profile?.bio) {
+      setBio(profile.bio);
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    if (!isOverLimit && profile?.id) {
+      setSaving(true);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ bio: bio.trim() })
+        .eq("id", profile.id);
+      
+      setSaving(false);
+      if (error) {
+        toast.error("Failed to save bio");
+      } else {
+        toast.success("Bio updated!");
+        navigate(-1);
+      }
+    } else if (!isOverLimit) {
       navigate(-1);
     }
   };
@@ -30,15 +54,19 @@ export default function EditBio() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <button onClick={() => navigate(-1)} className="p-2">
-          <X className="w-6 h-6 text-foreground" />
+          <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
-        <h1 className="text-lg font-bold text-foreground">Add bio</h1>
+        <h1 className="text-lg font-bold text-foreground">{bio ? "Edit bio" : "Add bio"}</h1>
         <button
           onClick={handleSave}
-          disabled={isOverLimit || !bio.trim()}
+          disabled={isOverLimit || saving}
           className="p-2 disabled:opacity-50"
         >
-          <Check className="w-6 h-6 text-foreground" />
+          {saving ? (
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Check className="w-6 h-6 text-primary" />
+          )}
         </button>
       </div>
 
