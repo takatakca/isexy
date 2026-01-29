@@ -185,7 +185,26 @@ export default function VideoCall() {
   const initializeCall = async () => {
     try {
       // Create call session first
-      await createCallSession();
+      const sessionId = await createCallSession();
+
+      // Send WhatsApp notification to receiver (for Cuban users)
+      if (sessionId && otherProfile) {
+        try {
+          await supabase.functions.invoke("send-whatsapp-call-notification", {
+            body: {
+              receiverId: otherProfile.id,
+              callerId: profile?.id,
+              callerName: profile?.first_name || "Someone",
+              matchId: matchId,
+              callSessionId: sessionId,
+            },
+          });
+          console.log("WhatsApp call notification sent");
+        } catch (err) {
+          console.error("Failed to send WhatsApp notification:", err);
+          // Continue with call anyway
+        }
+      }
 
       // Get local media stream
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -229,26 +248,31 @@ export default function VideoCall() {
         }
       };
 
-      // Simulate connection (in production, use signaling server)
-      setTimeout(() => {
-        setCallStatus("ringing");
-        
-        // Simulate answer after 3 seconds
-        setTimeout(async () => {
-          setCallStatus("connected");
-          
-          // Update session status
-          if (callSessionId) {
-            await supabase
-              .from("video_call_sessions")
-              .update({ status: "connected" })
-              .eq("id", callSessionId);
-          }
+      // Update status to ringing
+      setCallStatus("ringing");
+      
+      if (sessionId) {
+        await supabase
+          .from("video_call_sessions")
+          .update({ status: "ringing" })
+          .eq("id", sessionId);
+      }
 
-          startTimer();
-          startCreditDeduction();
-        }, 3000);
-      }, 1000);
+      // Wait for answer (in production, use signaling)
+      // For now, simulate answer after timeout
+      setTimeout(async () => {
+        setCallStatus("connected");
+        
+        if (callSessionId) {
+          await supabase
+            .from("video_call_sessions")
+            .update({ status: "connected" })
+            .eq("id", callSessionId);
+        }
+
+        startTimer();
+        startCreditDeduction();
+      }, 10000); // Wait 10 seconds for answer
 
     } catch (error) {
       console.error("Failed to get media stream:", error);

@@ -92,6 +92,8 @@ import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
 import { AIChatWidget } from "./components/AIChatWidget";
+import { PushNotificationPrompt } from "./components/PushNotificationPrompt";
+import { IncomingCallNotification } from "./components/IncomingCallNotification";
 
 const queryClient = new QueryClient();
 
@@ -193,6 +195,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
+            <PushNotificationPrompt />
+            <IncomingCallNotification />
             </StreakProvider>
           </LanguageProvider>
         </AuthProvider>

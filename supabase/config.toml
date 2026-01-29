@@ -29,3 +29,21 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.send-whatsapp-call-notification]
+verify_jwt = false
+
+[functions.create-credit-purchase]
+verify_jwt = false
+
+[functions.create-one-time-payment]
+verify_jwt = false
+
+[functions.seed-profiles]
+verify_jwt = false
+
+[functions.send-whatsapp-otp]
+verify_jwt = false
+
+[functions.translate-message]
+verify_jwt = false
