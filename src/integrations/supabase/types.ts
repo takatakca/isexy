@@ -120,6 +120,51 @@ export type Database = {
           },
         ]
       }
+      content_violations: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          detected_content: string
+          id: string
+          message_id: string | null
+          profile_id: string
+          violation_type: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          detected_content: string
+          id?: string
+          message_id?: string | null
+          profile_id: string
+          violation_type: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          detected_content?: string
+          id?: string
+          message_id?: string | null
+          profile_id?: string
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_violations_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_violations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -923,6 +968,71 @@ export type Database = {
           },
         ]
       }
+      missed_calls: {
+        Row: {
+          call_session_id: string | null
+          caller_id: string
+          created_at: string
+          id: string
+          match_id: string
+          notified_email: boolean | null
+          notified_push: boolean | null
+          notified_whatsapp: boolean | null
+          receiver_id: string
+        }
+        Insert: {
+          call_session_id?: string | null
+          caller_id: string
+          created_at?: string
+          id?: string
+          match_id: string
+          notified_email?: boolean | null
+          notified_push?: boolean | null
+          notified_whatsapp?: boolean | null
+          receiver_id: string
+        }
+        Update: {
+          call_session_id?: string | null
+          caller_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string
+          notified_email?: boolean | null
+          notified_push?: boolean | null
+          notified_whatsapp?: boolean | null
+          receiver_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missed_calls_call_session_id_fkey"
+            columns: ["call_session_id"]
+            isOneToOne: false
+            referencedRelation: "video_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missed_calls_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missed_calls_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missed_calls_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_photos: {
         Row: {
           created_at: string
@@ -1222,6 +1332,64 @@ export type Database = {
           {
             foreignKeyName: "reports_reporter_id_fkey"
             columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_calls: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          recipient_id: string
+          reminder_sent: boolean | null
+          scheduled_at: string
+          scheduler_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          recipient_id: string
+          reminder_sent?: boolean | null
+          scheduled_at: string
+          scheduler_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          recipient_id?: string
+          reminder_sent?: boolean | null
+          scheduled_at?: string
+          scheduler_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_calls_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_calls_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_calls_scheduler_id_fkey"
+            columns: ["scheduler_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1542,6 +1710,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_warnings: {
+        Row: {
+          ban_until: string | null
+          created_at: string
+          evidence: string | null
+          id: string
+          is_permanent_ban: boolean | null
+          issued_by: string | null
+          profile_id: string
+          warning_level: number
+          warning_type: string
+        }
+        Insert: {
+          ban_until?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          is_permanent_ban?: boolean | null
+          issued_by?: string | null
+          profile_id: string
+          warning_level?: number
+          warning_type: string
+        }
+        Update: {
+          ban_until?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          is_permanent_ban?: boolean | null
+          issued_by?: string | null
+          profile_id?: string
+          warning_level?: number
+          warning_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_warnings_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_warnings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       video_call_sessions: {
         Row: {

@@ -2,11 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useContentModeration } from "@/hooks/useContentModeration";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Check, CheckCheck } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Check, CheckCheck, Calendar, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TypingIndicator } from "@/components/TypingIndicator";
+import { CallScheduleModal } from "@/components/CallScheduleModal";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -40,13 +42,18 @@ export default function Chat() {
   const [translationsEnabled, setTranslationsEnabled] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
+  const [banMessage, setBanMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { checkContent, reportViolation, checkUserBanStatus } = useContentModeration();
 
   useEffect(() => {
     if (matchId && profile) {
       fetchMatchDetails();
       fetchMessages();
+      checkBanStatus();
     }
   }, [matchId, profile]);
 
@@ -272,8 +279,37 @@ export default function Chat() {
     }, 2000);
   };
 
+  const checkBanStatus = async () => {
+    if (!profile?.id) return;
+    
+    const status = await checkUserBanStatus(profile.id);
+    if (status.isBanned) {
+      setIsBanned(true);
+      if (status.isPermanent) {
+        setBanMessage("Your account is permanently banned for violating community guidelines.");
+      } else if (status.banUntil) {
+        setBanMessage(`Messaging restricted until ${format(status.banUntil, "MMM d 'at' h:mm a")}`);
+      }
+    }
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !profile || !matchId || sending) return;
+    if (!newMessage.trim() || !profile || !matchId || sending || isBanned) return;
+
+    // Check content for personal information
+    const modResult = checkContent(newMessage);
+    
+    if (!modResult.isClean) {
+      // Report violation and potentially ban user
+      await reportViolation(profile.id, null, modResult.violations);
+      
+      // Refresh ban status
+      await checkBanStatus();
+      
+      // Show warning but don't send message
+      toast.error("⚠️ Your message contains personal information which is not allowed. Please remove phone numbers, emails, or addresses.");
+      return;
+    }
 
     setSending(true);
     const content = newMessage.trim();
@@ -401,6 +437,15 @@ export default function Chat() {
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => setShowScheduleModal(true)}
+          className="text-muted-foreground"
+        >
+          <Calendar className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={handleVideoCall}
           className="text-primary"
         >
@@ -502,6 +547,14 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </main>
 
+      {/* Ban warning */}
+      {isBanned && (
+        <div className="px-4 py-3 bg-destructive/10 border-t border-destructive/30 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-destructive" />
+          <p className="text-sm text-destructive">{banMessage}</p>
+        </div>
+      )}
+
       {/* Input */}
       <footer className="p-4 border-t border-border bg-card">
         <div className="flex items-center gap-2">
@@ -510,18 +563,31 @@ export default function Chat() {
             value={newMessage}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-3 bg-muted rounded-full outline-none focus:ring-2 focus:ring-primary"
+            placeholder={isBanned ? "Messaging restricted..." : "Type a message..."}
+            disabled={isBanned}
+            className="flex-1 px-4 py-3 bg-muted rounded-full outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
+            disabled={!newMessage.trim() || sending || isBanned}
             className="w-12 h-12 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 transition-opacity"
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
       </footer>
+
+      {/* Schedule Call Modal */}
+      {otherProfile && profile && (
+        <CallScheduleModal
+          open={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+          matchId={matchId!}
+          recipientId={otherProfile.id}
+          recipientName={otherProfile.first_name}
+          currentUserId={profile.id}
+        />
+      )}
     </div>
   );
 }
