@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.translate-message]
 verify_jwt = false
+
+[functions.send-missed-call-notification]
+verify_jwt = false

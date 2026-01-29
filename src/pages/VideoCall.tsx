@@ -259,8 +259,34 @@ export default function VideoCall() {
       }
 
       // Wait for answer (in production, use signaling)
-      // For now, simulate answer after timeout
+      // Set a timeout for unanswered calls
+      const answerTimeout = setTimeout(async () => {
+        if (callStatus === "ringing") {
+          // Call was not answered - trigger missed call notification
+          if (sessionId && otherProfile) {
+            try {
+              await supabase.functions.invoke("send-missed-call-notification", {
+                body: {
+                  callerId: profile?.id,
+                  receiverId: otherProfile.id,
+                  matchId: matchId,
+                  callerName: profile?.first_name || "Someone",
+                },
+              });
+              console.log("Missed call notification sent");
+            } catch (err) {
+              console.error("Failed to send missed call notification:", err);
+            }
+          }
+          
+          toast.error("Call not answered");
+          handleEndCall();
+        }
+      }, 30000); // 30 seconds timeout
+
+      // Simulate answer for demo (in production, wait for actual answer)
       setTimeout(async () => {
+        clearTimeout(answerTimeout);
         setCallStatus("connected");
         
         if (callSessionId) {

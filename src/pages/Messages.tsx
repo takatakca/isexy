@@ -6,6 +6,8 @@ import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
+import { ScheduledCallsList } from "@/components/ScheduledCallsList";
+import { MissedCallBanner } from "@/components/MissedCallBanner";
 
 interface Match {
   id: string;
@@ -266,7 +268,15 @@ export default function Messages() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-16">
+      <div className="px-4">
+        {/* Scheduled Calls */}
+        <ScheduledCallsList />
+        
+        {/* Missed Calls */}
+        <MissedCallBanner />
+      </div>
+      
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-8">
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : matches.length === 0 ? (
