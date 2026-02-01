@@ -206,6 +206,79 @@ export type Database = {
           },
         ]
       }
+      cuban_points: {
+        Row: {
+          created_at: string
+          id: string
+          lifetime_points: number
+          points: number
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lifetime_points?: number
+          points?: number
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lifetime_points?: number
+          points?: number
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuban_points_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cuban_points_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          profile_id: string
+          reference_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          profile_id: string
+          reference_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          profile_id?: string
+          reference_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuban_points_transactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cuban_verifications: {
         Row: {
           audio_url: string | null
@@ -1027,6 +1100,63 @@ export type Database = {
           {
             foreignKeyName: "missed_calls_receiver_id_fkey"
             columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mobile_topups: {
+        Row: {
+          amount_cup: number | null
+          amount_usd: number
+          buyer_profile_id: string
+          carrier: string
+          completed_at: string | null
+          id: string
+          phone_number: string
+          purchased_at: string
+          recipient_profile_id: string
+          status: string
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount_cup?: number | null
+          amount_usd: number
+          buyer_profile_id: string
+          carrier: string
+          completed_at?: string | null
+          id?: string
+          phone_number: string
+          purchased_at?: string
+          recipient_profile_id: string
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount_cup?: number | null
+          amount_usd?: number
+          buyer_profile_id?: string
+          carrier?: string
+          completed_at?: string | null
+          id?: string
+          phone_number?: string
+          purchased_at?: string
+          recipient_profile_id?: string
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_topups_buyer_profile_id_fkey"
+            columns: ["buyer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobile_topups_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

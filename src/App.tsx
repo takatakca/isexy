@@ -73,6 +73,7 @@ import QAEvents from "./pages/QAEvents";
 import Matchmaker from "./pages/Matchmaker";
 import LoyaltyRewards from "./pages/LoyaltyRewards";
 import CubanCashout from "./pages/CubanCashout";
+import CubanRewards from "./pages/CubanRewards";
 import BlockReportFlow from "./pages/BlockReportFlow";
 import SubscriptionComparison from "./pages/SubscriptionComparison";
 import AdminAnalytics from "./pages/AdminAnalytics";
@@ -88,6 +89,8 @@ import ModeratorLogin from "./pages/ModeratorLogin";
 import Onboarding from "./pages/Onboarding";
 import WebSignup from "./pages/WebSignup";
 import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
+import AdminModeration from "./pages/AdminModeration";
+import CubanDonations from "./pages/CubanDonations";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -167,7 +170,9 @@ const App = () => (
               <Route path="/admin/agent" element={<AgentDashboard />} />
               <Route path="/admin/analytics" element={<AdminAnalytics />} />
               <Route path="/admin/knowledge-base" element={<AdminKnowledgeBase />} />
+              <Route path="/admin/moderation" element={<AdminModeration />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              <Route path="/donate/:recipientId?" element={<CubanDonations />} />
               <Route path="/compare-plans" element={<SubscriptionComparison />} />
               <Route path="/tourist-signup" element={<TouristSignup />} />
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
@@ -178,6 +183,7 @@ const App = () => (
               <Route path="/qa-events" element={<QAEvents />} />
               <Route path="/matchmaker" element={<Matchmaker />} />
               <Route path="/loyalty-rewards" element={<LoyaltyRewards />} />
+              <Route path="/cuban-rewards" element={<CubanRewards />} />
               <Route path="/cuban-cashout" element={<CubanCashout />} />
               <Route path="/block-report/:userId" element={<BlockReportFlow />} />
               <Route path="/reset-password" element={<ResetPassword />} />
