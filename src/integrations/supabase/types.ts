@@ -691,6 +691,103 @@ export type Database = {
           },
         ]
       }
+      gift_packages: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_usd: number
+          sort_order: number
+          value_description: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_usd: number
+          sort_order?: number
+          value_description?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_usd?: number
+          sort_order?: number
+          value_description?: string | null
+        }
+        Relationships: []
+      }
+      gift_transactions: {
+        Row: {
+          amount_usd: number
+          completed_at: string | null
+          created_at: string
+          gift_package_id: string
+          id: string
+          message: string | null
+          receiver_profile_id: string
+          sender_profile_id: string
+          status: string
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount_usd: number
+          completed_at?: string | null
+          created_at?: string
+          gift_package_id: string
+          id?: string
+          message?: string | null
+          receiver_profile_id: string
+          sender_profile_id: string
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          completed_at?: string | null
+          created_at?: string
+          gift_package_id?: string
+          id?: string
+          message?: string | null
+          receiver_profile_id?: string
+          sender_profile_id?: string
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_transactions_gift_package_id_fkey"
+            columns: ["gift_package_id"]
+            isOneToOne: false
+            referencedRelation: "gift_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_transactions_receiver_profile_id_fkey"
+            columns: ["receiver_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_transactions_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_chat_members: {
         Row: {
           group_chat_id: string
@@ -1526,6 +1623,110 @@ export type Database = {
           },
         ]
       }
+      star_cashout_requests: {
+        Row: {
+          admin_notes: string | null
+          cashout_details: Json
+          cashout_method: string
+          created_at: string
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          profile_id: string
+          stars_amount: number
+          status: string
+          usd_amount: number
+        }
+        Insert: {
+          admin_notes?: string | null
+          cashout_details: Json
+          cashout_method: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          profile_id: string
+          stars_amount: number
+          status?: string
+          usd_amount: number
+        }
+        Update: {
+          admin_notes?: string | null
+          cashout_details?: Json
+          cashout_method?: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          profile_id?: string
+          stars_amount?: number
+          status?: string
+          usd_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "star_cashout_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      star_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          receiver_profile_id: string
+          sender_profile_id: string
+          stars_amount: number
+          status: string
+          stripe_session_id: string | null
+          transaction_type: string
+          usd_value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_profile_id: string
+          sender_profile_id: string
+          stars_amount: number
+          status?: string
+          stripe_session_id?: string | null
+          transaction_type: string
+          usd_value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_profile_id?: string
+          sender_profile_id?: string
+          stars_amount?: number
+          status?: string
+          stripe_session_id?: string | null
+          transaction_type?: string
+          usd_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "star_transactions_receiver_profile_id_fkey"
+            columns: ["receiver_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "star_transactions_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       streak_badges: {
         Row: {
           badge_type: string
@@ -1840,6 +2041,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_stars: {
+        Row: {
+          created_at: string
+          id: string
+          lifetime_stars_received: number
+          lifetime_stars_sent: number
+          profile_id: string
+          stars_balance: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lifetime_stars_received?: number
+          lifetime_stars_sent?: number
+          profile_id: string
+          stars_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lifetime_stars_received?: number
+          lifetime_stars_sent?: number
+          profile_id?: string
+          stars_balance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stars_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_warnings: {
         Row: {
