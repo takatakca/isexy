@@ -4,12 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useContentModeration } from "@/hooks/useContentModeration";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Check, CheckCheck, Calendar, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Check, CheckCheck, Calendar, AlertTriangle, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { CallScheduleModal } from "@/components/CallScheduleModal";
 import { Button } from "@/components/ui/button";
+import { GiftModal } from "@/components/GiftModal";
 import { toast } from "sonner";
 
 interface Message {
@@ -43,6 +44,7 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [banMessage, setBanMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -437,6 +439,15 @@ export default function Chat() {
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => setShowGiftModal(true)}
+          className="text-yellow-500"
+        >
+          <Gift className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setShowScheduleModal(true)}
           className="text-muted-foreground"
         >
@@ -586,6 +597,16 @@ export default function Chat() {
           recipientId={otherProfile.id}
           recipientName={otherProfile.first_name}
           currentUserId={profile.id}
+        />
+      )}
+
+      {/* Gift Modal */}
+      {otherProfile && (
+        <GiftModal
+          isOpen={showGiftModal}
+          onClose={() => setShowGiftModal(false)}
+          recipientId={otherProfile.id}
+          recipientName={otherProfile.first_name}
         />
       )}
     </div>

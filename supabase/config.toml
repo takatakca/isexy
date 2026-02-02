@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.send-missed-call-notification]
 verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false
