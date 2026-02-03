@@ -276,11 +276,18 @@ export default function Settings() {
         {/* Account Settings */}
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Account Settings</h2>
-          <SettingCard>
+          <SettingCard className="divide-y divide-border">
             <SettingRow
               icon={Phone}
               label="Phone Number"
               value={profile?.city ? "Verified" : "Add"}
+            />
+            <SettingRow
+              icon={Gift}
+              label="Redeem VIP Code"
+              value=""
+              iconColor="text-primary"
+              onClick={() => navigate("/redeem-code")}
             />
           </SettingCard>
         </section>

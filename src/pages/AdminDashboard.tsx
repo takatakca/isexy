@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, TicketIcon, Clock, CheckCircle, AlertCircle, TrendingUp, Users, Shield } from "lucide-react";
+import { ArrowLeft, TicketIcon, Clock, CheckCircle, AlertCircle, TrendingUp, Users, Shield, UserCog, Ticket } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 interface TicketStats {
@@ -356,22 +356,26 @@ const AdminDashboard = () => {
         </Tabs>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Button onClick={() => navigate('/admin/tickets')} className="w-full">
             <TicketIcon className="h-4 w-4 mr-2" />
             Manage Tickets
           </Button>
-          <Button variant="outline" onClick={() => navigate('/admin/categories')} className="w-full">
-            <Users className="h-4 w-4 mr-2" />
-            Manage Categories
+          <Button variant="outline" onClick={() => navigate('/admin/users')} className="w-full">
+            <UserCog className="h-4 w-4 mr-2" />
+            Users & Roles
           </Button>
           <Button variant="outline" onClick={() => navigate('/admin/verifications')} className="w-full">
             <Shield className="h-4 w-4 mr-2" />
-            Cuban Verifications
+            Verifications
           </Button>
           <Button variant="outline" onClick={() => navigate('/admin/analytics')} className="w-full">
             <TrendingUp className="h-4 w-4 mr-2" />
-            Full Analytics
+            Analytics
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/admin/categories')} className="w-full">
+            <Ticket className="h-4 w-4 mr-2" />
+            VIP Codes
           </Button>
         </div>
       </div>

@@ -92,6 +92,8 @@ import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
 import AdminModeration from "./pages/AdminModeration";
 import CubanDonations from "./pages/CubanDonations";
 import MyStars from "./pages/MyStars";
+import RedeemCode from "./pages/RedeemCode";
+import AdminUserManagement from "./pages/AdminUserManagement";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -200,6 +202,8 @@ const App = () => (
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/agent-dashboard" element={<AgentDashboard />} />
               <Route path="/signup" element={<WebSignup />} />
+              <Route path="/redeem-code" element={<RedeemCode />} />
+              <Route path="/admin/users" element={<AdminUserManagement />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
