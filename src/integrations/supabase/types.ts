@@ -165,6 +165,102 @@ export type Database = {
           },
         ]
       }
+      coupon_codes: {
+        Row: {
+          code: string
+          code_type: string
+          created_at: string | null
+          created_by: string | null
+          current_uses: number | null
+          description: string | null
+          discount_percent: number | null
+          duration_days: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          starts_at: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          code_type: string
+          created_at?: string | null
+          created_by?: string | null
+          current_uses?: number | null
+          description?: string | null
+          discount_percent?: number | null
+          duration_days?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          starts_at?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          code_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          current_uses?: number | null
+          description?: string | null
+          discount_percent?: number | null
+          duration_days?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          starts_at?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      coupon_redemptions: {
+        Row: {
+          applied_benefit: string | null
+          coupon_id: string
+          expires_at: string | null
+          id: string
+          profile_id: string
+          redeemed_at: string | null
+        }
+        Insert: {
+          applied_benefit?: string | null
+          coupon_id: string
+          expires_at?: string | null
+          id?: string
+          profile_id: string
+          redeemed_at?: string | null
+        }
+        Update: {
+          applied_benefit?: string | null
+          coupon_id?: string
+          expires_at?: string | null
+          id?: string
+          profile_id?: string
+          redeemed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupon_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -2213,6 +2309,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      redeem_coupon: {
+        Args: { p_code: string; p_profile_id: string }
+        Returns: Json
       }
     }
     Enums: {
