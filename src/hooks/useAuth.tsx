@@ -87,9 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+
+        // Handle auth errors by clearing session
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          // Token refresh failed, clear local storage
+          await supabase.auth.signOut();
+          setProfile(null);
+          return;
+        }
 
         // Defer profile fetch to avoid deadlock
         if (session?.user) {
@@ -103,7 +111,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      // If there's an auth error (like stale token), clear and start fresh
+      if (error) {
+        console.log("Session error, clearing:", error.message);
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       

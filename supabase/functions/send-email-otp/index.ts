@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface EmailOTPRequest {
@@ -27,8 +27,35 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store OTP in response (in production, store in database with expiry)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP in database
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Delete any existing unused OTPs for this email/type
+    await supabase
+      .from("otp_codes")
+      .delete()
+      .eq("email", email)
+      .eq("type", type)
+      .is("used_at", null);
+    
+    // Insert new OTP
+    const { error: insertError } = await supabase
+      .from("otp_codes")
+      .insert({
+        email,
+        code: otp,
+        type,
+        expires_at: expiresAt.toISOString(),
+      });
+    
+    if (insertError) {
+      console.error("Error storing OTP:", insertError);
+      throw new Error("Failed to generate verification code");
+    }
 
     let subject: string;
     let htmlContent: string;
@@ -186,8 +213,6 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        otp, // In production, don't return OTP - store it securely
-        expiresAt: expiresAt.toISOString(),
         message: `OTP sent to ${email}` 
       }),
       { 
