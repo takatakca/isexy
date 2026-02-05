@@ -88,8 +88,7 @@ export default function Auth() {
         navigate("/verify", { 
           state: { 
             email, 
-            type: "verification",
-            otp: data.otp
+            type: "verification"
           } 
         });
       } catch (err) {

@@ -1356,6 +1356,36 @@ export type Database = {
           },
         ]
       }
+      otp_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          type: string
+          used_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          type: string
+          used_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          type?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       profile_photos: {
         Row: {
           created_at: string
@@ -2293,6 +2323,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_otps: { Args: never; Returns: undefined }
       generate_referral_code: { Args: never; Returns: string }
       get_admin_users: {
         Args: never
@@ -2312,6 +2343,10 @@ export type Database = {
       }
       redeem_coupon: {
         Args: { p_code: string; p_profile_id: string }
+        Returns: Json
+      }
+      verify_otp: {
+        Args: { p_code: string; p_email: string; p_type: string }
         Returns: Json
       }
     }

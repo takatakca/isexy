@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
 import { AuthButton } from "@/components/AuthButton";
@@ -12,6 +12,9 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 
 export default function UpdatePassword() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email || "";
+  const verified = location.state?.verified || false;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -20,15 +23,11 @@ export default function UpdatePassword() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Check if we have a valid session from the reset link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Invalid or expired reset link");
-        navigate("/reset-password");
-      }
-    };
-    checkSession();
+    // Check if we arrived here through proper OTP verification
+    if (!verified || !email) {
+      toast.error("Please verify your email first");
+      navigate("/reset-password");
+    }
   }, [navigate]);
 
   const handleSubmit = async () => {
@@ -54,15 +53,22 @@ export default function UpdatePassword() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      // Use admin API to update password for the user
+      const { data, error } = await supabase.functions.invoke("update-user-password", {
+        body: { email, password },
+      });
 
       if (error) {
-        toast.error(error.message);
+        console.error("Password update error:", error);
+        toast.error("Failed to update password. Please try again.");
+      } else if (data?.error) {
+        toast.error(data.error);
       } else {
         setSuccess(true);
         toast.success("Password updated successfully!");
       }
     } catch (err: any) {
+      console.error("Update password error:", err);
       toast.error("Failed to update password");
     } finally {
       setIsSubmitting(false);

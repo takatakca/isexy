@@ -13,7 +13,6 @@ export default function CodeVerification() {
   const { signUp } = useAuth();
   const email = location.state?.email || "";
   const type = location.state?.type || "verification";
-  const expectedOtp = location.state?.otp || "";
   
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isComplete, setIsComplete] = useState(false);
@@ -72,7 +71,6 @@ export default function CodeVerification() {
         body: { email, type },
       });
       if (error) throw error;
-      navigate(".", { state: { ...location.state, otp: data.otp }, replace: true });
       toast.success("New code sent!");
       setCountdown(60);
       setCode(["", "", "", "", "", ""]);
@@ -90,8 +88,22 @@ export default function CodeVerification() {
     setIsVerifying(true);
 
     try {
-      if (enteredCode !== expectedOtp) {
-        toast.error("Invalid code. Please try again.");
+      // Verify OTP using database function
+      const { data: verifyResult, error: verifyError } = await supabase.rpc("verify_otp", {
+        p_email: email,
+        p_code: enteredCode,
+        p_type: type,
+      });
+      
+      if (verifyError) {
+        console.error("Verify error:", verifyError);
+        throw new Error("Verification failed");
+      }
+      
+      const result = verifyResult as { valid: boolean; error?: string };
+      
+      if (!result.valid) {
+        toast.error(result.error || "Invalid code. Please try again.");
         setCode(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
         setIsVerifying(false);
