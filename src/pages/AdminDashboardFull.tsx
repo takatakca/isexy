@@ -626,13 +626,21 @@ export default function AdminDashboardFull() {
                 <AlertTriangle className="w-6 h-6" />
                 <span>Content Moderation</span>
               </Button>
-              <Button
+             <Button
                 variant="outline"
                 className="h-24 flex flex-col gap-2"
                 onClick={() => navigate("/admin/categories")}
               >
                 <Coins className="w-6 h-6" />
                 <span>Categories</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col gap-2"
+                onClick={() => navigate("/admin/users")}
+              >
+                <Users className="w-6 h-6" />
+                <span>User Management</span>
               </Button>
             </div>
           </TabsContent>

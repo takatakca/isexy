@@ -1,16 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Users, X, Sliders } from "lucide-react";
+import { Users } from "lucide-react";
 import Forum from "@/components/Forum";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 
 interface ExploreCategory {
   id: string;
@@ -86,22 +79,19 @@ const categoryImages: Record<string, string> = {
 };
 
 export default function Explore() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("discover");
-  const [selectedCategory, setSelectedCategory] = useState<ExploreCategory | null>(null);
-  const [distance, setDistance] = useState([80]);
 
   const handleCategoryClick = (category: ExploreCategory) => {
-    setSelectedCategory(category);
+    navigate(`/explore/${category.id}`);
   };
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-background px-4 pt-12 pb-4">
         <h1 className="text-3xl font-extrabold text-foreground">Explore</h1>
       </div>
 
-      {/* Tabs */}
       <div className="px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
@@ -122,7 +112,6 @@ export default function Explore() {
                       onClick={() => handleCategoryClick(item)}
                       className={`relative rounded-2xl overflow-hidden ${item.featured ? 'col-span-2 h-48' : 'h-44'} flex flex-col justify-end text-left transition-transform active:scale-[0.98]`}
                     >
-                      {/* Background image */}
                       {categoryImages[item.id] && (
                         <img
                           src={categoryImages[item.id]}
@@ -131,18 +120,12 @@ export default function Explore() {
                           loading="lazy"
                         />
                       )}
-                      
-                      {/* Color overlay */}
                       <div className={`absolute inset-0 bg-gradient-to-br ${item.color} mix-blend-multiply`} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                      
-                      {/* User count badge */}
                       <div className="absolute top-3 right-3 bg-foreground/90 text-background text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
                         <Users className="w-3 h-3" />
                         {item.count}
                       </div>
-                      
-                      {/* Title */}
                       <div className="relative z-10 p-4">
                         <h3 className="text-white font-bold text-xl leading-tight drop-shadow-lg">
                           {item.title}
@@ -160,82 +143,6 @@ export default function Explore() {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Category Settings Drawer */}
-      <Drawer open={!!selectedCategory} onOpenChange={() => setSelectedCategory(null)}>
-        <DrawerContent className="bg-card">
-          {selectedCategory && (
-            <>
-              {/* Preview Image */}
-              <div className="relative h-72 overflow-hidden">
-                {categoryImages[selectedCategory.id] && (
-                  <img
-                    src={categoryImages[selectedCategory.id]}
-                    alt={selectedCategory.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                )}
-                <div className={`absolute inset-0 bg-gradient-to-br ${selectedCategory.color} mix-blend-multiply`} />
-                
-                {/* Header */}
-                <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4">
-                  <button onClick={() => setSelectedCategory(null)}>
-                    <X className="w-6 h-6 text-white" />
-                  </button>
-                  <span className="text-muted-foreground font-medium">
-                    {selectedCategory.title}
-                  </span>
-                  <div className="w-6" />
-                </div>
-                
-                {/* Photo progress bars */}
-                <div className="absolute top-14 left-4 right-4 flex gap-1">
-                  {[...Array(6)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`h-0.5 flex-1 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/30'}`}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              {/* Settings */}
-              <div className="p-6 space-y-6">
-                <DrawerHeader className="p-0">
-                  <DrawerTitle>{selectedCategory.title} settings</DrawerTitle>
-                </DrawerHeader>
-                
-                {/* Distance slider */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-foreground">Discovery distance</span>
-                    <span className="text-foreground font-medium">{distance[0]} km</span>
-                  </div>
-                  <Slider
-                    value={distance}
-                    onValueChange={setDistance}
-                    max={160}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-                
-                <p className="text-sm text-muted-foreground text-center">
-                  These settings only apply to {selectedCategory.title}
-                </p>
-                
-                <Button 
-                  onClick={() => setSelectedCategory(null)}
-                  className="w-full py-6 text-lg font-bold rounded-full"
-                  variant="secondary"
-                >
-                  Update settings
-                </Button>
-              </div>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
 
       <BottomNav />
     </div>

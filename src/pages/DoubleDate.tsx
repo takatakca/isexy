@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Search, Heart, X, Check, Sparkles, Share2 } from "lucide-react";
+import { Users, UserPlus, Search, Heart, X, Check, Sparkles, Share2, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ interface DoubleDatePair {
 
 export default function DoubleDate() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     show_me_on_friend_profile: true,
     show_friends_on_profile: true,
@@ -279,9 +281,36 @@ export default function DoubleDate() {
                       </Badge>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => endPair(pair.id)}>
-                    End Pair
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={async () => {
+                      // Find group chat for this pair's double date match
+                      const { data: matches } = await supabase
+                        .from("double_date_matches")
+                        .select("id")
+                        .or(`pair1_id.eq.${pair.id},pair2_id.eq.${pair.id}`)
+                        .eq("is_active", true)
+                        .limit(1);
+                      
+                      if (matches?.[0]) {
+                        const { data: groupChat } = await supabase
+                          .from("group_chats")
+                          .select("id")
+                          .eq("double_date_match_id", matches[0].id)
+                          .single();
+                        
+                        if (groupChat) {
+                          navigate(`/group-chat/${groupChat.id}`);
+                          return;
+                        }
+                      }
+                      toast("No group chat yet — match with another pair first!");
+                    }}>
+                      <MessageCircle className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => endPair(pair.id)}>
+                      End Pair
+                    </Button>
+                  </div>
                 </div>
               ))}
             </CardContent>
