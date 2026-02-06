@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export default function BuyCredits() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentCredits, setCurrentCredits] = useState(0);
 
-  useState(() => {
+  useEffect(() => {
     const fetchCredits = async () => {
       if (!profile?.id) return;
       const { data } = await supabase
@@ -42,7 +42,7 @@ export default function BuyCredits() {
       if (data) setCurrentCredits(data.credits);
     };
     fetchCredits();
-  });
+  }, [profile?.id]);
 
   const handlePurchase = async () => {
     if (!profile) {
