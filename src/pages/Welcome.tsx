@@ -201,8 +201,8 @@ export default function Welcome() {
       </AnimatePresence>
 
       {/* Hero Section */}
-      {/* Hero Image Section - brand centered on image */}
-      <section className="relative min-h-[85dvh] flex flex-col items-center justify-center">
+      {/* Hero Section - full image with CTAs overlaid at bottom */}
+      <section className="relative min-h-[100dvh] flex flex-col">
         <div className="absolute inset-0 z-0">
           <img
             src="/images/hero-bg.png"
@@ -210,117 +210,97 @@ export default function Welcome() {
             className="w-full h-full object-cover"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-foreground/20" />
+          <div className="absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-foreground/85 via-foreground/50 to-transparent" />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7 }}
-          className="relative z-10 text-center px-6"
-        >
-          <h1 className="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight lowercase text-primary-foreground drop-shadow-lg">
-            isexy<span className="text-primary">.</span>ca
-          </h1>
-          <p className="text-primary-foreground text-xl md:text-2xl font-semibold mt-2 drop-shadow-md">
-            Experience Cuba &<br />Canada, Together.
-          </p>
-        </motion.div>
-      </section>
+        <div className="flex-1" />
 
-      {/* Sign Up / Login Section - below hero image */}
-      <section className="bg-foreground px-6 py-10">
-        <div className="max-w-md mx-auto w-full space-y-4">
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="space-y-3"
-          >
-            <button
-              onClick={() => navigate("/signup")}
-              className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-full text-base shadow-lg hover:brightness-110 transition-all active:scale-[0.98]"
+        <div className="relative z-10 px-6 pb-8">
+          <div className="max-w-md mx-auto w-full space-y-3">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="space-y-3"
             >
-              Create account
-            </button>
-            <button
-              onClick={() => navigate("/auth")}
-              className="w-full py-3.5 border-2 border-primary-foreground/80 text-primary-foreground font-bold rounded-full text-base hover:bg-primary-foreground/10 transition-all active:scale-[0.98]"
+              <button
+                onClick={() => navigate("/signup")}
+                className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-full text-base shadow-lg hover:brightness-110 transition-all active:scale-[0.98]"
+              >
+                Create account
+              </button>
+              <button
+                onClick={() => navigate("/auth")}
+                className="w-full py-3.5 border-2 border-primary-foreground/80 text-primary-foreground font-bold rounded-full text-base hover:bg-primary-foreground/10 transition-all active:scale-[0.98] backdrop-blur-sm"
+              >
+                Log in
+              </button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+              className="space-y-3"
             >
-              Log in
-            </button>
-          </motion.div>
-
-          {/* Social sign-in */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="space-y-3"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-primary-foreground/15" />
-              <span className="text-primary-foreground/50 text-xs font-medium">or sign in with</span>
-              <div className="flex-1 h-px bg-primary-foreground/15" />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-primary-foreground/25 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors"
-              >
-                <GoogleIcon />
-                <span className="text-sm font-medium text-primary-foreground">Google</span>
-              </button>
-              <button
-                onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-primary-foreground/25 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors"
-              >
-                <FacebookIcon />
-                <span className="text-sm font-medium text-primary-foreground">Facebook</span>
-              </button>
-              <button
-                onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-primary-foreground/25 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors"
-              >
-                <PhoneIcon />
-                <span className="text-sm font-medium text-primary-foreground">Phone</span>
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Cuban Registration */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-primary-foreground/5 border border-primary/25 rounded-2xl p-4"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-xl">🇨🇺</span>
-              <div>
-                <p className="font-bold text-sm text-primary-foreground">Cuban? Sign up FREE</p>
-                <p className="text-primary-foreground/50 text-xs">Get verified and start connecting</p>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-primary-foreground/20" />
+                <span className="text-primary-foreground/60 text-xs font-medium">or sign in with</span>
+                <div className="flex-1 h-px bg-primary-foreground/20" />
               </div>
-            </div>
-            <button
-              onClick={() => navigate("/cuban-signup")}
-              className="w-full py-2.5 bg-primary text-primary-foreground font-bold rounded-xl hover:brightness-110 transition-all text-sm active:scale-[0.98]"
-            >
-              Cuban Registration (Free)
-            </button>
-          </motion.div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="flex-1 py-3 border border-primary-foreground/30 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors backdrop-blur-sm"
+                >
+                  <GoogleIcon />
+                  <span className="text-sm font-medium text-primary-foreground">Google</span>
+                </button>
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="flex-1 py-3 border border-primary-foreground/30 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors backdrop-blur-sm"
+                >
+                  <FacebookIcon />
+                  <span className="text-sm font-medium text-primary-foreground">Facebook</span>
+                </button>
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="flex-1 py-3 border border-primary-foreground/30 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors backdrop-blur-sm"
+                >
+                  <PhoneIcon />
+                  <span className="text-sm font-medium text-primary-foreground">Phone</span>
+                </button>
+              </div>
+            </motion.div>
 
-          {/* Terms */}
-          <p className="text-center text-primary-foreground/35 text-[10px] leading-relaxed pt-2">
-            By continuing you agree to our{" "}
-            <Link to="/terms" className="underline hover:text-primary-foreground/60">Terms</Link>,{" "}
-            <Link to="/privacy" className="underline hover:text-primary-foreground/60">Privacy Policy</Link> &{" "}
-            <Link to="/cookies" className="underline hover:text-primary-foreground/60">Cookies Policy</Link>.
-          </p>
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.45 }}
+              className="bg-foreground/50 backdrop-blur-md border border-primary/25 rounded-2xl p-4"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xl">🇨🇺</span>
+                <div>
+                  <p className="font-bold text-sm text-primary-foreground">Cuban? Sign up FREE</p>
+                  <p className="text-primary-foreground/50 text-xs">Get verified and start connecting</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate("/cuban-signup")}
+                className="w-full py-2.5 bg-primary text-primary-foreground font-bold rounded-xl hover:brightness-110 transition-all text-sm active:scale-[0.98]"
+              >
+                Cuban Registration (Free)
+              </button>
+            </motion.div>
+
+            <p className="text-center text-primary-foreground/40 text-[10px] leading-relaxed pt-1">
+              By continuing you agree to our{" "}
+              <Link to="/terms" className="underline hover:text-primary-foreground/60">Terms</Link>,{" "}
+              <Link to="/privacy" className="underline hover:text-primary-foreground/60">Privacy Policy</Link> &{" "}
+              <Link to="/cookies" className="underline hover:text-primary-foreground/60">Cookies Policy</Link>.
+            </p>
+          </div>
         </div>
       </section>
 
