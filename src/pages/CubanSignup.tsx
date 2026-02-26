@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Check, Phone, CreditCard, Video, Mic, Shield, Upload, Camera, X, Image } from "lucide-react";
+import { Check, Phone, CreditCard, Video, Mic, Shield, Upload, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -19,16 +19,14 @@ type Step = "account" | "whatsapp" | "carnet" | "video" | "audio" | "complete";
 
 export default function CubanSignup() {
   const navigate = useNavigate();
-  const { signUp, user, profile, loading } = useAuth();
+  const { signUp, user, profile, loading, refreshProfile } = useAuth();
   const [step, setStep] = useState<Step>("account");
   
-  // Account fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   
-  // Verification fields
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
   const [whatsappCode, setWhatsappCode] = useState("");
@@ -58,56 +56,41 @@ export default function CubanSignup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // If user is already logged in, skip to whatsapp step
   useEffect(() => {
-    if (!loading && user && profile) {
-      checkVerification();
+    if (!loading && user && step === "account") {
+      setStep("whatsapp");
     }
-  }, [user, profile, loading]);
-
-  const checkVerification = async () => {
-    if (!profile) return;
-    
-    const { data } = await supabase
-      .from("cuban_verifications" as any)
-      .select("*")
-      .eq("profile_id", profile.id)
-      .single();
-    
-    if ((data as any)?.verification_status === "approved") {
-      navigate("/discover");
-    }
-  };
+  }, [user, loading]);
 
   const validateAccount = () => {
     let valid = true;
-    
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
       setEmailError(emailResult.error.errors[0].message);
       valid = false;
-    } else {
-      setEmailError("");
-    }
+    } else setEmailError("");
 
     const passwordResult = passwordSchema.safeParse(password);
     if (!passwordResult.success) {
       setPasswordError(passwordResult.error.errors[0].message);
       valid = false;
-    } else {
-      setPasswordError("");
-    }
+    } else setPasswordError("");
 
     return valid;
   };
 
   const handleCreateAccount = async () => {
     if (!validateAccount()) return;
-
     setIsSubmitting(true);
-    const { error } = await signUp(email, password);
     
+    const { error } = await signUp(email, password);
     if (!error) {
-      setStep("whatsapp");
+      // Auto-confirm is on, user is signed in immediately
+      // Wait a moment for the auth state to update
+      setTimeout(() => {
+        setStep("whatsapp");
+      }, 1000);
     }
     setIsSubmitting(false);
   };
@@ -125,12 +108,8 @@ export default function CubanSignup() {
       const response = await supabase.functions.invoke("send-whatsapp-otp", {
         body: { phoneNumber: whatsappNumber, action: "send" }
       });
-
       if (response.error) throw response.error;
-      
       toast.success("Verification code sent to WhatsApp!");
-      
-      // If dev code is returned (for testing), auto-fill it
       if (response.data?.devCode) {
         setWhatsappCode(response.data.devCode);
       }
@@ -145,14 +124,11 @@ export default function CubanSignup() {
       toast.error("Please enter the 6-digit code");
       return;
     }
-    
     try {
       const response = await supabase.functions.invoke("send-whatsapp-otp", {
         body: { phoneNumber: whatsappNumber, action: "verify", code: whatsappCode }
       });
-
       if (response.error) throw response.error;
-      
       if (response.data?.verified) {
         setWhatsappVerified(true);
         toast.success("WhatsApp verified!");
@@ -165,17 +141,20 @@ export default function CubanSignup() {
     }
   };
 
+  // Allow skipping WhatsApp if it fails (edge function may not be deployed)
+  const handleSkipWhatsApp = () => {
+    setWhatsappVerified(false);
+    setStep("carnet");
+  };
+
   const handleImageUpload = (type: 'front' | 'back') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
       return;
     }
-
     const preview = URL.createObjectURL(file);
-    
     if (type === 'front') {
       setCarnetFront(file);
       setCarnetFrontPreview(preview);
@@ -206,17 +185,12 @@ export default function CubanSignup() {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
-
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
-
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
+        if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         const file = new File([blob], 'verification-video.webm', { type: 'video/webm' });
@@ -224,11 +198,8 @@ export default function CubanSignup() {
         setVideoPreview(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
       };
-
       mediaRecorder.start();
       setIsRecordingVideo(true);
-
-      // Auto-stop after 15 seconds
       setTimeout(() => {
         if (mediaRecorderRef.current?.state === 'recording') {
           mediaRecorderRef.current.stop();
@@ -258,17 +229,12 @@ export default function CubanSignup() {
   const startAudioRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
       const mediaRecorder = new MediaRecorder(stream);
       audioRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
-
       mediaRecorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const file = new File([blob], 'verification-audio.webm', { type: 'audio/webm' });
@@ -276,11 +242,8 @@ export default function CubanSignup() {
         setAudioPreview(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
       };
-
       mediaRecorder.start();
       setIsRecordingAudio(true);
-
-      // Auto-stop after 30 seconds
       setTimeout(() => {
         if (audioRecorderRef.current?.state === 'recording') {
           audioRecorderRef.current.stop();
@@ -310,24 +273,26 @@ export default function CubanSignup() {
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     const { data, error } = await supabase.storage
       .from('cuban-verifications')
-      .upload(path, file);
-
+      .upload(path, file, { upsert: true });
     if (error) {
       console.error('Upload error:', error);
       return null;
     }
-
     const { data: urlData } = supabase.storage
       .from('cuban-verifications')
       .getPublicUrl(path);
-
     return urlData.publicUrl;
   };
 
   const handleSubmitVerification = async () => {
-    if (!profile || !user) {
-      toast.error("Please complete account setup first");
+    if (!user) {
+      toast.error("Please sign in first");
       return;
+    }
+
+    // Refresh profile if not available yet
+    if (!profile) {
+      await refreshProfile();
     }
 
     setIsSubmitting(true);
@@ -335,30 +300,61 @@ export default function CubanSignup() {
 
     try {
       const userId = user.id;
+
+      // First ensure we have a profile - create one if needed
+      let currentProfile = profile;
+      if (!currentProfile) {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        if (!profileData) {
+          // Create a minimal profile
+          const { data: newProfile, error: createError } = await supabase
+            .from("profiles")
+            .insert({
+              user_id: userId,
+              first_name: email.split("@")[0],
+              birth_date: "2000-01-01",
+              gender: "other",
+              country: "CU",
+              is_cuban: true as any,
+            } as any)
+            .select()
+            .single();
+          
+          if (createError) throw createError;
+          currentProfile = newProfile as any;
+          await refreshProfile();
+        } else {
+          currentProfile = profileData as any;
+        }
+      }
+
+      if (!currentProfile) throw new Error("Could not create profile");
+
+      const profileId = (currentProfile as any).id;
       let carnetFrontUrl = null;
       let carnetBackUrl = null;
       let videoUrl = null;
       let audioUrl = null;
 
-      // Upload carnet front
       if (carnetFront) {
         setUploadProgress(10);
         carnetFrontUrl = await uploadFile(carnetFront, `${userId}/carnet-front.jpg`);
       }
-
-      // Upload carnet back
       if (carnetBack) {
         setUploadProgress(30);
         carnetBackUrl = await uploadFile(carnetBack, `${userId}/carnet-back.jpg`);
       }
-
-      // Upload video
       if (videoFile) {
         setUploadProgress(50);
         videoUrl = await uploadFile(videoFile, `${userId}/verification-video.webm`);
       }
-
-      // Upload audio
       if (audioFile) {
         setUploadProgress(70);
         audioUrl = await uploadFile(audioFile, `${userId}/verification-audio.webm`);
@@ -370,12 +366,12 @@ export default function CubanSignup() {
       await supabase
         .from("profiles")
         .update({ is_cuban: true } as any)
-        .eq("id", profile.id);
+        .eq("id", profileId);
 
       // Submit verification
       const { error } = await supabase.from("cuban_verifications" as any).insert({
-        profile_id: profile.id,
-        whatsapp_number: whatsappNumber,
+        profile_id: profileId,
+        whatsapp_number: whatsappNumber || "not-provided",
         whatsapp_verified: whatsappVerified,
         carnet_id: carnetId,
         carnet_front_url: carnetFrontUrl,
@@ -392,6 +388,7 @@ export default function CubanSignup() {
       toast.success("Verification submitted! We'll review your application within 24 hours.");
       navigate("/profile-setup");
     } catch (error: any) {
+      console.error("Submission error:", error);
       toast.error(error.message || "Failed to submit verification");
     }
 
@@ -510,6 +507,21 @@ export default function CubanSignup() {
                 </div>
               )}
             </div>
+
+            {!whatsappVerified && (
+              <button
+                onClick={handleSkipWhatsApp}
+                className="w-full text-center text-muted-foreground text-sm hover:text-foreground transition-colors mb-4"
+              >
+                Skip for now →
+              </button>
+            )}
+
+            {whatsappVerified && (
+              <AuthButton variant="primary" onClick={() => setStep("carnet")}>
+                Continue
+              </AuthButton>
+            )}
           </>
         );
 
@@ -540,7 +552,6 @@ export default function CubanSignup() {
                 maxLength={11}
               />
 
-              {/* Carnet Front Upload */}
               <div>
                 <label className="block text-sm font-medium mb-2">Front of Carnet</label>
                 <div className="relative">
@@ -558,19 +569,12 @@ export default function CubanSignup() {
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-xl cursor-pointer hover:bg-muted/50 transition">
                       <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                       <span className="text-sm text-muted-foreground">Upload front photo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleImageUpload('front')}
-                        className="hidden"
-                      />
+                      <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload('front')} className="hidden" />
                     </label>
                   )}
                 </div>
               </div>
 
-              {/* Carnet Back Upload */}
               <div>
                 <label className="block text-sm font-medium mb-2">Back of Carnet</label>
                 <div className="relative">
@@ -588,13 +592,7 @@ export default function CubanSignup() {
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-xl cursor-pointer hover:bg-muted/50 transition">
                       <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                       <span className="text-sm text-muted-foreground">Upload back photo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleImageUpload('back')}
-                        className="hidden"
-                      />
+                      <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload('back')} className="hidden" />
                     </label>
                   )}
                 </div>
@@ -665,11 +663,7 @@ export default function CubanSignup() {
               )}
             </div>
 
-            <AuthButton
-              variant="primary"
-              onClick={handleVideoNext}
-              disabled={!videoFile}
-            >
+            <AuthButton variant="primary" onClick={handleVideoNext} disabled={!videoFile}>
               Continue
             </AuthButton>
           </>
@@ -724,11 +718,7 @@ export default function CubanSignup() {
               )}
             </div>
 
-            <AuthButton
-              variant="primary"
-              onClick={handleAudioNext}
-              disabled={!audioFile}
-            >
+            <AuthButton variant="primary" onClick={handleAudioNext} disabled={!audioFile}>
               Continue
             </AuthButton>
           </>
@@ -750,7 +740,7 @@ export default function CubanSignup() {
             <div className="space-y-3 mb-6">
               <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
                 <Check className="w-5 h-5 text-green-600" />
-                <span>WhatsApp Verified</span>
+                <span>{whatsappVerified ? "WhatsApp Verified" : "WhatsApp Skipped"}</span>
               </div>
               <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
                 <Check className="w-5 h-5 text-green-600" />
@@ -769,10 +759,7 @@ export default function CubanSignup() {
             {isSubmitting && (
               <div className="mb-4">
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
+                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 text-center">
                   Uploading files... {uploadProgress}%
@@ -795,7 +782,6 @@ export default function CubanSignup() {
   return (
     <AuthLayout showBack variant="white">
       <div className="flex-1 flex flex-col">
-        {/* Progress indicator */}
         {step !== "account" && step !== "complete" && (
           <div className="flex gap-2 mb-6">
             {["whatsapp", "carnet", "video", "audio"].map((s, i) => (
