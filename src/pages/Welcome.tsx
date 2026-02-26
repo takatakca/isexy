@@ -2,6 +2,8 @@ import { Logo } from "@/components/Logo";
 import { AuthButton } from "@/components/AuthButton";
 import { useNavigate, Link } from "react-router-dom";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { Heart, Shield, Globe, Star, ChevronRight, Users, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 // Social icons as inline SVGs
 const GoogleIcon = () => (
@@ -25,83 +27,217 @@ const PhoneIcon = () => (
   </svg>
 );
 
+const features = [
+  { icon: Shield, title: "Verified Profiles", desc: "ID-verified members for your safety" },
+  { icon: Globe, title: "Cuba & Canada", desc: "Bridge cultures, find real connection" },
+  { icon: Heart, title: "Smart Matching", desc: "AI-powered compatibility scoring" },
+  { icon: Star, title: "Video Dates", desc: "See who you're talking to, live" },
+];
+
+const loveStories = [
+  { names: "Maria & James", location: "Havana → Toronto", quote: "We matched on CubaDate and now we're planning our wedding!" },
+  { names: "Elena & Carlos", location: "Varadero → Montreal", quote: "Distance was nothing compared to what we found together." },
+  { names: "Sophie & Daniel", location: "Santiago → Vancouver", quote: "CubaDate gave us something real in a world of filters." },
+];
+
 export default function Welcome() {
   const navigate = useNavigate();
 
   return (
-    <div className="gradient-primary min-h-screen flex flex-col relative">
-      {/* Language selector in top right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSelector variant="icon" className="text-white hover:bg-white/20" />
-      </div>
-
-      {/* Logo section */}
-      <div className="flex-1 flex items-center justify-center pt-16 pb-8">
-        <Logo size="xl" variant="light" />
-      </div>
-
-      {/* Auth section */}
-      <div className="px-6 pb-10 space-y-6 animate-slide-up">
-        {/* Terms text */}
-        <p className="text-center text-primary-foreground/90 text-sm leading-relaxed">
-          By tapping 'Continue' you agree to our{" "}
-          <Link to="/terms" className="underline font-semibold hover:opacity-80">
-            Terms
-          </Link>
-          .<br />
-          Learn how we process your data in our{" "}
-          <Link to="/privacy" className="underline font-semibold hover:opacity-80">
-            Privacy Policy
-          </Link>{" "}
-          and{" "}
-          <Link to="/cookies" className="underline font-semibold hover:opacity-80">
-            Cookies Policy
-          </Link>
-          .
-        </p>
-
-        {/* Auth buttons */}
-        <div className="space-y-3">
-          <AuthButton
-            icon={<GoogleIcon />}
-            onClick={() => navigate("/auth")}
-          >
-            Continue with Google
-          </AuthButton>
-
-          <AuthButton
-            icon={<FacebookIcon />}
-            onClick={() => navigate("/auth")}
-          >
-            Continue with Facebook
-          </AuthButton>
-
-          <AuthButton
-            icon={<PhoneIcon />}
-            onClick={() => navigate("/auth")}
-          >
-            Continue with Phone Number
-          </AuthButton>
+    <div className="min-h-screen bg-foreground text-primary-foreground overflow-hidden">
+      {/* Nav */}
+      <nav className="flex items-center justify-between px-6 py-4 relative z-20">
+        <div className="flex items-center gap-2">
+          <Logo size="sm" variant="light" showText={false} />
+          <span className="text-lg font-extrabold tracking-tight">cubadate</span>
         </div>
-
-        {/* Cuban signup option */}
-        <div className="mt-4 p-4 bg-white/10 rounded-xl border border-white/20">
-          <p className="text-primary-foreground/90 text-sm mb-3 text-center">
-            🇨🇺 Are you from Cuba? Sign up for FREE with verification!
-          </p>
+        <div className="flex items-center gap-3">
+          <LanguageSelector variant="icon" className="text-primary-foreground/80 hover:text-primary-foreground" />
           <button
-            onClick={() => navigate("/cuban-signup")}
-            className="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors"
+            onClick={() => navigate("/staff-login")}
+            className="text-xs text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors"
           >
-            Cuban Registration (Free)
+            Staff
           </button>
         </div>
+      </nav>
 
-        {/* Trouble signing in */}
-        <button className="w-full text-center text-primary-foreground font-semibold py-2 hover:opacity-80 transition-opacity mt-4">
-          Trouble signing in?
-        </button>
-      </div>
+      {/* Hero Section */}
+      <section className="relative px-6 pt-12 pb-20">
+        {/* Gradient orbs */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
+        <div className="absolute top-40 right-0 w-[300px] h-[300px] rounded-full bg-primary/10 blur-[80px] pointer-events-none" />
+
+        <div className="max-w-lg mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="text-center mb-10"
+          >
+            <h1 className="text-5xl md:text-6xl font-extrabold leading-[1.1] mb-4 tracking-tight">
+              Swipe Right<span className="text-primary">™</span>
+            </h1>
+            <p className="text-primary-foreground/70 text-lg max-w-sm mx-auto">
+              Where Cuba meets the world. Find love, build connections, cross borders.
+            </p>
+          </motion.div>
+
+          {/* Auth Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="space-y-3 mb-6"
+          >
+            <AuthButton icon={<GoogleIcon />} onClick={() => navigate("/auth")}>
+              Continue with Google
+            </AuthButton>
+            <AuthButton icon={<FacebookIcon />} onClick={() => navigate("/auth")}>
+              Continue with Facebook
+            </AuthButton>
+            <AuthButton icon={<PhoneIcon />} onClick={() => navigate("/auth")}>
+              Continue with Phone Number
+            </AuthButton>
+          </motion.div>
+
+          {/* Cuban Registration CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="bg-primary/10 border border-primary/20 rounded-2xl p-5 mb-6"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-2xl">🇨🇺</span>
+              <div>
+                <p className="font-bold text-sm">Cuban? Sign up FREE</p>
+                <p className="text-primary-foreground/60 text-xs">Get verified and start connecting</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/cuban-signup")}
+              className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors text-sm"
+            >
+              Cuban Registration (Free)
+            </button>
+          </motion.div>
+
+          {/* Terms */}
+          <p className="text-center text-primary-foreground/40 text-xs leading-relaxed">
+            By continuing you agree to our{" "}
+            <Link to="/terms" className="underline hover:text-primary-foreground/60">Terms</Link>,{" "}
+            <Link to="/privacy" className="underline hover:text-primary-foreground/60">Privacy Policy</Link> &{" "}
+            <Link to="/cookies" className="underline hover:text-primary-foreground/60">Cookies Policy</Link>.
+          </p>
+
+          <button 
+            onClick={() => navigate("/auth")}
+            className="w-full text-center text-primary-foreground/60 font-semibold py-3 hover:text-primary transition-colors mt-4 text-sm"
+          >
+            Trouble signing in?
+          </button>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="px-6 py-16 bg-primary-foreground/[0.03]">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-2xl font-bold text-center mb-8">Why CubaDate?</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {features.map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-primary-foreground/5 border border-primary-foreground/10 rounded-2xl p-4"
+              >
+                <f.icon className="w-6 h-6 text-primary mb-2" />
+                <p className="font-bold text-sm">{f.title}</p>
+                <p className="text-primary-foreground/50 text-xs mt-1">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Love Stories Section — Tinder-style cards */}
+      <section className="px-6 py-16">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Love Stories</h2>
+            <button
+              onClick={() => navigate("/love-stories")}
+              className="text-primary text-sm font-semibold flex items-center gap-1 hover:underline"
+            >
+              See all <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="space-y-4">
+            {loveStories.map((story, i) => (
+              <motion.div
+                key={story.names}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="bg-primary-foreground/5 border border-primary-foreground/10 rounded-2xl p-5 flex gap-4 items-start"
+              >
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm">{story.names}</p>
+                  <p className="text-primary-foreground/40 text-xs mb-1">{story.location}</p>
+                  <p className="text-primary-foreground/70 text-sm italic">"{story.quote}"</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Banner */}
+      <section className="px-6 py-12 bg-primary/10">
+        <div className="max-w-lg mx-auto flex justify-around text-center">
+          <div>
+            <p className="text-3xl font-extrabold text-primary">50K+</p>
+            <p className="text-primary-foreground/50 text-xs mt-1">Active Members</p>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold text-primary">12K+</p>
+            <p className="text-primary-foreground/50 text-xs mt-1">Matches Made</p>
+          </div>
+          <div>
+            <p className="text-3xl font-extrabold text-primary">3K+</p>
+            <p className="text-primary-foreground/50 text-xs mt-1">Love Stories</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="px-6 py-8 border-t border-primary-foreground/10">
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Logo size="sm" variant="light" showText={false} />
+            <span className="font-bold">cubadate</span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4 mb-4">
+            <Link to="/about" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">About</Link>
+            <Link to="/safety" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Safety</Link>
+            <Link to="/help-support" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Support</Link>
+            <Link to="/community-guidelines" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Guidelines</Link>
+            <Link to="/privacy" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Privacy</Link>
+            <Link to="/terms" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Terms</Link>
+            <Link to="/dating-regulations" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Regulations</Link>
+          </div>
+          <p className="text-center text-primary-foreground/30 text-xs">
+            © {new Date().getFullYear()} CubaDate by ISEXY.CA — All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

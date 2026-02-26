@@ -94,9 +94,9 @@ export default function ModeratorLogin() {
       // Redirect based on role
       const isAdmin = roles.some(r => r.role === "admin");
       if (isAdmin) {
-        navigate("/admin/dashboard");
+        navigate("/support");
       } else {
-        navigate("/agent-dashboard");
+        navigate("/support");
       }
 
     } catch (err) {

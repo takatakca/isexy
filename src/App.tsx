@@ -86,6 +86,7 @@ import GroupChat from "./pages/GroupChat";
 import CategorySwipe from "./pages/CategorySwipe";
 import Referrals from "./pages/Referrals";
 import ModeratorLogin from "./pages/ModeratorLogin";
+import SupportPortal from "./pages/SupportPortal";
 import Onboarding from "./pages/Onboarding";
 import WebSignup from "./pages/WebSignup";
 import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
@@ -199,6 +200,7 @@ const App = () => (
               <Route path="/explore/:category" element={<CategorySwipe />} />
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/staff-login" element={<ModeratorLogin />} />
+              <Route path="/support" element={<SupportPortal />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/agent-dashboard" element={<AgentDashboard />} />
               <Route path="/signup" element={<WebSignup />} />
