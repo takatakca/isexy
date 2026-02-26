@@ -32,7 +32,7 @@ export function Logo({ size = "md", showText = true, variant = "light", classNam
       </div>
       {showText && (
         <span className={`${textSizeClasses[size]} ${textColor} font-extrabold tracking-tight`}>
-          cubadate
+          ISEXY
         </span>
       )}
     </div>

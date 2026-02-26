@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { AuthButton } from "@/components/AuthButton";
 import { useNavigate, Link } from "react-router-dom";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { Heart, Shield, Globe, Star, ChevronRight, Users, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  Heart, Shield, Globe, Star, ChevronRight, ChevronDown, ChevronUp,
+  Menu, X, Flame, Sparkles, Video, Crown, Zap,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Social icons as inline SVGs
+// Social icons
 const GoogleIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -35,36 +39,169 @@ const features = [
 ];
 
 const loveStories = [
-  { names: "Maria & James", location: "Havana → Toronto", quote: "We matched on CubaDate and now we're planning our wedding!" },
+  { names: "Maria & James", location: "Havana → Toronto", quote: "We matched on ISEXY and now we're planning our wedding!" },
   { names: "Elena & Carlos", location: "Varadero → Montreal", quote: "Distance was nothing compared to what we found together." },
-  { names: "Sophie & Daniel", location: "Santiago → Vancouver", quote: "CubaDate gave us something real in a world of filters." },
+  { names: "Sophie & Daniel", location: "Santiago → Vancouver", quote: "ISEXY gave us something real in a world of filters." },
+];
+
+// Menu sections like Tinder's hamburger
+interface MenuSection {
+  title: string;
+  expandable: boolean;
+  items?: { label: string; path: string }[];
+  path?: string;
+}
+
+const menuSections: MenuSection[] = [
+  {
+    title: "Products",
+    expandable: true,
+    items: [
+      { label: "Discover Features", path: "/explore" },
+      { label: "Premium Features", path: "/premium" },
+      { label: "ISEXY Plus®", path: "/compare-plans" },
+      { label: "ISEXY Gold™", path: "/compare-plans" },
+      { label: "ISEXY Platinum™", path: "/compare-plans" },
+    ],
+  },
+  { title: "Learn More", expandable: false, path: "/about" },
+  {
+    title: "Safety",
+    expandable: true,
+    items: [
+      { label: "Community Guidelines", path: "/community-guidelines" },
+      { label: "Safety Tips", path: "/safety-tips" },
+      { label: "Safety Center", path: "/safety" },
+      { label: "Dating Regulations", path: "/dating-regulations" },
+    ],
+  },
+  { title: "Support", expandable: false, path: "/help-support" },
+  { title: "Download", expandable: false, path: "/signup" },
 ];
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  const toggleSection = (title: string) => {
+    setExpandedSection(prev => (prev === title ? null : title));
+  };
 
   return (
     <div className="min-h-screen bg-foreground text-primary-foreground overflow-hidden">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 relative z-20">
+      <nav className="flex items-center justify-between px-6 py-4 relative z-30">
         <div className="flex items-center gap-2">
           <Logo size="sm" variant="light" showText={false} />
-          <span className="text-lg font-extrabold tracking-tight">cubadate</span>
+          <span className="text-lg font-extrabold tracking-tight">ISEXY</span>
         </div>
-        <div className="flex items-center gap-3">
-          <LanguageSelector variant="icon" className="text-primary-foreground/80 hover:text-primary-foreground" />
-          <button
-            onClick={() => navigate("/staff-login")}
-            className="text-xs text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors"
-          >
-            Staff
-          </button>
-        </div>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="w-10 h-10 flex items-center justify-center text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+        >
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </nav>
+
+      {/* Full-screen Mobile Menu — Tinder style */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-20 bg-foreground flex flex-col"
+          >
+            {/* Menu Header */}
+            <div className="flex items-center justify-between px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Logo size="sm" variant="light" showText={false} />
+                <span className="text-lg font-extrabold tracking-tight text-primary-foreground">ISEXY</span>
+              </div>
+              <button
+                onClick={() => setMenuOpen(false)}
+                className="w-10 h-10 flex items-center justify-center text-primary-foreground/80 hover:text-primary-foreground"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Menu Sections */}
+            <div className="flex-1 overflow-y-auto px-4 pb-8">
+              {menuSections.map((section) => (
+                <div key={section.title} className="mb-2">
+                  <button
+                    onClick={() => {
+                      if (section.expandable) {
+                        toggleSection(section.title);
+                      } else if (section.path) {
+                        setMenuOpen(false);
+                        navigate(section.path);
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between px-4 py-4 rounded-xl text-left font-semibold text-base transition-colors ${
+                      expandedSection === section.title
+                        ? "bg-primary-foreground/5 text-primary"
+                        : "bg-primary-foreground/[0.03] text-primary-foreground hover:bg-primary-foreground/5"
+                    }`}
+                  >
+                    {section.title}
+                    {section.expandable && (
+                      expandedSection === section.title
+                        ? <ChevronUp className="w-5 h-5 text-primary" />
+                        : <ChevronDown className="w-5 h-5 text-primary-foreground/40" />
+                    )}
+                  </button>
+
+                  {/* Expanded items */}
+                  <AnimatePresence>
+                    {section.expandable && expandedSection === section.title && section.items && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pl-6 py-2 space-y-1">
+                          {section.items.map((item) => (
+                            <button
+                              key={item.label}
+                              onClick={() => { setMenuOpen(false); navigate(item.path); }}
+                              className="w-full text-left px-4 py-3 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom of menu */}
+            <div className="px-6 pb-8 space-y-4">
+              <button
+                onClick={() => { setMenuOpen(false); navigate("/auth"); }}
+                className="w-full py-4 bg-primary-foreground text-foreground font-bold rounded-full text-base hover:bg-primary-foreground/90 transition-colors"
+              >
+                Log in
+              </button>
+              <div className="flex items-center justify-center gap-2 text-primary-foreground/50">
+                <LanguageSelector variant="icon" className="text-primary-foreground/50 hover:text-primary-foreground" />
+                <span className="text-sm">Language</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hero Section */}
       <section className="relative px-6 pt-12 pb-20">
-        {/* Gradient orbs */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
         <div className="absolute top-40 right-0 w-[300px] h-[300px] rounded-full bg-primary/10 blur-[80px] pointer-events-none" />
 
@@ -83,22 +220,62 @@ export default function Welcome() {
             </p>
           </motion.div>
 
-          {/* Auth Buttons */}
+          {/* Create Account + Login */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="space-y-3 mb-6"
           >
-            <AuthButton icon={<GoogleIcon />} onClick={() => navigate("/auth")}>
-              Continue with Google
-            </AuthButton>
-            <AuthButton icon={<FacebookIcon />} onClick={() => navigate("/auth")}>
-              Continue with Facebook
-            </AuthButton>
-            <AuthButton icon={<PhoneIcon />} onClick={() => navigate("/auth")}>
-              Continue with Phone Number
-            </AuthButton>
+            <button
+              onClick={() => navigate("/signup")}
+              className="w-full py-4 bg-primary-foreground text-foreground font-bold rounded-full text-base hover:bg-primary-foreground/90 transition-colors"
+            >
+              Create account
+            </button>
+            <button
+              onClick={() => navigate("/auth")}
+              className="w-full py-4 border border-primary-foreground/30 text-primary-foreground font-bold rounded-full text-base hover:bg-primary-foreground/5 transition-colors"
+            >
+              Log in
+            </button>
+          </motion.div>
+
+          {/* Or sign in with */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="space-y-3 mb-6"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex-1 h-px bg-primary-foreground/10" />
+              <span className="text-primary-foreground/40 text-xs">or sign in with</span>
+              <div className="flex-1 h-px bg-primary-foreground/10" />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate("/auth")}
+                className="flex-1 py-3 border border-primary-foreground/20 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/5 transition-colors"
+              >
+                <GoogleIcon />
+                <span className="text-sm font-medium">Google</span>
+              </button>
+              <button
+                onClick={() => navigate("/auth")}
+                className="flex-1 py-3 border border-primary-foreground/20 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/5 transition-colors"
+              >
+                <FacebookIcon />
+                <span className="text-sm font-medium">Facebook</span>
+              </button>
+              <button
+                onClick={() => navigate("/auth")}
+                className="flex-1 py-3 border border-primary-foreground/20 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/5 transition-colors"
+              >
+                <PhoneIcon />
+                <span className="text-sm font-medium">Phone</span>
+              </button>
+            </div>
           </motion.div>
 
           {/* Cuban Registration CTA */}
@@ -130,20 +307,13 @@ export default function Welcome() {
             <Link to="/privacy" className="underline hover:text-primary-foreground/60">Privacy Policy</Link> &{" "}
             <Link to="/cookies" className="underline hover:text-primary-foreground/60">Cookies Policy</Link>.
           </p>
-
-          <button 
-            onClick={() => navigate("/auth")}
-            className="w-full text-center text-primary-foreground/60 font-semibold py-3 hover:text-primary transition-colors mt-4 text-sm"
-          >
-            Trouble signing in?
-          </button>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="px-6 py-16 bg-primary-foreground/[0.03]">
         <div className="max-w-lg mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8">Why CubaDate?</h2>
+          <h2 className="text-2xl font-bold text-center mb-8">Why ISEXY?</h2>
           <div className="grid grid-cols-2 gap-4">
             {features.map((f, i) => (
               <motion.div
@@ -163,7 +333,7 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* Love Stories Section — Tinder-style cards */}
+      {/* Love Stories Section */}
       <section className="px-6 py-16">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -217,25 +387,68 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="px-6 py-8 border-t border-primary-foreground/10">
+      {/* About / SEO Text Section — like Tinder's bottom text */}
+      <section className="px-6 py-12">
         <div className="max-w-lg mx-auto">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Logo size="sm" variant="light" showText={false} />
-            <span className="font-bold">cubadate</span>
-          </div>
-          <div className="flex flex-wrap justify-center gap-4 mb-4">
-            <Link to="/about" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">About</Link>
-            <Link to="/safety" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Safety</Link>
-            <Link to="/help-support" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Support</Link>
-            <Link to="/community-guidelines" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Guidelines</Link>
-            <Link to="/privacy" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Privacy</Link>
-            <Link to="/terms" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Terms</Link>
-            <Link to="/dating-regulations" className="text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Regulations</Link>
-          </div>
-          <p className="text-center text-primary-foreground/30 text-xs">
-            © {new Date().getFullYear()} CubaDate by ISEXY.CA — All rights reserved.
+          <p className="text-primary-foreground/50 text-sm leading-relaxed mb-4">
+            Looking for love, new friends, or just want to have fun? ISEXY.CA is where it happens. 
+            With thousands of matches made, it's the best way to meet your next date. Whether you're 
+            straight, part of the LGBTQIA+ community, or looking for something specific — ISEXY 
+            connects you with real, verified people across Cuba and Canada.
           </p>
+          <p className="text-primary-foreground/50 text-sm leading-relaxed">
+            ISEXY isn't just another dating app — it's a platform built for genuine connections. 
+            With video dates, smart matching, and verified profiles, you'll find exactly what 
+            you're looking for. Swipe right, match, chat, and meet. It's that simple.
+          </p>
+        </div>
+      </section>
+
+      {/* Footer — Tinder-style multi-column */}
+      <footer className="px-6 py-10 border-t border-primary-foreground/10">
+        <div className="max-w-lg mx-auto">
+          {/* Footer columns */}
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <h3 className="font-bold text-sm mb-3">Legal</h3>
+              <div className="space-y-2">
+                <Link to="/privacy" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Privacy</Link>
+                <Link to="/consumer-health-privacy" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Consumer Health Privacy</Link>
+                <Link to="/terms" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Terms of Use</Link>
+                <Link to="/cookie-policy" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Cookie Policy</Link>
+                <Link to="/licenses" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Intellectual Property</Link>
+                <Link to="/dating-regulations" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Accessibility</Link>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-bold text-sm mb-3">Resources</h3>
+              <div className="space-y-2">
+                <Link to="/faq" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">FAQ</Link>
+                <Link to="/love-stories" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Love Stories</Link>
+                <Link to="/about" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">About</Link>
+                <Link to="/contact-us" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Contact</Link>
+                <Link to="/redeem-code" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Promo Code</Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-primary-foreground/10 pt-6">
+            <div className="flex flex-wrap justify-center gap-3 mb-4 text-primary-foreground/40 text-xs">
+              <Link to="/faq" className="hover:text-primary-foreground/70">FAQ</Link>
+              <span>/</span>
+              <Link to="/safety-tips" className="hover:text-primary-foreground/70">Safety Tips</Link>
+              <span>/</span>
+              <Link to="/terms" className="hover:text-primary-foreground/70">Terms of Use</Link>
+              <span>/</span>
+              <Link to="/cookie-policy" className="hover:text-primary-foreground/70">Cookie Policy</Link>
+              <span>/</span>
+              <Link to="/privacy" className="hover:text-primary-foreground/70">Privacy Settings</Link>
+            </div>
+            <p className="text-center text-primary-foreground/30 text-xs">
+              © {new Date().getFullYear()} ISEXY.CA — All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
