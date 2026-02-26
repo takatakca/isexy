@@ -207,10 +207,10 @@ export default function Welcome() {
           <img
             src="/images/hero-bg.png"
             alt="ISEXY.CA - Experience Cuba & Canada, Together"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
             loading="eager"
           />
-          <div className="absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-foreground/85 via-foreground/50 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-foreground via-foreground/70 to-transparent" />
         </div>
 
         <div className="flex-1" />
