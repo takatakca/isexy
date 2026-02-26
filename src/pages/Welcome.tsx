@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
-import { AuthButton } from "@/components/AuthButton";
 import { useNavigate, Link } from "react-router-dom";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import {
   Heart, Shield, Globe, Star, ChevronRight, ChevronDown, ChevronUp,
-  Menu, X, Flame, Sparkles, Video, Crown, Zap,
+  Menu, X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Social icons
 const GoogleIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -44,7 +42,6 @@ const loveStories = [
   { names: "Sophie & Daniel", location: "Santiago → Vancouver", quote: "ISEXY gave us something real in a world of filters." },
 ];
 
-// Menu sections like Tinder's hamburger
 interface MenuSection {
   title: string;
   expandable: boolean;
@@ -91,7 +88,7 @@ export default function Welcome() {
   return (
     <div className="min-h-screen bg-foreground text-primary-foreground overflow-hidden">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 relative z-30">
+      <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4 z-30">
         <div className="flex items-center gap-2">
           <Logo size="sm" variant="light" showText={false} />
           <span className="text-lg font-extrabold tracking-tight">ISEXY</span>
@@ -104,7 +101,7 @@ export default function Welcome() {
         </button>
       </nav>
 
-      {/* Full-screen Mobile Menu — Tinder style */}
+      {/* Full-screen Mobile Menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -114,7 +111,6 @@ export default function Welcome() {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-20 bg-foreground flex flex-col"
           >
-            {/* Menu Header */}
             <div className="flex items-center justify-between px-6 py-4">
               <div className="flex items-center gap-2">
                 <Logo size="sm" variant="light" showText={false} />
@@ -127,8 +123,6 @@ export default function Welcome() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-
-            {/* Menu Sections */}
             <div className="flex-1 overflow-y-auto px-4 pb-8">
               {menuSections.map((section) => (
                 <div key={section.title} className="mb-2">
@@ -154,8 +148,6 @@ export default function Welcome() {
                         : <ChevronDown className="w-5 h-5 text-primary-foreground/40" />
                     )}
                   </button>
-
-                  {/* Expanded items */}
                   <AnimatePresence>
                     {section.expandable && expandedSection === section.title && section.items && (
                       <motion.div
@@ -182,8 +174,6 @@ export default function Welcome() {
                 </div>
               ))}
             </div>
-
-            {/* Bottom of menu */}
             <div className="px-6 pb-8 space-y-4">
               <button
                 onClick={() => { setMenuOpen(false); navigate("/auth"); }}
@@ -200,20 +190,24 @@ export default function Welcome() {
         )}
       </AnimatePresence>
 
-      {/* Hero Section */}
-      {/* Hero Image - shown fully, no overlay */}
-      <section className="relative w-full">
+      {/* Hero Section - Full viewport, image with overlay buttons */}
+      <section className="relative min-h-[100dvh] w-full flex flex-col">
+        {/* Background image */}
         <img
           src="/images/hero-bg.png"
           alt="ISEXY.CA - Experience Cuba & Canada, Together"
-          className="w-full h-auto block"
+          className="absolute inset-0 w-full h-full object-cover object-top"
           loading="eager"
         />
-      </section>
 
-      {/* Sign Up / Login Section - directly below image */}
-      <section className="bg-foreground px-6 py-8">
-        <div className="max-w-md mx-auto w-full space-y-4">
+        {/* Gradient overlay at bottom for button legibility */}
+        <div className="absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
+
+        {/* Spacer to push content to bottom */}
+        <div className="flex-1" />
+
+        {/* CTA Buttons overlaid on image */}
+        <div className="relative z-10 px-6 pb-6 max-w-md mx-auto w-full space-y-3">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -228,7 +222,7 @@ export default function Welcome() {
             </button>
             <button
               onClick={() => navigate("/auth")}
-              className="w-full py-3.5 border-2 border-primary-foreground/80 text-primary-foreground font-bold rounded-full text-base hover:bg-primary-foreground/10 transition-all active:scale-[0.98]"
+              className="w-full py-3.5 border-2 border-white/80 text-white font-bold rounded-full text-base hover:bg-white/10 transition-all active:scale-[0.98]"
             >
               Log in
             </button>
@@ -241,39 +235,51 @@ export default function Welcome() {
             className="space-y-3"
           >
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-primary-foreground/15" />
-              <span className="text-primary-foreground/50 text-xs font-medium">or sign in with</span>
-              <div className="flex-1 h-px bg-primary-foreground/15" />
+              <div className="flex-1 h-px bg-white/20" />
+              <span className="text-white/60 text-xs font-medium">or sign in with</span>
+              <div className="flex-1 h-px bg-white/20" />
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-primary-foreground/25 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors"
+                className="flex-1 py-3 border border-white/30 rounded-full flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
               >
                 <GoogleIcon />
-                <span className="text-sm font-medium text-primary-foreground">Google</span>
+                <span className="text-sm font-medium text-white">Google</span>
               </button>
               <button
                 onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-primary-foreground/25 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors"
+                className="flex-1 py-3 border border-white/30 rounded-full flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
               >
                 <FacebookIcon />
-                <span className="text-sm font-medium text-primary-foreground">Facebook</span>
+                <span className="text-sm font-medium text-white">Facebook</span>
               </button>
               <button
-                onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-primary-foreground/25 rounded-full flex items-center justify-center gap-2 hover:bg-primary-foreground/10 transition-colors"
+                onClick={() => navigate("/phone")}
+                className="flex-1 py-3 border border-white/30 rounded-full flex items-center justify-center gap-2 hover:bg-white/10 transition-colors text-white"
               >
                 <PhoneIcon />
-                <span className="text-sm font-medium text-primary-foreground">Phone</span>
+                <span className="text-sm font-medium">Phone</span>
               </button>
             </div>
           </motion.div>
 
+          <p className="text-center text-white/40 text-[10px] leading-relaxed pt-1">
+            By continuing you agree to our{" "}
+            <Link to="/terms" className="underline hover:text-white/60">Terms</Link>,{" "}
+            <Link to="/privacy" className="underline hover:text-white/60">Privacy Policy</Link> &{" "}
+            <Link to="/cookies" className="underline hover:text-white/60">Cookies Policy</Link>.
+          </p>
+        </div>
+      </section>
+
+      {/* Cuban Registration Card - below hero */}
+      <section className="bg-foreground px-6 py-6">
+        <div className="max-w-md mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             className="bg-primary-foreground/5 border border-primary/25 rounded-2xl p-4"
           >
             <div className="flex items-center gap-3 mb-3">
@@ -290,13 +296,6 @@ export default function Welcome() {
               Cuban Registration (Free)
             </button>
           </motion.div>
-
-          <p className="text-center text-primary-foreground/35 text-[10px] leading-relaxed pt-2">
-            By continuing you agree to our{" "}
-            <Link to="/terms" className="underline hover:text-primary-foreground/60">Terms</Link>,{" "}
-            <Link to="/privacy" className="underline hover:text-primary-foreground/60">Privacy Policy</Link> &{" "}
-            <Link to="/cookies" className="underline hover:text-primary-foreground/60">Cookies Policy</Link>.
-          </p>
         </div>
       </section>
 
@@ -377,68 +376,38 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* About / SEO Text Section — like Tinder's bottom text */}
+      {/* About / SEO Text */}
       <section className="px-6 py-12">
         <div className="max-w-lg mx-auto">
           <p className="text-primary-foreground/50 text-sm leading-relaxed mb-4">
             Looking for love, new friends, or just want to have fun? ISEXY.CA is where it happens. 
-            With thousands of matches made, it's the best way to meet your next date. Whether you're 
-            straight, part of the LGBTQIA+ community, or looking for something specific — ISEXY 
-            connects you with real, verified people across Cuba and Canada.
-          </p>
-          <p className="text-primary-foreground/50 text-sm leading-relaxed">
-            ISEXY isn't just another dating app — it's a platform built for genuine connections. 
-            With video dates, smart matching, and verified profiles, you'll find exactly what 
-            you're looking for. Swipe right, match, chat, and meet. It's that simple.
+            With thousands of matches made, it's the best way to meet your next date.
           </p>
         </div>
       </section>
 
-      {/* Footer — Tinder-style multi-column */}
-      <footer className="px-6 py-10 border-t border-primary-foreground/10">
+      {/* Footer */}
+      <footer className="px-6 py-8 border-t border-primary-foreground/10">
         <div className="max-w-lg mx-auto">
-          {/* Footer columns */}
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div>
-              <h3 className="font-bold text-sm mb-3">Legal</h3>
-              <div className="space-y-2">
-                <Link to="/privacy" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Privacy</Link>
-                <Link to="/consumer-health-privacy" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Consumer Health Privacy</Link>
-                <Link to="/terms" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Terms of Use</Link>
-                <Link to="/cookie-policy" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Cookie Policy</Link>
-                <Link to="/licenses" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Intellectual Property</Link>
-                <Link to="/dating-regulations" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Accessibility</Link>
-              </div>
+          <div className="flex items-center gap-2 mb-6">
+            <Logo size="sm" variant="light" showText={false} />
+            <span className="text-lg font-extrabold tracking-tight">ISEXY</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+            <div className="space-y-2">
+              <Link to="/faq" className="block text-primary-foreground/50 hover:text-primary-foreground">FAQ</Link>
+              <Link to="/about" className="block text-primary-foreground/50 hover:text-primary-foreground">About</Link>
+              <Link to="/safety" className="block text-primary-foreground/50 hover:text-primary-foreground">Safety</Link>
+              <Link to="/contact-us" className="block text-primary-foreground/50 hover:text-primary-foreground">Contact</Link>
             </div>
-            <div>
-              <h3 className="font-bold text-sm mb-3">Resources</h3>
-              <div className="space-y-2">
-                <Link to="/faq" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">FAQ</Link>
-                <Link to="/love-stories" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Love Stories</Link>
-                <Link to="/about" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">About</Link>
-                <Link to="/contact-us" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Contact</Link>
-                <Link to="/redeem-code" className="block text-primary-foreground/50 text-xs hover:text-primary-foreground/80">Promo Code</Link>
-              </div>
+            <div className="space-y-2">
+              <Link to="/terms" className="block text-primary-foreground/50 hover:text-primary-foreground">Terms</Link>
+              <Link to="/privacy" className="block text-primary-foreground/50 hover:text-primary-foreground">Privacy</Link>
+              <Link to="/cookie-policy" className="block text-primary-foreground/50 hover:text-primary-foreground">Cookies</Link>
+              <Link to="/consumer-health-privacy" className="block text-primary-foreground/50 hover:text-primary-foreground">Health Privacy</Link>
             </div>
           </div>
-
-          {/* Bottom bar */}
-          <div className="border-t border-primary-foreground/10 pt-6">
-            <div className="flex flex-wrap justify-center gap-3 mb-4 text-primary-foreground/40 text-xs">
-              <Link to="/faq" className="hover:text-primary-foreground/70">FAQ</Link>
-              <span>/</span>
-              <Link to="/safety-tips" className="hover:text-primary-foreground/70">Safety Tips</Link>
-              <span>/</span>
-              <Link to="/terms" className="hover:text-primary-foreground/70">Terms of Use</Link>
-              <span>/</span>
-              <Link to="/cookie-policy" className="hover:text-primary-foreground/70">Cookie Policy</Link>
-              <span>/</span>
-              <Link to="/privacy" className="hover:text-primary-foreground/70">Privacy Settings</Link>
-            </div>
-            <p className="text-center text-primary-foreground/30 text-xs">
-              © {new Date().getFullYear()} ISEXY.CA — All rights reserved.
-            </p>
-          </div>
+          <p className="text-primary-foreground/30 text-xs">© {new Date().getFullYear()} ISEXY.CA — All rights reserved.</p>
         </div>
       </footer>
     </div>
