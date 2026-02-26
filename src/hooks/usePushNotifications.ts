@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
+// Extend ServiceWorkerRegistration to include pushManager
+declare global {
+  interface ServiceWorkerRegistration {
+    pushManager: PushManager;
+  }
+  interface PushManager {
+    getSubscription(): Promise<PushSubscription | null>;
+    subscribe(options?: PushSubscriptionOptionsInit): Promise<PushSubscription>;
+  }
+}
+
 const VAPID_PUBLIC_KEY = "BEL2aJLdQU6HLMU5kzF8b_3Ih8v9jYJ4G-w_sWIlY9GSmFc0YH4-3cJzqGqOHGKJflbMFnNCCFgPBYF6UuPgqZc";
 
 interface PushNotificationState {
