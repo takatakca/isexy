@@ -109,12 +109,16 @@ export default function CubanSignup() {
         body: { phoneNumber: whatsappNumber, action: "send" }
       });
       if (response.error) throw response.error;
-      toast.success("Verification code sent to WhatsApp!");
-      if (response.data?.devCode) {
-        setWhatsappCode(response.data.devCode);
+      const data = response.data;
+      if (data?.devCode) {
+        // Auto-fill OTP code for testing (WhatsApp API not configured yet)
+        setWhatsappCode(data.devCode);
+        toast.success("Code auto-filled for testing! Click Verify to continue.");
+      } else {
+        toast.success("Verification code sent to WhatsApp!");
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to send code");
+      toast.error(error.message || "Failed to send code. You can skip this step.");
     }
     setSendingCode(false);
   };
@@ -271,17 +275,22 @@ export default function CubanSignup() {
   };
 
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
-    const { data, error } = await supabase.storage
-      .from('cuban-verifications')
-      .upload(path, file, { upsert: true });
-    if (error) {
-      console.error('Upload error:', error);
+    try {
+      const { data, error } = await supabase.storage
+        .from('cuban-verifications')
+        .upload(path, file, { upsert: true });
+      if (error) {
+        console.error('Upload error:', error);
+        toast.error(`Upload failed: ${error.message}`);
+        return null;
+      }
+      // Return the storage path (bucket is private, so no public URL)
+      return path;
+    } catch (err: any) {
+      console.error('Upload exception:', err);
+      toast.error(`Upload failed: ${err.message}`);
       return null;
     }
-    const { data: urlData } = supabase.storage
-      .from('cuban-verifications')
-      .getPublicUrl(path);
-    return urlData.publicUrl;
   };
 
   const handleSubmitVerification = async () => {

@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error };
     }
 
-    toast.success("Account created! Please check your email to verify.");
+    toast.success("Account created successfully!");
     return { error: null };
   };
 
