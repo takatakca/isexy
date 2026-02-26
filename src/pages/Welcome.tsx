@@ -201,15 +201,15 @@ export default function Welcome() {
       </AnimatePresence>
 
       {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex flex-col justify-end px-6 pb-10 pt-20">
-        {/* Background gradient simulating photo collage */}
+      <section className="relative min-h-[100vh] flex flex-col justify-center px-6 py-20">
+        {/* Background hero image */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-foreground/60 to-foreground" />
-          <div className="absolute top-[10%] left-[5%] w-[45%] h-[55%] rounded-3xl bg-primary/15 blur-sm rotate-[-6deg]" />
-          <div className="absolute top-[8%] right-[3%] w-[45%] h-[50%] rounded-3xl bg-primary/10 blur-sm rotate-[4deg]" />
-          <div className="absolute bottom-[30%] left-[10%] w-[40%] h-[35%] rounded-3xl bg-primary/8 blur-sm rotate-[3deg]" />
-          <div className="absolute bottom-[35%] right-[5%] w-[42%] h-[38%] rounded-3xl bg-primary/12 blur-sm rotate-[-3deg]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-foreground/50 to-foreground" />
+          <img
+            src="/images/hero-bg.png"
+            alt="ISEXY.CA - Where Cuba Meets Canada"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-foreground/30" />
         </div>
 
         <div className="max-w-lg mx-auto relative z-10 w-full">
@@ -217,11 +217,14 @@ export default function Welcome() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
-            className="text-center mb-10"
+            className="text-center mb-6"
           >
-            <h1 className="text-5xl md:text-7xl font-extrabold leading-[1.1] mb-2 tracking-tight">
-              ISEXY<span className="text-primary">.CA</span>
+            <h1 className="text-5xl md:text-7xl font-extrabold leading-[1.1] mb-3 tracking-tight lowercase">
+              isexy<span className="text-primary">.</span>ca
             </h1>
+            <p className="text-primary-foreground/90 text-xl md:text-2xl font-semibold">
+              Where Cuba Meets Canada
+            </p>
           </motion.div>
 
           {/* Create Account + Login */}
