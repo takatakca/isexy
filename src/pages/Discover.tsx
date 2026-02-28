@@ -146,7 +146,7 @@ export default function Discover() {
 
       let query = supabase
         .from("profiles")
-        .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, shadow_banned")
+        .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, super_boost_until, shadow_banned")
         .eq("is_active", true)
         .neq("shadow_banned", true);
 
@@ -195,8 +195,10 @@ export default function Discover() {
         const tierMult: Record<string, number> = { platinum: 2.0, gold: 1.5, plus: 1.2 };
         score = Math.round(score * (tierMult[p.subscription_tier] || 1.0));
 
-        // Boost multiplier
-        if (p.last_boost_at && new Date(p.last_boost_at).getTime() > Date.now() - 30 * 60 * 1000) {
+        // Super Boost multiplier (5x) takes priority over regular boost (3x)
+        if (p.super_boost_until && new Date(p.super_boost_until).getTime() > Date.now()) {
+          score = score * 5;
+        } else if (p.last_boost_at && new Date(p.last_boost_at).getTime() > Date.now() - 30 * 60 * 1000) {
           score = score * 3;
         }
 
@@ -234,6 +236,25 @@ export default function Discover() {
     setSwipeDirection(action === "like" ? "right" : action === "nope" ? "left" : "up");
     setLastSwiped(currentProfile);
     setShowProfileDetail(false);
+
+    // Rate limit check for free users
+    if (!userProfile.is_premium) {
+      const { data: rateCheck } = await supabase.rpc("check_swipe_rate_limit", {
+        p_profile_id: userProfile.id,
+      });
+      const rateResult = rateCheck as any;
+      if (rateResult && !rateResult.allowed) {
+        if (rateResult.error === "rate_limited") {
+          const cooldownEnd = new Date(rateResult.cooldown_until);
+          const hoursLeft = Math.ceil((cooldownEnd.getTime() - Date.now()) / (1000 * 60 * 60));
+          toast.error(`Swipe limit reached! Come back in ${hoursLeft}h or upgrade to Premium.`);
+          setShowPaywall(true);
+        }
+        setIsAnimating(false);
+        setSwipeDirection(null);
+        return;
+      }
+    }
 
     // Use server-side atomic function for likes/super_likes
     if (action === "like" || action === "super_like") {
