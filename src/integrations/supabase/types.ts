@@ -1520,6 +1520,7 @@ export type Database = {
           company: string | null
           country: string
           created_at: string
+          daily_swipe_count: number
           distance_preference: number | null
           drinking: string | null
           education: string | null
@@ -1536,6 +1537,7 @@ export type Database = {
           job_title: string | null
           last_active_at: string | null
           last_boost_at: string | null
+          last_swipe_reset_at: string | null
           latitude: number | null
           likes_remaining: number | null
           location_enabled: boolean | null
@@ -1557,7 +1559,9 @@ export type Database = {
           smoking: string | null
           subscription_expires_at: string | null
           subscription_tier: string | null
+          super_boost_until: string | null
           super_likes_remaining: number | null
+          swipe_cooldown_until: string | null
           updated_at: string
           user_id: string
           workout: string | null
@@ -1574,6 +1578,7 @@ export type Database = {
           company?: string | null
           country?: string
           created_at?: string
+          daily_swipe_count?: number
           distance_preference?: number | null
           drinking?: string | null
           education?: string | null
@@ -1590,6 +1595,7 @@ export type Database = {
           job_title?: string | null
           last_active_at?: string | null
           last_boost_at?: string | null
+          last_swipe_reset_at?: string | null
           latitude?: number | null
           likes_remaining?: number | null
           location_enabled?: boolean | null
@@ -1611,7 +1617,9 @@ export type Database = {
           smoking?: string | null
           subscription_expires_at?: string | null
           subscription_tier?: string | null
+          super_boost_until?: string | null
           super_likes_remaining?: number | null
+          swipe_cooldown_until?: string | null
           updated_at?: string
           user_id: string
           workout?: string | null
@@ -1628,6 +1636,7 @@ export type Database = {
           company?: string | null
           country?: string
           created_at?: string
+          daily_swipe_count?: number
           distance_preference?: number | null
           drinking?: string | null
           education?: string | null
@@ -1644,6 +1653,7 @@ export type Database = {
           job_title?: string | null
           last_active_at?: string | null
           last_boost_at?: string | null
+          last_swipe_reset_at?: string | null
           latitude?: number | null
           likes_remaining?: number | null
           location_enabled?: boolean | null
@@ -1665,7 +1675,9 @@ export type Database = {
           smoking?: string | null
           subscription_expires_at?: string | null
           subscription_tier?: string | null
+          super_boost_until?: string | null
           super_likes_remaining?: number | null
+          swipe_cooldown_until?: string | null
           updated_at?: string
           user_id?: string
           workout?: string | null
@@ -2440,6 +2452,7 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: number
       }
+      check_swipe_rate_limit: { Args: { p_profile_id: string }; Returns: Json }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       deduct_call_minute: {
         Args: { p_call_type: string; p_profile_id: string }

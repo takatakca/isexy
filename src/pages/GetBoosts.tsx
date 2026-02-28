@@ -103,14 +103,21 @@ export default function GetBoosts() {
     try {
       const productName = activeType === "super" 
         ? `Super Boost (${selected.duration})`
+        : activeType === "primetime"
+        ? `${selected.quantity} Primetime Boost${selected.quantity > 1 ? 's' : ''}`
         : `${selected.quantity} ${config.title}${selected.quantity > 1 ? 's' : ''}`;
 
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
         body: {
           productName,
           quantity: 1,
-          unitAmount: Math.round(total * 100), // Convert to cents
+          unitAmount: Math.round(total * 100),
           description: config.description,
+          metadata: {
+            type: activeType,
+            ...(activeType === "super" ? { hours: selected.quantity } : { quantity: selected.quantity }),
+            ...(activeType === "primetime" ? { schedule_peak: true } : {}),
+          },
         },
       });
 

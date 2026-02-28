@@ -31,6 +31,8 @@ import {
   TicketIcon,
   Coins,
   Video,
+  DollarSign,
+  Crown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -101,6 +103,8 @@ export default function AdminDashboardFull() {
   const [signupData, setSignupData] = useState<{ date: string; count: number }[]>([]);
   const [genderData, setGenderData] = useState<{ name: string; value: number }[]>([]);
   const [revenueStats, setRevenueStats] = useState({ credits: 0, subscriptions: 0, videoCalls: 0 });
+  const [tierDistribution, setTierDistribution] = useState<{ name: string; value: number }[]>([]);
+  const [revenueTimeline, setRevenueTimeline] = useState<{ date: string; amount: number }[]>([]);
 
   useEffect(() => {
     checkAdminAndFetch();
@@ -221,16 +225,48 @@ export default function AdminDashboardFull() {
   };
 
   const fetchRevenueStats = async () => {
-    const [credits, videoSessions] = await Promise.all([
-      supabase.from("credit_transactions").select("amount").eq("type", "purchase"),
+    const [credits, videoSessions, profiles, chatSubs] = await Promise.all([
+      supabase.from("credit_transactions").select("amount, created_at").eq("type", "purchase"),
       supabase.from("video_call_sessions").select("credits_used"),
+      supabase.from("profiles").select("subscription_tier, is_premium"),
+      supabase.from("chat_subscriptions").select("status").eq("status", "active"),
     ]);
 
     setRevenueStats({
       credits: credits.data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0,
-      subscriptions: 0, // Would need Stripe integration to get actual revenue
+      subscriptions: chatSubs.data?.length || 0,
       videoCalls: videoSessions.data?.reduce((sum, s) => sum + (s.credits_used || 0), 0) || 0,
     });
+
+    // Tier distribution
+    const tiers: Record<string, number> = { free: 0, plus: 0, gold: 0, platinum: 0 };
+    profiles.data?.forEach((p: any) => {
+      const tier = p.is_premium ? (p.subscription_tier || "plus") : "free";
+      tiers[tier] = (tiers[tier] || 0) + 1;
+    });
+    setTierDistribution(Object.entries(tiers).map(([name, value]) => ({ 
+      name: name.charAt(0).toUpperCase() + name.slice(1), value 
+    })));
+
+    // Revenue timeline (credit purchases over last 14 days)
+    const dailyRevenue: Record<string, number> = {};
+    for (let i = 13; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      dailyRevenue[date.toISOString().split("T")[0]] = 0;
+    }
+    credits.data?.forEach((t: any) => {
+      const dateStr = t.created_at?.split("T")[0];
+      if (dateStr && dailyRevenue[dateStr] !== undefined) {
+        dailyRevenue[dateStr] += Math.abs(t.amount);
+      }
+    });
+    setRevenueTimeline(
+      Object.entries(dailyRevenue).map(([date, amount]) => ({
+        date: format(new Date(date), "MMM d"),
+        amount,
+      }))
+    );
   };
 
   const handleBanUser = async (userId: string, currentStatus: boolean) => {
@@ -359,9 +395,10 @@ export default function AdminDashboardFull() {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="revenue">Revenue</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="tools">Tools</TabsTrigger>
           </TabsList>
@@ -506,6 +543,131 @@ export default function AdminDashboardFull() {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Revenue Tab */}
+          <TabsContent value="revenue" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-green-500" />
+                    <div>
+                      <p className="text-2xl font-bold">{revenueStats.credits}</p>
+                      <p className="text-xs text-muted-foreground">Credit Purchases</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-amber-500" />
+                    <div>
+                      <p className="text-2xl font-bold">{revenueStats.subscriptions}</p>
+                      <p className="text-xs text-muted-foreground">Active Subscriptions</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <Video className="w-5 h-5 text-purple-500" />
+                    <div>
+                      <p className="text-2xl font-bold">{revenueStats.videoCalls}</p>
+                      <p className="text-xs text-muted-foreground">Call Credits Used</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Revenue Timeline (14 days)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={revenueTimeline}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Credits" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Subscription Tier Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={tierDistribution}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                          label={({ name, value }) => `${name}: ${value}`}
+                        >
+                          {tierDistribution.map((_, index) => (
+                            <Cell key={`tier-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Key Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-foreground">
+                      {stats.total > 0 ? ((stats.premium / stats.total) * 100).toFixed(1) : 0}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">Conversion Rate</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-foreground">
+                      ${stats.premium > 0 ? (revenueStats.credits / Math.max(stats.total, 1)).toFixed(2) : "0.00"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">ARPU</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-foreground">{stats.premium}</p>
+                    <p className="text-xs text-muted-foreground">Paying Users</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-2xl font-bold text-foreground">{stats.newThisWeek}</p>
+                    <p className="text-xs text-muted-foreground">New This Week</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
