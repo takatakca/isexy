@@ -165,6 +165,48 @@ export type Database = {
           },
         ]
       }
+      conversation_unlocks: {
+        Row: {
+          created_at: string
+          credits_spent: number
+          id: string
+          match_id: string
+          unlock_type: string
+          unlocked_by: string
+        }
+        Insert: {
+          created_at?: string
+          credits_spent?: number
+          id?: string
+          match_id: string
+          unlock_type?: string
+          unlocked_by: string
+        }
+        Update: {
+          created_at?: string
+          credits_spent?: number
+          id?: string
+          match_id?: string
+          unlock_type?: string
+          unlocked_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_unlocks_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_unlocks_unlocked_by_fkey"
+            columns: ["unlocked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_codes: {
         Row: {
           code: string
@@ -2347,6 +2389,14 @@ export type Database = {
       }
       redeem_coupon: {
         Args: { p_code: string; p_profile_id: string }
+        Returns: Json
+      }
+      unlock_conversation: {
+        Args: {
+          p_match_id: string
+          p_profile_id: string
+          p_unlock_type?: string
+        }
         Returns: Json
       }
       verify_otp: {
