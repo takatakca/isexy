@@ -1,134 +1,185 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Heart, Sparkles, Star } from "lucide-react";
+import { Heart, Star, Loader2 } from "lucide-react";
 import { AuthButton } from "@/components/AuthButton";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock top picks data
-const mockTopPicks = [
-  { id: 1, name: "Julie", age: 32, timeLeft: "24h left", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=500&fit=crop" },
-  { id: 2, name: "Melissa", age: 35, timeLeft: "24h left", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=500&fit=crop" },
-  { id: 3, name: "Aline", age: 34, timeLeft: "24h left", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop" },
-  { id: 4, name: "Javiera", age: 28, timeLeft: "24h left", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=500&fit=crop" },
-];
+interface LikedProfile {
+  id: string;
+  first_name: string;
+  birth_date: string;
+  city?: string;
+  is_verified?: boolean;
+  photos: string[];
+  liked_at: string;
+}
+
+function calculateAge(birthDate: string): number {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
 
 export default function Likes() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"likes" | "picks">("likes");
+  const { profile: userProfile } = useAuth();
+  const [activeTab, setActiveTab] = useState<"likes" | "sent">("likes");
+  const [receivedLikes, setReceivedLikes] = useState<LikedProfile[]>([]);
+  const [sentLikes, setSentLikes] = useState<LikedProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (userProfile) {
+      fetchLikes();
+    }
+  }, [userProfile]);
+
+  const fetchLikes = async () => {
+    if (!userProfile) return;
+    setLoading(true);
+    try {
+      // Sent likes (profiles the user liked)
+      const { data: sentSwipes } = await supabase
+        .from("swipes")
+        .select("swiped_id, created_at")
+        .eq("swiper_id", userProfile.id)
+        .in("action", ["like", "super_like"])
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (sentSwipes && sentSwipes.length > 0) {
+        const ids = sentSwipes.map(s => s.swiped_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, birth_date, city, is_verified")
+          .in("id", ids);
+
+        if (profiles) {
+          const withPhotos = await Promise.all(
+            profiles.map(async (p) => {
+              const { data: photos } = await supabase
+                .from("profile_photos")
+                .select("photo_url")
+                .eq("profile_id", p.id)
+                .order("position")
+                .limit(1);
+              const swipe = sentSwipes.find(s => s.swiped_id === p.id);
+              return {
+                ...p,
+                photos: photos?.map(ph => ph.photo_url) || [],
+                liked_at: swipe?.created_at || "",
+              };
+            })
+          );
+          // Sort by liked_at desc
+          withPhotos.sort((a, b) => new Date(b.liked_at).getTime() - new Date(a.liked_at).getTime());
+          setSentLikes(withPhotos);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching likes:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isPremium = userProfile?.is_premium || userProfile?.subscription_tier === "gold" || userProfile?.subscription_tier === "platinum";
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
       <div className="sticky top-0 z-10 bg-background px-4 pt-12 pb-2">
         <h1 className="text-3xl font-extrabold text-foreground mb-4">Likes</h1>
-        
-        {/* Tabs */}
         <div className="flex border-b border-border">
           <button
             onClick={() => setActiveTab("likes")}
-            className={`flex-1 py-3 text-center font-semibold relative ${
-              activeTab === "likes" ? "text-foreground" : "text-muted-foreground"
-            }`}
+            className={`flex-1 py-3 text-center font-semibold relative ${activeTab === "likes" ? "text-foreground" : "text-muted-foreground"}`}
           >
-            0 Likes
-            {activeTab === "likes" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 to-rose-500" />
-            )}
+            Who Liked You
+            {activeTab === "likes" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
           <button
-            onClick={() => setActiveTab("picks")}
-            className={`flex-1 py-3 text-center font-semibold relative ${
-              activeTab === "picks" ? "text-foreground" : "text-muted-foreground"
-            }`}
+            onClick={() => setActiveTab("sent")}
+            className={`flex-1 py-3 text-center font-semibold relative ${activeTab === "sent" ? "text-foreground" : "text-muted-foreground"}`}
           >
-            <span className="flex items-center justify-center gap-1">
-              Top Picks
-              <span className="w-2 h-2 bg-rose-500 rounded-full" />
-            </span>
-            {activeTab === "picks" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 to-rose-500" />
-            )}
+            {sentLikes.length} Sent
+            {activeTab === "sent" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
         </div>
       </div>
 
-      {/* Content */}
       {activeTab === "likes" ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-8 py-16">
-          <p className="text-center text-muted-foreground mb-12">
-            Upgrade to Gold to see people who have already liked you.
-          </p>
-          
-          {/* Icon */}
-          <div className="relative mb-8">
-            <div className="flex items-center gap-1">
-              <div className="flex flex-col gap-1">
-                <div className="w-6 h-1 bg-yellow-500 rounded-full" />
-                <div className="w-4 h-1 bg-yellow-500 rounded-full" />
-                <div className="w-2 h-1 bg-yellow-500 rounded-full" />
-              </div>
-              <Heart className="w-16 h-16 text-yellow-500 fill-yellow-500" />
-            </div>
+        !isPremium ? (
+          <div className="flex-1 flex flex-col items-center justify-center px-8 py-16">
+            <Heart className="w-16 h-16 text-primary fill-primary mb-6" />
+            <p className="text-center text-lg text-muted-foreground mb-4">
+              See people who liked you with CubaDate Gold™
+            </p>
+            <AuthButton
+              variant="primary"
+              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-foreground font-bold px-12"
+              onClick={() => navigate("/premium")}
+            >
+              See Who Likes You
+            </AuthButton>
           </div>
-          
-          <p className="text-center text-lg text-muted-foreground mb-12">
-            See people who liked you with CubaDate Gold™
-          </p>
-          
-          {/* CTA Button */}
-          <AuthButton
-            variant="primary"
-            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-foreground font-bold px-12"
-            onClick={() => navigate("/premium")}
-          >
-            See Who Likes You
-          </AuthButton>
-        </div>
+        ) : (
+          <div className="px-4 py-4">
+            <p className="text-center text-muted-foreground mb-4">People who liked your profile</p>
+            {receivedLikes.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">No likes yet. Keep swiping!</p>
+            )}
+          </div>
+        )
       ) : (
         <div className="px-4 py-4">
-          <p className="text-center text-muted-foreground mb-6">
-            Upgrade to CubaDate Gold™ for more Top Picks!
-          </p>
-          
-          {/* Top Picks Grid */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {mockTopPicks.map((pick) => (
-              <div
-                key={pick.id}
-                className="relative rounded-xl overflow-hidden aspect-[3/4]"
-              >
-                {/* Blurred image */}
-                <img
-                  src={pick.image}
-                  alt={pick.name}
-                  className="w-full h-full object-cover blur-md scale-110"
-                />
-                
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                
-                {/* Star button */}
-                <button className="absolute bottom-4 right-4 w-10 h-10 bg-cyan-400 rounded-full flex items-center justify-center">
-                  <Star className="w-5 h-5 text-white fill-white" />
-                </button>
-                
-                {/* Info */}
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h3 className="font-bold text-lg">{pick.name}, {pick.age}</h3>
-                  <p className="text-yellow-400 text-sm">{pick.timeLeft}</p>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : sentLikes.length === 0 ? (
+            <div className="flex flex-col items-center py-12">
+              <Heart className="w-12 h-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No likes sent yet</p>
+              <button onClick={() => navigate("/discover")} className="mt-4 text-primary font-semibold">
+                Start Swiping
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {sentLikes.map((profile) => (
+                <div
+                  key={profile.id}
+                  className="relative rounded-xl overflow-hidden aspect-[3/4] cursor-pointer"
+                  onClick={() => navigate(`/discover`)}
+                >
+                  {profile.photos[0] ? (
+                    <img src={profile.photos[0]} alt={profile.first_name} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <Heart className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute bottom-3 left-3">
+                    <h3 className="font-bold text-white text-sm">
+                      {profile.first_name}, {calculateAge(profile.birth_date)}
+                    </h3>
+                    {profile.city && <p className="text-white/70 text-xs">{profile.city}</p>}
+                  </div>
+                  {profile.is_verified && (
+                    <div className="absolute top-2 right-2 bg-primary rounded-full p-1">
+                      <Star className="w-3 h-3 text-primary-foreground fill-current" />
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Unlock Button */}
-          <AuthButton
-            variant="primary"
-            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-foreground font-bold"
-            onClick={() => navigate("/premium")}
-          >
-            Unlock all Top Picks
-          </AuthButton>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
