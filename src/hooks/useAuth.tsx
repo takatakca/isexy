@@ -42,6 +42,9 @@ interface Profile {
   drinking?: string;
   smoking?: string;
   workout?: string;
+  shadow_banned?: boolean;
+  first_purchase_promo_used?: boolean;
+  promo_expires_at?: string;
 }
 
 interface AuthContextType {

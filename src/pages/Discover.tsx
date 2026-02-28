@@ -12,6 +12,7 @@ import { SwipeSurgeNotification, useSwipeSurge } from "@/components/SwipeSurgeNo
 import { ConsistencyChallengeModal, useStreakTracker } from "@/components/ConsistencyChallengeModal";
 import { MatchCelebration } from "@/components/MatchCelebration";
 import { ContactMethodModal } from "@/components/ContactMethodModal";
+import { FirstImpressionModal } from "@/components/FirstImpressionModal";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -82,6 +83,11 @@ export default function Discover() {
     otherName: string;
     otherPhotoUrl?: string;
   } | null>(null);
+  const [firstImpressionTarget, setFirstImpressionTarget] = useState<{
+    profileId: string;
+    name: string;
+    photoUrl?: string;
+  } | null>(null);
 
   const currentProfile = profiles[currentIndex];
   const nextProfile = profiles[currentIndex + 1];
@@ -140,8 +146,9 @@ export default function Discover() {
 
       let query = supabase
         .from("profiles")
-        .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at")
-        .eq("is_active", true);
+        .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, shadow_banned")
+        .eq("is_active", true)
+        .neq("shadow_banned", true);
 
       if (excludeIds.length > 0) {
         query = query.not("id", "in", `(${excludeIds.join(",")})`);
@@ -457,6 +464,35 @@ export default function Discover() {
         />
       )}
 
+      {/* First Impression Modal (Platinum) */}
+      {firstImpressionTarget && (
+        <FirstImpressionModal
+          isOpen={true}
+          onClose={() => {
+            // Send without message
+            setFirstImpressionTarget(null);
+            handleSwipe("super_like");
+          }}
+          onSend={async (message) => {
+            setFirstImpressionTarget(null);
+            // Perform super like first
+            await handleSwipe("super_like");
+            // Then update the swipe with the message
+            if (userProfile && currentProfile) {
+              await supabase
+                .from("swipes")
+                .update({ message })
+                .eq("swiper_id", userProfile.id)
+                .eq("swiped_id", firstImpressionTarget.profileId);
+            }
+            toast.success("First Impression sent! 💫");
+          }}
+          targetName={firstImpressionTarget.name}
+          targetPhotoUrl={firstImpressionTarget.photoUrl}
+          remainingImpressions={3}
+        />
+      )}
+
       {/* Profile Detail View */}
       {showProfileDetail && displayProfile && (
         <ProfileDetail
@@ -529,7 +565,17 @@ export default function Discover() {
           className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border">
           <X className="w-8 h-8 text-rose-500" />
         </button>
-        <button onClick={() => handleSwipe("super_like")} disabled={isAnimating}
+        <button onClick={() => {
+          if (userProfile?.subscription_tier === 'platinum' && currentProfile) {
+            setFirstImpressionTarget({
+              profileId: currentProfile.id,
+              name: currentProfile.first_name,
+              photoUrl: currentProfile.photos?.[0],
+            });
+          } else {
+            handleSwipe("super_like");
+          }
+        }} disabled={isAnimating}
           className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-cyan-400 hover:scale-110 transition-transform border border-border">
           <Star className="w-5 h-5 fill-current" />
         </button>
