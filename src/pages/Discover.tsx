@@ -234,6 +234,7 @@ export default function Discover() {
       // Match is created automatically by DB trigger (check_and_create_match)
       // Check if a match was just created to show notification
       if (!result?.already_swiped) {
+        // Match is created on every like now (one-sided messaging)
         const { data: matchData } = await supabase
           .from("matches")
           .select("id")
@@ -241,19 +242,30 @@ export default function Discover() {
           .maybeSingle();
 
         if (matchData) {
-          // Get user's photo for celebration
-          const { data: userPhotos } = await supabase
-            .from("profile_photos")
-            .select("photo_url")
-            .eq("profile_id", userProfile.id)
-            .order("position")
-            .limit(1);
+          // Check if mutual like (both liked each other)
+          const { data: mutualSwipe } = await supabase
+            .from("swipes")
+            .select("id")
+            .eq("swiper_id", currentProfile.id)
+            .eq("swiped_id", userProfile.id)
+            .in("action", ["like", "super_like"])
+            .maybeSingle();
 
-          setMatchCelebration({
-            matchId: matchData.id,
-            matchName: currentProfile.first_name,
-            matchPhotoUrl: currentProfile.photos?.[0],
-          });
+          if (mutualSwipe) {
+            // Mutual like → show celebration
+            setMatchCelebration({
+              matchId: matchData.id,
+              matchName: currentProfile.first_name,
+              matchPhotoUrl: currentProfile.photos?.[0],
+            });
+          } else {
+            // One-sided like → show contact modal directly
+            setContactModal({
+              matchId: matchData.id,
+              otherName: currentProfile.first_name,
+              otherPhotoUrl: currentProfile.photos?.[0],
+            });
+          }
         }
       }
     } else {

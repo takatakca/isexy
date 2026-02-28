@@ -371,7 +371,7 @@ export default function Messages() {
                     {!match.is_unlocked ? (
                       <span className="flex items-center gap-1">
                         <Lock className="w-3 h-3" />
-                        Unlock to chat
+                        Subscription required
                       </span>
                     ) : match.unread_count > 0 
                       ? `${match.unread_count} new message${match.unread_count > 1 ? "s" : ""}`
