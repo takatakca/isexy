@@ -2341,6 +2341,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      perform_like: {
+        Args: { p_action: string; p_swiped_id: string; p_swiper_id: string }
+        Returns: Json
+      }
       redeem_coupon: {
         Args: { p_code: string; p_profile_id: string }
         Returns: Json
