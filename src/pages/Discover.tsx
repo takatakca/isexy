@@ -198,6 +198,7 @@ export default function Discover() {
 
       if (error) {
         console.error("Error recording swipe:", error);
+        toast.error("Failed to record action. Please try again.");
         setIsAnimating(false);
         setSwipeDirection(null);
         return;
@@ -218,21 +219,16 @@ export default function Discover() {
       // Update local likes count
       if (result?.likes_remaining !== undefined) setLikesRemaining(result.likes_remaining);
 
-      // Check for match
+      // Match is created automatically by DB trigger (check_and_create_match)
+      // Check if a match was just created to show notification
       if (!result?.already_swiped) {
-        const { data: mutualSwipe } = await supabase
-          .from("swipes")
+        const { data: matchData } = await supabase
+          .from("matches")
           .select("id")
-          .eq("swiper_id", currentProfile.id)
-          .eq("swiped_id", userProfile.id)
-          .in("action", ["like", "super_like"])
+          .or(`and(profile1_id.eq.${userProfile.id < currentProfile.id ? userProfile.id : currentProfile.id},profile2_id.eq.${userProfile.id < currentProfile.id ? currentProfile.id : userProfile.id})`)
           .maybeSingle();
 
-        if (mutualSwipe) {
-          await supabase.from("matches").insert({
-            profile1_id: userProfile.id < currentProfile.id ? userProfile.id : currentProfile.id,
-            profile2_id: userProfile.id < currentProfile.id ? currentProfile.id : userProfile.id,
-          });
+        if (matchData) {
           toast.success(`It's a match with ${currentProfile.first_name}! 🎉`, {
             action: { label: "Message", onClick: () => navigate("/matches") },
           });
@@ -240,13 +236,18 @@ export default function Discover() {
       }
     } else {
       // Pass - just insert directly
-      await supabase.from("swipes").insert({
+      const { error } = await supabase.from("swipes").insert({
         swiper_id: userProfile.id,
         swiped_id: currentProfile.id,
         action: "nope",
-      }).then(({ error }) => {
-        if (error && error.code !== "23505") console.error("Error recording pass:", error);
       });
+      if (error && error.code !== "23505") {
+        console.error("Error recording pass:", error);
+        toast.error("Failed to record action.");
+        setIsAnimating(false);
+        setSwipeDirection(null);
+        return;
+      }
     }
 
     setTimeout(() => {
