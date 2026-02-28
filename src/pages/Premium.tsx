@@ -4,6 +4,8 @@ import { X, Check, Loader2, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { subscriptionTiers, SubscriptionTier } from "@/lib/subscriptionTiers";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { PromoCountdownBanner } from "@/components/PromoCountdownBanner";
 
 type Duration = "week" | "month" | "6months";
 
@@ -107,9 +109,11 @@ const tierConfig: Record<SubscriptionTier, {
 
 export default function Premium() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
   const [selectedDuration, setSelectedDuration] = useState<Duration>("week");
   const [loading, setLoading] = useState(false);
+  const showPromo = !profile?.first_purchase_promo_used && !profile?.is_premium;
 
   const config = tierConfig[activeTier];
   const plans = planOptions[activeTier];
@@ -180,6 +184,18 @@ export default function Premium() {
           </h1>
         </div>
       </div>
+
+      {/* FOMO Promo Banner */}
+      {showPromo && (
+        <PromoCountdownBanner
+          onCtaClick={() => {
+            setSelectedDuration("week");
+            handleSubscribe();
+          }}
+          discountPercent={50}
+          durationMinutes={30}
+        />
+      )}
 
       {/* Plan selection */}
       <div className="px-4 -mt-2">

@@ -1524,6 +1524,7 @@ export type Database = {
           drinking: string | null
           education: string | null
           first_name: string
+          first_purchase_promo_used: boolean | null
           gender: string
           id: string
           interested_in: string[] | null
@@ -1543,10 +1544,14 @@ export type Database = {
           love_language: string | null
           pets: string[] | null
           privacy_accepted: boolean | null
+          promo_expires_at: string | null
           prompts: Json | null
           referral_code: string | null
           school: string | null
           sexual_orientation: string | null
+          shadow_banned: boolean | null
+          shadow_banned_at: string | null
+          shadow_banned_reason: string | null
           show_gender: boolean | null
           show_orientation: boolean | null
           smoking: string | null
@@ -1573,6 +1578,7 @@ export type Database = {
           drinking?: string | null
           education?: string | null
           first_name: string
+          first_purchase_promo_used?: boolean | null
           gender: string
           id?: string
           interested_in?: string[] | null
@@ -1592,10 +1598,14 @@ export type Database = {
           love_language?: string | null
           pets?: string[] | null
           privacy_accepted?: boolean | null
+          promo_expires_at?: string | null
           prompts?: Json | null
           referral_code?: string | null
           school?: string | null
           sexual_orientation?: string | null
+          shadow_banned?: boolean | null
+          shadow_banned_at?: string | null
+          shadow_banned_reason?: string | null
           show_gender?: boolean | null
           show_orientation?: boolean | null
           smoking?: string | null
@@ -1622,6 +1632,7 @@ export type Database = {
           drinking?: string | null
           education?: string | null
           first_name?: string
+          first_purchase_promo_used?: boolean | null
           gender?: string
           id?: string
           interested_in?: string[] | null
@@ -1641,10 +1652,14 @@ export type Database = {
           love_language?: string | null
           pets?: string[] | null
           privacy_accepted?: boolean | null
+          promo_expires_at?: string | null
           prompts?: Json | null
           referral_code?: string | null
           school?: string | null
           sexual_orientation?: string | null
+          shadow_banned?: boolean | null
+          shadow_banned_at?: string | null
+          shadow_banned_reason?: string | null
           show_gender?: boolean | null
           show_orientation?: boolean | null
           smoking?: string | null
@@ -2086,6 +2101,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
+          message: string | null
           swiped_id: string
           swiper_id: string
         }
@@ -2093,6 +2109,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
+          message?: string | null
           swiped_id: string
           swiper_id: string
         }
@@ -2100,6 +2117,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
+          message?: string | null
           swiped_id?: string
           swiper_id?: string
         }
