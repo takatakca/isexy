@@ -21,19 +21,19 @@ interface PlanOption {
 
 const planOptions: Record<SubscriptionTier, PlanOption[]> = {
   plus: [
-    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 3.75, totalPrice: 3.75 },
-    { duration: "month", label: "1 Month", weeklyPrice: 3.75, totalPrice: 14.99, savings: 0 },
-    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 2.50, totalPrice: 59.99, savings: 33 },
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 9.99, totalPrice: 9.99 },
+    { duration: "month", label: "1 Month", weeklyPrice: 6.62, totalPrice: 26.49, savings: 34 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 3.33, totalPrice: 79.99, savings: 67 },
   ],
   gold: [
-    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 7.50, totalPrice: 7.50 },
-    { duration: "month", label: "1 Month", weeklyPrice: 7.50, totalPrice: 29.99, savings: 0 },
-    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 5.00, totalPrice: 119.99, savings: 33 },
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 14.99, totalPrice: 14.99 },
+    { duration: "month", label: "1 Month", weeklyPrice: 9.99, totalPrice: 39.99, savings: 33 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 5.00, totalPrice: 119.99, savings: 67 },
   ],
   platinum: [
-    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 10.00, totalPrice: 10.00 },
-    { duration: "month", label: "1 Month", weeklyPrice: 10.00, totalPrice: 39.99, savings: 0 },
-    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 6.67, totalPrice: 159.99, savings: 33 },
+    { duration: "week", label: "1 Week", popular: true, weeklyPrice: 19.99, totalPrice: 19.99 },
+    { duration: "month", label: "1 Month", weeklyPrice: 12.50, totalPrice: 49.99, savings: 38 },
+    { duration: "6months", label: "6 Months", bestValue: true, weeklyPrice: 6.67, totalPrice: 159.99, savings: 67 },
   ],
 };
 
@@ -66,7 +66,8 @@ const tierFeatures: Record<SubscriptionTier, { title: string; description?: stri
     { title: "Priority Likes", description: "Your Likes will be seen sooner with Priority Likes." },
     { title: "Unlimited Rewinds" },
     { title: "1 Free Boost per month", description: "Free monthly Boost only available for 1 month or longer subscriptions." },
-    { title: "3 Free Super Likes per week" },
+    { title: "Unlimited Super Likes" },
+    { title: "Message Before Matching", description: "Send a message before you even match." },
     { title: "3 Free First Impressions per week", description: "Stand out with a message before matching." },
     { title: "Unlimited Passport™ Mode", description: "Match and chat with people anywhere in the world." },
     { title: "Top Picks", description: "Browse through a daily curated selection of profiles." },

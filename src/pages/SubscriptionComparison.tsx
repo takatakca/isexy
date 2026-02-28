@@ -22,13 +22,13 @@ const allFeatures = [
   { key: "boostPerMonth", label: "1 Free Boost per Month", plus: false, gold: true, platinum: true },
   { key: "superLikes", label: "Super Likes", plus: "0/week", gold: "5/week", platinum: "Unlimited" },
   { key: "messageBeforeMatch", label: "Message Before Matching", plus: false, gold: false, platinum: true },
+  { key: "firstImpressions", label: "First Impressions", plus: "0/week", gold: "0/week", platinum: "3/week" },
   { key: "passportMode", label: "Passport™ Mode", plus: true, gold: true, platinum: true },
   { key: "topPicks", label: "Top Picks", plus: false, gold: true, platinum: true },
   { key: "controlProfile", label: "Control Your Profile", plus: true, gold: true, platinum: true },
   { key: "controlWhoSees", label: "Control Who Sees You", plus: true, gold: true, platinum: true },
   { key: "controlWhoYouSee", label: "Control Who You See", plus: true, gold: true, platinum: true },
   { key: "hideAds", label: "Hide Ads", plus: true, gold: true, platinum: true },
-  { key: "firstImpressions", label: "First Impressions", plus: "0/week", gold: "0/week", platinum: "3/week" },
 ];
 
 const tierConfig: Record<SubscriptionTier, {
