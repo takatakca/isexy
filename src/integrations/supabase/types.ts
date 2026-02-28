@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      allowances: {
+        Row: {
+          created_at: string
+          id: string
+          monthly_boosts: number
+          monthly_boosts_max: number
+          monthly_reset_at: string
+          profile_id: string
+          updated_at: string
+          weekly_first_impressions: number
+          weekly_first_impressions_max: number
+          weekly_reset_at: string
+          weekly_super_likes: number
+          weekly_super_likes_max: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          monthly_boosts?: number
+          monthly_boosts_max?: number
+          monthly_reset_at?: string
+          profile_id: string
+          updated_at?: string
+          weekly_first_impressions?: number
+          weekly_first_impressions_max?: number
+          weekly_reset_at?: string
+          weekly_super_likes?: number
+          weekly_super_likes_max?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          monthly_boosts?: number
+          monthly_boosts_max?: number
+          monthly_reset_at?: string
+          profile_id?: string
+          updated_at?: string
+          weekly_first_impressions?: number
+          weekly_first_impressions_max?: number
+          weekly_reset_at?: string
+          weekly_super_likes?: number
+          weekly_super_likes_max?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allowances_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocks: {
         Row: {
           blocked_id: string
@@ -45,6 +98,88 @@ export type Database = {
             foreignKeyName: "blocks_blocker_id_fkey"
             columns: ["blocker_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boost_transactions: {
+        Row: {
+          action: string
+          boost_type: string
+          created_at: string
+          id: string
+          profile_id: string
+          quantity: number
+          stripe_session_id: string | null
+        }
+        Insert: {
+          action: string
+          boost_type: string
+          created_at?: string
+          id?: string
+          profile_id: string
+          quantity?: number
+          stripe_session_id?: string | null
+        }
+        Update: {
+          action?: string
+          boost_type?: string
+          created_at?: string
+          id?: string
+          profile_id?: string
+          quantity?: number
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boost_transactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boost_wallets: {
+        Row: {
+          boosts: number
+          created_at: string
+          id: string
+          monthly_boost_available: boolean
+          monthly_boost_reset_at: string | null
+          primetime_boosts: number
+          profile_id: string
+          super_boost_hours: number
+          updated_at: string
+        }
+        Insert: {
+          boosts?: number
+          created_at?: string
+          id?: string
+          monthly_boost_available?: boolean
+          monthly_boost_reset_at?: string | null
+          primetime_boosts?: number
+          profile_id: string
+          super_boost_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          boosts?: number
+          created_at?: string
+          id?: string
+          monthly_boost_available?: boolean
+          monthly_boost_reset_at?: string | null
+          primetime_boosts?: number
+          profile_id?: string
+          super_boost_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boost_wallets_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -740,6 +875,80 @@ export type Database = {
           variables?: string[] | null
         }
         Relationships: []
+      }
+      entitlements_cache: {
+        Row: {
+          ads_disabled: boolean
+          created_at: string
+          id: string
+          last_synced_at: string
+          monthly_boosts: number
+          passport_enabled: boolean
+          pre_match_message: boolean
+          priority_likes: boolean
+          priority_score_multiplier: number
+          profile_id: string
+          see_who_liked: boolean
+          tier: string
+          top_picks_enabled: boolean
+          unlimited_likes: boolean
+          unlimited_rewinds: boolean
+          updated_at: string
+          visibility_controls: boolean
+          weekly_first_impressions: number
+          weekly_super_likes: number
+        }
+        Insert: {
+          ads_disabled?: boolean
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          monthly_boosts?: number
+          passport_enabled?: boolean
+          pre_match_message?: boolean
+          priority_likes?: boolean
+          priority_score_multiplier?: number
+          profile_id: string
+          see_who_liked?: boolean
+          tier?: string
+          top_picks_enabled?: boolean
+          unlimited_likes?: boolean
+          unlimited_rewinds?: boolean
+          updated_at?: string
+          visibility_controls?: boolean
+          weekly_first_impressions?: number
+          weekly_super_likes?: number
+        }
+        Update: {
+          ads_disabled?: boolean
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          monthly_boosts?: number
+          passport_enabled?: boolean
+          pre_match_message?: boolean
+          priority_likes?: boolean
+          priority_score_multiplier?: number
+          profile_id?: string
+          see_who_liked?: boolean
+          tier?: string
+          top_picks_enabled?: boolean
+          unlimited_likes?: boolean
+          unlimited_rewinds?: boolean
+          updated_at?: string
+          visibility_controls?: boolean
+          weekly_first_impressions?: number
+          weekly_super_likes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entitlements_cache_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       forum_categories: {
         Row: {
@@ -1684,6 +1893,62 @@ export type Database = {
         }
         Relationships: []
       }
+      promotions: {
+        Row: {
+          created_at: string
+          discount_percent: number
+          eligible: boolean
+          id: string
+          offer_expires_at: string
+          offer_price: number
+          offer_start_at: string
+          profile_id: string
+          promo_type: string
+          redeemed_at: string | null
+          renewal_price: number
+          stripe_session_id: string | null
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percent?: number
+          eligible?: boolean
+          id?: string
+          offer_expires_at: string
+          offer_price: number
+          offer_start_at?: string
+          profile_id: string
+          promo_type?: string
+          redeemed_at?: string | null
+          renewal_price: number
+          stripe_session_id?: string | null
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          discount_percent?: number
+          eligible?: boolean
+          id?: string
+          offer_expires_at?: string
+          offer_price?: number
+          offer_start_at?: string
+          profile_id?: string
+          promo_type?: string
+          redeemed_at?: string | null
+          renewal_price?: number
+          stripe_session_id?: string | null
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -2452,6 +2717,10 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: number
       }
+      check_promo_eligibility: {
+        Args: { p_profile_id: string; p_tier: string }
+        Returns: Json
+      }
       check_swipe_rate_limit: { Args: { p_profile_id: string }; Returns: Json }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       deduct_call_minute: {
@@ -2483,12 +2752,19 @@ export type Database = {
         Args: { p_code: string; p_profile_id: string }
         Returns: Json
       }
+      reset_monthly_allowances: { Args: never; Returns: number }
+      reset_weekly_allowances: { Args: never; Returns: number }
+      sync_entitlements: { Args: { p_profile_id: string }; Returns: Json }
       unlock_conversation: {
         Args: {
           p_match_id: string
           p_profile_id: string
           p_unlock_type?: string
         }
+        Returns: Json
+      }
+      use_boost: {
+        Args: { p_boost_type: string; p_profile_id: string }
         Returns: Json
       }
       verify_otp: {
