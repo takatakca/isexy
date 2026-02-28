@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.update-user-password]
 verify_jwt = false
+
+[functions.subscription-resets]
+verify_jwt = false
+
+[functions.create-minute-purchase]
+verify_jwt = false

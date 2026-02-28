@@ -2418,6 +2418,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_profile_score: {
+        Args: { p_profile_id: string }
+        Returns: number
+      }
       cleanup_expired_otps: { Args: never; Returns: undefined }
       deduct_call_minute: {
         Args: { p_call_type: string; p_profile_id: string }

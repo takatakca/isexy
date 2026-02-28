@@ -140,7 +140,7 @@ export default function Discover() {
 
       let query = supabase
         .from("profiles")
-        .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests")
+        .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at")
         .eq("is_active", true);
 
       if (excludeIds.length > 0) {
@@ -173,14 +173,42 @@ export default function Discover() {
         })
       );
 
-      const sorted = profilesWithPhotos.sort((a, b) => {
+      // Score-based ranking: tier multiplier + boost + profile completeness
+      const scoredProfiles = profilesWithPhotos.map((p: any) => {
+        let score = 0;
+        if (p.photos.length > 0) score += p.photos.length * 7;
+        if (p.bio && p.bio.length >= 10) score += 20;
+        if (p.interests && p.interests.length >= 3) score += 12;
+        if (p.is_verified) score += 8;
+        if (p.job_title) score += 8;
+        if (p.school) score += 6;
+        if (p.city) score += 6;
+
+        // Tier multiplier
+        const tierMult: Record<string, number> = { platinum: 2.0, gold: 1.5, plus: 1.2 };
+        score = Math.round(score * (tierMult[p.subscription_tier] || 1.0));
+
+        // Boost multiplier
+        if (p.last_boost_at && new Date(p.last_boost_at).getTime() > Date.now() - 30 * 60 * 1000) {
+          score = score * 3;
+        }
+
+        // Distance penalty
+        let dist = Infinity;
+        if (userProfile?.latitude && p.latitude) {
+          dist = calculateDistance(userProfile.latitude, userProfile.longitude || 0, p.latitude, p.longitude || 0);
+        }
+        return { ...p, _score: score, _dist: dist };
+      });
+
+      const sorted = scoredProfiles.sort((a: any, b: any) => {
+        // Photos first
         if (a.photos.length > 0 && b.photos.length === 0) return -1;
         if (a.photos.length === 0 && b.photos.length > 0) return 1;
-        if (userProfile?.latitude && a.latitude && b.latitude) {
-          return calculateDistance(userProfile.latitude, userProfile.longitude || 0, a.latitude, a.longitude || 0) -
-            calculateDistance(userProfile.latitude, userProfile.longitude || 0, b.latitude, b.longitude || 0);
-        }
-        return 0;
+        // Then by score descending
+        if (b._score !== a._score) return b._score - a._score;
+        // Then by distance ascending
+        return a._dist - b._dist;
       });
 
       setProfiles(sorted);
