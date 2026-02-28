@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Shield, Search, Smile, X, CreditCard, Smartphone, AlertTriangle, CheckCheck } from "lucide-react";
+import { Shield, Search, Smile, X, CreditCard, Smartphone, AlertTriangle, CheckCheck, Lock } from "lucide-react";
 import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { ScheduledCallsList } from "@/components/ScheduledCallsList";
 import { MissedCallBanner } from "@/components/MissedCallBanner";
+import { ContactMethodModal } from "@/components/ContactMethodModal";
 
 interface Match {
   id: string;
@@ -19,6 +20,7 @@ interface Match {
   };
   last_message_at: string | null;
   unread_count: number;
+  is_unlocked: boolean;
 }
 
 const safetySlides = [
@@ -55,6 +57,11 @@ export default function Messages() {
   const [safetySlide, setSafetySlide] = useState(0);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactModal, setContactModal] = useState<{
+    matchId: string;
+    otherName: string;
+    otherPhotoUrl?: string;
+  } | null>(null);
 
   useEffect(() => {
     // Check if user has seen safety tips
@@ -93,7 +100,7 @@ export default function Messages() {
         (data || []).map(async (match) => {
           const otherProfileId = match.profile1_id === profile.id ? match.profile2_id : match.profile1_id;
           
-          const [profileResult, photoResult, unreadResult] = await Promise.all([
+          const [profileResult, photoResult, unreadResult, unlockResult] = await Promise.all([
             supabase
               .from("profiles")
               .select("id, first_name, last_active_at")
@@ -112,6 +119,13 @@ export default function Messages() {
               .eq("match_id", match.id)
               .neq("sender_id", profile.id)
               .eq("is_read", false),
+            supabase
+              .from("conversation_unlocks")
+              .select("id")
+              .eq("match_id", match.id)
+              .eq("unlocked_by", profile.id)
+              .eq("unlock_type", "chat")
+              .maybeSingle(),
           ]);
 
           return {
@@ -124,6 +138,7 @@ export default function Messages() {
             },
             last_message_at: match.last_message_at,
             unread_count: unreadResult.data?.length || 0,
+            is_unlocked: unlockResult.data !== null || profile.is_premium === true,
           };
         })
       );
@@ -307,7 +322,17 @@ export default function Messages() {
             {matches.map((match) => (
               <button
                 key={match.id}
-                onClick={() => navigate(`/chat/${match.id}`)}
+                onClick={() => {
+                  if (match.is_unlocked) {
+                    navigate(`/chat/${match.id}`);
+                  } else {
+                    setContactModal({
+                      matchId: match.id,
+                      otherName: match.other_profile.first_name,
+                      otherPhotoUrl: match.other_profile.photo_url,
+                    });
+                  }
+                }}
                 className="w-full flex items-center gap-3 p-3 hover:bg-muted rounded-xl transition-colors"
               >
                 <div className="relative w-14 h-14 rounded-full bg-muted overflow-hidden">
@@ -322,7 +347,6 @@ export default function Messages() {
                       {match.other_profile.first_name[0]}
                     </div>
                   )}
-                  {/* Online indicator */}
                   <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-background rounded-full">
                     <OnlineStatusIndicator 
                       lastActiveAt={match.other_profile.last_active_at || null} 
@@ -337,14 +361,19 @@ export default function Messages() {
                     </h3>
                     {match.unread_count > 0 && (
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <span className="text-xs font-bold text-white">
+                        <span className="text-xs font-bold text-primary-foreground">
                           {match.unread_count > 9 ? "9+" : match.unread_count}
                         </span>
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground truncate">
-                    {match.unread_count > 0 
+                    {!match.is_unlocked ? (
+                      <span className="flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Unlock to chat
+                      </span>
+                    ) : match.unread_count > 0 
                       ? `${match.unread_count} new message${match.unread_count > 1 ? "s" : ""}`
                       : "Say something!"}
                   </p>
@@ -354,6 +383,17 @@ export default function Messages() {
           </div>
         )}
       </div>
+
+      {/* Contact Method Modal */}
+      {contactModal && (
+        <ContactMethodModal
+          isOpen={true}
+          onClose={() => { setContactModal(null); fetchMatches(); }}
+          matchId={contactModal.matchId}
+          otherName={contactModal.otherName}
+          otherPhotoUrl={contactModal.otherPhotoUrl}
+        />
+      )}
 
       <BottomNav />
     </div>

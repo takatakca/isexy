@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Heart, MessageCircle, Flame, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
+import { ContactMethodModal } from "@/components/ContactMethodModal";
 
 interface Match {
   id: string;
@@ -25,6 +26,11 @@ export default function Matches() {
   const { profile } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactModal, setContactModal] = useState<{
+    matchId: string;
+    otherName: string;
+    otherPhotoUrl?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -159,7 +165,11 @@ export default function Matches() {
               {matches.slice(0, 6).map((match) => (
                 <button
                   key={match.id}
-                  onClick={() => navigate(`/chat/${match.id}`)}
+                  onClick={() => setContactModal({
+                    matchId: match.id,
+                    otherName: match.other_profile.first_name,
+                    otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
+                  })}
                   className="relative aspect-square rounded-xl overflow-hidden"
                 >
                   {match.other_profile.photos[0] ? (
@@ -204,7 +214,11 @@ export default function Matches() {
               {matches.map((match) => (
                 <button
                   key={match.id}
-                  onClick={() => navigate(`/chat/${match.id}`)}
+                  onClick={() => setContactModal({
+                    matchId: match.id,
+                    otherName: match.other_profile.first_name,
+                    otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
+                  })}
                   className="w-full flex items-center gap-3 p-3 bg-card rounded-xl border border-border hover:bg-muted/50 transition-colors"
                 >
                   <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
@@ -261,6 +275,17 @@ export default function Matches() {
           </div>
         )}
       </main>
+
+      {/* Contact Method Modal */}
+      {contactModal && (
+        <ContactMethodModal
+          isOpen={true}
+          onClose={() => setContactModal(null)}
+          matchId={contactModal.matchId}
+          otherName={contactModal.otherName}
+          otherPhotoUrl={contactModal.otherPhotoUrl}
+        />
+      )}
     </div>
   );
 }

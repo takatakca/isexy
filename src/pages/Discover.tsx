@@ -10,6 +10,8 @@ import { DiscoverCampaigns } from "@/components/DiscoverCampaigns";
 import { TopPicksCarousel } from "@/components/TopPicksCarousel";
 import { SwipeSurgeNotification, useSwipeSurge } from "@/components/SwipeSurgeNotification";
 import { ConsistencyChallengeModal, useStreakTracker } from "@/components/ConsistencyChallengeModal";
+import { MatchCelebration } from "@/components/MatchCelebration";
+import { ContactMethodModal } from "@/components/ContactMethodModal";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -70,6 +72,16 @@ export default function Discover() {
   const [likesRemaining, setLikesRemaining] = useState<number>(100);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showProfileDetail, setShowProfileDetail] = useState(false);
+  const [matchCelebration, setMatchCelebration] = useState<{
+    matchId: string;
+    matchName: string;
+    matchPhotoUrl?: string;
+  } | null>(null);
+  const [contactModal, setContactModal] = useState<{
+    matchId: string;
+    otherName: string;
+    otherPhotoUrl?: string;
+  } | null>(null);
 
   const currentProfile = profiles[currentIndex];
   const nextProfile = profiles[currentIndex + 1];
@@ -229,8 +241,18 @@ export default function Discover() {
           .maybeSingle();
 
         if (matchData) {
-          toast.success(`It's a match with ${currentProfile.first_name}! 🎉`, {
-            action: { label: "Message", onClick: () => navigate("/matches") },
+          // Get user's photo for celebration
+          const { data: userPhotos } = await supabase
+            .from("profile_photos")
+            .select("photo_url")
+            .eq("profile_id", userProfile.id)
+            .order("position")
+            .limit(1);
+
+          setMatchCelebration({
+            matchId: matchData.id,
+            matchName: currentProfile.first_name,
+            matchPhotoUrl: currentProfile.photos?.[0],
           });
         }
       }
@@ -363,6 +385,36 @@ export default function Discover() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Match Celebration */}
+      {matchCelebration && (
+        <MatchCelebration
+          isOpen={true}
+          onClose={() => setMatchCelebration(null)}
+          onChatNow={() => {
+            const mc = matchCelebration;
+            setMatchCelebration(null);
+            setContactModal({
+              matchId: mc.matchId,
+              otherName: mc.matchName,
+              otherPhotoUrl: mc.matchPhotoUrl,
+            });
+          }}
+          matchName={matchCelebration.matchName}
+          matchPhotoUrl={matchCelebration.matchPhotoUrl}
+        />
+      )}
+
+      {/* Contact Method Modal */}
+      {contactModal && (
+        <ContactMethodModal
+          isOpen={true}
+          onClose={() => setContactModal(null)}
+          matchId={contactModal.matchId}
+          otherName={contactModal.otherName}
+          otherPhotoUrl={contactModal.otherPhotoUrl}
+        />
       )}
 
       {/* Profile Detail View */}
