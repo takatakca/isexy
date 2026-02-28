@@ -151,7 +151,7 @@ export default function GetSuperLikes() {
       <div className="px-4 py-4">
         <div className="border border-border rounded-2xl p-4">
           <p className="text-xs font-semibold text-muted-foreground text-center mb-3">
-            Includes 2 Free Super Likes Every Week
+            Includes 5 Free Super Likes Every Week
           </p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

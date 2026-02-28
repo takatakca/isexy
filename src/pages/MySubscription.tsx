@@ -64,7 +64,7 @@ const tierSections: Record<SubscriptionTier, TierSection[]> = {
       features: [
         { title: "Unlimited Rewinds", included: true },
         { title: "1 Free Boost per month", description: "Free monthly Boost only available for 1 month or longer subscriptions.", included: true },
-        { title: "2 Free Super Likes per week", included: true },
+        { title: "5 Free Super Likes per week", included: true },
         { title: "3 Free First Impressions per week", description: "Stand out with a message before matching.", included: false },
       ],
     },
@@ -99,7 +99,8 @@ const tierSections: Record<SubscriptionTier, TierSection[]> = {
       features: [
         { title: "Unlimited Rewinds", included: true },
         { title: "1 Free Boost per month", description: "Free monthly Boost only available for 1 month or longer subscriptions.", included: true },
-        { title: "3 Free Super Likes per week", included: true },
+        { title: "Unlimited Super Likes", included: true },
+        { title: "Message Before Matching", description: "Send a message before you even match.", included: true },
         { title: "3 Free First Impressions per week", description: "Stand out with a message before matching.", included: true },
       ],
     },
@@ -136,7 +137,7 @@ const tierConfig: Record<SubscriptionTier, {
     bgColor: "bg-gradient-to-br from-pink-100 to-rose-100",
     buttonGradient: "from-rose-500 to-pink-600",
     buttonColor: "bg-gradient-to-r from-rose-500 to-pink-600",
-    startingPrice: 9.99,
+    startingPrice: 3.33,
     label: "+",
     accentColor: "text-rose-500",
   },
@@ -145,7 +146,7 @@ const tierConfig: Record<SubscriptionTier, {
     bgColor: "bg-gradient-to-br from-yellow-100 to-amber-100",
     buttonGradient: "from-yellow-500 to-amber-500",
     buttonColor: "bg-gradient-to-r from-yellow-500 to-amber-500",
-    startingPrice: 14.99,
+    startingPrice: 5.00,
     label: "GOLD",
     accentColor: "text-amber-600",
   },
@@ -154,7 +155,7 @@ const tierConfig: Record<SubscriptionTier, {
     bgColor: "bg-gradient-to-br from-slate-200 to-slate-300",
     buttonGradient: "from-slate-500 to-slate-700",
     buttonColor: "bg-gradient-to-r from-slate-500 to-slate-700",
-    startingPrice: 19.99,
+    startingPrice: 6.67,
     label: "PLATINUM",
     accentColor: "text-slate-600",
   },
@@ -300,7 +301,7 @@ export default function MySubscription() {
           onClick={() => navigate("/premium")}
           className={`w-full py-4 rounded-full font-bold text-lg text-white transition-opacity hover:opacity-90 ${config.buttonColor}`}
         >
-          STARTING AT ${config.startingPrice.toFixed(2)}
+          STARTING AT ${config.startingPrice.toFixed(2)}/wk
         </button>
       </div>
     </div>
