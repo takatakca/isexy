@@ -50,6 +50,50 @@ export type Database = {
           },
         ]
       }
+      chat_subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          plan_months: number
+          profile_id: string
+          starts_at: string
+          status: string
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          plan_months?: number
+          profile_id: string
+          starts_at?: string
+          status?: string
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          plan_months?: number
+          profile_id?: string
+          starts_at?: string
+          status?: string
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_subscriptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chatbot_conversations: {
         Row: {
           created_at: string
@@ -306,6 +350,7 @@ export type Database = {
       credit_transactions: {
         Row: {
           amount: number
+          category: string | null
           created_at: string
           description: string | null
           id: string
@@ -316,6 +361,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -326,6 +372,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          category?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -2131,8 +2178,10 @@ export type Database = {
           id: string
           last_purchase_at: string | null
           lifetime_credits: number
+          phone_minutes: number
           profile_id: string
           updated_at: string
+          video_minutes: number
         }
         Insert: {
           created_at?: string
@@ -2140,8 +2189,10 @@ export type Database = {
           id?: string
           last_purchase_at?: string | null
           lifetime_credits?: number
+          phone_minutes?: number
           profile_id: string
           updated_at?: string
+          video_minutes?: number
         }
         Update: {
           created_at?: string
@@ -2149,8 +2200,10 @@ export type Database = {
           id?: string
           last_purchase_at?: string | null
           lifetime_credits?: number
+          phone_minutes?: number
           profile_id?: string
           updated_at?: string
+          video_minutes?: number
         }
         Relationships: [
           {
@@ -2366,6 +2419,10 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_otps: { Args: never; Returns: undefined }
+      deduct_call_minute: {
+        Args: { p_call_type: string; p_profile_id: string }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       get_admin_users: {
         Args: never

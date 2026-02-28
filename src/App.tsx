@@ -82,6 +82,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import VideoCall from "./pages/VideoCall";
 import DatingRegulations from "./pages/DatingRegulations";
 import BuyCredits from "./pages/BuyCredits";
+import BuyMinutes from "./pages/BuyMinutes";
 import GroupChat from "./pages/GroupChat";
 import CategorySwipe from "./pages/CategorySwipe";
 import Referrals from "./pages/Referrals";
@@ -196,6 +197,7 @@ const App = () => (
               <Route path="/video-call/:matchId" element={<VideoCall />} />
               <Route path="/dating-regulations" element={<DatingRegulations />} />
               <Route path="/buy-credits" element={<BuyCredits />} />
+              <Route path="/buy-minutes" element={<BuyMinutes />} />
               <Route path="/group-chat/:groupId" element={<GroupChat />} />
               <Route path="/explore/:category" element={<CategorySwipe />} />
               <Route path="/referrals" element={<Referrals />} />
