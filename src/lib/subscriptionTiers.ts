@@ -1,8 +1,14 @@
+export type Duration = "week" | "month" | "6months";
+
 export const subscriptionTiers = {
   plus: {
     name: "CubaDate Plus",
-    price_id: "price_1ShkiHDTp0s6enQIJAQPgle3",
     product_id: "prod_Tf4swUnx8LI3BR",
+    price_ids: {
+      week: "price_1TTy8TDTp0s6enQIwncoADHV",
+      month: "price_1TTy8aDTp0s6enQIgteqRXkk",
+      "6months": "price_1TTy8fDTp0s6enQIHMHbr2NF",
+    } as Record<Duration, string>,
     plans: [
       { duration: "week", label: "1 Week", weeklyPrice: 9.99, totalPrice: 9.99, popular: true },
       { duration: "month", label: "1 Month", weeklyPrice: 6.62, totalPrice: 26.49, savings: 34 },
@@ -20,8 +26,12 @@ export const subscriptionTiers = {
   },
   gold: {
     name: "CubaDate Gold",
-    price_id: "price_1ShkiJDTp0s6enQIMaWUyu9U",
     product_id: "prod_Tf4sVyy62yF0cy",
+    price_ids: {
+      week: "price_1TTy8kDTp0s6enQIEWrLSt4p",
+      month: "price_1TTy8nDTp0s6enQILlo2IRaL",
+      "6months": "price_1TTy8rDTp0s6enQIqCNgNOhD",
+    } as Record<Duration, string>,
     plans: [
       { duration: "week", label: "1 Week", weeklyPrice: 14.99, totalPrice: 14.99, popular: true },
       { duration: "month", label: "1 Month", weeklyPrice: 9.99, totalPrice: 39.99, savings: 33 },
@@ -40,8 +50,12 @@ export const subscriptionTiers = {
   },
   platinum: {
     name: "CubaDate Platinum",
-    price_id: "price_1ShkiKDTp0s6enQIgWrUd2px",
     product_id: "prod_Tf4sF4GddOh8RM",
+    price_ids: {
+      week: "price_1TTy8uDTp0s6enQIHE7Mr5pM",
+      month: "price_1TTy8xDTp0s6enQIulowd3ET",
+      "6months": "price_1TTy92DTp0s6enQIqM1gxUvF",
+    } as Record<Duration, string>,
     plans: [
       { duration: "week", label: "1 Week", weeklyPrice: 19.99, totalPrice: 19.99, popular: true },
       { duration: "month", label: "1 Month", weeklyPrice: 12.50, totalPrice: 49.99, savings: 38 },
