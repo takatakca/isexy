@@ -243,11 +243,11 @@ export default function Discover() {
         return { ...p, _score: score, _dist: dist };
       });
 
-      const sorted = scoredProfiles.sort((a: any, b: any) => {
-        // Photos first
-        if (a.photos.length > 0 && b.photos.length === 0) return -1;
-        if (a.photos.length === 0 && b.photos.length > 0) return 1;
-        // Then by score descending
+      // Require at least one photo (matches profile-completion gate)
+      const withPhotos = scoredProfiles.filter((p: any) => p.photos.length > 0);
+
+      const sorted = withPhotos.sort((a: any, b: any) => {
+        // Score descending
         if (b._score !== a._score) return b._score - a._score;
         // Then by distance ascending
         return a._dist - b._dist;
