@@ -359,7 +359,12 @@ const AdminEmailTemplates = () => {
               ) : (
                 <div 
                   className="min-h-[300px] border rounded-lg p-4 bg-white text-black overflow-auto"
-                  dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(getPreviewHtml(), {
+                    ALLOWED_TAGS: ['h1','h2','h3','h4','p','div','span','a','strong','em','b','i','u','br','hr','center','table','thead','tbody','tr','td','th','ul','ol','li','img','blockquote'],
+                    ALLOWED_ATTR: ['style','class','href','src','alt','width','height','target','rel'],
+                    FORBID_TAGS: ['script','style','iframe','object','embed','form','input'],
+                    FORBID_ATTR: ['onerror','onload','onclick','onmouseover']
+                  }) }}
                 />
               )}
             </div>
