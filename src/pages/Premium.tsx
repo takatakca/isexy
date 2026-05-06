@@ -124,9 +124,8 @@ export default function Premium() {
   const handleSubscribe = async () => {
     setLoading(true);
     try {
-      const tier = subscriptionTiers[activeTier];
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId: tier.price_id },
+        body: { tier: activeTier, duration: selectedDuration },
       });
 
       if (error) throw error;
