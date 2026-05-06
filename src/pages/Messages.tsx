@@ -19,6 +19,7 @@ interface Match {
     last_active_at?: string | null;
   };
   last_message_at: string | null;
+  last_message_preview: string | null;
   unread_count: number;
   is_unlocked: boolean;
 }
@@ -110,7 +111,7 @@ export default function Messages() {
         (data || []).map(async (match) => {
           const otherProfileId = match.profile1_id === profile.id ? match.profile2_id : match.profile1_id;
           
-          const [profileResult, photoResult, unreadResult, unlockResult] = await Promise.all([
+          const [profileResult, photoResult, unreadResult, unlockResult, lastMsgResult] = await Promise.all([
             supabase
               .from("profiles")
               .select("id, first_name, last_active_at")
@@ -122,7 +123,7 @@ export default function Messages() {
               .eq("profile_id", otherProfileId)
               .order("position")
               .limit(1)
-              .single(),
+              .maybeSingle(),
             supabase
               .from("messages")
               .select("id")
@@ -136,6 +137,13 @@ export default function Messages() {
               .eq("unlocked_by", profile.id)
               .eq("unlock_type", "chat")
               .maybeSingle(),
+            supabase
+              .from("messages")
+              .select("content, created_at")
+              .eq("match_id", match.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
           ]);
 
           return {
@@ -146,7 +154,8 @@ export default function Messages() {
               photo_url: photoResult.data?.photo_url,
               last_active_at: profileResult.data?.last_active_at,
             },
-            last_message_at: match.last_message_at,
+            last_message_at: match.last_message_at || lastMsgResult.data?.created_at || null,
+            last_message_preview: lastMsgResult.data?.content || null,
             unread_count: unreadResult.data?.length || 0,
             is_unlocked: unlockResult.data !== null || profile.is_premium === true,
           };
@@ -383,8 +392,8 @@ export default function Messages() {
                         <Lock className="w-3 h-3" />
                         Subscription required
                       </span>
-                    ) : match.unread_count > 0 
-                      ? `${match.unread_count} new message${match.unread_count > 1 ? "s" : ""}`
+                    ) : match.last_message_preview
+                      ? match.last_message_preview
                       : "Say something!"}
                   </p>
                 </div>
