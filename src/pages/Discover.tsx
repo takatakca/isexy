@@ -642,7 +642,39 @@ export default function Discover() {
           className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border">
           <Heart className="w-8 h-8 text-green-500 fill-green-500" />
         </button>
-        <button onClick={() => navigate("/get-boosts")}
+        <button onClick={async () => {
+          if (!userProfile) return;
+          // Check boost wallet balance
+          const { data: wallet } = await supabase
+            .from("boost_wallets")
+            .select("boosts, monthly_boost_available")
+            .eq("profile_id", userProfile.id)
+            .maybeSingle();
+          const hasMonthly = !!wallet?.monthly_boost_available;
+          const hasBoost = (wallet?.boosts ?? 0) > 0;
+          if (!hasMonthly && !hasBoost) {
+            navigate("/get-boosts");
+            return;
+          }
+          const type = hasMonthly ? "monthly" : "boost";
+          const { data, error } = await supabase.rpc("use_boost", {
+            p_profile_id: userProfile.id,
+            p_boost_type: type,
+          });
+          if (error) { toast.error("Failed to activate boost"); return; }
+          const result = data as any;
+          if (!result?.success) {
+            if (result?.error === "no_boosts" || result?.error === "no_monthly_boost") {
+              navigate("/get-boosts");
+              return;
+            }
+            toast.error(result?.error || "Failed to activate boost");
+            return;
+          }
+          toast.success("Boost activated! 🚀 You're top of the stack for 30 min.");
+          await refreshProfile?.();
+          fetchProfiles();
+        }}
           className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-purple-500 hover:scale-110 transition-transform border border-border">
           <Zap className="w-5 h-5 fill-current" />
         </button>
