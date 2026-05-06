@@ -320,41 +320,24 @@ export default function Discover() {
       // Update local likes count
       if (result?.likes_remaining !== undefined) setLikesRemaining(result.likes_remaining);
 
-      // Match is created automatically by DB trigger (check_and_create_match)
-      // Check if a match was just created to show notification
+      // Match is created automatically by the DB trigger (check_and_create_match) ONLY on mutual like.
+      // So if a matches row exists for this pair, it means the other user already liked us.
       if (!result?.already_swiped) {
-        // Match is created on every like now (one-sided messaging)
+        const a = userProfile.id < currentProfile.id ? userProfile.id : currentProfile.id;
+        const b = userProfile.id < currentProfile.id ? currentProfile.id : userProfile.id;
         const { data: matchData } = await supabase
           .from("matches")
           .select("id")
-          .or(`and(profile1_id.eq.${userProfile.id < currentProfile.id ? userProfile.id : currentProfile.id},profile2_id.eq.${userProfile.id < currentProfile.id ? currentProfile.id : userProfile.id})`)
+          .eq("profile1_id", a)
+          .eq("profile2_id", b)
           .maybeSingle();
 
         if (matchData) {
-          // Check if mutual like (both liked each other)
-          const { data: mutualSwipe } = await supabase
-            .from("swipes")
-            .select("id")
-            .eq("swiper_id", currentProfile.id)
-            .eq("swiped_id", userProfile.id)
-            .in("action", ["like", "super_like"])
-            .maybeSingle();
-
-          if (mutualSwipe) {
-            // Mutual like → show celebration
-            setMatchCelebration({
-              matchId: matchData.id,
-              matchName: currentProfile.first_name,
-              matchPhotoUrl: currentProfile.photos?.[0],
-            });
-          } else {
-            // One-sided like → show contact modal directly
-            setContactModal({
-              matchId: matchData.id,
-              otherName: currentProfile.first_name,
-              otherPhotoUrl: currentProfile.photos?.[0],
-            });
-          }
+          setMatchCelebration({
+            matchId: matchData.id,
+            matchName: currentProfile.first_name,
+            matchPhotoUrl: currentProfile.photos?.[0],
+          });
         }
       }
     } else {
