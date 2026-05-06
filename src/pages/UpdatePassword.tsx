@@ -25,7 +25,7 @@ export default function UpdatePassword() {
 
   useEffect(() => {
     // Check if we arrived here through proper OTP verification
-    if (!verified || !email) {
+    if (!verified || !email || !otp) {
       toast.error("Please verify your email first");
       navigate("/reset-password");
     }
