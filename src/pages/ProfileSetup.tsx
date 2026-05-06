@@ -558,7 +558,7 @@ export default function ProfileSetup() {
       onBack={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
     >
       {/* Skip button for optional steps */}
-      {[5, 6, 7].includes(step) && (
+      {[6, 7].includes(step) && (
         <button
           onClick={handleSkip}
           className="absolute top-4 right-4 text-muted-foreground font-semibold hover:text-foreground transition-colors"
