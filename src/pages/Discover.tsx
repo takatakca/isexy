@@ -432,8 +432,8 @@ export default function Discover() {
           <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6">
             <Heart className="w-12 h-12 text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2 text-center">No more profiles</h2>
-          <p className="text-muted-foreground text-center mb-6">Check back later or expand your preferences.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2 text-center">No more profiles right now</h2>
+          <p className="text-muted-foreground text-center mb-6">Try expanding your preferences or check back later.</p>
           <button onClick={fetchProfiles} className="px-6 py-3 gradient-primary text-white rounded-full font-semibold">Refresh</button>
         </main>
         <BottomNav />
