@@ -125,8 +125,8 @@ const App = () => (
               <Route path="/phone" element={<PhoneAuth />} />
               <Route path="/verify" element={<CodeVerification />} />
               <Route path="/house-rules" element={<HouseRules />} />
-              <Route path="/profile-setup" element={<ProfileSetup />} />
-              <Route path="/discover" element={<Discover />} />
+              <Route path="/profile-setup" element={<ProtectedRoute requireCompleteProfile={false}><ProfileSetup /></ProtectedRoute>} />
+              <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/likes" element={<Likes />} />
               <Route path="/matches" element={<Messages />} />
