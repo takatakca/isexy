@@ -119,11 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Defer profile fetch to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id).then(setProfile);
+          setTimeout(async () => {
+            const p = await fetchProfile(session.user.id);
+            setProfile(p);
+            setPhotoCount(p ? await fetchPhotoCount(p.id) : 0);
           }, 0);
         } else {
           setProfile(null);
+          setPhotoCount(0);
         }
       }
     );
