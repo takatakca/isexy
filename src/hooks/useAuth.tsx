@@ -198,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setPhotoCount(0);
     toast.success("Signed out successfully");
   };
 
