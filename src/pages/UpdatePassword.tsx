@@ -14,6 +14,7 @@ export default function UpdatePassword() {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || "";
+  const otp = location.state?.otp || "";
   const verified = location.state?.verified || false;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
