@@ -127,18 +127,18 @@ const App = () => (
               <Route path="/house-rules" element={<HouseRules />} />
               <Route path="/profile-setup" element={<ProtectedRoute requireCompleteProfile={false}><ProfileSetup /></ProtectedRoute>} />
               <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/likes" element={<Likes />} />
-              <Route path="/matches" element={<Messages />} />
-              <Route path="/chat/:matchId" element={<Chat />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/premium" element={<Premium />} />
-              <Route path="/edit-bio" element={<EditBio />} />
-              <Route path="/edit-profile" element={<EditProfile />} />
-              <Route path="/get-super-likes" element={<GetSuperLikes />} />
-              <Route path="/get-boosts" element={<GetBoosts />} />
-              <Route path="/my-subscription" element={<MySubscription />} />
+              <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
+              <Route path="/likes" element={<ProtectedRoute><Likes /></ProtectedRoute>} />
+              <Route path="/matches" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+              <Route path="/chat/:matchId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
+              <Route path="/edit-bio" element={<ProtectedRoute><EditBio /></ProtectedRoute>} />
+              <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+              <Route path="/get-super-likes" element={<ProtectedRoute><GetSuperLikes /></ProtectedRoute>} />
+              <Route path="/get-boosts" element={<ProtectedRoute><GetBoosts /></ProtectedRoute>} />
+              <Route path="/my-subscription" element={<ProtectedRoute><MySubscription /></ProtectedRoute>} />
               <Route path="/safety" element={<Safety />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
