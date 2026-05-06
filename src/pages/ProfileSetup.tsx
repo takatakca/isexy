@@ -6,9 +6,10 @@ import { AuthButton } from "@/components/AuthButton";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { ChipSelector } from "@/components/ChipSelector";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { 
-  Wine, Cigarette, Dumbbell, PawPrint, MessageSquare, 
+import {
+  Wine, Cigarette, Dumbbell, PawPrint, MessageSquare,
   Heart, GraduationCap, MapPin, Shield, Users, Lightbulb
 } from "lucide-react";
 
