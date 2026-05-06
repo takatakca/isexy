@@ -120,6 +120,13 @@ const App = () => (
               <Route path="/welcome" element={<Navigate to="/" replace />} />
               <Route path="/cookies" element={<Navigate to="/cookie-policy" replace />} />
               <Route path="/messages" element={<Navigate to="/matches" replace />} />
+              <Route path="/likes-you" element={<Navigate to="/who-liked-you" replace />} />
+              <Route path="/passport" element={<Navigate to="/passport-mode" replace />} />
+              <Route path="/boosts" element={<Navigate to="/get-boosts" replace />} />
+              <Route path="/super-likes" element={<Navigate to="/get-super-likes" replace />} />
+              <Route path="/subscription-comparison" element={<Navigate to="/compare-plans" replace />} />
+              <Route path="/login" element={<Navigate to="/auth" replace />} />
+              <Route path="/forgot-password" element={<Navigate to="/reset-password" replace />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cuban-signup" element={<CubanSignup />} />
               <Route path="/phone" element={<PhoneAuth />} />
