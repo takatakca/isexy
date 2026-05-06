@@ -81,19 +81,29 @@ export default function Messages() {
     if (!profile?.id) return;
     
     try {
-      const { data, error } = await supabase
-        .from("matches")
-        .select(`
-          id,
-          last_message_at,
-          profile1_id,
-          profile2_id
-        `)
-        .or(`profile1_id.eq.${profile.id},profile2_id.eq.${profile.id}`)
-        .eq("is_active", true)
-        .order("last_message_at", { ascending: false, nullsFirst: false });
+      const [matchesRes, blocksRes] = await Promise.all([
+        supabase
+          .from("matches")
+          .select(`id, last_message_at, profile1_id, profile2_id`)
+          .or(`profile1_id.eq.${profile.id},profile2_id.eq.${profile.id}`)
+          .eq("is_active", true)
+          .order("last_message_at", { ascending: false, nullsFirst: false }),
+        supabase
+          .from("blocks")
+          .select("blocker_id, blocked_id")
+          .or(`blocker_id.eq.${profile.id},blocked_id.eq.${profile.id}`),
+      ]);
 
-      if (error) throw error;
+      if (matchesRes.error) throw matchesRes.error;
+      const blockedIds = new Set<string>(
+        (blocksRes.data || []).map((b: any) =>
+          b.blocker_id === profile.id ? b.blocked_id : b.blocker_id
+        )
+      );
+      const data = (matchesRes.data || []).filter((m: any) => {
+        const other = m.profile1_id === profile.id ? m.profile2_id : m.profile1_id;
+        return !blockedIds.has(other);
+      });
 
       // Get the other profile for each match
       const matchesWithProfiles = await Promise.all(
