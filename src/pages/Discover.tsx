@@ -322,7 +322,14 @@ export default function Discover() {
 
       const result = data as any;
       if (!result?.success) {
-        if (result?.error === "no_likes_remaining" || result?.error === "no_super_likes_remaining") {
+        if (result?.error === "no_super_likes_remaining") {
+          toast.error("You're out of Super Likes!");
+          setIsAnimating(false);
+          setSwipeDirection(null);
+          navigate("/get-super-likes");
+          return;
+        }
+        if (result?.error === "no_likes_remaining") {
           setShowPaywall(true);
           toast.error("You've used all your likes! Upgrade to Premium for unlimited likes.");
           setIsAnimating(false);
