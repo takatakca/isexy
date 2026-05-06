@@ -145,7 +145,7 @@ const App = () => (
               <Route path="/love-stories" element={<LoveStories />} />
               <Route path="/about" element={<About />} />
               <Route path="/news" element={<News />} />
-              <Route path="/matches-list" element={<Matches />} />
+              <Route path="/matches-list" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
               <Route path="/interests" element={<Interests />} />
               <Route path="/block-contacts" element={<BlockContacts />} />
               <Route path="/dark-mode" element={<DarkMode />} />
