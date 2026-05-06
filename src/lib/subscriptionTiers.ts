@@ -1,76 +1,50 @@
-export type Duration = "week" | "month" | "6months";
+export type Duration = "week" | "month" | "six_months";
 
 export const subscriptionTiers = {
   plus: {
-    name: "CubaDate Plus",
-    product_id: "prod_Tf4swUnx8LI3BR",
-    price_ids: {
-      week: "price_1TTy8TDTp0s6enQIwncoADHV",
-      month: "price_1TTy8aDTp0s6enQIgteqRXkk",
-      "6months": "price_1TTy8fDTp0s6enQIHMHbr2NF",
-    } as Record<Duration, string>,
+    name: "ISEXY Plus",
     plans: [
-      { duration: "week", label: "1 Week", weeklyPrice: 9.99, totalPrice: 9.99, popular: true },
-      { duration: "month", label: "1 Month", weeklyPrice: 6.62, totalPrice: 26.49, savings: 34 },
-      { duration: "6months", label: "6 Months", weeklyPrice: 3.33, totalPrice: 79.99, bestValue: true, savings: 67 },
+      { duration: "week" as Duration, label: "1 Week", weeklyPrice: 9.99, totalPrice: 9.99, popular: true },
+      { duration: "month" as Duration, label: "1 Month", weeklyPrice: 6.62, totalPrice: 26.49, savings: 34 },
+      { duration: "six_months" as Duration, label: "6 Months", weeklyPrice: 3.33, totalPrice: 79.99, bestValue: true, savings: 67 },
     ],
     features: [
       "Unlimited Likes",
       "Unlimited Rewinds",
-      "Unlimited Passport™ Mode",
-      "Control Your Profile",
-      "Control Who Sees You",
-      "Control Who You See",
-      "Hide Ads",
+      "Passport Mode",
+      "Control who you see",
+      "Hide ads",
     ],
   },
   gold: {
-    name: "CubaDate Gold",
-    product_id: "prod_Tf4sVyy62yF0cy",
-    price_ids: {
-      week: "price_1TTy8kDTp0s6enQIEWrLSt4p",
-      month: "price_1TTy8nDTp0s6enQILlo2IRaL",
-      "6months": "price_1TTy8rDTp0s6enQIqCNgNOhD",
-    } as Record<Duration, string>,
+    name: "ISEXY Gold",
     plans: [
-      { duration: "week", label: "1 Week", weeklyPrice: 14.99, totalPrice: 14.99, popular: true },
-      { duration: "month", label: "1 Month", weeklyPrice: 9.99, totalPrice: 39.99, savings: 33 },
-      { duration: "6months", label: "6 Months", weeklyPrice: 5.00, totalPrice: 119.99, bestValue: true, savings: 67 },
+      { duration: "week" as Duration, label: "1 Week", weeklyPrice: 14.99, totalPrice: 14.99, popular: true },
+      { duration: "month" as Duration, label: "1 Month", weeklyPrice: 9.99, totalPrice: 39.99, savings: 33 },
+      { duration: "six_months" as Duration, label: "6 Months", weeklyPrice: 5.0, totalPrice: 119.99, bestValue: true, savings: 67 },
     ],
     features: [
-      "Unlimited Likes",
-      "See Who Likes You",
-      "Unlimited Rewinds",
-      "1 Free Boost per month",
-      "5 Free Super Likes per week",
-      "Unlimited Passport™ Mode",
+      "Everything in Plus",
+      "See who likes you",
       "Top Picks",
-      "Hide Ads",
+      "5 Super Likes per week",
+      "1 Boost per month",
     ],
   },
   platinum: {
-    name: "CubaDate Platinum",
-    product_id: "prod_Tf4sF4GddOh8RM",
-    price_ids: {
-      week: "price_1TTy8uDTp0s6enQIHE7Mr5pM",
-      month: "price_1TTy8xDTp0s6enQIulowd3ET",
-      "6months": "price_1TTy92DTp0s6enQIqM1gxUvF",
-    } as Record<Duration, string>,
+    name: "ISEXY Platinum",
     plans: [
-      { duration: "week", label: "1 Week", weeklyPrice: 19.99, totalPrice: 19.99, popular: true },
-      { duration: "month", label: "1 Month", weeklyPrice: 12.50, totalPrice: 49.99, savings: 38 },
-      { duration: "6months", label: "6 Months", weeklyPrice: 6.67, totalPrice: 159.99, bestValue: true, savings: 67 },
+      { duration: "week" as Duration, label: "1 Week", weeklyPrice: 23.99, totalPrice: 23.99, popular: true },
+      { duration: "month" as Duration, label: "1 Month", weeklyPrice: 14.77, totalPrice: 63.99, savings: 33 },
+      { duration: "six_months" as Duration, label: "6 Months", weeklyPrice: 7.38, totalPrice: 191.99, bestValue: true, savings: 67 },
     ],
     features: [
-      "Unlimited Likes",
-      "See Who Likes You",
+      "Everything in Gold",
       "Priority Likes",
-      "Unlimited Rewinds",
-      "1 Free Boost per month",
-      "Unlimited Super Likes",
+      // TODO: verify fulfillment of "Message before matching" feature
       "Message before matching",
-      "Top Picks",
-      "Hide Ads",
+      "More profile visibility",
+      "Premium discovery priority",
     ],
   },
 } as const;
@@ -104,12 +78,3 @@ export const superLikesPackages = [
 ];
 
 export type SubscriptionTier = keyof typeof subscriptionTiers;
-
-export function getTierByProductId(productId: string): SubscriptionTier | null {
-  for (const [tier, data] of Object.entries(subscriptionTiers)) {
-    if (data.product_id === productId) {
-      return tier as SubscriptionTier;
-    }
-  }
-  return null;
-}
