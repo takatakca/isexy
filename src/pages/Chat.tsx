@@ -158,20 +158,53 @@ export default function Chat() {
     const { data: match, error } = await supabase
       .from("matches")
       .select(`
+        is_active,
         profile1:profiles!matches_profile1_id_fkey(id, first_name),
         profile2:profiles!matches_profile2_id_fkey(id, first_name)
       `)
       .eq("id", matchId)
-      .single();
+      .maybeSingle();
 
     if (error || !match) {
-      console.error("Error fetching match:", error);
+      toast.error("Conversation not found");
+      navigate("/matches");
       return;
     }
 
-    const other = (match.profile1 as any).id === profile.id 
-      ? match.profile2 
-      : match.profile1;
+    const p1 = match.profile1 as any;
+    const p2 = match.profile2 as any;
+
+    // Only matched participants may view this chat
+    if (p1.id !== profile.id && p2.id !== profile.id) {
+      toast.error("You don't have access to this conversation");
+      navigate("/matches");
+      return;
+    }
+
+    if (match.is_active === false) {
+      toast.error("This match is no longer active");
+      navigate("/matches");
+      return;
+    }
+
+    const other = p1.id === profile.id ? p2 : p1;
+
+    // Check for blocks between the two users
+    const { data: blockRow } = await supabase
+      .from("blocks")
+      .select("id")
+      .or(
+        `and(blocker_id.eq.${profile.id},blocked_id.eq.${other.id}),` +
+        `and(blocker_id.eq.${other.id},blocked_id.eq.${profile.id})`
+      )
+      .limit(1)
+      .maybeSingle();
+
+    if (blockRow) {
+      toast.error("Messaging is unavailable with this user");
+      navigate("/matches");
+      return;
+    }
 
     const { data: photos } = await supabase
       .from("profile_photos")
