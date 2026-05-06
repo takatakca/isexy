@@ -44,6 +44,24 @@ function calculateAge(birthDate: string): number {
   return age;
 }
 
+function normalizeGender(value?: string | null): string {
+  const v = (value || "").toLowerCase().trim();
+  if (["man", "male", "men", "m"].includes(v)) return "men";
+  if (["woman", "female", "women", "w", "f"].includes(v)) return "women";
+  if (["nonbinary", "non-binary", "non binary", "nb", "enby"].includes(v)) return "nonbinary";
+  if (["everyone", "all", "any"].includes(v)) return "everyone";
+  return v;
+}
+
+function preferenceMatchesGender(preferences: string[] | null | undefined, gender?: string | null): boolean {
+  if (!preferences || preferences.length === 0) return false;
+  const normPrefs = preferences.map(normalizeGender);
+  if (normPrefs.includes("everyone")) return true;
+  const g = normalizeGender(gender);
+  if (!g) return false;
+  return normPrefs.includes(g);
+}
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -188,19 +206,16 @@ export default function Discover() {
       if (error) { console.error("Error fetching profiles:", error); toast.error("Couldn't load profiles."); setLoading(false); return; }
 
       let filteredProfiles = profilesData || [];
-      if (userProfile?.interested_in && userProfile.interested_in.length > 0) {
-        const userInterestedIn = userProfile.interested_in.map(g => g.toLowerCase());
-        const wantsEveryone = userInterestedIn.includes("everyone");
-        if (!wantsEveryone) {
-          const filtered = filteredProfiles.filter((p: any) => {
-            const pg = (p.gender || "").toLowerCase();
-            return userInterestedIn.includes(pg) ||
-              (userInterestedIn.includes("women") && ["female", "woman"].includes(pg)) ||
-              (userInterestedIn.includes("men") && ["male", "man"].includes(pg));
-          });
-          filteredProfiles = filtered;
-        }
-      }
+      const myGender = userProfile?.gender;
+      const myInterestedIn = userProfile?.interested_in || [];
+
+      filteredProfiles = filteredProfiles.filter((p: any) => {
+        // A) Their gender matches my interested_in
+        const aMatch = preferenceMatchesGender(myInterestedIn, p.gender);
+        // B) My gender matches their interested_in (excludes empty/missing)
+        const bMatch = preferenceMatchesGender(p.interested_in, myGender);
+        return aMatch && bMatch;
+      });
 
       const profilesWithPhotos = await Promise.all(
         filteredProfiles.map(async (p: any) => {
@@ -307,7 +322,14 @@ export default function Discover() {
 
       const result = data as any;
       if (!result?.success) {
-        if (result?.error === "no_likes_remaining" || result?.error === "no_super_likes_remaining") {
+        if (result?.error === "no_super_likes_remaining") {
+          toast.error("You're out of Super Likes!");
+          setIsAnimating(false);
+          setSwipeDirection(null);
+          navigate("/get-super-likes");
+          return;
+        }
+        if (result?.error === "no_likes_remaining") {
           setShowPaywall(true);
           toast.error("You've used all your likes! Upgrade to Premium for unlimited likes.");
           setIsAnimating(false);
@@ -410,8 +432,8 @@ export default function Discover() {
           <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6">
             <Heart className="w-12 h-12 text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2 text-center">No more profiles</h2>
-          <p className="text-muted-foreground text-center mb-6">Check back later or expand your preferences.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2 text-center">No more profiles right now</h2>
+          <p className="text-muted-foreground text-center mb-6">Try expanding your preferences or check back later.</p>
           <button onClick={fetchProfiles} className="px-6 py-3 gradient-primary text-white rounded-full font-semibold">Refresh</button>
         </main>
         <BottomNav />
@@ -620,7 +642,7 @@ export default function Discover() {
           className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border">
           <Heart className="w-8 h-8 text-green-500 fill-green-500" />
         </button>
-        <button onClick={() => navigate("/premium")}
+        <button onClick={() => navigate("/get-boosts")}
           className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-purple-500 hover:scale-110 transition-transform border border-border">
           <Zap className="w-5 h-5 fill-current" />
         </button>
