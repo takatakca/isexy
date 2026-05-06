@@ -287,6 +287,7 @@ export default function Matches() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-foreground truncate">
                         {match.other_profile.first_name}
+                        {match.other_profile.age ? `, ${match.other_profile.age}` : ""}
                       </h3>
                       {match.unread_count > 0 && (
                         <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
@@ -296,16 +297,23 @@ export default function Matches() {
                         </span>
                       )}
                     </div>
+                    {match.other_profile.city && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {match.other_profile.city}
+                      </p>
+                    )}
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      {/* Read receipt indicator */}
-                      {match.last_message_at && match.last_message_read && (
+                      {match.last_message_preview && match.last_message_read && (
                         <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
                       )}
                       <span className="truncate">
-                        {match.last_message_at
-                          ? `Last message ${format(new Date(match.last_message_at), "MMM d")}`
-                          : "Say hi! 👋"}
+                        {match.last_message_preview || "Say hi! 👋"}
                       </span>
+                      {match.last_message_at && (
+                        <span className="flex-shrink-0 text-xs">
+                          · {format(new Date(match.last_message_at), "MMM d")}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <MessageCircle className="w-5 h-5 text-primary flex-shrink-0" />
