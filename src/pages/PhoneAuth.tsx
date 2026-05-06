@@ -82,11 +82,12 @@ export default function PhoneAuth() {
         )}
 
         {/* Info text */}
+        <p className="text-muted-foreground text-sm mb-4">
+          Phone sign-in is coming soon. For now, please use email to sign in or create your account.
+        </p>
         <p className="text-muted-foreground text-sm mb-8">
-          We'll text you a code to verify you're really you.
-          Message and data rates may apply.{" "}
-          <button className="text-foreground underline font-semibold">
-            What happens if your number changes?
+          <button onClick={() => navigate("/auth")} className="text-foreground underline font-semibold">
+            Use email instead
           </button>
         </p>
 
