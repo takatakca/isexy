@@ -137,36 +137,69 @@ export default function Discover() {
       const excludeIds: string[] = [];
       if (userProfile) {
         excludeIds.push(userProfile.id);
+
+        // 1. Already-swiped profiles
         const { data: swipedIds } = await supabase
           .from("swipes")
           .select("swiped_id")
           .eq("swiper_id", userProfile.id);
         if (swipedIds) excludeIds.push(...swipedIds.map((s) => s.swiped_id));
+
+        // 2. Profiles I blocked
+        const { data: blockedByMe } = await supabase
+          .from("blocks")
+          .select("blocked_id")
+          .eq("blocker_id", userProfile.id);
+        if (blockedByMe) excludeIds.push(...blockedByMe.map((b) => b.blocked_id));
+
+        // 3. Profiles that blocked me
+        const { data: blockedMe } = await supabase
+          .from("blocks")
+          .select("blocker_id")
+          .eq("blocked_id", userProfile.id);
+        if (blockedMe) excludeIds.push(...blockedMe.map((b) => b.blocker_id));
       }
+
+      // Compute age window (enforces 18+ and applies user's age range if set)
+      const today = new Date();
+      const minAge = Math.max(18, userProfile?.age_min ?? 18);
+      const maxAge = Math.min(99, userProfile?.age_max ?? 99);
+      const maxBirthDate = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate())
+        .toISOString().slice(0, 10); // born on/before this = at least minAge
+      const minBirthDate = new Date(today.getFullYear() - maxAge - 1, today.getMonth(), today.getDate() + 1)
+        .toISOString().slice(0, 10);
 
       let query = supabase
         .from("profiles")
         .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, super_boost_until, shadow_banned")
         .eq("is_active", true)
-        .neq("shadow_banned", true);
+        .neq("shadow_banned", true)
+        .not("first_name", "is", null)
+        .not("birth_date", "is", null)
+        .lte("birth_date", maxBirthDate)
+        .gte("birth_date", minBirthDate);
 
       if (excludeIds.length > 0) {
-        query = query.not("id", "in", `(${excludeIds.join(",")})`);
+        const uniq = Array.from(new Set(excludeIds));
+        query = query.not("id", "in", `(${uniq.join(",")})`);
       }
 
       const { data: profilesData, error } = await query.limit(50);
-      if (error) { console.error("Error fetching profiles:", error); setLoading(false); return; }
+      if (error) { console.error("Error fetching profiles:", error); toast.error("Couldn't load profiles."); setLoading(false); return; }
 
       let filteredProfiles = profilesData || [];
       if (userProfile?.interested_in && userProfile.interested_in.length > 0) {
         const userInterestedIn = userProfile.interested_in.map(g => g.toLowerCase());
-        const filtered = filteredProfiles.filter((p: any) => {
-          const pg = (p.gender || "").toLowerCase();
-          return userInterestedIn.includes(pg) ||
-            (userInterestedIn.includes("women") && ["female", "woman"].includes(pg)) ||
-            (userInterestedIn.includes("men") && ["male", "man"].includes(pg));
-        });
-        if (filtered.length > 0) filteredProfiles = filtered;
+        const wantsEveryone = userInterestedIn.includes("everyone");
+        if (!wantsEveryone) {
+          const filtered = filteredProfiles.filter((p: any) => {
+            const pg = (p.gender || "").toLowerCase();
+            return userInterestedIn.includes(pg) ||
+              (userInterestedIn.includes("women") && ["female", "woman"].includes(pg)) ||
+              (userInterestedIn.includes("men") && ["male", "man"].includes(pg));
+          });
+          filteredProfiles = filtered;
+        }
       }
 
       const profilesWithPhotos = await Promise.all(
