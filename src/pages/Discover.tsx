@@ -169,7 +169,7 @@ export default function Discover() {
       const minBirthDate = new Date(today.getFullYear() - maxAge - 1, today.getMonth(), today.getDate() + 1)
         .toISOString().slice(0, 10);
 
-      let query = supabase
+      let query: any = supabase
         .from("profiles")
         .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, super_boost_until, shadow_banned")
         .eq("is_active", true)
