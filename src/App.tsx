@@ -116,6 +116,9 @@ const App = () => (
             <StreakProvider>
             <Routes>
               <Route path="/" element={<Welcome />} />
+              <Route path="/welcome" element={<Navigate to="/" replace />} />
+              <Route path="/cookies" element={<Navigate to="/cookie-policy" replace />} />
+              <Route path="/messages" element={<Navigate to="/matches" replace />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cuban-signup" element={<CubanSignup />} />
               <Route path="/phone" element={<PhoneAuth />} />
