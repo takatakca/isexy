@@ -206,19 +206,16 @@ export default function Discover() {
       if (error) { console.error("Error fetching profiles:", error); toast.error("Couldn't load profiles."); setLoading(false); return; }
 
       let filteredProfiles = profilesData || [];
-      if (userProfile?.interested_in && userProfile.interested_in.length > 0) {
-        const userInterestedIn = userProfile.interested_in.map(g => g.toLowerCase());
-        const wantsEveryone = userInterestedIn.includes("everyone");
-        if (!wantsEveryone) {
-          const filtered = filteredProfiles.filter((p: any) => {
-            const pg = (p.gender || "").toLowerCase();
-            return userInterestedIn.includes(pg) ||
-              (userInterestedIn.includes("women") && ["female", "woman"].includes(pg)) ||
-              (userInterestedIn.includes("men") && ["male", "man"].includes(pg));
-          });
-          filteredProfiles = filtered;
-        }
-      }
+      const myGender = userProfile?.gender;
+      const myInterestedIn = userProfile?.interested_in || [];
+
+      filteredProfiles = filteredProfiles.filter((p: any) => {
+        // A) Their gender matches my interested_in
+        const aMatch = preferenceMatchesGender(myInterestedIn, p.gender);
+        // B) My gender matches their interested_in (excludes empty/missing)
+        const bMatch = preferenceMatchesGender(p.interested_in, myGender);
+        return aMatch && bMatch;
+      });
 
       const profilesWithPhotos = await Promise.all(
         filteredProfiles.map(async (p: any) => {
