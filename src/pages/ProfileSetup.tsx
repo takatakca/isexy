@@ -32,6 +32,7 @@ const interestCategories = {
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export default function ProfileSetup() {
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [gender, setGender] = useState("");
+  const [interestedIn, setInterestedIn] = useState<string[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [bio, setBio] = useState("");
   const [drinking, setDrinking] = useState("");
