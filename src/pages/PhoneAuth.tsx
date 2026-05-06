@@ -4,6 +4,7 @@ import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
 import { AuthButton } from "@/components/AuthButton";
 import { ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 
 const countryCodes = [
   { code: "+1", country: "CA", flag: "🇨🇦" },
@@ -18,9 +19,10 @@ export default function PhoneAuth() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const handleSubmit = () => {
-    if (phoneNumber.length >= 10) {
-      navigate("/verify", { state: { phone: `${selectedCountry.code}${phoneNumber}` } });
-    }
+    // Phone OTP provider is not yet wired up. Inform the user instead of
+    // navigating to a verification screen that cannot verify the code.
+    toast.info("Phone login is coming soon. Please use email sign-in for now.");
+    navigate("/auth");
   };
 
   const isValid = phoneNumber.length >= 10;
