@@ -64,9 +64,8 @@ export default function SubscriptionComparison() {
   const handleSubscribe = async (tier: SubscriptionTier) => {
     setLoading(tier);
     try {
-      const tierData = subscriptionTiers[tier];
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId: tierData.price_id },
+        body: { tier, duration: "month" },
       });
 
       if (error) throw error;
