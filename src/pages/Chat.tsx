@@ -48,7 +48,7 @@ export default function Chat() {
   const [isBanned, setIsBanned] = useState(false);
   const [banMessage, setBanMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { checkContent, reportViolation, checkUserBanStatus } = useContentModeration();
 
   useEffect(() => {
