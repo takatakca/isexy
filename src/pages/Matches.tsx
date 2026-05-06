@@ -41,24 +41,41 @@ export default function Matches() {
   const fetchMatches = async () => {
     if (!profile) return;
 
-    const { data, error } = await supabase
-      .from("matches")
-      .select(`
-        id,
-        matched_at,
-        last_message_at,
-        profile1:profiles!matches_profile1_id_fkey(id, first_name),
-        profile2:profiles!matches_profile2_id_fkey(id, first_name)
-      `)
-      .or(`profile1_id.eq.${profile.id},profile2_id.eq.${profile.id}`)
-      .eq("is_active", true)
-      .order("matched_at", { ascending: false });
+    const [matchesRes, blocksRes] = await Promise.all([
+      supabase
+        .from("matches")
+        .select(`
+          id,
+          matched_at,
+          last_message_at,
+          profile1:profiles!matches_profile1_id_fkey(id, first_name),
+          profile2:profiles!matches_profile2_id_fkey(id, first_name)
+        `)
+        .or(`profile1_id.eq.${profile.id},profile2_id.eq.${profile.id}`)
+        .eq("is_active", true)
+        .order("matched_at", { ascending: false }),
+      supabase
+        .from("blocks")
+        .select("blocker_id, blocked_id")
+        .or(`blocker_id.eq.${profile.id},blocked_id.eq.${profile.id}`),
+    ]);
 
-    if (error) {
-      console.error("Error fetching matches:", error);
+    if (matchesRes.error) {
+      console.error("Error fetching matches:", matchesRes.error);
       setLoading(false);
       return;
     }
+
+    const blockedIds = new Set<string>(
+      (blocksRes.data || []).map((b: any) =>
+        b.blocker_id === profile.id ? b.blocked_id : b.blocker_id
+      )
+    );
+
+    const data = (matchesRes.data || []).filter((m: any) => {
+      const otherId = m.profile1.id === profile.id ? m.profile2.id : m.profile1.id;
+      return !blockedIds.has(otherId);
+    });
 
     // Get photos, last_active, and unread messages for each match
     const matchesWithPhotos = await Promise.all(
