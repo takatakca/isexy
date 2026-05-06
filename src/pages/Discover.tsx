@@ -137,36 +137,69 @@ export default function Discover() {
       const excludeIds: string[] = [];
       if (userProfile) {
         excludeIds.push(userProfile.id);
+
+        // 1. Already-swiped profiles
         const { data: swipedIds } = await supabase
           .from("swipes")
           .select("swiped_id")
           .eq("swiper_id", userProfile.id);
         if (swipedIds) excludeIds.push(...swipedIds.map((s) => s.swiped_id));
+
+        // 2. Profiles I blocked
+        const { data: blockedByMe } = await supabase
+          .from("blocks")
+          .select("blocked_id")
+          .eq("blocker_id", userProfile.id);
+        if (blockedByMe) excludeIds.push(...blockedByMe.map((b) => b.blocked_id));
+
+        // 3. Profiles that blocked me
+        const { data: blockedMe } = await supabase
+          .from("blocks")
+          .select("blocker_id")
+          .eq("blocked_id", userProfile.id);
+        if (blockedMe) excludeIds.push(...blockedMe.map((b) => b.blocker_id));
       }
 
-      let query = supabase
+      // Compute age window (enforces 18+ and applies user's age range if set)
+      const today = new Date();
+      const minAge = Math.max(18, userProfile?.age_min ?? 18);
+      const maxAge = Math.min(99, userProfile?.age_max ?? 99);
+      const maxBirthDate = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate())
+        .toISOString().slice(0, 10); // born on/before this = at least minAge
+      const minBirthDate = new Date(today.getFullYear() - maxAge - 1, today.getMonth(), today.getDate() + 1)
+        .toISOString().slice(0, 10);
+
+      let query: any = supabase
         .from("profiles")
         .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, super_boost_until, shadow_banned")
         .eq("is_active", true)
-        .neq("shadow_banned", true);
+        .neq("shadow_banned", true)
+        .not("first_name", "is", null)
+        .not("birth_date", "is", null)
+        .lte("birth_date", maxBirthDate)
+        .gte("birth_date", minBirthDate);
 
       if (excludeIds.length > 0) {
-        query = query.not("id", "in", `(${excludeIds.join(",")})`);
+        const uniq = Array.from(new Set(excludeIds));
+        query = query.not("id", "in", `(${uniq.join(",")})`);
       }
 
       const { data: profilesData, error } = await query.limit(50);
-      if (error) { console.error("Error fetching profiles:", error); setLoading(false); return; }
+      if (error) { console.error("Error fetching profiles:", error); toast.error("Couldn't load profiles."); setLoading(false); return; }
 
       let filteredProfiles = profilesData || [];
       if (userProfile?.interested_in && userProfile.interested_in.length > 0) {
         const userInterestedIn = userProfile.interested_in.map(g => g.toLowerCase());
-        const filtered = filteredProfiles.filter((p: any) => {
-          const pg = (p.gender || "").toLowerCase();
-          return userInterestedIn.includes(pg) ||
-            (userInterestedIn.includes("women") && ["female", "woman"].includes(pg)) ||
-            (userInterestedIn.includes("men") && ["male", "man"].includes(pg));
-        });
-        if (filtered.length > 0) filteredProfiles = filtered;
+        const wantsEveryone = userInterestedIn.includes("everyone");
+        if (!wantsEveryone) {
+          const filtered = filteredProfiles.filter((p: any) => {
+            const pg = (p.gender || "").toLowerCase();
+            return userInterestedIn.includes(pg) ||
+              (userInterestedIn.includes("women") && ["female", "woman"].includes(pg)) ||
+              (userInterestedIn.includes("men") && ["male", "man"].includes(pg));
+          });
+          filteredProfiles = filtered;
+        }
       }
 
       const profilesWithPhotos = await Promise.all(
@@ -210,11 +243,11 @@ export default function Discover() {
         return { ...p, _score: score, _dist: dist };
       });
 
-      const sorted = scoredProfiles.sort((a: any, b: any) => {
-        // Photos first
-        if (a.photos.length > 0 && b.photos.length === 0) return -1;
-        if (a.photos.length === 0 && b.photos.length > 0) return 1;
-        // Then by score descending
+      // Require at least one photo (matches profile-completion gate)
+      const withPhotos = scoredProfiles.filter((p: any) => p.photos.length > 0);
+
+      const sorted = withPhotos.sort((a: any, b: any) => {
+        // Score descending
         if (b._score !== a._score) return b._score - a._score;
         // Then by distance ascending
         return a._dist - b._dist;
@@ -287,41 +320,24 @@ export default function Discover() {
       // Update local likes count
       if (result?.likes_remaining !== undefined) setLikesRemaining(result.likes_remaining);
 
-      // Match is created automatically by DB trigger (check_and_create_match)
-      // Check if a match was just created to show notification
+      // Match is created automatically by the DB trigger (check_and_create_match) ONLY on mutual like.
+      // So if a matches row exists for this pair, it means the other user already liked us.
       if (!result?.already_swiped) {
-        // Match is created on every like now (one-sided messaging)
+        const a = userProfile.id < currentProfile.id ? userProfile.id : currentProfile.id;
+        const b = userProfile.id < currentProfile.id ? currentProfile.id : userProfile.id;
         const { data: matchData } = await supabase
           .from("matches")
           .select("id")
-          .or(`and(profile1_id.eq.${userProfile.id < currentProfile.id ? userProfile.id : currentProfile.id},profile2_id.eq.${userProfile.id < currentProfile.id ? currentProfile.id : userProfile.id})`)
+          .eq("profile1_id", a)
+          .eq("profile2_id", b)
           .maybeSingle();
 
         if (matchData) {
-          // Check if mutual like (both liked each other)
-          const { data: mutualSwipe } = await supabase
-            .from("swipes")
-            .select("id")
-            .eq("swiper_id", currentProfile.id)
-            .eq("swiped_id", userProfile.id)
-            .in("action", ["like", "super_like"])
-            .maybeSingle();
-
-          if (mutualSwipe) {
-            // Mutual like → show celebration
-            setMatchCelebration({
-              matchId: matchData.id,
-              matchName: currentProfile.first_name,
-              matchPhotoUrl: currentProfile.photos?.[0],
-            });
-          } else {
-            // One-sided like → show contact modal directly
-            setContactModal({
-              matchId: matchData.id,
-              otherName: currentProfile.first_name,
-              otherPhotoUrl: currentProfile.photos?.[0],
-            });
-          }
+          setMatchCelebration({
+            matchId: matchData.id,
+            matchName: currentProfile.first_name,
+            matchPhotoUrl: currentProfile.photos?.[0],
+          });
         }
       }
     } else {
@@ -387,7 +403,7 @@ export default function Discover() {
       <div className="min-h-screen bg-background flex flex-col pb-20">
         <header className="flex items-center justify-between px-4 py-3">
           <DiscoverFilters onFiltersChange={fetchProfiles} showVerifiedOnly={showVerifiedOnly} setShowVerifiedOnly={setShowVerifiedOnly} />
-          <div className="flex items-center gap-2"><Flame className="w-5 h-5 text-primary" /><span className="font-bold text-foreground">CubaDate</span></div>
+          <div className="flex items-center gap-2"><Flame className="w-5 h-5 text-primary" /><span className="font-bold text-foreground">ISEXY</span></div>
           <LanguageSelector variant="icon" />
         </header>
         <main className="flex-1 flex flex-col items-center justify-center px-8">
@@ -533,7 +549,7 @@ export default function Discover() {
         <DiscoverFilters onFiltersChange={fetchProfiles} showVerifiedOnly={showVerifiedOnly} setShowVerifiedOnly={setShowVerifiedOnly} />
         <div className="flex items-center gap-2">
           <Flame className="w-5 h-5 text-primary" />
-          <span className="font-bold text-foreground">CubaDate</span>
+          <span className="font-bold text-foreground">ISEXY</span>
           {!userProfile?.is_premium && (
             <span className="text-xs text-muted-foreground ml-1">({likesRemaining} likes)</span>
           )}

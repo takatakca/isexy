@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS on_swipe_check_match ON public.swipes;
