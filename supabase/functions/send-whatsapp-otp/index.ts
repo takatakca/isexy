@@ -121,15 +121,15 @@ Deno.serve(async (req) => {
           console.error("WhatsApp send failed:", whatsappErr);
         }
       } else {
-        console.log(`[SIMULATION] OTP for ${normalizedPhone}: ${otp}`);
+        // Provider not configured — do NOT log the OTP in production.
+        console.warn("WhatsApp provider not configured; OTP stored in DB only.");
       }
 
-      // Always return the devCode so user can verify (until WhatsApp API is configured)
+      // Never return the OTP to the client.
       return new Response(
         JSON.stringify({
           success: true,
           message: "Verification code sent!",
-          devCode: otp,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
