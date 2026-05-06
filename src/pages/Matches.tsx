@@ -11,14 +11,27 @@ interface Match {
   id: string;
   matched_at: string;
   last_message_at: string | null;
+  last_message_preview: string | null;
   unread_count: number;
   last_message_read: boolean;
   other_profile: {
     id: string;
     first_name: string;
+    age: number | null;
+    city: string | null;
     last_active_at: string | null;
     photos: { photo_url: string }[];
   };
+}
+
+function calcAge(birthDate: string | null): number | null {
+  if (!birthDate) return null;
+  const b = new Date(birthDate);
+  const d = new Date();
+  let age = d.getFullYear() - b.getFullYear();
+  const m = d.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && d.getDate() < b.getDate())) age--;
+  return age;
 }
 
 export default function Matches() {
@@ -82,7 +95,7 @@ export default function Matches() {
       (data || []).map(async (match: any) => {
         const otherProfile = match.profile1.id === profile.id ? match.profile2 : match.profile1;
         
-        const [photosResult, profileResult, unreadResult] = await Promise.all([
+        const [photosResult, profileResult, unreadResult, lastMsgResult] = await Promise.all([
           supabase
             .from("profile_photos")
             .select("photo_url")
@@ -91,7 +104,7 @@ export default function Matches() {
             .limit(1),
           supabase
             .from("profiles")
-            .select("last_active_at")
+            .select("last_active_at, birth_date, city")
             .eq("id", otherProfile.id)
             .single(),
           supabase
@@ -100,16 +113,26 @@ export default function Matches() {
             .eq("match_id", match.id)
             .neq("sender_id", profile.id)
             .eq("is_read", false),
+          supabase
+            .from("messages")
+            .select("content, created_at")
+            .eq("match_id", match.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ]);
 
         return {
           id: match.id,
           matched_at: match.matched_at,
-          last_message_at: match.last_message_at,
+          last_message_at: match.last_message_at || lastMsgResult.data?.created_at || null,
+          last_message_preview: lastMsgResult.data?.content || null,
           unread_count: unreadResult.data?.length || 0,
           last_message_read: (unreadResult.data?.length || 0) === 0,
           other_profile: {
             ...otherProfile,
+            age: calcAge(profileResult.data?.birth_date || null),
+            city: profileResult.data?.city || null,
             last_active_at: profileResult.data?.last_active_at || null,
             photos: photosResult.data || [],
           },
