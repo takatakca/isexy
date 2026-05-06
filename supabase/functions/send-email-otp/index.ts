@@ -153,8 +153,6 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         success: true, 
         message: `Verification code sent to ${email}`,
-        // Return devCode so app can auto-fill during dev/testing
-        devCode: otp,
       }),
       { 
         status: 200, 
