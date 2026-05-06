@@ -182,11 +182,11 @@ const App = () => (
               <Route path="/admin/moderation" element={<AdminModeration />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/donate/:recipientId?" element={<CubanDonations />} />
-              <Route path="/compare-plans" element={<SubscriptionComparison />} />
+              <Route path="/compare-plans" element={<ProtectedRoute><SubscriptionComparison /></ProtectedRoute>} />
               <Route path="/tourist-signup" element={<TouristSignup />} />
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
-              <Route path="/who-liked-you" element={<WhoLikedYou />} />
-              <Route path="/passport-mode" element={<PassportMode />} />
+              <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
+              <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
               <Route path="/photo-verification" element={<PhotoVerification />} />
               <Route path="/double-date" element={<DoubleDate />} />
               <Route path="/qa-events" element={<QAEvents />} />
