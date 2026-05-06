@@ -635,7 +635,7 @@ export default function Discover() {
           className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center hover:scale-110 transition-transform border border-border">
           <Heart className="w-8 h-8 text-green-500 fill-green-500" />
         </button>
-        <button onClick={() => navigate("/premium")}
+        <button onClick={() => navigate("/get-boosts")}
           className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-purple-500 hover:scale-110 transition-transform border border-border">
           <Zap className="w-5 h-5 fill-current" />
         </button>
