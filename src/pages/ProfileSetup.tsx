@@ -170,7 +170,7 @@ export default function ProfileSetup() {
       case 2: return !!birthdate;
       case 3: return !!gender && interestedIn.length > 0;
       case 4: return photos.length >= 2;
-      case 5: return true; // Bio is optional
+      case 5: return bio.trim().length >= 10;
       case 6: return true; // Lifestyle is optional
       case 7: return true; // Personality is optional  
       case 8: return interests.length >= 3;
