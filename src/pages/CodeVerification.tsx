@@ -88,20 +88,31 @@ export default function CodeVerification() {
     setIsVerifying(true);
 
     try {
-      // Verify OTP using database function
+      // For password reset: do NOT consume the OTP here.
+      // The update-user-password edge function will verify+consume server-side.
+      if (type === "password_reset") {
+        if (!email) {
+          toast.error("Missing email. Please restart the reset flow.");
+          navigate("/reset-password");
+          return;
+        }
+        navigate("/update-password", { state: { email, otp: enteredCode, verified: true } });
+        return;
+      }
+
+      // For verification/login: verify + consume now
       const { data: verifyResult, error: verifyError } = await supabase.rpc("verify_otp", {
         p_email: email,
         p_code: enteredCode,
         p_type: type,
       });
-      
+
       if (verifyError) {
         console.error("Verify error:", verifyError);
         throw new Error("Verification failed");
       }
-      
+
       const result = verifyResult as { valid: boolean; error?: string };
-      
       if (!result.valid) {
         toast.error(result.error || "Invalid code. Please try again.");
         setCode(["", "", "", "", "", ""]);
@@ -111,11 +122,8 @@ export default function CodeVerification() {
       }
 
       toast.success("Email verified successfully!");
-      
-      if (type === "password_reset") {
-        navigate("/update-password", { state: { email, verified: true } });
-      } else if (type === "verification") {
-        // Complete signup
+
+      if (type === "verification") {
         const pending = sessionStorage.getItem("pending_signup");
         if (pending) {
           const { email: signupEmail, password } = JSON.parse(pending);
