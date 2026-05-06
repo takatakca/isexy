@@ -68,92 +68,95 @@ export default function ProfileSetup() {
       return;
     }
 
+    // 18+ enforcement
+    if (birthdate) {
+      const ageMs = Date.now() - new Date(birthdate).getTime();
+      const age = ageMs / (365.25 * 24 * 60 * 60 * 1000);
+      if (age < 18) {
+        toast.error("You must be 18 or older to use ISEXY.");
+        return;
+      }
+    } else {
+      toast.error("Please set your birth date.");
+      return;
+    }
+
+    if (!name || !gender || interestedIn.length === 0) {
+      toast.error("Please complete your name, gender, and who you're interested in.");
+      return;
+    }
+    if (bio.trim().length < 10) {
+      toast.error("Please write a short bio (at least 10 characters).");
+      setStep(5);
+      return;
+    }
+    if (photos.length < 1) {
+      toast.error("Please upload at least one profile photo.");
+      setStep(4);
+      return;
+    }
+
     setLoading(true);
     try {
-      // Check if profile already exists
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
+
+      const baseFields = {
+        first_name: name,
+        birth_date: birthdate,
+        gender: gender.toLowerCase(),
+        interested_in: interestedIn,
+        bio,
+        drinking,
+        smoking,
+        workout,
+        pets,
+        communication_style: communication,
+        love_language: loveLanguage,
+        education,
+        interests,
+        privacy_accepted: true,
+      };
 
       let profileId: string;
 
       if (existingProfile) {
-        // Update existing profile
         const { data: updatedProfile, error: updateError } = await supabase
           .from("profiles")
-          .update({
-            first_name: name,
-            birth_date: birthdate,
-            gender: gender.toLowerCase(),
-            bio,
-            drinking,
-            smoking,
-            workout,
-            pets,
-            communication_style: communication,
-            love_language: loveLanguage,
-            education,
-            interests,
-            privacy_accepted: true,
-            country: "Cuba",
-          })
+          .update(baseFields)
           .eq("user_id", userId)
           .select()
           .single();
-
         if (updateError) throw updateError;
         profileId = updatedProfile.id;
       } else {
-        // Create new profile
         const { data: newProfile, error: insertError } = await supabase
           .from("profiles")
-          .insert({
-            user_id: userId,
-            first_name: name,
-            birth_date: birthdate,
-            gender: gender.toLowerCase(),
-            bio,
-            drinking,
-            smoking,
-            workout,
-            pets,
-            communication_style: communication,
-            love_language: loveLanguage,
-            education,
-            interests,
-            privacy_accepted: true,
-            country: "Cuba",
-          })
+          .insert({ user_id: userId, ...baseFields })
           .select()
           .single();
-
         if (insertError) throw insertError;
         profileId = newProfile.id;
       }
 
-      // Save photos to profile_photos table
+      // Save photos to profile_photos table (replace set)
       if (photos.length > 0) {
-        // Delete existing photos first
-        await supabase
-          .from("profile_photos")
-          .delete()
-          .eq("profile_id", profileId);
-
+        await supabase.from("profile_photos").delete().eq("profile_id", profileId);
         const photoInserts = photos.map((url, index) => ({
           profile_id: profileId,
           photo_url: url,
           position: index,
         }));
-
         const { error: photosError } = await supabase
           .from("profile_photos")
           .insert(photoInserts);
-
         if (photosError) throw photosError;
       }
 
+      await refreshProfile();
       toast.success("Profile created successfully!");
       navigate("/discover");
     } catch (error: any) {
