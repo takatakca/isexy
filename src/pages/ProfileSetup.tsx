@@ -221,7 +221,7 @@ export default function ProfileSetup() {
       case 3:
         return (
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-extrabold text-foreground mb-8">
+            <h1 className="text-3xl font-extrabold text-foreground mb-6">
               What's your gender?
             </h1>
             <div className="space-y-3 mb-8">
@@ -239,6 +239,39 @@ export default function ProfileSetup() {
                 </button>
               ))}
             </div>
+
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              Who are you interested in?
+            </h2>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["Women", "Men", "Everyone"].map((option) => {
+                const value = option.toLowerCase();
+                const selected = interestedIn.includes(value);
+                return (
+                  <button
+                    key={option}
+                    onClick={() => {
+                      if (value === "everyone") {
+                        setInterestedIn(["women", "men"]);
+                      } else {
+                        const others = interestedIn.filter((i) => i !== value);
+                        setInterestedIn(selected ? others : [...others, value]);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-full border-2 font-medium text-sm transition-all ${
+                      (value === "everyone"
+                        ? interestedIn.length === 2
+                        : selected)
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-foreground hover:border-muted-foreground"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-muted-foreground text-sm mb-4">Pick at least one. You can change this later.</p>
           </div>
         );
 
