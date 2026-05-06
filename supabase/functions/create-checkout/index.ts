@@ -7,86 +7,107 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Server-side mapping: tier + duration -> Stripe price ID
-const PRICE_MAP: Record<string, Record<string, string>> = {
+const VALID_TIERS = ["plus", "gold", "platinum"] as const;
+const VALID_DURATIONS = ["week", "month", "six_months"] as const;
+
+type Tier = typeof VALID_TIERS[number];
+type Duration = typeof VALID_DURATIONS[number];
+
+const ENV_KEY: Record<Tier, Record<Duration, string>> = {
   plus: {
-    week: "price_1TTy8TDTp0s6enQIwncoADHV",
-    month: "price_1TTy8aDTp0s6enQIgteqRXkk",
-    "6months": "price_1TTy8fDTp0s6enQIHMHbr2NF",
+    week: "STRIPE_PRICE_PLUS_WEEK",
+    month: "STRIPE_PRICE_PLUS_MONTH",
+    six_months: "STRIPE_PRICE_PLUS_SIX_MONTHS",
   },
   gold: {
-    week: "price_1TTy8kDTp0s6enQIEWrLSt4p",
-    month: "price_1TTy8nDTp0s6enQILlo2IRaL",
-    "6months": "price_1TTy8rDTp0s6enQIqCNgNOhD",
+    week: "STRIPE_PRICE_GOLD_WEEK",
+    month: "STRIPE_PRICE_GOLD_MONTH",
+    six_months: "STRIPE_PRICE_GOLD_SIX_MONTHS",
   },
   platinum: {
-    week: "price_1TTy8uDTp0s6enQIHE7Mr5pM",
-    month: "price_1TTy8xDTp0s6enQIulowd3ET",
-    "6months": "price_1TTy92DTp0s6enQIqM1gxUvF",
+    week: "STRIPE_PRICE_PLATINUM_WEEK",
+    month: "STRIPE_PRICE_PLATINUM_MONTH",
+    six_months: "STRIPE_PRICE_PLATINUM_SIX_MONTHS",
   },
 };
 
-const VALID_TIERS = ["plus", "gold", "platinum"];
-const VALID_DURATIONS = ["week", "month", "6months"];
+function jsonError(msg: string, status = 400) {
+  return new Response(JSON.stringify({ error: msg }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
-    const { tier, duration } = await req.json();
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
-    if (!VALID_TIERS.includes(tier)) {
-      return new Response(JSON.stringify({ error: "Invalid tier" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
-    if (!VALID_DURATIONS.includes(duration)) {
-      return new Response(JSON.stringify({ error: "Invalid duration" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
+    const body = await req.json();
+    const tier = body?.tier as Tier;
+    // Normalize legacy "6months" to "six_months"
+    const rawDuration = body?.duration === "6months" ? "six_months" : body?.duration;
+    const duration = rawDuration as Duration;
 
-    const priceId = PRICE_MAP[tier][duration];
+    if (!VALID_TIERS.includes(tier)) return jsonError("Invalid tier");
+    if (!VALID_DURATIONS.includes(duration)) return jsonError("Invalid duration");
+
+    const envKey = ENV_KEY[tier][duration];
+    const priceId = Deno.env.get(envKey);
     if (!priceId) {
-      return new Response(JSON.stringify({ error: "Price not found" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+      return jsonError(`Missing Stripe price configuration: ${envKey}`, 500);
     }
 
-    const authHeader = req.headers.get("Authorization")!;
+    const appUrl = Deno.env.get("APP_URL");
+    if (!appUrl) {
+      return jsonError("Missing configuration: APP_URL", 500);
+    }
+
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) return jsonError("STRIPE_SECRET_KEY not configured", 500);
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return jsonError("No authorization header", 401);
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !userData.user?.email) return jsonError("Not authenticated", 401);
+    const user = userData.user;
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+    // Look up profile.id
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    }
+    const customerId = customers.data[0]?.id;
+
+    const metadata: Record<string, string> = {
+      purchase_type: "subscription",
+      user_id: user.id,
+      tier,
+      duration,
+    };
+    if (profile?.id) metadata.profile_id = profile.id;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      metadata: { tier, duration, profile_user_id: user.id },
-      subscription_data: {
-        metadata: { tier, duration, profile_user_id: user.id },
-      },
-      success_url: `${req.headers.get("origin")}/discover?success=true`,
-      cancel_url: `${req.headers.get("origin")}/premium?cancelled=true`,
+      metadata,
+      subscription_data: { metadata },
+      success_url: `${appUrl}/discover?success=true`,
+      cancel_url: `${appUrl}/premium?cancelled=true`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
@@ -95,9 +116,6 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonError(errorMessage, 500);
   }
 });
