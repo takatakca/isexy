@@ -148,10 +148,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id).then((profileData) => {
-          setProfile(profileData);
-          setLoading(false);
-        });
+        const profileData = await fetchProfile(session.user.id);
+        setProfile(profileData);
+        setPhotoCount(profileData ? await fetchPhotoCount(profileData.id) : 0);
+        setLoading(false);
       } else {
         setLoading(false);
       }
