@@ -20,18 +20,33 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, type, firstName = "there" }: EmailOTPRequest = await req.json();
 
-    if (!email) {
-      throw new Error("Email is required");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error("Valid email is required");
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Rate limit: max 3 OTPs per email/type within 1 hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentCount } = await supabase
+      .from("otp_codes")
+      .select("id", { count: "exact", head: true })
+      .eq("email", email)
+      .eq("type", type)
+      .gte("created_at", oneHourAgo);
+    if ((recentCount ?? 0) >= 3) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Store OTP in database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Delete any existing unused OTPs for this email/type
     await supabase
@@ -138,8 +153,6 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         success: true, 
         message: `Verification code sent to ${email}`,
-        // Return devCode so app can auto-fill during dev/testing
-        devCode: otp,
       }),
       { 
         status: 200, 

@@ -90,12 +90,12 @@ export default function KnowledgeBase() {
 
     setFeedback(isHelpful ? 'helpful' : 'not_helpful');
     
+    const updatePayload = isHelpful
+      ? { helpful_count: (selectedArticle.helpful_count || 0) + 1 }
+      : { not_helpful_count: (selectedArticle.not_helpful_count || 0) + 1 };
     await supabase
       .from("knowledge_base")
-      .update({
-        [isHelpful ? 'helpful_count' : 'not_helpful_count']: 
-          (isHelpful ? selectedArticle.helpful_count : selectedArticle.not_helpful_count) + 1
-      })
+      .update(updatePayload)
       .eq("id", selectedArticle.id);
   };
 

@@ -48,7 +48,7 @@ export default function Chat() {
   const [isBanned, setIsBanned] = useState(false);
   const [banMessage, setBanMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { checkContent, reportViolation, checkUserBanStatus } = useContentModeration();
 
   useEffect(() => {
@@ -208,7 +208,7 @@ export default function Chat() {
       if (unreadIds.length > 0) {
         await supabase
           .from("messages")
-          .update({ is_read: true, read_at: new Date().toISOString() })
+          .update({ is_read: true })
           .in("id", unreadIds);
       }
     }
@@ -255,7 +255,7 @@ export default function Chat() {
   const markAsRead = async (messageId: string) => {
     await supabase
       .from("messages")
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true })
       .eq("id", messageId);
   };
 
