@@ -21,7 +21,7 @@ export function ProtectedRoute({
   children,
   requireCompleteProfile = true,
 }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, photoCount, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -36,14 +36,24 @@ export function ProtectedRoute({
     return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
   }
 
-  // Minimal profile completeness check — photos handled in a later phase.
+  // Profile completeness: required fields + at least one photo + 18+
+  let isAdult = false;
+  if (profile?.birth_date) {
+    const dob = new Date(profile.birth_date);
+    const ageMs = Date.now() - dob.getTime();
+    isAdult = ageMs / (365.25 * 24 * 60 * 60 * 1000) >= 18;
+  }
+
   const isComplete =
     !!profile &&
     !!profile.first_name &&
     !!profile.birth_date &&
+    isAdult &&
     !!profile.gender &&
     Array.isArray(profile.interested_in) &&
-    profile.interested_in.length > 0;
+    profile.interested_in.length > 0 &&
+    !!profile.bio &&
+    photoCount >= 1;
 
   if (requireCompleteProfile && !isComplete) {
     return <Navigate to="/profile-setup" replace />;
