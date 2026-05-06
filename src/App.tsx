@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ConsumerHealthPrivacy from "./pages/ConsumerHealthPrivacy";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import Welcome from "./pages/Welcome";
@@ -116,6 +116,9 @@ const App = () => (
             <StreakProvider>
             <Routes>
               <Route path="/" element={<Welcome />} />
+              <Route path="/welcome" element={<Navigate to="/" replace />} />
+              <Route path="/cookies" element={<Navigate to="/cookie-policy" replace />} />
+              <Route path="/messages" element={<Navigate to="/matches" replace />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cuban-signup" element={<CubanSignup />} />
               <Route path="/phone" element={<PhoneAuth />} />
