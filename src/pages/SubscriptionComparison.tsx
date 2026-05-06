@@ -106,7 +106,7 @@ export default function SubscriptionComparison() {
       <div className="p-4 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Flame className="w-8 h-8 text-primary fill-primary" />
-          <span className="text-2xl font-bold text-foreground">CubaDate</span>
+          <span className="text-2xl font-bold text-foreground">ISEXY</span>
         </div>
         <p className="text-muted-foreground">
           Choose the plan that's right for you

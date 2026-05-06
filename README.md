@@ -71,3 +71,25 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Stripe Subscription Setup (admin only)
+
+To create the ISEXY subscription products and prices in Stripe automatically:
+
+1. Install the Stripe SDK locally if not present:
+   ```
+   npm install stripe
+   ```
+2. Run the setup script with your Stripe secret key:
+   ```
+   STRIPE_SECRET_KEY=sk_test_or_live_key node scripts/create-stripe-subscriptions.mjs
+   ```
+3. The script will print 9 `STRIPE_PRICE_*` env vars and `APP_URL`. Copy them
+   into Lovable / Supabase project secrets.
+4. After secrets are added, re-deploy edge functions (automatic in Lovable).
+
+The script:
+- Refuses to run without `STRIPE_SECRET_KEY`.
+- Never logs the secret key.
+- Prints whether it ran in TEST or LIVE mode.
+- Reuses existing products/prices by metadata to avoid duplicates.

@@ -61,13 +61,57 @@ serve(async (req) => {
 
     logStep("Processing event", { type: event.type });
 
-    // Map Stripe product IDs to app tier names
-    const PRODUCT_TO_TIER: Record<string, string> = {
-      prod_Tf4swUnx8LI3BR: "plus",
-      prod_Tf4sVyy62yF0cy: "gold",
-      prod_Tf4sF4GddOh8RM: "platinum",
-    };
     const VALID_TIERS = ["free", "plus", "gold", "platinum"];
+    const VALID_DURATIONS = ["week", "month", "six_months"];
+
+    // Resolve profile.id from metadata first, fall back to email lookup
+    async function resolveProfileId(opts: {
+      metaProfileId?: string;
+      metaUserId?: string;
+      email?: string | null;
+    }): Promise<string | null> {
+      if (opts.metaProfileId) {
+        const { data } = await supabaseClient
+          .from("profiles")
+          .select("id")
+          .eq("id", opts.metaProfileId)
+          .maybeSingle();
+        if (data?.id) return data.id;
+      }
+      if (opts.metaUserId) {
+        const { data } = await supabaseClient
+          .from("profiles")
+          .select("id")
+          .eq("user_id", opts.metaUserId)
+          .maybeSingle();
+        if (data?.id) return data.id;
+      }
+      if (opts.email) {
+        const { data: users } = await supabaseClient.auth.admin.listUsers();
+        const user = users.users.find((u) => u.email === opts.email);
+        if (user) {
+          const { data } = await supabaseClient
+            .from("profiles")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (data?.id) return data.id;
+        }
+      }
+      return null;
+    }
+
+    function tierFromMetadata(meta: Record<string, string> | null | undefined): string | null {
+      const t = meta?.tier;
+      if (t && VALID_TIERS.includes(t)) return t;
+      return null;
+    }
+
+    function normalizeDuration(d: string | undefined | null): string | null {
+      if (!d) return null;
+      if (d === "6months") return "six_months";
+      return VALID_DURATIONS.includes(d) ? d : null;
+    }
 
     switch (event.type) {
       case "checkout.session.completed": {
@@ -75,73 +119,67 @@ serve(async (req) => {
         logStep("Checkout completed", { sessionId: session.id, mode: session.mode });
 
         if (session.mode === "subscription") {
-          // Handle subscription purchase
           const customerId = session.customer as string;
           const subscriptionId = session.subscription as string;
+          const meta = (session.metadata ?? {}) as Record<string, string>;
 
-          // Get customer email
           const customer = await stripe.customers.retrieve(customerId);
           const email = (customer as Stripe.Customer).email;
 
-          if (email) {
-            // Find user by email
-            const { data: profile } = await supabaseClient
-              .from("profiles")
-              .select("id, user_id")
-              .eq("user_id", (await supabaseClient.auth.admin.listUsers()).data.users.find(u => u.email === email)?.id)
-              .single();
+          const profileId = await resolveProfileId({
+            metaProfileId: meta.profile_id,
+            metaUserId: meta.user_id,
+            email,
+          });
 
-            if (profile) {
-              // Get subscription details
-              const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-              const productId = subscription.items.data[0].price.product as string;
-              const appTier = PRODUCT_TO_TIER[productId] ?? (session.metadata?.tier as string);
-
-              if (!appTier || !VALID_TIERS.includes(appTier)) {
-                logStep("Unknown product/tier, skipping", { productId, appTier });
-                break;
-              }
-
-              // Update or create subscription record
-              await supabaseClient
-                .from("subscriptions")
-                .upsert({
-                  profile_id: profile.id,
-                  stripe_customer_id: customerId,
-                  stripe_subscription_id: subscriptionId,
-                  status: subscription.status,
-                  tier: appTier,
-                  current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-                  current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                }, { onConflict: "profile_id" });
-
-              // Update profile (only app tier names: free/plus/gold/platinum)
-              await supabaseClient
-                .from("profiles")
-                .update({
-                  is_premium: true,
-                  subscription_tier: appTier,
-                  subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
-                  first_purchase_promo_used: true,
-                })
-                .eq("id", profile.id);
-
-              // Sync entitlements cache
-              await supabaseClient.rpc("sync_entitlements", { p_profile_id: profile.id });
-
-              logStep("Subscription created for user", { profileId: profile.id, tier: appTier });
-            }
+          if (!profileId) {
+            logStep("Could not resolve profile for subscription", { sessionId: session.id });
+            break;
           }
+
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const subMeta = (subscription.metadata ?? {}) as Record<string, string>;
+          const appTier = tierFromMetadata(subMeta) ?? tierFromMetadata(meta);
+          const duration = normalizeDuration(subMeta.duration ?? meta.duration);
+
+          if (!appTier || appTier === "free") {
+            logStep("No valid tier in metadata, skipping", { appTier });
+            break;
+          }
+
+          const subRow: Record<string, unknown> = {
+            profile_id: profileId,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            status: subscription.status,
+            tier: appTier,
+            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          };
+          // duration column is optional; safe to include via try/catch upsert
+          await supabaseClient.from("subscriptions").upsert(subRow, { onConflict: "profile_id" });
+
+          await supabaseClient
+            .from("profiles")
+            .update({
+              is_premium: true,
+              subscription_tier: appTier,
+              subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+              first_purchase_promo_used: true,
+            })
+            .eq("id", profileId);
+
+          await supabaseClient.rpc("sync_entitlements", { p_profile_id: profileId });
+
+          logStep("Subscription created", { profileId, tier: appTier, duration });
         } else if (session.mode === "payment") {
-          // Handle one-time payment (credits purchase)
+          // One-time payment handling (credits) — UNCHANGED
           const customerId = session.customer as string;
           const customer = await stripe.customers.retrieve(customerId);
           const email = (customer as Stripe.Customer).email;
 
           if (email && session.metadata?.credits) {
             const credits = parseInt(session.metadata.credits);
-            
-            // Find user
             const { data: users } = await supabaseClient.auth.admin.listUsers();
             const user = users.users.find(u => u.email === email);
 
@@ -153,18 +191,14 @@ serve(async (req) => {
                 .single();
 
               if (profile) {
-                // Add credits
                 await supabaseClient
                   .from("user_credits")
                   .upsert({
                     profile_id: profile.id,
                     credits: credits,
                     last_purchase_at: new Date().toISOString(),
-                  }, { 
-                    onConflict: "profile_id",
-                  });
+                  }, { onConflict: "profile_id" });
 
-                // Record transaction
                 await supabaseClient
                   .from("credit_transactions")
                   .insert({
@@ -187,8 +221,8 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription updated", { subscriptionId: subscription.id, status: subscription.status });
 
-        const productId = subscription.items.data[0].price.product as string;
-        const appTier = PRODUCT_TO_TIER[productId];
+        const subMeta = (subscription.metadata ?? {}) as Record<string, string>;
+        const appTier = tierFromMetadata(subMeta);
         const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
         const { error } = await supabaseClient

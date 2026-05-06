@@ -78,7 +78,10 @@ serve(async (req) => {
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       productId = subscription.items.data[0].price.product;
-      tier = PRODUCT_TO_TIER[productId as string] ?? null;
+      const metaTier = (subscription.metadata as Record<string, string> | undefined)?.tier;
+      tier = (metaTier && ["plus", "gold", "platinum"].includes(metaTier))
+        ? metaTier
+        : (PRODUCT_TO_TIER[productId as string] ?? null);
       logStep("Determined subscription tier", { productId, tier });
     } else {
       logStep("No active subscription found");
