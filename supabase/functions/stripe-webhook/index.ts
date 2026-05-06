@@ -221,8 +221,8 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription updated", { subscriptionId: subscription.id, status: subscription.status });
 
-        const productId = subscription.items.data[0].price.product as string;
-        const appTier = PRODUCT_TO_TIER[productId];
+        const subMeta = (subscription.metadata ?? {}) as Record<string, string>;
+        const appTier = tierFromMetadata(subMeta);
         const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
         const { error } = await supabaseClient
