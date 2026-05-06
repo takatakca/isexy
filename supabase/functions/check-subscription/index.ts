@@ -64,14 +64,22 @@ serve(async (req) => {
     });
     const hasActiveSub = subscriptions.data.length > 0;
     let productId = null;
+    let tier: string | null = null;
     let subscriptionEnd = null;
+
+    const PRODUCT_TO_TIER: Record<string, string> = {
+      prod_Tf4swUnx8LI3BR: "plus",
+      prod_Tf4sVyy62yF0cy: "gold",
+      prod_Tf4sF4GddOh8RM: "platinum",
+    };
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       productId = subscription.items.data[0].price.product;
-      logStep("Determined subscription tier", { productId });
+      tier = PRODUCT_TO_TIER[productId as string] ?? null;
+      logStep("Determined subscription tier", { productId, tier });
     } else {
       logStep("No active subscription found");
     }
@@ -79,6 +87,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       product_id: productId,
+      tier,
       subscription_end: subscriptionEnd
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
