@@ -61,6 +61,14 @@ serve(async (req) => {
 
     logStep("Processing event", { type: event.type });
 
+    // Map Stripe product IDs to app tier names
+    const PRODUCT_TO_TIER: Record<string, string> = {
+      prod_Tf4swUnx8LI3BR: "plus",
+      prod_Tf4sVyy62yF0cy: "gold",
+      prod_Tf4sF4GddOh8RM: "platinum",
+    };
+    const VALID_TIERS = ["free", "plus", "gold", "platinum"];
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -87,6 +95,12 @@ serve(async (req) => {
               // Get subscription details
               const subscription = await stripe.subscriptions.retrieve(subscriptionId);
               const productId = subscription.items.data[0].price.product as string;
+              const appTier = PRODUCT_TO_TIER[productId] ?? (session.metadata?.tier as string);
+
+              if (!appTier || !VALID_TIERS.includes(appTier)) {
+                logStep("Unknown product/tier, skipping", { productId, appTier });
+                break;
+              }
 
               // Update or create subscription record
               await supabaseClient
@@ -96,22 +110,26 @@ serve(async (req) => {
                   stripe_customer_id: customerId,
                   stripe_subscription_id: subscriptionId,
                   status: subscription.status,
-                  tier: productId,
+                  tier: appTier,
                   current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
                   current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
                 }, { onConflict: "profile_id" });
 
-              // Update profile
+              // Update profile (only app tier names: free/plus/gold/platinum)
               await supabaseClient
                 .from("profiles")
                 .update({
                   is_premium: true,
-                  subscription_tier: productId,
+                  subscription_tier: appTier,
                   subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
+                  first_purchase_promo_used: true,
                 })
                 .eq("id", profile.id);
 
-              logStep("Subscription created for user", { profileId: profile.id, tier: productId });
+              // Sync entitlements cache
+              await supabaseClient.rpc("sync_entitlements", { p_profile_id: profile.id });
+
+              logStep("Subscription created for user", { profileId: profile.id, tier: appTier });
             }
           }
         } else if (session.mode === "payment") {
