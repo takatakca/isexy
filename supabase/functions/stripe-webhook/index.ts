@@ -187,18 +187,40 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription updated", { subscriptionId: subscription.id, status: subscription.status });
 
-        // Update subscription in database
+        const productId = subscription.items.data[0].price.product as string;
+        const appTier = PRODUCT_TO_TIER[productId];
+        const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+
         const { error } = await supabaseClient
           .from("subscriptions")
           .update({
             status: subscription.status,
+            tier: appTier ?? undefined,
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_end: periodEnd,
           })
           .eq("stripe_subscription_id", subscription.id);
 
-        if (error) {
-          logStep("Error updating subscription", { error: error.message });
+        if (error) logStep("Error updating subscription", { error: error.message });
+
+        // Sync profile tier
+        const { data: sub } = await supabaseClient
+          .from("subscriptions")
+          .select("profile_id")
+          .eq("stripe_subscription_id", subscription.id)
+          .single();
+
+        if (sub && appTier) {
+          const isActive = ["active", "trialing"].includes(subscription.status);
+          await supabaseClient
+            .from("profiles")
+            .update({
+              is_premium: isActive,
+              subscription_tier: isActive ? appTier : "free",
+              subscription_expires_at: isActive ? periodEnd : null,
+            })
+            .eq("id", sub.profile_id);
+          await supabaseClient.rpc("sync_entitlements", { p_profile_id: sub.profile_id });
         }
         break;
       }
@@ -207,13 +229,11 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription cancelled", { subscriptionId: subscription.id });
 
-        // Update subscription status
         await supabaseClient
           .from("subscriptions")
           .update({ status: "canceled" })
           .eq("stripe_subscription_id", subscription.id);
 
-        // Update profile
         const { data: sub } = await supabaseClient
           .from("subscriptions")
           .select("profile_id")
@@ -225,10 +245,11 @@ serve(async (req) => {
             .from("profiles")
             .update({
               is_premium: false,
-              subscription_tier: null,
+              subscription_tier: "free",
               subscription_expires_at: null,
             })
             .eq("id", sub.profile_id);
+          await supabaseClient.rpc("sync_entitlements", { p_profile_id: sub.profile_id });
         }
         break;
       }
