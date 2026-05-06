@@ -68,31 +68,33 @@ export default function ProfileSetup() {
       return;
     }
 
-    // 18+ enforcement
+    // 18+ enforcement (frontend check; backend hardening can be added later)
     if (birthdate) {
       const ageMs = Date.now() - new Date(birthdate).getTime();
       const age = ageMs / (365.25 * 24 * 60 * 60 * 1000);
       if (age < 18) {
-        toast.error("You must be 18 or older to use ISEXY.");
+        toast.error("You must be 18 or older to use this app.");
         return;
       }
-    } else {
-      toast.error("Please set your birth date.");
-      return;
     }
 
-    if (!name || !gender || interestedIn.length === 0) {
-      toast.error("Please complete your name, gender, and who you're interested in.");
-      return;
-    }
-    if (bio.trim().length < 10) {
-      toast.error("Please write a short bio (at least 10 characters).");
-      setStep(5);
-      return;
-    }
-    if (photos.length < 1) {
-      toast.error("Please upload at least one profile photo.");
-      setStep(4);
+    // Collect any missing required fields and show a single clear message
+    const missing: string[] = [];
+    if (!name || name.trim().length < 2) missing.push("name");
+    if (!birthdate) missing.push("birth date");
+    if (!gender) missing.push("gender");
+    if (interestedIn.length === 0) missing.push("who you're interested in");
+    if (bio.trim().length < 10) missing.push("bio (min 10 characters)");
+    if (photos.length < 1) missing.push("at least 1 profile photo");
+
+    if (missing.length > 0) {
+      toast.error(`Please complete: ${missing.join(", ")}.`);
+      // Jump to the first relevant step
+      if (!name || name.trim().length < 2) setStep(1);
+      else if (!birthdate) setStep(2);
+      else if (!gender || interestedIn.length === 0) setStep(3);
+      else if (photos.length < 1) setStep(4);
+      else if (bio.trim().length < 10) setStep(5);
       return;
     }
 
@@ -172,7 +174,7 @@ export default function ProfileSetup() {
       case 1: return name.length >= 2;
       case 2: return !!birthdate;
       case 3: return !!gender && interestedIn.length > 0;
-      case 4: return photos.length >= 2;
+      case 4: return photos.length >= 1;
       case 5: return bio.trim().length >= 10;
       case 6: return true; // Lifestyle is optional
       case 7: return true; // Personality is optional  
@@ -285,7 +287,7 @@ export default function ProfileSetup() {
               Add your recent pics
             </h1>
             <p className="text-muted-foreground mb-6">
-              Upload 2 photos to start. Add 4 or more to make your profile stand out.
+              Upload at least 1 photo to continue. Add more to make your profile stand out — your first photo will be your main pic.
             </p>
             <PhotoUpload
               photos={photos}
