@@ -44,6 +44,24 @@ function calculateAge(birthDate: string): number {
   return age;
 }
 
+function normalizeGender(value?: string | null): string {
+  const v = (value || "").toLowerCase().trim();
+  if (["man", "male", "men", "m"].includes(v)) return "men";
+  if (["woman", "female", "women", "w", "f"].includes(v)) return "women";
+  if (["nonbinary", "non-binary", "non binary", "nb", "enby"].includes(v)) return "nonbinary";
+  if (["everyone", "all", "any"].includes(v)) return "everyone";
+  return v;
+}
+
+function preferenceMatchesGender(preferences: string[] | null | undefined, gender?: string | null): boolean {
+  if (!preferences || preferences.length === 0) return false;
+  const normPrefs = preferences.map(normalizeGender);
+  if (normPrefs.includes("everyone")) return true;
+  const g = normalizeGender(gender);
+  if (!g) return false;
+  return normPrefs.includes(g);
+}
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
