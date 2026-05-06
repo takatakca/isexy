@@ -207,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         profile,
+        photoCount,
         loading,
         signUp,
         signIn,
