@@ -14,6 +14,7 @@ export default function UpdatePassword() {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || "";
+  const otp = location.state?.otp || "";
   const verified = location.state?.verified || false;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -24,7 +25,7 @@ export default function UpdatePassword() {
 
   useEffect(() => {
     // Check if we arrived here through proper OTP verification
-    if (!verified || !email) {
+    if (!verified || !email || !otp) {
       toast.error("Please verify your email first");
       navigate("/reset-password");
     }
@@ -55,7 +56,7 @@ export default function UpdatePassword() {
     try {
       // Use admin API to update password for the user
       const { data, error } = await supabase.functions.invoke("update-user-password", {
-        body: { email, password },
+        body: { email, password, otp },
       });
 
       if (error) {
