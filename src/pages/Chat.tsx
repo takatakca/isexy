@@ -360,6 +360,15 @@ export default function Chat() {
     if (error) {
       console.error("Error sending message:", error);
       setNewMessage(content);
+      const msg = error.message || "";
+      if (msg.includes("blocked")) {
+        toast.error("You can't message this user.");
+      } else if (msg.includes("no longer active") || msg.includes("not part") || msg.includes("Match not found")) {
+        toast.error("This conversation is no longer available.");
+        navigate("/matches");
+      } else {
+        toast.error("Failed to send message. Please try again.");
+      }
     } else {
       await supabase
         .from("matches")
