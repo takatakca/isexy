@@ -143,10 +143,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     if (!emailSent) {
-      console.log("=== EMAIL OTP (not sent via email service) ===");
-      console.log("To:", email);
-      console.log("OTP:", otp);
-      console.log("=================");
+      // Provider not configured — do not log OTP. Code is stored in DB and
+      // verified server-side via verify_otp RPC.
+      console.warn("Email provider not configured; OTP stored in DB only.");
     }
 
     return new Response(

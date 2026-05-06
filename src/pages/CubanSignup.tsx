@@ -110,12 +110,10 @@ export default function CubanSignup() {
       });
       if (response.error) throw response.error;
       const data = response.data;
-      if (data?.devCode) {
-        // Auto-fill OTP code for testing (WhatsApp API not configured yet)
-        setWhatsappCode(data.devCode);
-        toast.success("Code auto-filled for testing! Click Verify to continue.");
-      } else {
+      if (data?.success) {
         toast.success("Verification code sent to WhatsApp!");
+      } else {
+        toast.error("Could not send verification code. Please try again.");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to send code. You can skip this step.");

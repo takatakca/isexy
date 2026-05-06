@@ -99,6 +99,7 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AIChatWidget } from "./components/AIChatWidget";
 import { PushNotificationPrompt } from "./components/PushNotificationPrompt";
 import { IncomingCallNotification } from "./components/IncomingCallNotification";
@@ -124,32 +125,32 @@ const App = () => (
               <Route path="/phone" element={<PhoneAuth />} />
               <Route path="/verify" element={<CodeVerification />} />
               <Route path="/house-rules" element={<HouseRules />} />
-              <Route path="/profile-setup" element={<ProfileSetup />} />
-              <Route path="/discover" element={<Discover />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/likes" element={<Likes />} />
-              <Route path="/matches" element={<Messages />} />
-              <Route path="/chat/:matchId" element={<Chat />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/premium" element={<Premium />} />
-              <Route path="/edit-bio" element={<EditBio />} />
-              <Route path="/edit-profile" element={<EditProfile />} />
-              <Route path="/get-super-likes" element={<GetSuperLikes />} />
-              <Route path="/get-boosts" element={<GetBoosts />} />
-              <Route path="/my-subscription" element={<MySubscription />} />
+              <Route path="/profile-setup" element={<ProtectedRoute requireCompleteProfile={false}><ProfileSetup /></ProtectedRoute>} />
+              <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
+              <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
+              <Route path="/likes" element={<ProtectedRoute><Likes /></ProtectedRoute>} />
+              <Route path="/matches" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+              <Route path="/chat/:matchId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
+              <Route path="/edit-bio" element={<ProtectedRoute><EditBio /></ProtectedRoute>} />
+              <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+              <Route path="/get-super-likes" element={<ProtectedRoute><GetSuperLikes /></ProtectedRoute>} />
+              <Route path="/get-boosts" element={<ProtectedRoute><GetBoosts /></ProtectedRoute>} />
+              <Route path="/my-subscription" element={<ProtectedRoute><MySubscription /></ProtectedRoute>} />
               <Route path="/safety" element={<Safety />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/love-stories" element={<LoveStories />} />
               <Route path="/about" element={<About />} />
               <Route path="/news" element={<News />} />
-              <Route path="/matches-list" element={<Matches />} />
+              <Route path="/matches-list" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
               <Route path="/interests" element={<Interests />} />
               <Route path="/block-contacts" element={<BlockContacts />} />
               <Route path="/dark-mode" element={<DarkMode />} />
               <Route path="/autoplay-videos" element={<AutoplayVideos />} />
-              <Route path="/top-picks" element={<TopPicks />} />
+              <Route path="/top-picks" element={<ProtectedRoute><TopPicks /></ProtectedRoute>} />
               <Route path="/community-guidelines" element={<CommunityGuidelines />} />
               <Route path="/safety-tips" element={<SafetyTips />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -181,11 +182,11 @@ const App = () => (
               <Route path="/admin/moderation" element={<AdminModeration />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/donate/:recipientId?" element={<CubanDonations />} />
-              <Route path="/compare-plans" element={<SubscriptionComparison />} />
+              <Route path="/compare-plans" element={<ProtectedRoute><SubscriptionComparison /></ProtectedRoute>} />
               <Route path="/tourist-signup" element={<TouristSignup />} />
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
-              <Route path="/who-liked-you" element={<WhoLikedYou />} />
-              <Route path="/passport-mode" element={<PassportMode />} />
+              <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
+              <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
               <Route path="/photo-verification" element={<PhotoVerification />} />
               <Route path="/double-date" element={<DoubleDate />} />
               <Route path="/qa-events" element={<QAEvents />} />
@@ -197,11 +198,11 @@ const App = () => (
               <Route path="/block-report/:userId" element={<BlockReportFlow />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/update-password" element={<UpdatePassword />} />
-              <Route path="/video-call/:matchId" element={<VideoCall />} />
+              <Route path="/video-call/:matchId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
               <Route path="/dating-regulations" element={<DatingRegulations />} />
-              <Route path="/buy-credits" element={<BuyCredits />} />
-              <Route path="/buy-minutes" element={<BuyMinutes />} />
-              <Route path="/group-chat/:groupId" element={<GroupChat />} />
+              <Route path="/buy-credits" element={<ProtectedRoute><BuyCredits /></ProtectedRoute>} />
+              <Route path="/buy-minutes" element={<ProtectedRoute><BuyMinutes /></ProtectedRoute>} />
+              <Route path="/group-chat/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
               <Route path="/explore/:category" element={<CategorySwipe />} />
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/staff-login" element={<ModeratorLogin />} />

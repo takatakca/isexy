@@ -77,12 +77,11 @@ export default function WebSignup() {
       sessionStorage.setItem("pending_signup", JSON.stringify({ email, password }));
       
       toast.success("Verification code sent to your email!");
-      navigate("/verify", { 
-        state: { 
-          email, 
+      navigate("/verify", {
+        state: {
+          email,
           type: "verification",
-          otp: data.otp
-        } 
+        },
       });
     } catch (err) {
       toast.error("Failed to create account");
