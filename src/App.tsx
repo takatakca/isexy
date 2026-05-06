@@ -198,11 +198,11 @@ const App = () => (
               <Route path="/block-report/:userId" element={<BlockReportFlow />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/update-password" element={<UpdatePassword />} />
-              <Route path="/video-call/:matchId" element={<VideoCall />} />
+              <Route path="/video-call/:matchId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
               <Route path="/dating-regulations" element={<DatingRegulations />} />
-              <Route path="/buy-credits" element={<BuyCredits />} />
-              <Route path="/buy-minutes" element={<BuyMinutes />} />
-              <Route path="/group-chat/:groupId" element={<GroupChat />} />
+              <Route path="/buy-credits" element={<ProtectedRoute><BuyCredits /></ProtectedRoute>} />
+              <Route path="/buy-minutes" element={<ProtectedRoute><BuyMinutes /></ProtectedRoute>} />
+              <Route path="/group-chat/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
               <Route path="/explore/:category" element={<CategorySwipe />} />
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/staff-login" element={<ModeratorLogin />} />
