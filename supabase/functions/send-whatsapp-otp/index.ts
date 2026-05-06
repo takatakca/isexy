@@ -38,6 +38,21 @@ Deno.serve(async (req) => {
     const normalizedPhone = phoneNumber.replace(/[\s\-\(\)]/g, "");
 
     if (action === "send") {
+      // Rate limit: max 3 OTPs per phone within 1 hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count: recentCount } = await supabase
+        .from("otp_codes")
+        .select("id", { count: "exact", head: true })
+        .eq("email", `whatsapp:${normalizedPhone}`)
+        .eq("type", "whatsapp")
+        .gte("created_at", oneHourAgo);
+      if ((recentCount ?? 0) >= 3) {
+        return new Response(
+          JSON.stringify({ error: "Too many requests. Please try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const otp = generateOTP();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
