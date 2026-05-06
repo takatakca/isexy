@@ -3,12 +3,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface UpdatePasswordRequest {
   email: string;
   password: string;
+  otp: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -17,75 +19,84 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, password }: UpdatePasswordRequest = await req.json();
+    const { email, password, otp }: UpdatePasswordRequest = await req.json();
 
-    if (!email || !password) {
+    if (!email || !password || !otp) {
       return new Response(
-        JSON.stringify({ error: "Email and password are required" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: "Email, password and verification code are required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
     if (password.length < 6) {
       return new Response(
         JSON.stringify({ error: "Password must be at least 6 characters" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+    if (!/^\d{6}$/.test(otp)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid verification code" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+
+    // SERVER-SIDE OTP VERIFICATION — consumes the code (single-use)
+    const { data: verifyData, error: verifyError } = await supabase.rpc("verify_otp", {
+      p_email: email,
+      p_code: otp,
+      p_type: "password_reset",
     });
+
+    if (verifyError || !verifyData || (verifyData as any).valid !== true) {
+      return new Response(
+        JSON.stringify({ error: (verifyData as any)?.error || "Invalid or expired verification code" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
 
     // Find user by email
     const { data: users, error: listError } = await supabase.auth.admin.listUsers();
-    
     if (listError) {
-      console.error("Error listing users:", listError);
-      return new Response(
-        JSON.stringify({ error: "Failed to find user" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const user = users.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: "User not found" }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Update password
-    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
-      password,
-    });
-
-    if (updateError) {
-      console.error("Error updating password:", updateError);
+      console.error("listUsers error:", listError);
       return new Response(
         JSON.stringify({ error: "Failed to update password" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+    const user = users.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    if (!user) {
+      // Generic response — do not reveal existence
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
-    console.log("Password updated successfully for:", email);
+    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, { password });
+    if (updateError) {
+      console.error("updateUser error:", updateError);
+      return new Response(
+        JSON.stringify({ error: "Failed to update password" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Password updated successfully" }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ success: true }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
-  } catch (error: any) {
-    console.error("Update password error:", error);
+  } catch (err: any) {
+    console.error("update-user-password error:", err);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to update password" }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ error: "Failed to update password" }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   }
 };
