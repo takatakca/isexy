@@ -51,6 +51,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  photoCount: number;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [photoCount, setPhotoCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -80,10 +82,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data as Profile | null;
   };
 
+  const fetchPhotoCount = async (profileId: string) => {
+    const { count } = await supabase
+      .from("profile_photos")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", profileId);
+    return count ?? 0;
+  };
+
   const refreshProfile = async () => {
     if (user) {
       const profileData = await fetchProfile(user.id);
       setProfile(profileData);
+      if (profileData) {
+        setPhotoCount(await fetchPhotoCount(profileData.id));
+      } else {
+        setPhotoCount(0);
+      }
     }
   };
 
@@ -104,11 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Defer profile fetch to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id).then(setProfile);
+          setTimeout(async () => {
+            const p = await fetchProfile(session.user.id);
+            setProfile(p);
+            setPhotoCount(p ? await fetchPhotoCount(p.id) : 0);
           }, 0);
         } else {
           setProfile(null);
+          setPhotoCount(0);
         }
       }
     );
@@ -130,10 +148,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id).then((profileData) => {
-          setProfile(profileData);
-          setLoading(false);
-        });
+        const profileData = await fetchProfile(session.user.id);
+        setProfile(profileData);
+        setPhotoCount(profileData ? await fetchPhotoCount(profileData.id) : 0);
+        setLoading(false);
       } else {
         setLoading(false);
       }
@@ -180,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setPhotoCount(0);
     toast.success("Signed out successfully");
   };
 
@@ -189,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         profile,
+        photoCount,
         loading,
         signUp,
         signIn,

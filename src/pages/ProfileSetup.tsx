@@ -6,9 +6,10 @@ import { AuthButton } from "@/components/AuthButton";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { ChipSelector } from "@/components/ChipSelector";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { 
-  Wine, Cigarette, Dumbbell, PawPrint, MessageSquare, 
+import {
+  Wine, Cigarette, Dumbbell, PawPrint, MessageSquare,
   Heart, GraduationCap, MapPin, Shield, Users, Lightbulb
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ const interestCategories = {
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -39,6 +41,7 @@ export default function ProfileSetup() {
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [gender, setGender] = useState("");
+  const [interestedIn, setInterestedIn] = useState<string[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [bio, setBio] = useState("");
   const [drinking, setDrinking] = useState("");
@@ -65,92 +68,95 @@ export default function ProfileSetup() {
       return;
     }
 
+    // 18+ enforcement
+    if (birthdate) {
+      const ageMs = Date.now() - new Date(birthdate).getTime();
+      const age = ageMs / (365.25 * 24 * 60 * 60 * 1000);
+      if (age < 18) {
+        toast.error("You must be 18 or older to use ISEXY.");
+        return;
+      }
+    } else {
+      toast.error("Please set your birth date.");
+      return;
+    }
+
+    if (!name || !gender || interestedIn.length === 0) {
+      toast.error("Please complete your name, gender, and who you're interested in.");
+      return;
+    }
+    if (bio.trim().length < 10) {
+      toast.error("Please write a short bio (at least 10 characters).");
+      setStep(5);
+      return;
+    }
+    if (photos.length < 1) {
+      toast.error("Please upload at least one profile photo.");
+      setStep(4);
+      return;
+    }
+
     setLoading(true);
     try {
-      // Check if profile already exists
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
+
+      const baseFields = {
+        first_name: name,
+        birth_date: birthdate,
+        gender: gender.toLowerCase(),
+        interested_in: interestedIn,
+        bio,
+        drinking,
+        smoking,
+        workout,
+        pets,
+        communication_style: communication,
+        love_language: loveLanguage,
+        education,
+        interests,
+        privacy_accepted: true,
+      };
 
       let profileId: string;
 
       if (existingProfile) {
-        // Update existing profile
         const { data: updatedProfile, error: updateError } = await supabase
           .from("profiles")
-          .update({
-            first_name: name,
-            birth_date: birthdate,
-            gender: gender.toLowerCase(),
-            bio,
-            drinking,
-            smoking,
-            workout,
-            pets,
-            communication_style: communication,
-            love_language: loveLanguage,
-            education,
-            interests,
-            privacy_accepted: true,
-            country: "Cuba",
-          })
+          .update(baseFields)
           .eq("user_id", userId)
           .select()
           .single();
-
         if (updateError) throw updateError;
         profileId = updatedProfile.id;
       } else {
-        // Create new profile
         const { data: newProfile, error: insertError } = await supabase
           .from("profiles")
-          .insert({
-            user_id: userId,
-            first_name: name,
-            birth_date: birthdate,
-            gender: gender.toLowerCase(),
-            bio,
-            drinking,
-            smoking,
-            workout,
-            pets,
-            communication_style: communication,
-            love_language: loveLanguage,
-            education,
-            interests,
-            privacy_accepted: true,
-            country: "Cuba",
-          })
+          .insert({ user_id: userId, ...baseFields })
           .select()
           .single();
-
         if (insertError) throw insertError;
         profileId = newProfile.id;
       }
 
-      // Save photos to profile_photos table
+      // Save photos to profile_photos table (replace set)
       if (photos.length > 0) {
-        // Delete existing photos first
-        await supabase
-          .from("profile_photos")
-          .delete()
-          .eq("profile_id", profileId);
-
+        await supabase.from("profile_photos").delete().eq("profile_id", profileId);
         const photoInserts = photos.map((url, index) => ({
           profile_id: profileId,
           photo_url: url,
           position: index,
         }));
-
         const { error: photosError } = await supabase
           .from("profile_photos")
           .insert(photoInserts);
-
         if (photosError) throw photosError;
       }
 
+      await refreshProfile();
       toast.success("Profile created successfully!");
       navigate("/discover");
     } catch (error: any) {
@@ -165,9 +171,9 @@ export default function ProfileSetup() {
     switch (step) {
       case 1: return name.length >= 2;
       case 2: return !!birthdate;
-      case 3: return !!gender;
+      case 3: return !!gender && interestedIn.length > 0;
       case 4: return photos.length >= 2;
-      case 5: return true; // Bio is optional
+      case 5: return bio.trim().length >= 10;
       case 6: return true; // Lifestyle is optional
       case 7: return true; // Personality is optional  
       case 8: return interests.length >= 3;
@@ -218,7 +224,7 @@ export default function ProfileSetup() {
       case 3:
         return (
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-extrabold text-foreground mb-8">
+            <h1 className="text-3xl font-extrabold text-foreground mb-6">
               What's your gender?
             </h1>
             <div className="space-y-3 mb-8">
@@ -236,6 +242,39 @@ export default function ProfileSetup() {
                 </button>
               ))}
             </div>
+
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              Who are you interested in?
+            </h2>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["Women", "Men", "Everyone"].map((option) => {
+                const value = option.toLowerCase();
+                const selected = interestedIn.includes(value);
+                return (
+                  <button
+                    key={option}
+                    onClick={() => {
+                      if (value === "everyone") {
+                        setInterestedIn(["women", "men"]);
+                      } else {
+                        const others = interestedIn.filter((i) => i !== value);
+                        setInterestedIn(selected ? others : [...others, value]);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-full border-2 font-medium text-sm transition-all ${
+                      (value === "everyone"
+                        ? interestedIn.length === 2
+                        : selected)
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-foreground hover:border-muted-foreground"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-muted-foreground text-sm mb-4">Pick at least one. You can change this later.</p>
           </div>
         );
 
@@ -522,7 +561,7 @@ export default function ProfileSetup() {
       onBack={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
     >
       {/* Skip button for optional steps */}
-      {[5, 6, 7].includes(step) && (
+      {[6, 7].includes(step) && (
         <button
           onClick={handleSkip}
           className="absolute top-4 right-4 text-muted-foreground font-semibold hover:text-foreground transition-colors"
