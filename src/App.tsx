@@ -150,7 +150,7 @@ const App = () => (
               <Route path="/block-contacts" element={<BlockContacts />} />
               <Route path="/dark-mode" element={<DarkMode />} />
               <Route path="/autoplay-videos" element={<AutoplayVideos />} />
-              <Route path="/top-picks" element={<TopPicks />} />
+              <Route path="/top-picks" element={<ProtectedRoute><TopPicks /></ProtectedRoute>} />
               <Route path="/community-guidelines" element={<CommunityGuidelines />} />
               <Route path="/safety-tips" element={<SafetyTips />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
