@@ -403,7 +403,7 @@ export default function Discover() {
       <div className="min-h-screen bg-background flex flex-col pb-20">
         <header className="flex items-center justify-between px-4 py-3">
           <DiscoverFilters onFiltersChange={fetchProfiles} showVerifiedOnly={showVerifiedOnly} setShowVerifiedOnly={setShowVerifiedOnly} />
-          <div className="flex items-center gap-2"><Flame className="w-5 h-5 text-primary" /><span className="font-bold text-foreground">CubaDate</span></div>
+          <div className="flex items-center gap-2"><Flame className="w-5 h-5 text-primary" /><span className="font-bold text-foreground">ISEXY</span></div>
           <LanguageSelector variant="icon" />
         </header>
         <main className="flex-1 flex flex-col items-center justify-center px-8">
@@ -549,7 +549,7 @@ export default function Discover() {
         <DiscoverFilters onFiltersChange={fetchProfiles} showVerifiedOnly={showVerifiedOnly} setShowVerifiedOnly={setShowVerifiedOnly} />
         <div className="flex items-center gap-2">
           <Flame className="w-5 h-5 text-primary" />
-          <span className="font-bold text-foreground">CubaDate</span>
+          <span className="font-bold text-foreground">ISEXY</span>
           {!userProfile?.is_premium && (
             <span className="text-xs text-muted-foreground ml-1">({likesRemaining} likes)</span>
           )}
