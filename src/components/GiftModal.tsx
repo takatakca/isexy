@@ -74,35 +74,16 @@ export function GiftModal({ isOpen, onClose, recipientId, recipientName }: GiftM
 
     setProcessing(true);
     try {
-      // Create gift transaction
-      const { data: transaction, error: txError } = await supabase
-        .from("gift_transactions")
-        .insert({
-          sender_profile_id: profile.id,
-          receiver_profile_id: recipientId,
-          gift_package_id: selectedPackage.id,
-          amount_usd: selectedPackage.price_usd,
-          message: message || null,
-          status: "pending",
-        })
-        .select()
-        .single();
-
-      if (txError) throw txError;
-
-      // Create Stripe checkout session
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
         "create-one-time-payment",
         {
           body: {
-            amount: Math.round(selectedPackage.price_usd * 100),
-            productName: `Gift: ${selectedPackage.name} for ${recipientName}`,
+            productId: `gift_${selectedPackage.id}`,
             metadata: {
               type: "gift",
-              transaction_id: (transaction as any).id,
-              sender_id: profile.id,
-              receiver_id: recipientId,
-              package_id: selectedPackage.id,
+              recipient_profile_id: recipientId,
+              gift_type: selectedPackage.category,
+              message: message?.slice(0, 200) || "",
             },
           },
         }
@@ -110,7 +91,6 @@ export function GiftModal({ isOpen, onClose, recipientId, recipientName }: GiftM
 
       if (checkoutError) throw checkoutError;
 
-      // Redirect to Stripe
       if (checkoutData?.url) {
         window.location.href = checkoutData.url;
       } else {
