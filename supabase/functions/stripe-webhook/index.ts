@@ -185,57 +185,174 @@ serve(async (req) => {
 
           logStep("Subscription created", { profileId, tier: appTier, duration });
         } else if (session.mode === "payment") {
-          // One-time payment: trust ONLY metadata.package_id (server catalog), not metadata.credits.
           const customerId = session.customer as string;
-          const customer = await stripe.customers.retrieve(customerId);
-          const email = (customer as Stripe.Customer).email;
+          const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
+          const email = (customer as Stripe.Customer | null)?.email ?? session.customer_details?.email ?? null;
           const meta = (session.metadata ?? {}) as Record<string, string>;
+          const productId = meta.product_id || "";
           const packageId = meta.package_id;
-
-          if (!packageId || !CREDIT_PACKAGES[packageId]) {
-            logStep("No valid credit package in metadata; skipping credit grant", { packageId });
-            break;
-          }
-          const credits = CREDIT_PACKAGES[packageId].credits;
 
           const profileId = await resolveProfileId({
             metaProfileId: meta.profile_id,
             metaUserId: meta.user_id,
             email,
           });
-
           if (!profileId) {
-            logStep("Could not resolve profile for credit purchase");
+            logStep("Could not resolve profile for one-time payment");
             break;
           }
 
-          // Atomic increment via upsert read-modify-write under service role
-          const { data: existing } = await supabaseClient
-            .from("user_credits")
-            .select("credits")
-            .eq("profile_id", profileId)
-            .maybeSingle();
+          // ---- Credits (legacy: package_id) ----
+          if (packageId && CREDIT_PACKAGES[packageId]) {
+            const credits = CREDIT_PACKAGES[packageId].credits;
+            // Idempotency: check existing transaction
+            const { data: existingTx } = await supabaseClient
+              .from("credit_transactions").select("id")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingTx) { logStep("Credit purchase already fulfilled", { sessionId: session.id }); break; }
 
-          const newBalance = (existing?.credits ?? 0) + credits;
-
-          await supabaseClient
-            .from("user_credits")
-            .upsert(
+            const { data: existing } = await supabaseClient
+              .from("user_credits").select("credits").eq("profile_id", profileId).maybeSingle();
+            const newBalance = (existing?.credits ?? 0) + credits;
+            await supabaseClient.from("user_credits").upsert(
               { profile_id: profileId, credits: newBalance, last_purchase_at: new Date().toISOString() },
               { onConflict: "profile_id" }
             );
-
-          await supabaseClient
-            .from("credit_transactions")
-            .insert({
-              profile_id: profileId,
-              amount: credits,
-              type: "purchase",
+            await supabaseClient.from("credit_transactions").insert({
+              profile_id: profileId, amount: credits, type: "purchase",
               description: `Purchased ${credits} credits (${packageId})`,
               stripe_session_id: session.id,
             });
+            logStep("Credits added", { profileId, credits, packageId });
+            break;
+          }
 
-          logStep("Credits added", { profileId, credits, packageId });
+          // ---- Gift fulfillment ----
+          if (productId.startsWith("gift_") || meta.type === "gift") {
+            const giftPackageId = meta.gift_package_id || productId.replace(/^gift_/, "");
+            const recipientId = meta.recipient_profile_id;
+            const amountUsd = (session.amount_total ?? 0) / 100;
+            // Idempotency
+            const { data: existingGift } = await supabaseClient
+              .from("gift_transactions").select("id,status")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingGift) {
+              if (existingGift.status !== "completed") {
+                await supabaseClient.from("gift_transactions")
+                  .update({ status: "completed", completed_at: new Date().toISOString() })
+                  .eq("id", existingGift.id);
+              }
+              logStep("Gift already recorded", { sessionId: session.id });
+              break;
+            }
+            if (recipientId && giftPackageId) {
+              await supabaseClient.from("gift_transactions").insert({
+                sender_profile_id: profileId,
+                receiver_profile_id: recipientId,
+                gift_package_id: giftPackageId,
+                amount_usd: amountUsd,
+                message: meta.message ?? null,
+                status: "completed",
+                stripe_session_id: session.id,
+                completed_at: new Date().toISOString(),
+              });
+              logStep("Gift fulfilled", { profileId, recipientId, amountUsd });
+            } else {
+              logStep("Missing gift fulfillment metadata", { recipientId, giftPackageId });
+            }
+            break;
+          }
+
+          // ---- Donation / topup / food fulfillment ----
+          if (productId.startsWith("donation_") || productId.startsWith("topup_") || productId.startsWith("food_")) {
+            const amountUsd = (session.amount_total ?? 0) / 100;
+            // Idempotency
+            const { data: existingDon } = await supabaseClient
+              .from("donations").select("id,status")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingDon) {
+              if (existingDon.status !== "completed") {
+                await supabaseClient.from("donations")
+                  .update({ status: "completed", completed_at: new Date().toISOString() })
+                  .eq("id", existingDon.id);
+              }
+              logStep("Donation already recorded", { sessionId: session.id });
+              break;
+            }
+            const donationType = productId.startsWith("topup_") ? "topup"
+              : productId.startsWith("food_") ? "food" : "cash";
+            await supabaseClient.from("donations").insert({
+              donor_profile_id: profileId,
+              recipient_profile_id: meta.recipient_profile_id ?? null,
+              amount_usd: amountUsd,
+              donation_type: donationType,
+              phone_number: meta.phone_number ?? null,
+              recipient_name: meta.recipient_name ?? null,
+              status: "completed",
+              stripe_session_id: session.id,
+              completed_at: new Date().toISOString(),
+            });
+            logStep("Donation fulfilled", { profileId, amountUsd, donationType });
+            break;
+          }
+
+          // ---- Boosts / Super Likes / Primetime / Super Boosts ----
+          if (productId.startsWith("super_likes_") || productId.startsWith("boost_")
+              || productId.startsWith("primetime_") || productId.startsWith("superboost_")) {
+            const { data: existingBoost } = await supabaseClient
+              .from("boost_transactions").select("id")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingBoost) { logStep("Boost already fulfilled", { sessionId: session.id }); break; }
+
+            // Map to wallet updates
+            const qtyMatch = productId.match(/_(\d+)(h?)$/);
+            const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+            let action = "credit";
+            let boostType = productId;
+
+            if (productId.startsWith("super_likes_")) {
+              const { data: w } = await supabaseClient.from("allowances").select("weekly_super_likes_max").eq("profile_id", profileId).maybeSingle();
+              await supabaseClient.from("allowances").upsert(
+                { profile_id: profileId, weekly_super_likes_max: (w?.weekly_super_likes_max ?? 0) + qty },
+                { onConflict: "profile_id" }
+              );
+              boostType = "super_like";
+            } else if (productId.startsWith("boost_")) {
+              const { data: w } = await supabaseClient.from("boost_wallets").select("boosts").eq("profile_id", profileId).maybeSingle();
+              await supabaseClient.from("boost_wallets").upsert(
+                { profile_id: profileId, boosts: (w?.boosts ?? 0) + qty },
+                { onConflict: "profile_id" }
+              );
+              boostType = "boost";
+            } else if (productId.startsWith("primetime_")) {
+              const { data: w } = await supabaseClient.from("boost_wallets").select("primetime_boosts").eq("profile_id", profileId).maybeSingle();
+              await supabaseClient.from("boost_wallets").upsert(
+                { profile_id: profileId, primetime_boosts: (w?.primetime_boosts ?? 0) + qty },
+                { onConflict: "profile_id" }
+              );
+              boostType = "primetime_boost";
+            } else if (productId.startsWith("superboost_")) {
+              const hours = qtyMatch ? parseInt(qtyMatch[1], 10) : 3;
+              const { data: w } = await supabaseClient.from("boost_wallets").select("super_boost_hours").eq("profile_id", profileId).maybeSingle();
+              await supabaseClient.from("boost_wallets").upsert(
+                { profile_id: profileId, super_boost_hours: (w?.super_boost_hours ?? 0) + hours },
+                { onConflict: "profile_id" }
+              );
+              boostType = "super_boost";
+            }
+
+            await supabaseClient.from("boost_transactions").insert({
+              profile_id: profileId,
+              boost_type: boostType,
+              action,
+              quantity: qty,
+              stripe_session_id: session.id,
+            });
+            logStep("Boost fulfilled", { profileId, productId, qty });
+            break;
+          }
+
+          logStep("Unrecognized one-time product_id", { productId });
         }
         break;
       }
