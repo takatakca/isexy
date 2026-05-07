@@ -53,13 +53,19 @@ export const FileUpload = ({
       }
 
       try {
-        // Generate unique filename
+        // Get current user to scope path under their uid (required by storage RLS)
+        const { data: userData } = await supabase.auth.getUser();
+        const uid = userData?.user?.id;
+        if (!uid) {
+          toast.error("Please sign in to upload files");
+          continue;
+        }
+
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(7);
         const ext = file.name.split('.').pop();
-        const fileName = `${timestamp}-${randomStr}.${ext}`;
+        const fileName = `${uid}/${timestamp}-${randomStr}.${ext}`;
 
-        // Upload to Supabase storage
         const { data, error } = await supabase.storage
           .from("ticket-attachments")
           .upload(fileName, file);
@@ -70,14 +76,14 @@ export const FileUpload = ({
           continue;
         }
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
+        // Generate a short-lived signed URL (bucket is private)
+        const { data: signed } = await supabase.storage
           .from("ticket-attachments")
-          .getPublicUrl(data.path);
+          .createSignedUrl(data.path, 60 * 60 * 24 * 7);
 
         newFiles.push({
           name: file.name,
-          url: urlData.publicUrl,
+          url: signed?.signedUrl ?? data.path,
           type: file.type
         });
       } catch (error) {

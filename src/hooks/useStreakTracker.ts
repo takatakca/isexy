@@ -89,28 +89,24 @@ export function useStreakTracker() {
         .eq("id", profileId)
         .then(() => {});
 
-      // 4. Check and award new badges
+      // 4. Check and award new badges via server-side RPC
       for (const threshold of BADGE_THRESHOLDS) {
         if (newStreak >= threshold.days) {
           const exists = currentBadges.some(b => b.badge_type === threshold.type);
           if (!exists) {
-            const { error } = await supabase
-              .from("streak_badges")
-              .insert({
-                profile_id: profileId,
-                badge_type: threshold.type,
-                streak_count: newStreak,
-              });
-            if (!error) {
+            const { data: res } = await supabase.rpc("award_streak_badge", {
+              p_badge_type: threshold.type,
+              p_streak_count: newStreak,
+            });
+            if ((res as any)?.success) {
               setNewBadge(threshold.type);
               setShowConfetti(true);
-              // Refresh badges
               const { data: updated } = await supabase
                 .from("streak_badges")
                 .select("*")
                 .eq("profile_id", profileId);
               if (updated) setEarnedBadges(updated);
-              break; // Only award one badge at a time
+              break;
             }
           }
         }
