@@ -30,13 +30,9 @@ export default function GetSuperLikes() {
   const handlePurchase = async () => {
     setLoading(true);
     try {
+      const productId = `super_likes_${selected.quantity}`;
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
-        body: {
-          productName: `${selected.quantity} Super Likes`,
-          quantity: 1,
-          unitAmount: Math.round(total * 100), // Convert to cents
-          description: `Get ${selected.quantity} Super Likes to stand out from the crowd`,
-        },
+        body: { productId, metadata: { type: "super_likes", quantity: String(selected.quantity) } },
       });
 
       if (error) throw error;

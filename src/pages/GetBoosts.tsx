@@ -101,22 +101,24 @@ export default function GetBoosts() {
   const handlePurchase = async () => {
     setLoading(true);
     try {
-      const productName = activeType === "super" 
-        ? `Super Boost (${selected.duration})`
-        : activeType === "primetime"
-        ? `${selected.quantity} Primetime Boost${selected.quantity > 1 ? 's' : ''}`
-        : `${selected.quantity} ${config.title}${selected.quantity > 1 ? 's' : ''}`;
+      // Map (activeType, quantity/duration) → server catalog productId
+      let productId: string | null = null;
+      if (activeType === "boost") productId = `boost_${selected.quantity}`;
+      else if (activeType === "primetime") productId = `primetime_${selected.quantity}`;
+      else if (activeType === "super") productId = `superboost_${selected.quantity}h`;
+
+      if (!productId) {
+        toast.error("Unknown package");
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
         body: {
-          productName,
-          quantity: 1,
-          unitAmount: Math.round(total * 100),
-          description: config.description,
+          productId,
           metadata: {
             type: activeType,
-            ...(activeType === "super" ? { hours: selected.quantity } : { quantity: selected.quantity }),
-            ...(activeType === "primetime" ? { schedule_peak: true } : {}),
+            ...(activeType === "super" ? { hours: String(selected.quantity) } : { quantity: String(selected.quantity) }),
+            ...(activeType === "primetime" ? { schedule_peak: "true" } : {}),
           },
         },
       });
