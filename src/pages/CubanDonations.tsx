@@ -123,35 +123,37 @@ export default function CubanDonations() {
       return;
     }
 
+    // Map selection to a server-trusted productId
+    const prefix =
+      selectedOption === "topup" ? "topup_" :
+      selectedOption === "food" ? "food_" :
+      "donation_";
+    const productId = `${prefix}${finalAmount}`;
+
     setProcessing(true);
 
     try {
-      // Create Stripe checkout session
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
         body: {
-          amount: finalAmount * 100, // Convert to cents
-          currency: "usd",
-          description: `${selectedDonation?.name} for Cuban user`,
+          productId,
           metadata: {
-            type: selectedOption,
-            recipientId: recipientId || null,
-            phoneNumber: phoneNumber || null,
-            donorId: profile?.id,
+            type: selectedOption ?? "donation",
+            recipient_profile_id: recipientId || "",
+            phone_number: phoneNumber || "",
+            recipient_name: recipientName || "",
           },
-          successUrl: `${window.location.origin}/donation-success`,
-          cancelUrl: window.location.href,
         },
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // Redirect to Stripe Checkout
       if (data?.url) {
         window.location.href = data.url;
       }
     } catch (error) {
       console.error("Error creating payment:", error);
-      toast.error("Failed to process payment. Please try again.");
+      toast.error("This donation amount is not available. Please pick a listed amount.");
     } finally {
       setProcessing(false);
     }
