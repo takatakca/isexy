@@ -109,105 +109,19 @@ export default function Referrals() {
       toast.error("Please enter a referral code");
       return;
     }
-
     setApplying(true);
-
-    // Find referrer by code
-    const { data: referrer } = await supabase
-      .from("profiles")
-      .select("id, first_name")
-      .eq("referral_code", friendCode.toUpperCase())
-      .single();
-
-    if (!referrer) {
-      toast.error("Invalid referral code");
-      setApplying(false);
-      return;
-    }
-
-    if (referrer.id === profile?.id) {
-      toast.error("You can't use your own referral code");
-      setApplying(false);
-      return;
-    }
-
-    // Create referral record
-    const { error: refError } = await supabase.from("referrals").insert({
-      referrer_id: referrer.id,
-      referred_id: profile!.id,
-      referral_code: friendCode.toUpperCase(),
-      status: "completed",
-      completed_at: new Date().toISOString(),
+    const { data, error } = await supabase.rpc("apply_referral_code", {
+      p_friend_code: friendCode.toUpperCase(),
     });
-
-    if (refError) {
-      if (refError.code === "23505") {
-        toast.error("You've already used a referral code");
-      } else {
-        toast.error("Failed to apply code");
-      }
-      setApplying(false);
+    setApplying(false);
+    const result = data as { success?: boolean; error?: string; credits?: number } | null;
+    if (error || !result?.success) {
+      toast.error(result?.error || error?.message || "Failed to apply code");
       return;
     }
-
-    // Award credits to both
-    const creditAmount = 10;
-
-    // Award to referrer - get current credits first
-    const { data: referrerCredits } = await supabase
-      .from("user_credits")
-      .select("credits")
-      .eq("profile_id", referrer.id)
-      .maybeSingle();
-
-    if (referrerCredits) {
-      await supabase
-        .from("user_credits")
-        .update({ credits: referrerCredits.credits + creditAmount })
-        .eq("profile_id", referrer.id);
-    } else {
-      await supabase
-        .from("user_credits")
-        .insert({ profile_id: referrer.id, credits: creditAmount });
-    }
-
-    // Award to referred user
-    const { data: existingCredits } = await supabase
-      .from("user_credits")
-      .select("credits")
-      .eq("profile_id", profile!.id)
-      .maybeSingle();
-
-    if (existingCredits) {
-      await supabase
-        .from("user_credits")
-        .update({ credits: existingCredits.credits + creditAmount })
-        .eq("profile_id", profile!.id);
-    } else {
-      await supabase
-        .from("user_credits")
-        .insert({ profile_id: profile!.id, credits: creditAmount });
-    }
-
-    // Record transactions
-    await supabase.from("credit_transactions").insert([
-      {
-        profile_id: referrer.id,
-        type: "referral_bonus",
-        amount: creditAmount,
-        description: `Referral bonus: ${profile?.first_name} joined`,
-      },
-      {
-        profile_id: profile!.id,
-        type: "referral_bonus",
-        amount: creditAmount,
-        description: `Welcome bonus: Referred by ${referrer.first_name}`,
-      },
-    ]);
-
-    toast.success(`You received ${creditAmount} credits!`);
+    toast.success(`You received ${result.credits ?? 10} credits!`);
     setFriendCode("");
-    setApplying(false);
+    fetchReferralData();
   };
 
   const completedReferrals = referrals.filter(r => r.status === "completed");

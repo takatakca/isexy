@@ -18,9 +18,27 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authenticated user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supa = (await import("https://esm.sh/@supabase/supabase-js@2.39.3")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const { data: ud, error: ue } = await supa.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (ue || !ud?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { text, targetLanguage, sourceLanguage } = await req.json() as TranslationRequest;
 
-    if (!text || !targetLanguage) {
+    if (!text || typeof text !== "string" || text.length > 4000 || !targetLanguage) {
       return new Response(
         JSON.stringify({ error: "Missing text or targetLanguage" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -12,6 +12,14 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
+// Authoritative server-side credit catalog (must match BuyCredits.tsx)
+const CREDIT_PACKAGES: Record<string, { credits: number }> = {
+  credits_10: { credits: 10 },
+  credits_25: { credits: 30 },   // 25 + 5 bonus
+  credits_50: { credits: 65 },   // 50 + 15 bonus
+  credits_100: { credits: 140 }, // 100 + 40 bonus
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,31 +34,37 @@ serve(async (req) => {
     if (!stripeKey) {
       throw new Error("STRIPE_SECRET_KEY not configured");
     }
+    if (!webhookSecret) {
+      logStep("STRIPE_WEBHOOK_SECRET not configured — refusing event");
+      return new Response(JSON.stringify({ error: "Webhook secret not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    
+
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
 
-    let event: Stripe.Event;
+    if (!signature) {
+      return new Response(JSON.stringify({ error: "Missing stripe-signature" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Verify webhook signature if secret is configured
-    if (webhookSecret && signature) {
-      try {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-        logStep("Webhook signature verified");
-      } catch (err) {
-        const errMessage = err instanceof Error ? err.message : String(err);
-        logStep("Webhook signature verification failed", { error: errMessage });
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else {
-      // Parse without verification (development mode)
-      event = JSON.parse(body);
-      logStep("Webhook parsed without signature verification");
+    let event: Stripe.Event;
+    try {
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+      logStep("Webhook signature verified");
+    } catch (err) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      logStep("Webhook signature verification failed", { error: errMessage });
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const supabaseClient = createClient(
@@ -64,7 +78,6 @@ serve(async (req) => {
     const VALID_TIERS = ["free", "plus", "gold", "platinum"];
     const VALID_DURATIONS = ["week", "month", "six_months"];
 
-    // Resolve profile.id from metadata first, fall back to email lookup
     async function resolveProfileId(opts: {
       metaProfileId?: string;
       metaUserId?: string;
@@ -156,7 +169,6 @@ serve(async (req) => {
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           };
-          // duration column is optional; safe to include via try/catch upsert
           await supabaseClient.from("subscriptions").upsert(subRow, { onConflict: "profile_id" });
 
           await supabaseClient
@@ -173,46 +185,57 @@ serve(async (req) => {
 
           logStep("Subscription created", { profileId, tier: appTier, duration });
         } else if (session.mode === "payment") {
-          // One-time payment handling (credits) — UNCHANGED
+          // One-time payment: trust ONLY metadata.package_id (server catalog), not metadata.credits.
           const customerId = session.customer as string;
           const customer = await stripe.customers.retrieve(customerId);
           const email = (customer as Stripe.Customer).email;
+          const meta = (session.metadata ?? {}) as Record<string, string>;
+          const packageId = meta.package_id;
 
-          if (email && session.metadata?.credits) {
-            const credits = parseInt(session.metadata.credits);
-            const { data: users } = await supabaseClient.auth.admin.listUsers();
-            const user = users.users.find(u => u.email === email);
-
-            if (user) {
-              const { data: profile } = await supabaseClient
-                .from("profiles")
-                .select("id")
-                .eq("user_id", user.id)
-                .single();
-
-              if (profile) {
-                await supabaseClient
-                  .from("user_credits")
-                  .upsert({
-                    profile_id: profile.id,
-                    credits: credits,
-                    last_purchase_at: new Date().toISOString(),
-                  }, { onConflict: "profile_id" });
-
-                await supabaseClient
-                  .from("credit_transactions")
-                  .insert({
-                    profile_id: profile.id,
-                    amount: credits,
-                    type: "purchase",
-                    description: `Purchased ${credits} credits`,
-                    stripe_session_id: session.id,
-                  });
-
-                logStep("Credits added", { profileId: profile.id, credits });
-              }
-            }
+          if (!packageId || !CREDIT_PACKAGES[packageId]) {
+            logStep("No valid credit package in metadata; skipping credit grant", { packageId });
+            break;
           }
+          const credits = CREDIT_PACKAGES[packageId].credits;
+
+          const profileId = await resolveProfileId({
+            metaProfileId: meta.profile_id,
+            metaUserId: meta.user_id,
+            email,
+          });
+
+          if (!profileId) {
+            logStep("Could not resolve profile for credit purchase");
+            break;
+          }
+
+          // Atomic increment via upsert read-modify-write under service role
+          const { data: existing } = await supabaseClient
+            .from("user_credits")
+            .select("credits")
+            .eq("profile_id", profileId)
+            .maybeSingle();
+
+          const newBalance = (existing?.credits ?? 0) + credits;
+
+          await supabaseClient
+            .from("user_credits")
+            .upsert(
+              { profile_id: profileId, credits: newBalance, last_purchase_at: new Date().toISOString() },
+              { onConflict: "profile_id" }
+            );
+
+          await supabaseClient
+            .from("credit_transactions")
+            .insert({
+              profile_id: profileId,
+              amount: credits,
+              type: "purchase",
+              description: `Purchased ${credits} credits (${packageId})`,
+              stripe_session_id: session.id,
+            });
+
+          logStep("Credits added", { profileId, credits, packageId });
         }
         break;
       }
@@ -237,7 +260,6 @@ serve(async (req) => {
 
         if (error) logStep("Error updating subscription", { error: error.message });
 
-        // Sync profile tier
         const { data: sub } = await supabaseClient
           .from("subscriptions")
           .select("profile_id")
@@ -288,17 +310,10 @@ serve(async (req) => {
         break;
       }
 
-      case "invoice.payment_succeeded": {
-        const invoice = event.data.object as Stripe.Invoice;
-        logStep("Invoice paid", { invoiceId: invoice.id });
-        break;
-      }
-
+      case "invoice.payment_succeeded":
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        logStep("Invoice payment failed", { invoiceId: invoice.id });
-        
-        // Optionally send notification to user
+        logStep("Invoice event", { invoiceId: invoice.id, type: event.type });
         break;
       }
 

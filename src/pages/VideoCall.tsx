@@ -67,11 +67,8 @@ export default function VideoCall() {
         setLowCreditsWarning(true);
       }
     } else {
-      // Create credits record if doesn't exist
-      await supabase.from("user_credits").insert({
-        profile_id: profile.id,
-        credits: 0,
-      });
+      // Initialize wallet via server function (cannot self-write)
+      await supabase.rpc("ensure_user_credits");
       setLowCreditsWarning(true);
     }
   };
@@ -137,48 +134,18 @@ export default function VideoCall() {
 
   const deductCredit = useCallback(async () => {
     if (!profile?.id) return false;
-
-    // Get current credits
-    const { data: creditData } = await supabase
-      .from("user_credits")
-      .select("credits")
-      .eq("profile_id", profile.id)
-      .single();
-
-    if (!creditData || creditData.credits < CREDIT_COST_PER_MINUTE) {
+    const { data, error } = await supabase.rpc("deduct_video_credit");
+    const res = data as { success?: boolean; remaining?: number; error?: string } | null;
+    if (error || !res?.success) {
       toast.error("Insufficient credits! Call ending.");
       handleEndCall();
       return false;
     }
-
-    // Deduct credit
-    const { error: updateError } = await supabase
-      .from("user_credits")
-      .update({ credits: creditData.credits - CREDIT_COST_PER_MINUTE })
-      .eq("profile_id", profile.id);
-
-    if (updateError) {
-      console.error("Failed to deduct credit:", updateError);
-      return false;
-    }
-
-    // Record transaction
-    await supabase.from("credit_transactions").insert({
-      profile_id: profile.id,
-      type: "video_call",
-      amount: -CREDIT_COST_PER_MINUTE,
-      description: `Video call minute`,
-      video_call_id: callSessionId,
-    });
-
     setCreditsUsed(prev => prev + CREDIT_COST_PER_MINUTE);
-    setUserCredits(prev => prev - CREDIT_COST_PER_MINUTE);
-
-    // Warn at 3 credits remaining
-    if (creditData.credits - CREDIT_COST_PER_MINUTE <= 3) {
-      toast.warning(`Only ${creditData.credits - CREDIT_COST_PER_MINUTE} credits remaining!`);
+    setUserCredits(res.remaining ?? 0);
+    if ((res.remaining ?? 0) <= 3) {
+      toast.warning(`Only ${res.remaining} credits remaining!`);
     }
-
     return true;
   }, [profile?.id, callSessionId]);
 

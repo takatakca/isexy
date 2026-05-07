@@ -7,16 +7,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface PurchaseRequest {
-  packageId: string;
-  credits: number;
-  price: number;
-}
+// Authoritative server catalog. Client only sends packageId.
+const PACKAGES: Record<string, { credits: number; priceCents: number; label: string }> = {
+  credits_10: { credits: 10, priceCents: 999, label: "10 Video Chat Credits" },
+  credits_25: { credits: 30, priceCents: 1999, label: "25 Credits + 5 Bonus" },
+  credits_50: { credits: 65, priceCents: 3499, label: "50 Credits + 15 Bonus" },
+  credits_100: { credits: 140, priceCents: 5999, label: "100 Credits + 40 Bonus" },
+};
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -24,33 +24,30 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Missing Authorization header");
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    
-    if (!user?.email) {
-      throw new Error("User not authenticated");
-    }
+    if (!user?.email) throw new Error("User not authenticated");
 
-    const { packageId, credits, price }: PurchaseRequest = await req.json();
-
-    if (!packageId || !credits || !price) {
-      throw new Error("Missing package information");
+    const body = await req.json().catch(() => ({}));
+    const packageId: string | undefined = body?.packageId;
+    if (!packageId || !PACKAGES[packageId]) {
+      return new Response(JSON.stringify({ error: "Invalid packageId" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+    const pkg = PACKAGES[packageId];
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Check for existing customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    }
+    const customerId = customers.data[0]?.id;
 
-    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -58,21 +55,17 @@ serve(async (req) => {
         {
           price_data: {
             currency: "usd",
-            product_data: {
-              name: `${credits} Video Chat Credits`,
-              description: `${credits} credits for video chat ($1/minute)`,
-            },
-            unit_amount: Math.round(price * 100),
+            product_data: { name: pkg.label },
+            unit_amount: pkg.priceCents,
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/buy-credits?success=true&credits=${credits}`,
+      success_url: `${req.headers.get("origin")}/buy-credits?success=true`,
       cancel_url: `${req.headers.get("origin")}/buy-credits?canceled=true`,
       metadata: {
         user_id: user.id,
-        credits: credits.toString(),
         package_id: packageId,
       },
     });

@@ -56,7 +56,7 @@ export default function BuyCredits() {
       if (!pkg) return;
 
       const { data, error } = await supabase.functions.invoke("create-credit-purchase", {
-        body: { packageId: pkg.id, credits: pkg.credits + (pkg.bonus || 0), price: pkg.price },
+        body: { packageId: pkg.id },
       });
 
       if (error) throw error;

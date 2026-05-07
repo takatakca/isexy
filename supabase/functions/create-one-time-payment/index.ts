@@ -7,10 +7,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Server-side authoritative catalog. Client sends only `productId`.
+// Prices in cents (CAD/USD as noted).
+type CatalogItem = { name: string; description?: string; amountCents: number; currency: "usd" | "cad" };
+const CATALOG: Record<string, CatalogItem> = {
+  // Super Likes
+  super_likes_3:  { name: "3 Super Likes",  amountCents: 1197, currency: "cad" },
+  super_likes_15: { name: "15 Super Likes", amountCents: 4890, currency: "cad" },
+  super_likes_30: { name: "30 Super Likes", amountCents: 7470, currency: "cad" },
+  // Boosts
+  boost_1:  { name: "1 Boost",  amountCents: 649,  currency: "cad" },
+  boost_10: { name: "10 Boosts", amountCents: 3290, currency: "cad" },
+  boost_20: { name: "20 Boosts", amountCents: 4980, currency: "cad" },
+  // Primetime Boosts
+  primetime_1: { name: "1 Primetime Boost",  amountCents: 999,  currency: "cad" },
+  primetime_3: { name: "3 Primetime Boosts", amountCents: 2799, currency: "cad" },
+  primetime_5: { name: "5 Primetime Boosts", amountCents: 3895, currency: "cad" },
+  // Super Boosts
+  superboost_3h:  { name: "Super Boost 3 hours",  amountCents: 4999,  currency: "cad" },
+  superboost_6h:  { name: "Super Boost 6 hours",  amountCents: 9299,  currency: "cad" },
+  superboost_12h: { name: "Super Boost 12 hours", amountCents: 16999, currency: "cad" },
+};
+
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -18,48 +38,57 @@ serve(async (req) => {
   );
 
   try {
-    const { productName, quantity, unitAmount, description } = await req.json();
-    
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Missing Authorization header");
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) throw new Error("User not authenticated");
+
+    const body = await req.json().catch(() => ({}));
+    const productId: string | undefined = body?.productId;
+    const metadata = (body?.metadata ?? {}) as Record<string, string>;
+
+    if (!productId || !CATALOG[productId]) {
+      return new Response(JSON.stringify({ error: "Invalid productId" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const item = CATALOG[productId];
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
-    
-    // Check for existing customer
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    }
 
-    // Create a one-time payment session with price_data for flexibility
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customerId = customers.data[0]?.id;
+
+    // Sanitize metadata: drop any monetary fields the client tried to inject.
+    const safeMeta: Record<string, string> = {};
+    for (const [k, v] of Object.entries(metadata)) {
+      if (typeof v === "string" && v.length <= 200 && !/(amount|price|cents|usd|cad)/i.test(k)) {
+        safeMeta[k] = v;
+      }
+    }
+    safeMeta.user_id = user.id;
+    safeMeta.product_id = productId;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price_data: {
-            currency: "cad",
-            product_data: {
-              name: productName,
-              description: description || undefined,
-            },
-            unit_amount: unitAmount, // Amount in cents
+            currency: item.currency,
+            product_data: { name: item.name, description: item.description },
+            unit_amount: item.amountCents,
           },
-          quantity: quantity,
+          quantity: 1,
         },
       ],
       mode: "payment",
       success_url: `${req.headers.get("origin")}/discover?purchase=success`,
       cancel_url: `${req.headers.get("origin")}/discover?purchase=cancelled`,
-      metadata: {
-        user_id: user.id,
-        product_type: productName,
-        quantity: quantity.toString(),
-      },
+      metadata: safeMeta,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
