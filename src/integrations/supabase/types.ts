@@ -673,6 +673,63 @@ export type Database = {
           },
         ]
       }
+      donations: {
+        Row: {
+          amount_usd: number
+          completed_at: string | null
+          created_at: string
+          donation_type: string
+          donor_profile_id: string | null
+          id: string
+          phone_number: string | null
+          recipient_name: string | null
+          recipient_profile_id: string | null
+          status: string
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount_usd: number
+          completed_at?: string | null
+          created_at?: string
+          donation_type: string
+          donor_profile_id?: string | null
+          id?: string
+          phone_number?: string | null
+          recipient_name?: string | null
+          recipient_profile_id?: string | null
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          completed_at?: string | null
+          created_at?: string
+          donation_type?: string
+          donor_profile_id?: string | null
+          id?: string
+          phone_number?: string | null
+          recipient_name?: string | null
+          recipient_profile_id?: string | null
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_donor_profile_id_fkey"
+            columns: ["donor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       double_date_matches: {
         Row: {
           created_at: string
