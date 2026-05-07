@@ -73,7 +73,62 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    logStep("Processing event", { type: event.type });
+    logStep("Processing event", { type: event.type, id: event.id });
+
+    // ---- Webhook event logging + duplicate guard ----
+    const sessionIdForLog =
+      (event.data.object as any)?.id && event.type.startsWith("checkout.")
+        ? (event.data.object as any).id
+        : null;
+
+    const { data: insertedLog, error: logInsertError } = await supabaseClient
+      .from("stripe_webhook_events")
+      .insert({
+        stripe_event_id: event.id,
+        event_type: event.type,
+        stripe_session_id: sessionIdForLog,
+        processing_status: "received",
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (logInsertError) {
+      // Unique violation on stripe_event_id => duplicate event
+      if ((logInsertError as any).code === "23505") {
+        await supabaseClient
+          .from("stripe_webhook_events")
+          .update({ processing_status: "skipped_duplicate", processed_at: new Date().toISOString() })
+          .eq("stripe_event_id", event.id)
+          .eq("processing_status", "received");
+        logStep("Duplicate event skipped", { eventId: event.id });
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      logStep("Failed to insert webhook log row", { error: logInsertError.message });
+    }
+    const logRowId = insertedLog?.id ?? null;
+
+    async function markProcessed() {
+      if (!logRowId) return;
+      await supabaseClient
+        .from("stripe_webhook_events")
+        .update({ processing_status: "processed", processed_at: new Date().toISOString() })
+        .eq("id", logRowId);
+    }
+    async function markFailed(errMsg: string) {
+      if (!logRowId) return;
+      await supabaseClient
+        .from("stripe_webhook_events")
+        .update({
+          processing_status: "failed",
+          error_message: errMsg.slice(0, 2000),
+          processed_at: new Date().toISOString(),
+        })
+        .eq("id", logRowId);
+    }
+
+    try {
 
     const VALID_TIERS = ["free", "plus", "gold", "platinum"];
     const VALID_DURATIONS = ["week", "month", "six_months"];
@@ -438,9 +493,20 @@ serve(async (req) => {
         logStep("Unhandled event type", { type: event.type });
     }
 
+    await markProcessed();
+
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+    } catch (innerErr) {
+      const msg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+      logStep("Error during event processing", { error: msg });
+      await markFailed(msg);
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("Error processing webhook", { error: errorMessage });

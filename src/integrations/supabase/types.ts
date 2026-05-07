@@ -2323,6 +2323,39 @@ export type Database = {
           },
         ]
       }
+      stripe_webhook_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          processed_at: string | null
+          processing_status: string
+          stripe_event_id: string
+          stripe_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string
+          stripe_event_id: string
+          stripe_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string
+          stripe_event_id?: string
+          stripe_session_id?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
