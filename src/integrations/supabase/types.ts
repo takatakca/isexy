@@ -2713,6 +2713,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_referral_code: { Args: { p_friend_code: string }; Returns: Json }
+      award_streak_badge: {
+        Args: { p_badge_type: string; p_streak_count: number }
+        Returns: Json
+      }
       calculate_profile_score: {
         Args: { p_profile_id: string }
         Returns: number
@@ -2727,6 +2732,8 @@ export type Database = {
         Args: { p_call_type: string; p_profile_id: string }
         Returns: Json
       }
+      deduct_video_credit: { Args: never; Returns: Json }
+      ensure_user_credits: { Args: never; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       get_admin_users: {
         Args: never
