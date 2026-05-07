@@ -19,6 +19,7 @@ interface WebhookEvent {
 interface FulfillmentCounts {
   credits: number;
   boosts: number;
+  superLikes: number;
   gifts: number;
   donations: number;
   subscriptions: number;
@@ -31,14 +32,14 @@ interface SubscriptionRow {
   current_period_end: string | null;
 }
 
-const CHECKLIST_ITEMS = [
-  { key: "subscription", label: "Plus monthly subscription tested", eventType: "checkout.session.completed", mode: "subscription" },
-  { key: "credits", label: "Credit pack tested", table: "credit_transactions" },
-  { key: "super_likes", label: "Super-like pack tested", table: "boost_transactions", filter: { column: "boost_type", value: "super_like" } },
-  { key: "boosts", label: "Boost pack tested", table: "boost_transactions", filter: { column: "boost_type", value: "boost" } },
-  { key: "gifts", label: "Gift tested", table: "gift_transactions" },
-  { key: "donations", label: "Donation tested", table: "donations" },
-  { key: "duplicate", label: "Duplicate webhook resend tested", check: "duplicate" },
+const CHECKLIST_ITEMS: { key: keyof FulfillmentCounts | "duplicate" | "subscription"; label: string }[] = [
+  { key: "subscription", label: "Plus/Gold/Platinum subscription fulfilled" },
+  { key: "credits", label: "Credit pack fulfilled" },
+  { key: "superLikes", label: "Super-like pack fulfilled" },
+  { key: "boosts", label: "Boost pack fulfilled" },
+  { key: "gifts", label: "Gift completed" },
+  { key: "donations", label: "Donation completed" },
+  { key: "duplicate", label: "Duplicate webhook resend handled" },
 ];
 
 export default function AdminPaymentTests() {
@@ -46,7 +47,7 @@ export default function AdminPaymentTests() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [events, setEvents] = useState<WebhookEvent[]>([]);
-  const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, gifts: 0, donations: 0, subscriptions: 0 });
+  const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, superLikes: 0, gifts: 0, donations: 0, subscriptions: 0 });
   const [subs, setSubs] = useState<SubscriptionRow[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
 
@@ -72,37 +73,49 @@ export default function AdminPaymentTests() {
     setRefreshing(true);
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [evRes, credRes, boostRes, giftRes, donRes, subRes, allSubsRes] = await Promise.all([
+    // Webhook fulfillment is signaled by stripe_session_id NOT NULL on each row.
+    // boost_transactions.action from webhook is "credit" (not "purchase").
+    // boost_transactions.boost_type values: "super_like" | "boost" | "primetime_boost" | "super_boost".
+    const [evRes, credRes, slRes, boostRes, giftRes, donRes, subRes, paidSubsRes] = await Promise.all([
       supabase.from("stripe_webhook_events" as any).select("*").order("created_at", { ascending: false }).limit(50),
-      supabase.from("credit_transactions").select("id", { count: "exact", head: true }).gte("created_at", since).eq("type", "purchase"),
-      supabase.from("boost_transactions").select("id", { count: "exact", head: true }).gte("created_at", since).eq("action", "purchase"),
-      supabase.from("gift_transactions").select("id", { count: "exact", head: true }).gte("created_at", since).eq("status", "completed"),
-      supabase.from("donations").select("id", { count: "exact", head: true }).gte("created_at", since).eq("status", "completed"),
-      supabase.from("subscriptions").select("profile_id, tier, status, current_period_end").neq("tier", "free").order("updated_at", { ascending: false }).limit(10),
-      supabase.from("subscriptions").select("id", { count: "exact", head: true }).gte("updated_at", since),
+      supabase.from("credit_transactions").select("id", { count: "exact", head: true })
+        .gte("created_at", since).eq("type", "purchase").not("stripe_session_id", "is", null),
+      supabase.from("boost_transactions").select("id", { count: "exact", head: true })
+        .gte("created_at", since).eq("boost_type", "super_like").not("stripe_session_id", "is", null),
+      supabase.from("boost_transactions").select("id", { count: "exact", head: true })
+        .gte("created_at", since).in("boost_type", ["boost", "primetime_boost", "super_boost"]).not("stripe_session_id", "is", null),
+      supabase.from("gift_transactions").select("id", { count: "exact", head: true })
+        .gte("created_at", since).eq("status", "completed").not("stripe_session_id", "is", null),
+      supabase.from("donations").select("id", { count: "exact", head: true })
+        .gte("created_at", since).eq("status", "completed").not("stripe_session_id", "is", null),
+      supabase.from("subscriptions").select("profile_id, tier, status, current_period_end")
+        .neq("tier", "free").order("updated_at", { ascending: false }).limit(10),
+      supabase.from("subscriptions").select("id", { count: "exact", head: true })
+        .gte("updated_at", since).neq("tier", "free").eq("status", "active"),
     ]);
 
     const evs = (evRes.data || []) as unknown as WebhookEvent[];
     setEvents(evs);
-    setCounts({
+    const newCounts: FulfillmentCounts = {
       credits: credRes.count ?? 0,
+      superLikes: slRes.count ?? 0,
       boosts: boostRes.count ?? 0,
       gifts: giftRes.count ?? 0,
       donations: donRes.count ?? 0,
-      subscriptions: allSubsRes.count ?? 0,
-    });
+      subscriptions: paidSubsRes.count ?? 0,
+    };
+    setCounts(newCounts);
     setSubs((subRes.data || []) as SubscriptionRow[]);
 
-    // Build checklist from events + tables
-    const cl: Record<string, boolean> = {};
-    cl.subscription = evs.some(e => e.event_type?.startsWith("customer.subscription") && e.processing_status === "processed");
-    cl.credits = (credRes.count ?? 0) > 0;
-    cl.super_likes = evs.some(e => e.event_type === "checkout.session.completed" && e.processing_status === "processed");
-    cl.boosts = (boostRes.count ?? 0) > 0;
-    cl.gifts = (giftRes.count ?? 0) > 0;
-    cl.donations = (donRes.count ?? 0) > 0;
-    cl.duplicate = evs.some(e => e.processing_status === "skipped_duplicate");
-    setChecklist(cl);
+    setChecklist({
+      subscription: newCounts.subscriptions > 0,
+      credits: newCounts.credits > 0,
+      superLikes: newCounts.superLikes > 0,
+      boosts: newCounts.boosts > 0,
+      gifts: newCounts.gifts > 0,
+      donations: newCounts.donations > 0,
+      duplicate: evs.some(e => e.processing_status === "skipped_duplicate"),
+    });
     setRefreshing(false);
   };
 
@@ -130,7 +143,7 @@ export default function AdminPaymentTests() {
 
         <div>
           <h1 className="text-3xl font-bold">Payment Test Status</h1>
-          <p className="text-muted-foreground">Pre-publish verification of Stripe webhooks and fulfillment</p>
+          <p className="text-muted-foreground">Pre-publish verification of Stripe webhooks and fulfillment (last 24h)</p>
         </div>
 
         {failedEvents.length > 0 && (
@@ -171,13 +184,14 @@ export default function AdminPaymentTests() {
         <Card>
           <CardHeader><CardTitle>Fulfillment Counts (Last 24h)</CardTitle></CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               {[
+                { label: "Subscriptions", value: counts.subscriptions },
                 { label: "Credits", value: counts.credits },
+                { label: "Super Likes", value: counts.superLikes },
                 { label: "Boosts", value: counts.boosts },
                 { label: "Gifts", value: counts.gifts },
                 { label: "Donations", value: counts.donations },
-                { label: "Subscriptions", value: counts.subscriptions },
               ].map(c => (
                 <div key={c.label} className="text-center p-4 rounded-lg bg-muted">
                   <div className="text-2xl font-bold">{c.value}</div>
@@ -189,7 +203,7 @@ export default function AdminPaymentTests() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Latest Subscriptions ({subs.length})</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Latest Paid Subscriptions ({subs.length})</CardTitle></CardHeader>
           <CardContent>
             {subs.length === 0 ? (
               <p className="text-sm text-muted-foreground">No active paid subscriptions yet.</p>
@@ -235,7 +249,9 @@ export default function AdminPaymentTests() {
                       {e.processed_at && ` → processed ${new Date(e.processed_at).toLocaleTimeString()}`}
                     </div>
                     {e.stripe_session_id && (
-                      <div className="text-xs font-mono text-muted-foreground truncate">{e.stripe_session_id}</div>
+                      <div className="text-xs font-mono text-muted-foreground truncate">
+                        session: {e.stripe_session_id}
+                      </div>
                     )}
                     {e.error_message && (
                       <div className="text-xs text-destructive">{e.error_message}</div>
@@ -244,6 +260,11 @@ export default function AdminPaymentTests() {
                 ))}
               </div>
             )}
+            <p className="text-xs text-muted-foreground mt-4">
+              Note: product_id / package_id are stored in Stripe session metadata, not in the webhook log.
+              To inspect a specific purchase, copy the session ID and look it up in Stripe Dashboard or the
+              corresponding fulfillment table (credit_transactions, boost_transactions, gift_transactions, donations).
+            </p>
           </CardContent>
         </Card>
       </div>
