@@ -493,9 +493,20 @@ serve(async (req) => {
         logStep("Unhandled event type", { type: event.type });
     }
 
+    await markProcessed();
+
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+    } catch (innerErr) {
+      const msg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+      logStep("Error during event processing", { error: msg });
+      await markFailed(msg);
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("Error processing webhook", { error: errorMessage });
