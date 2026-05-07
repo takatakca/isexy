@@ -20,6 +20,25 @@ serve(async (req) => {
   }
 
   try {
+    // Require authenticated user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    );
+    const { data: ud, error: ue } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (ue || !ud?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerUserId = ud.user.id;
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -27,6 +46,30 @@ serve(async (req) => {
     );
 
     const { userId, title, body, data, tag } = await req.json() as PushPayload;
+
+    // Caller can only push to themselves OR users they share a match with
+    if (userId !== callerUserId) {
+      const { data: callerProfile } = await supabaseClient
+        .from("profiles").select("id").eq("user_id", callerUserId).maybeSingle();
+      const { data: targetProfile } = await supabaseClient
+        .from("profiles").select("id").eq("user_id", userId).maybeSingle();
+      if (!callerProfile || !targetProfile) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: shared } = await supabaseClient
+        .from("matches")
+        .select("id")
+        .or(`and(profile1_id.eq.${callerProfile.id},profile2_id.eq.${targetProfile.id}),and(profile1_id.eq.${targetProfile.id},profile2_id.eq.${callerProfile.id})`)
+        .limit(1)
+        .maybeSingle();
+      if (!shared) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     console.log(`[PUSH] Sending notification to user: ${userId}`);
 
