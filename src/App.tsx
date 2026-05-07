@@ -96,6 +96,7 @@ import CubanDonations from "./pages/CubanDonations";
 import MyStars from "./pages/MyStars";
 import RedeemCode from "./pages/RedeemCode";
 import AdminUserManagement from "./pages/AdminUserManagement";
+import AdminPaymentTests from "./pages/AdminPaymentTests";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -219,6 +220,7 @@ const App = () => (
               <Route path="/signup" element={<WebSignup />} />
               <Route path="/redeem-code" element={<RedeemCode />} />
               <Route path="/admin/users" element={<AdminUserManagement />} />
+              <Route path="/admin/payment-tests" element={<AdminPaymentTests />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
