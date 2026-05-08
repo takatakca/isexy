@@ -73,6 +73,13 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) return jsonError("STRIPE_SECRET_KEY not configured", 500);
 
+    // Live Payment Safety Gate
+    const liveEnabled = (Deno.env.get("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
+    const isTestKey = stripeKey.startsWith("sk_test_");
+    if (!liveEnabled && !isTestKey) {
+      return jsonError("Live payments are disabled until testing is complete.", 403);
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return jsonError("No authorization header", 401);
     const token = authHeader.replace("Bearer ", "");
