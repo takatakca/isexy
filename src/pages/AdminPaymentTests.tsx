@@ -50,6 +50,7 @@ export default function AdminPaymentTests() {
   const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, superLikes: 0, gifts: 0, donations: 0, subscriptions: 0 });
   const [subs, setSubs] = useState<SubscriptionRow[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
+  const [gate, setGate] = useState<{ liveEnabled: boolean; mode: string; blocked: boolean } | null>(null);
 
   useEffect(() => {
     checkAdminAndFetch();
@@ -116,6 +117,8 @@ export default function AdminPaymentTests() {
       donations: newCounts.donations > 0,
       duplicate: evs.some(e => e.processing_status === "skipped_duplicate"),
     });
+    const { data: gateData } = await supabase.functions.invoke("payments-gate-status");
+    if (gateData) setGate(gateData as any);
     setRefreshing(false);
   };
 
@@ -145,6 +148,24 @@ export default function AdminPaymentTests() {
           <h1 className="text-3xl font-bold">Payment Test Status</h1>
           <p className="text-muted-foreground">Pre-publish verification of Stripe webhooks and fulfillment (last 24h)</p>
         </div>
+
+        {gate && (
+          <Card className={gate.blocked ? "border-amber-500 bg-amber-500/5" : "border-green-600 bg-green-600/5"}>
+            <CardContent className="pt-6 flex items-center gap-3">
+              <AlertTriangle className={`w-5 h-5 ${gate.blocked ? "text-amber-600" : "text-green-600"}`} />
+              <div className="text-sm">
+                <div className="font-semibold">
+                  {gate.blocked
+                    ? "Test mode only — live payments disabled"
+                    : `Live payments ENABLED (key: ${gate.mode})`}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  PAYMENTS_LIVE_ENABLED = {String(gate.liveEnabled)} · Stripe key mode = {gate.mode}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {failedEvents.length > 0 && (
           <Card className="border-destructive">

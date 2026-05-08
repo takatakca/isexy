@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.create-minute-purchase]
 verify_jwt = false
+
+[functions.payments-gate-status]
+verify_jwt = false
