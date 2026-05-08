@@ -149,6 +149,24 @@ export default function AdminPaymentTests() {
           <p className="text-muted-foreground">Pre-publish verification of Stripe webhooks and fulfillment (last 24h)</p>
         </div>
 
+        {gate && (
+          <Card className={gate.blocked ? "border-amber-500 bg-amber-500/5" : "border-green-600 bg-green-600/5"}>
+            <CardContent className="pt-6 flex items-center gap-3">
+              <AlertTriangle className={`w-5 h-5 ${gate.blocked ? "text-amber-600" : "text-green-600"}`} />
+              <div className="text-sm">
+                <div className="font-semibold">
+                  {gate.blocked
+                    ? "Test mode only — live payments disabled"
+                    : `Live payments ENABLED (key: ${gate.mode})`}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  PAYMENTS_LIVE_ENABLED = {String(gate.liveEnabled)} · Stripe key mode = {gate.mode}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {failedEvents.length > 0 && (
           <Card className="border-destructive">
             <CardHeader>
