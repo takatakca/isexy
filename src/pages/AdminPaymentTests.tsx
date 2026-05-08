@@ -50,6 +50,7 @@ export default function AdminPaymentTests() {
   const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, superLikes: 0, gifts: 0, donations: 0, subscriptions: 0 });
   const [subs, setSubs] = useState<SubscriptionRow[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
+  const [gate, setGate] = useState<{ liveEnabled: boolean; mode: string; blocked: boolean } | null>(null);
 
   useEffect(() => {
     checkAdminAndFetch();
@@ -116,6 +117,8 @@ export default function AdminPaymentTests() {
       donations: newCounts.donations > 0,
       duplicate: evs.some(e => e.processing_status === "skipped_duplicate"),
     });
+    const { data: gateData } = await supabase.functions.invoke("payments-gate-status");
+    if (gateData) setGate(gateData as any);
     setRefreshing(false);
   };
 
