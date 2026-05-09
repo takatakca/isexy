@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.payments-gate-status]
 verify_jwt = false
+
+[functions.create-test-account]
+verify_jwt = false
