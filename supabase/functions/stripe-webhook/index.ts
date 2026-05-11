@@ -319,7 +319,42 @@ serve(async (req) => {
             break;
           }
 
-          // ---- Gift fulfillment ----
+          // ---- Phone/Video Minute purchases ----
+          if (packageId && MINUTE_PACKAGES[packageId]) {
+            const { minutes, type } = MINUTE_PACKAGES[packageId];
+            const { data: existingTx } = await supabaseClient
+              .from("credit_transactions").select("id")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingTx) {
+              logStep("Minute purchase already fulfilled", { sessionId: session.id });
+              break;
+            }
+            const column = type === "phone" ? "phone_minutes" : "video_minutes";
+            const { data: existing } = await supabaseClient
+              .from("user_credits").select("phone_minutes, video_minutes")
+              .eq("profile_id", profileId).maybeSingle();
+            const currentVal = (existing as any)?.[column] ?? 0;
+            const newVal = currentVal + minutes;
+            await supabaseClient.from("user_credits").upsert(
+              {
+                profile_id: profileId,
+                [column]: newVal,
+                last_purchase_at: new Date().toISOString(),
+              },
+              { onConflict: "profile_id" }
+            );
+            await supabaseClient.from("credit_transactions").insert({
+              profile_id: profileId,
+              amount: minutes,
+              type: "purchase",
+              category: type,
+              description: `Purchased ${minutes} ${type} minutes (${packageId})`,
+              stripe_session_id: session.id,
+            });
+            logStep("Minutes added", { profileId, minutes, type, packageId });
+            break;
+          }
+
           if (productId.startsWith("gift_") || meta.type === "gift") {
             const giftPackageId = meta.gift_package_id || productId.replace(/^gift_/, "");
             const recipientId = meta.recipient_profile_id;
