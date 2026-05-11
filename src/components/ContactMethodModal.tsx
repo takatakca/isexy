@@ -102,8 +102,8 @@ export function ContactMethodModal({ isOpen, onClose, matchId, otherName, otherP
 
       onClose();
       if (type === "chat") navigate(`/chat/${matchId}`);
-      else if (type === "video") navigate(`/video-call/${matchId}`);
-      else navigate(`/video-call/${matchId}`); // Phone stub
+      else if (type === "video") navigate(`/video-call/${matchId}?type=video`);
+      else navigate(`/video-call/${matchId}?type=phone`);
     } catch (err: any) {
       console.error("Unlock error:", err);
       toast.error("Something went wrong. Please try again.");
