@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Video, VideoOff, Mic, MicOff, Phone, 
-  RotateCcw, Maximize2, MessageCircle, X, Coins, AlertCircle 
+import {
+  Video, VideoOff, Mic, MicOff, Phone,
+  MessageCircle, X, Clock, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,63 +18,71 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const CREDIT_COST_PER_MINUTE = 1;
+type CallType = "video" | "phone";
 
 export default function VideoCall() {
   const { matchId } = useParams<{ matchId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  
+
+  const callType: CallType = (searchParams.get("type") === "phone" ? "phone" : "video");
+  const isPhone = callType === "phone";
+
   const [callStatus, setCallStatus] = useState<"connecting" | "ringing" | "connected" | "ended">("connecting");
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [creditsUsed, setCreditsUsed] = useState(0);
-  const [userCredits, setUserCredits] = useState(0);
-  const [lowCreditsWarning, setLowCreditsWarning] = useState(false);
+  const [minutesUsed, setMinutesUsed] = useState(0);
+  const [minutesRemaining, setMinutesRemaining] = useState(0);
+  const [insufficientMinutes, setInsufficientMinutes] = useState(false);
   const [otherProfile, setOtherProfile] = useState<{ first_name: string; photo_url?: string; id: string } | null>(null);
   const [callSessionId, setCallSessionId] = useState<string | null>(null);
-  
+  const [walletReady, setWalletReady] = useState(false);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const creditTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const minuteTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    fetchUserCredits();
+    fetchMinutes();
     fetchOtherProfile();
-    
-    return () => {
-      endCall();
-    };
-  }, [matchId, profile]);
+    return () => { endCall(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, profile?.id]);
 
-  const fetchUserCredits = async () => {
+  // Start call once we have both other profile + wallet check
+  useEffect(() => {
+    if (walletReady && otherProfile && callStatus === "connecting" && minutesRemaining > 0) {
+      initializeCall();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletReady, otherProfile]);
+
+  const fetchMinutes = async () => {
     if (!profile?.id) return;
-
     const { data } = await supabase
       .from("user_credits")
-      .select("credits")
+      .select("phone_minutes, video_minutes")
       .eq("profile_id", profile.id)
       .maybeSingle();
-
-    if (data) {
-      setUserCredits(data.credits);
-      if (data.credits < 5) {
-        setLowCreditsWarning(true);
-      }
-    } else {
-      // Initialize wallet via server function (cannot self-write)
+    if (!data) {
       await supabase.rpc("ensure_user_credits");
-      setLowCreditsWarning(true);
+      setMinutesRemaining(0);
+      setInsufficientMinutes(true);
+    } else {
+      const remaining = isPhone ? (data.phone_minutes ?? 0) : (data.video_minutes ?? 0);
+      setMinutesRemaining(remaining);
+      if (remaining <= 0) setInsufficientMinutes(true);
     }
+    setWalletReady(true);
   };
 
   const fetchOtherProfile = async () => {
     if (!profile || !matchId) return;
-
     const { data: match } = await supabase
       .from("matches")
       .select(`
@@ -84,34 +91,20 @@ export default function VideoCall() {
       `)
       .eq("id", matchId)
       .single();
-
-    if (match) {
-      const other = (match.profile1 as any).id === profile.id 
-        ? match.profile2 
-        : match.profile1;
-
-      const { data: photos } = await supabase
-        .from("profile_photos")
-        .select("photo_url")
-        .eq("profile_id", (other as any).id)
-        .order("position")
-        .limit(1);
-
-      setOtherProfile({
-        id: (other as any).id,
-        first_name: (other as any).first_name,
-        photo_url: photos?.[0]?.photo_url,
-      });
-
-      if (userCredits >= 1) {
-        initializeCall();
-      }
-    }
+    if (!match) return;
+    const other = (match.profile1 as any).id === profile.id ? match.profile2 : match.profile1;
+    const { data: photos } = await supabase
+      .from("profile_photos").select("photo_url")
+      .eq("profile_id", (other as any).id).order("position").limit(1);
+    setOtherProfile({
+      id: (other as any).id,
+      first_name: (other as any).first_name,
+      photo_url: photos?.[0]?.photo_url,
+    });
   };
 
   const createCallSession = async () => {
     if (!profile?.id || !matchId || !otherProfile?.id) return null;
-
     const { data, error } = await supabase
       .from("video_call_sessions")
       .insert({
@@ -120,41 +113,36 @@ export default function VideoCall() {
         receiver_id: otherProfile.id,
         status: "connecting",
       })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Failed to create call session:", error);
-      return null;
-    }
-
+      .select().single();
+    if (error) { console.error("session error", error); return null; }
     setCallSessionId(data.id);
     return data.id;
   };
 
-  const deductCredit = useCallback(async () => {
+  const deductMinute = useCallback(async () => {
     if (!profile?.id) return false;
-    const { data, error } = await supabase.rpc("deduct_video_credit");
+    const { data, error } = await supabase.rpc("deduct_call_minute", {
+      p_profile_id: profile.id,
+      p_call_type: callType,
+    });
     const res = data as { success?: boolean; remaining?: number; error?: string } | null;
     if (error || !res?.success) {
-      toast.error("Insufficient credits! Call ending.");
+      toast.error("Out of minutes — call ending.");
       handleEndCall();
       return false;
     }
-    setCreditsUsed(prev => prev + CREDIT_COST_PER_MINUTE);
-    setUserCredits(res.remaining ?? 0);
-    if ((res.remaining ?? 0) <= 3) {
-      toast.warning(`Only ${res.remaining} credits remaining!`);
+    setMinutesUsed(p => p + 1);
+    setMinutesRemaining(res.remaining ?? 0);
+    if ((res.remaining ?? 0) <= 2 && (res.remaining ?? 0) > 0) {
+      toast.warning(`Only ${res.remaining} ${callType} minutes left!`);
     }
     return true;
-  }, [profile?.id, callSessionId]);
+  }, [profile?.id, callType]);
 
   const initializeCall = async () => {
     try {
-      // Create call session first
       const sessionId = await createCallSession();
 
-      // Send WhatsApp notification to receiver (for Cuban users)
       if (sessionId && otherProfile) {
         try {
           await supabase.functions.invoke("send-whatsapp-call-notification", {
@@ -162,164 +150,99 @@ export default function VideoCall() {
               receiverId: otherProfile.id,
               callerId: profile?.id,
               callerName: profile?.first_name || "Someone",
-              matchId: matchId,
+              matchId,
               callSessionId: sessionId,
+              callType,
             },
           });
-          console.log("WhatsApp call notification sent");
-        } catch (err) {
-          console.error("Failed to send WhatsApp notification:", err);
-          // Continue with call anyway
-        }
+        } catch (err) { console.error("WA notif", err); }
       }
 
-      // Get local media stream
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: !isPhone,
         audio: true,
       });
-      
       localStreamRef.current = stream;
-      
-      if (localVideoRef.current) {
+      if (!isPhone && localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
 
-      // Initialize WebRTC peer connection
-      const configuration: RTCConfiguration = {
+      peerConnectionRef.current = new RTCPeerConnection({
         iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
         ],
-      };
-
-      peerConnectionRef.current = new RTCPeerConnection(configuration);
-
-      // Add local tracks to peer connection
-      stream.getTracks().forEach(track => {
-        peerConnectionRef.current?.addTrack(track, stream);
       });
-
-      // Handle remote stream
+      stream.getTracks().forEach(track => peerConnectionRef.current?.addTrack(track, stream));
       peerConnectionRef.current.ontrack = (event) => {
         if (remoteVideoRef.current && event.streams[0]) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
       };
 
-      // Handle ICE candidates
-      peerConnectionRef.current.onicecandidate = (event) => {
-        if (event.candidate) {
-          // In production, send candidate to signaling server
-          console.log("ICE candidate:", event.candidate);
-        }
-      };
-
-      // Update status to ringing
       setCallStatus("ringing");
-      
       if (sessionId) {
-        await supabase
-          .from("video_call_sessions")
-          .update({ status: "ringing" })
-          .eq("id", sessionId);
+        await supabase.from("video_call_sessions").update({ status: "ringing" }).eq("id", sessionId);
       }
 
-      // Wait for answer (in production, use signaling)
-      // Set a timeout for unanswered calls
       const answerTimeout = setTimeout(async () => {
         if (callStatus === "ringing") {
-          // Call was not answered - trigger missed call notification
           if (sessionId && otherProfile) {
             try {
               await supabase.functions.invoke("send-missed-call-notification", {
                 body: {
                   callerId: profile?.id,
                   receiverId: otherProfile.id,
-                  matchId: matchId,
+                  matchId,
                   callerName: profile?.first_name || "Someone",
+                  callType,
                 },
               });
-              console.log("Missed call notification sent");
-            } catch (err) {
-              console.error("Failed to send missed call notification:", err);
-            }
+            } catch (err) { console.error("missed call", err); }
           }
-          
           toast.error("Call not answered");
           handleEndCall();
         }
-      }, 30000); // 30 seconds timeout
+      }, 30000);
 
-      // Simulate answer for demo (in production, wait for actual answer)
       setTimeout(async () => {
         clearTimeout(answerTimeout);
         setCallStatus("connected");
-        
-        if (callSessionId) {
-          await supabase
-            .from("video_call_sessions")
-            .update({ status: "connected" })
-            .eq("id", callSessionId);
+        if (sessionId) {
+          await supabase.from("video_call_sessions").update({ status: "connected" }).eq("id", sessionId);
         }
-
         startTimer();
-        startCreditDeduction();
-      }, 10000); // Wait 10 seconds for answer
-
+        startMinuteDeduction();
+      }, 5000);
     } catch (error) {
-      console.error("Failed to get media stream:", error);
-      toast.error("Unable to access camera or microphone");
+      console.error("media error", error);
+      toast.error(isPhone ? "Unable to access microphone" : "Unable to access camera/microphone");
       navigate(-1);
     }
   };
 
   const startTimer = () => {
-    timerRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
+    timerRef.current = setInterval(() => setCallDuration(p => p + 1), 1000);
   };
 
-  const startCreditDeduction = () => {
-    // Deduct immediately for first minute
-    deductCredit();
-
-    // Then deduct every minute
-    creditTimerRef.current = setInterval(() => {
-      deductCredit();
-    }, 60000); // Every minute
+  const startMinuteDeduction = () => {
+    deductMinute();
+    minuteTimerRef.current = setInterval(() => { deductMinute(); }, 60000);
   };
 
   const endCall = async () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    
-    if (creditTimerRef.current) {
-      clearInterval(creditTimerRef.current);
-    }
-    
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-    }
-
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-    }
-
-    // Update call session
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (minuteTimerRef.current) clearInterval(minuteTimerRef.current);
+    if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop());
+    if (peerConnectionRef.current) peerConnectionRef.current.close();
     if (callSessionId) {
-      await supabase
-        .from("video_call_sessions")
-        .update({
-          status: "ended",
-          ended_at: new Date().toISOString(),
-          duration_seconds: callDuration,
-          credits_used: creditsUsed,
-        })
-        .eq("id", callSessionId);
+      await supabase.from("video_call_sessions").update({
+        status: "ended",
+        ended_at: new Date().toISOString(),
+        duration_seconds: callDuration,
+        credits_used: minutesUsed,
+      }).eq("id", callSessionId);
     }
-    
     setCallStatus("ended");
   };
 
@@ -329,50 +252,44 @@ export default function VideoCall() {
   };
 
   const toggleMute = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsMuted(!isMuted);
-    }
+    if (!localStreamRef.current) return;
+    localStreamRef.current.getAudioTracks().forEach(t => t.enabled = !t.enabled);
+    setIsMuted(!isMuted);
   };
 
   const toggleVideo = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks().forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsVideoOff(!isVideoOff);
-    }
+    if (isPhone || !localStreamRef.current) return;
+    localStreamRef.current.getVideoTracks().forEach(t => t.enabled = !t.enabled);
+    setIsVideoOff(!isVideoOff);
   };
 
   const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    const m = Math.floor(seconds / 60), s = seconds % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Low credits warning dialog
-  if (lowCreditsWarning && userCredits < 1) {
+  if (insufficientMinutes) {
     return (
       <AlertDialog open={true}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Coins className="w-5 h-5 text-amber-500" />
-              Insufficient Credits
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              No {isPhone ? "Phone" : "Video"} Minutes
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Video calls cost {CREDIT_COST_PER_MINUTE} credit per minute. You need at least 1 credit to start a call.
+              You need {isPhone ? "phone" : "video"} minutes to start this call.
               <div className="mt-4 p-3 bg-muted rounded-lg">
-                <p className="text-foreground font-medium">Your balance: {userCredits} credits</p>
+                <p className="text-foreground font-medium">
+                  Your balance: {minutesRemaining} {isPhone ? "phone" : "video"} min
+                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => navigate(-1)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/buy-credits")}>
-              Buy Credits
+            <AlertDialogAction onClick={() => navigate("/buy-minutes")}>
+              Buy Minutes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -382,23 +299,14 @@ export default function VideoCall() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col relative">
-      {/* Remote video (full screen) */}
       <div className="flex-1 relative">
-        {callStatus === "connected" ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
+        {!isPhone && callStatus === "connected" ? (
+          <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center">
             {otherProfile?.photo_url ? (
-              <img
-                src={otherProfile.photo_url}
-                alt={otherProfile.first_name}
-                className="w-32 h-32 rounded-full object-cover mb-6"
-              />
+              <img src={otherProfile.photo_url} alt={otherProfile.first_name}
+                className="w-32 h-32 rounded-full object-cover mb-6" />
             ) : (
               <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-6">
                 <span className="text-4xl font-bold text-muted-foreground">
@@ -409,97 +317,68 @@ export default function VideoCall() {
             <h2 className="text-2xl font-bold text-white mb-2">
               {otherProfile?.first_name || "Connecting..."}
             </h2>
-            <p className="text-muted-foreground">
-              {callStatus === "connecting" ? "Connecting..." : 
-               callStatus === "ringing" ? "Ringing..." : 
-               "Call ended"}
+            <p className="text-white/60">
+              {callStatus === "connecting" ? "Connecting..." :
+                callStatus === "ringing" ? "Ringing..." :
+                callStatus === "connected" ? (isPhone ? "On call" : "Connected") :
+                "Call ended"}
             </p>
+            {isPhone && callStatus === "connected" && (
+              <audio ref={remoteVideoRef as any} autoPlay playsInline className="hidden" />
+            )}
           </div>
         )}
 
-        {/* Credits & Duration display */}
         {callStatus === "connected" && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3">
             <div className="px-4 py-2 bg-black/50 rounded-full flex items-center gap-2">
+              <Clock className="w-4 h-4 text-white" />
               <span className="text-white font-medium">{formatDuration(callDuration)}</span>
             </div>
             <div className="px-4 py-2 bg-amber-500/80 rounded-full flex items-center gap-2">
-              <Coins className="w-4 h-4 text-white" />
-              <span className="text-white font-medium">{userCredits} credits</span>
+              <span className="text-white font-medium">{minutesRemaining} min</span>
             </div>
           </div>
         )}
 
-        {/* Cost indicator */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 text-white/60 text-xs">
-          ${CREDIT_COST_PER_MINUTE}/min
-        </div>
-
-        {/* Close button */}
-        <button
-          onClick={handleEndCall}
-          className="absolute top-6 right-6 p-2 bg-black/50 rounded-full"
-        >
+        <button onClick={handleEndCall}
+          className="absolute top-6 right-6 p-2 bg-black/50 rounded-full">
           <X className="w-6 h-6 text-white" />
         </button>
       </div>
 
-      {/* Local video (picture-in-picture) */}
-      <div className="absolute bottom-32 right-4 w-28 h-40 rounded-xl overflow-hidden border-2 border-white shadow-lg">
-        {isVideoOff ? (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
-            <VideoOff className="w-8 h-8 text-muted-foreground" />
-          </div>
-        ) : (
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
-        )}
-      </div>
-
-      {/* Controls */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4 px-8">
-        <button
-          onClick={toggleMute}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-            isMuted ? "bg-white" : "bg-white/20"
-          }`}
-        >
-          {isMuted ? (
-            <MicOff className="w-6 h-6 text-black" />
-          ) : (
-            <Mic className="w-6 h-6 text-white" />
-          )}
-        </button>
-
-        <button
-          onClick={toggleVideo}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-            isVideoOff ? "bg-white" : "bg-white/20"
-          }`}
-        >
+      {!isPhone && (
+        <div className="absolute bottom-32 right-4 w-28 h-40 rounded-xl overflow-hidden border-2 border-white shadow-lg">
           {isVideoOff ? (
-            <VideoOff className="w-6 h-6 text-black" />
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+              <VideoOff className="w-8 h-8 text-muted-foreground" />
+            </div>
           ) : (
-            <Video className="w-6 h-6 text-white" />
+            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
           )}
+        </div>
+      )}
+
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-4 px-8">
+        <button onClick={toggleMute}
+          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${isMuted ? "bg-white" : "bg-white/20"}`}>
+          {isMuted ? <MicOff className="w-6 h-6 text-black" /> : <Mic className="w-6 h-6 text-white" />}
         </button>
 
-        <button
-          onClick={() => navigate(`/chat/${matchId}`)}
-          className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center"
-        >
+        {!isPhone && (
+          <button onClick={toggleVideo}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${isVideoOff ? "bg-white" : "bg-white/20"}`}>
+            {isVideoOff ? <VideoOff className="w-6 h-6 text-black" /> : <Video className="w-6 h-6 text-white" />}
+          </button>
+        )}
+
+        <button onClick={() => navigate(`/chat/${matchId}`)}
+          className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
           <MessageCircle className="w-6 h-6 text-white" />
         </button>
 
-        <button
-          onClick={handleEndCall}
-          className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center"
-        >
+        <button onClick={handleEndCall}
+          className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center">
           <Phone className="w-6 h-6 text-white rotate-[135deg]" />
         </button>
       </div>
