@@ -97,6 +97,8 @@ import MyStars from "./pages/MyStars";
 import RedeemCode from "./pages/RedeemCode";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminPaymentTests from "./pages/AdminPaymentTests";
+import PhoneLine from "./pages/PhoneLine";
+import PhoneLineSetup from "./pages/PhoneLineSetup";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -221,6 +223,8 @@ const App = () => (
               <Route path="/redeem-code" element={<RedeemCode />} />
               <Route path="/admin/users" element={<AdminUserManagement />} />
               <Route path="/admin/payment-tests" element={<AdminPaymentTests />} />
+              <Route path="/phone-line" element={<ProtectedRoute><PhoneLine /></ProtectedRoute>} />
+              <Route path="/phone-line/setup" element={<ProtectedRoute><PhoneLineSetup /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />

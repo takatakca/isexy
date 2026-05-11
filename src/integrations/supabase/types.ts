@@ -1741,6 +1741,100 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_line_numbers: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          phone_number_e164: string
+          phone_verified: boolean
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          phone_number_e164: string
+          phone_verified?: boolean
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          phone_number_e164?: string
+          phone_verified?: boolean
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_line_numbers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phone_line_profiles: {
+        Row: {
+          age: number
+          city: string | null
+          created_at: string
+          display_name: string
+          gender: string | null
+          headline: string | null
+          id: string
+          interested_in: string[] | null
+          is_public: boolean
+          last_active_at: string | null
+          profile_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          age: number
+          city?: string | null
+          created_at?: string
+          display_name: string
+          gender?: string | null
+          headline?: string | null
+          id?: string
+          interested_in?: string[] | null
+          is_public?: boolean
+          last_active_at?: string | null
+          profile_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          age?: number
+          city?: string | null
+          created_at?: string
+          display_name?: string
+          gender?: string | null
+          headline?: string | null
+          id?: string
+          interested_in?: string[] | null
+          is_public?: boolean
+          last_active_at?: string | null
+          profile_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_line_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_photos: {
         Row: {
           created_at: string
@@ -2792,6 +2886,69 @@ export type Database = {
           {
             foreignKeyName: "video_call_sessions_receiver_id_fkey"
             columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_greetings: {
+        Row: {
+          audio_url: string
+          created_at: string
+          duration_seconds: number
+          id: string
+          is_active: boolean
+          is_hidden: boolean
+          moderation_status: string
+          phone_line_profile_id: string
+          profile_id: string
+          rejected_reason: string | null
+          report_count: number
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          duration_seconds: number
+          id?: string
+          is_active?: boolean
+          is_hidden?: boolean
+          moderation_status?: string
+          phone_line_profile_id: string
+          profile_id: string
+          rejected_reason?: string | null
+          report_count?: number
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          is_active?: boolean
+          is_hidden?: boolean
+          moderation_status?: string
+          phone_line_profile_id?: string
+          profile_id?: string
+          rejected_reason?: string | null
+          report_count?: number
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_greetings_phone_line_profile_id_fkey"
+            columns: ["phone_line_profile_id"]
+            isOneToOne: false
+            referencedRelation: "phone_line_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_greetings_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
