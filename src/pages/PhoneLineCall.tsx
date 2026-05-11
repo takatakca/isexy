@@ -112,20 +112,22 @@ export default function PhoneLineCall() {
     const { data, error } = await supabase.rpc("charge_call_session_minute", {
       p_call_session_id: callSessionId,
     });
-    if (error) {
-      toast.error("Charge failed");
-      return;
-    }
-    const r = data as { success: boolean; remaining?: number; error?: string };
+    if (error) return;
+    const r = data as { success: boolean; charged?: boolean; remaining?: number; error?: string };
     if (!r?.success) {
       if (r?.error === "no_minutes") {
         toast.error("Out of phone minutes");
         await hangUp("out_of_minutes");
         navigate("/buy-minutes");
+        return;
+      }
+      if (r?.error === "call_not_active") {
+        await hangUp("call_not_active");
       }
       return;
     }
-    setRemaining(r.remaining ?? null);
+    // success — may or may not have charged this tick (server time-gated)
+    if (typeof r.remaining === "number") setRemaining(r.remaining);
   };
 
   const toggleMute = () => {
