@@ -3071,6 +3071,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_voice_reply_read: { Args: { p_reply_id: string }; Returns: Json }
       perform_like: {
         Args: { p_action: string; p_swiped_id: string; p_swiper_id: string }
         Returns: Json
