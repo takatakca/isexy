@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Play, Pause, Mic, Square, RotateCcw, Send, Flag, Ban } from "lucide-react";
+import { ArrowLeft, Play, Pause, Mic, Square, RotateCcw, Send, Flag, Ban, Phone } from "lucide-react";
 import { toast } from "sonner";
 
 const MAX_REPLY_SECONDS = 90;
