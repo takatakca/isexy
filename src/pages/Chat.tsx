@@ -498,6 +498,15 @@ export default function Chat() {
         <Button
           variant="ghost"
           size="icon"
+          onClick={handlePhoneCall}
+          className="text-blue-500"
+        >
+          <Phone className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={handleVideoCall}
           className="text-primary"
         >
