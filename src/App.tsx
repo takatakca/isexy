@@ -99,6 +99,8 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminPaymentTests from "./pages/AdminPaymentTests";
 import PhoneLine from "./pages/PhoneLine";
 import PhoneLineSetup from "./pages/PhoneLineSetup";
+import PhoneLineBrowse from "./pages/PhoneLineBrowse";
+import PhoneLineInbox from "./pages/PhoneLineInbox";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -225,6 +227,8 @@ const App = () => (
               <Route path="/admin/payment-tests" element={<AdminPaymentTests />} />
               <Route path="/phone-line" element={<ProtectedRoute><PhoneLine /></ProtectedRoute>} />
               <Route path="/phone-line/setup" element={<ProtectedRoute><PhoneLineSetup /></ProtectedRoute>} />
+              <Route path="/phone-line/browse" element={<ProtectedRoute><PhoneLineBrowse /></ProtectedRoute>} />
+              <Route path="/phone-line/inbox" element={<ProtectedRoute><PhoneLineInbox /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />

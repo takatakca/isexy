@@ -1835,6 +1835,79 @@ export type Database = {
           },
         ]
       }
+      phone_line_voice_replies: {
+        Row: {
+          audio_url: string
+          created_at: string
+          duration_seconds: number
+          from_profile_id: string
+          greeting_id: string | null
+          id: string
+          is_hidden: boolean
+          is_read: boolean
+          moderation_status: string
+          rejected_reason: string | null
+          report_count: number
+          to_profile_id: string
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          duration_seconds: number
+          from_profile_id: string
+          greeting_id?: string | null
+          id?: string
+          is_hidden?: boolean
+          is_read?: boolean
+          moderation_status?: string
+          rejected_reason?: string | null
+          report_count?: number
+          to_profile_id: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          duration_seconds?: number
+          from_profile_id?: string
+          greeting_id?: string | null
+          id?: string
+          is_hidden?: boolean
+          is_read?: boolean
+          moderation_status?: string
+          rejected_reason?: string | null
+          report_count?: number
+          to_profile_id?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_line_voice_replies_from_profile_id_fkey"
+            columns: ["from_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_line_voice_replies_greeting_id_fkey"
+            columns: ["greeting_id"]
+            isOneToOne: false
+            referencedRelation: "voice_greetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_line_voice_replies_to_profile_id_fkey"
+            columns: ["to_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_photos: {
         Row: {
           created_at: string
