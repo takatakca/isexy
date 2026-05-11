@@ -296,6 +296,9 @@ export default function PhoneLineBrowse() {
                     </Button>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
+                    <Button size="sm" className="gap-1" onClick={() => callVoice(g)}>
+                      <Phone className="h-3.5 w-3.5" /> Call voice profile
+                    </Button>
                     <Button size="sm" variant="outline" className="gap-1" onClick={() => openReply(g)}>
                       <Mic className="h-3.5 w-3.5" /> Voice reply
                     </Button>
