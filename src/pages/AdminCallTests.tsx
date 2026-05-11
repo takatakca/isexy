@@ -11,8 +11,9 @@ interface CallRow {
   call_type: string;
   provider: string;
   status: string;
-  caller_profile_id: string;
+  caller_profile_id: string | null;
   receiver_profile_id: string | null;
+  provider_call_sid: string | null;
   duration_seconds: number;
   minutes_charged: number;
   end_reason: string | null;
