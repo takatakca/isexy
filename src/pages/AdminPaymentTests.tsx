@@ -53,7 +53,7 @@ export default function AdminPaymentTests() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [events, setEvents] = useState<WebhookEvent[]>([]);
-  const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, superLikes: 0, gifts: 0, donations: 0, subscriptions: 0 });
+  const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, superLikes: 0, gifts: 0, donations: 0, subscriptions: 0, phoneMinutes: 0, videoMinutes: 0, chatSubs: 0 });
   const [subs, setSubs] = useState<SubscriptionRow[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [gate, setGate] = useState<{ liveEnabled: boolean; mode: string; blocked: boolean } | null>(null);
