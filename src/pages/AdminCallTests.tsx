@@ -11,8 +11,9 @@ interface CallRow {
   call_type: string;
   provider: string;
   status: string;
-  caller_profile_id: string;
+  caller_profile_id: string | null;
   receiver_profile_id: string | null;
+  provider_call_sid: string | null;
   duration_seconds: number;
   minutes_charged: number;
   end_reason: string | null;
@@ -88,8 +89,15 @@ export default function AdminCallTests() {
     }
     if (c.status === "completed" && !c.ended_at) flags.push("missing_ended_at");
     if (c.status === "failed" && c.minutes_charged > 0) flags.push("failed_with_charges");
+    if (["missed", "no-answer", "busy"].includes(c.status) && c.minutes_charged > 0) {
+      flags.push("missed_with_charges");
+    }
     const maxAllowed = Math.ceil((c.duration_seconds || 0) / 60) + 1;
     if (c.minutes_charged > maxAllowed) flags.push("overcharged_vs_duration");
+    if (c.provider === "twilio" && !c.caller_profile_id) flags.push("twilio_no_profile");
+    if (c.provider === "twilio" && c.status === "completed" && !c.ended_at) {
+      flags.push("twilio_completed_no_end");
+    }
     return flags;
   };
 
@@ -142,12 +150,13 @@ export default function AdminCallTests() {
                     ))}
                   </div>
                   <div className="mt-1 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                    <div>caller: {c.caller_profile_id}</div>
+                    <div>caller: {c.caller_profile_id ?? "—"}</div>
                     <div>receiver: {c.receiver_profile_id ?? "—"}</div>
                     <div>duration: {c.duration_seconds}s</div>
                     <div>charged: {c.minutes_charged} min</div>
                     <div>end_reason: {c.end_reason ?? "—"}</div>
                     <div>ended_at: {c.ended_at ?? "—"}</div>
+                    {c.provider_call_sid && <div className="sm:col-span-2">CallSid: {c.provider_call_sid}</div>}
                   </div>
                 </div>
               );
