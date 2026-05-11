@@ -105,10 +105,7 @@ export default function PhoneLineInbox() {
       setPlayingId(r.id);
 
       if (markRead && !r.is_read) {
-        await supabase
-          .from("phone_line_voice_replies")
-          .update({ is_read: true })
-          .eq("id", r.id);
+        await supabase.rpc("mark_voice_reply_read", { p_reply_id: r.id });
         setReceived((prev) => prev.map((x) => (x.id === r.id ? { ...x, is_read: true } : x)));
       }
     } catch (e: any) {
