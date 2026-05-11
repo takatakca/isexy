@@ -88,6 +88,8 @@ export default function AdminCallTests() {
     }
     if (c.status === "completed" && !c.ended_at) flags.push("missing_ended_at");
     if (c.status === "failed" && c.minutes_charged > 0) flags.push("failed_with_charges");
+    const maxAllowed = Math.ceil((c.duration_seconds || 0) / 60) + 1;
+    if (c.minutes_charged > maxAllowed) flags.push("overcharged_vs_duration");
     return flags;
   };
 
