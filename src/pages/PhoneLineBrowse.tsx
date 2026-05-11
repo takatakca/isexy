@@ -247,6 +247,35 @@ export default function PhoneLineBrowse() {
     navigate(`/block-report/${g.profile_id}`);
   };
 
+  const callVoice = async (g: PLProfile) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setPlayingId(null);
+    }
+    const { data, error } = await supabase.rpc("start_phone_line_call_session", {
+      p_target_profile_id: g.profile_id,
+      p_call_type: "phone_line_profile",
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    const r = data as { success: boolean; error?: string; call_session_id?: string };
+    if (!r?.success) {
+      if (r?.error === "no_minutes") {
+        toast.error("You need phone minutes to call.");
+        navigate("/buy-minutes");
+        return;
+      }
+      if (r?.error === "blocked") return toast.error("This user is unavailable.");
+      if (r?.error === "age_restricted") return toast.error("18+ only.");
+      if (r?.error === "incomplete_profile") return toast.error("Complete your profile first.");
+      if (r?.error === "voice_profile_unavailable") return toast.error("Voice profile not available.");
+      return toast.error(r?.error ?? "Could not start call");
+    }
+    navigate(`/phone-line/call/${r.call_session_id}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
