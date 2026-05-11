@@ -43,9 +43,9 @@ export default function PhoneLine() {
 
   const tiles = [
     { icon: Mic, title: "Your voice profile", desc: plProfile ? `Status: ${plProfile.status}` : "Not set up yet", to: "/phone-line/setup", primary: true },
-    { icon: Headphones, title: "Browse voices", desc: "Listen to greetings (coming soon)", to: "#", disabled: true },
-    { icon: Inbox, title: "Voice inbox", desc: "Your replies (coming soon)", to: "#", disabled: true },
-    { icon: Radio, title: "Live singles line", desc: "Join the live room (coming soon)", to: "#", disabled: true },
+    { icon: Headphones, title: "Browse voices", desc: "Listen to greetings", to: "/phone-line/browse" },
+    { icon: Inbox, title: "Voice inbox", desc: "Your replies", to: "/phone-line/inbox" },
+    { icon: Radio, title: "Live singles line", desc: "Coming soon", to: "#", disabled: true },
     { icon: Coins, title: "Buy minutes", desc: "Top up phone & video minutes", to: "/buy-minutes" },
     { icon: Shield, title: "Safety & 18+", desc: "How we keep your number private", to: "/safety" },
   ];
