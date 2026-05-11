@@ -231,6 +231,9 @@ export default function AdminPaymentTests() {
                 { label: "Boosts", value: counts.boosts },
                 { label: "Gifts", value: counts.gifts },
                 { label: "Donations", value: counts.donations },
+                { label: "Phone min", value: counts.phoneMinutes },
+                { label: "Video min", value: counts.videoMinutes },
+                { label: "Chat sub", value: counts.chatSubs },
               ].map(c => (
                 <div key={c.label} className="text-center p-4 rounded-lg bg-muted">
                   <div className="text-2xl font-bold">{c.value}</div>
