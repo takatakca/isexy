@@ -231,6 +231,8 @@ const App = () => (
               <Route path="/phone-line/setup" element={<ProtectedRoute><PhoneLineSetup /></ProtectedRoute>} />
               <Route path="/phone-line/browse" element={<ProtectedRoute><PhoneLineBrowse /></ProtectedRoute>} />
               <Route path="/phone-line/inbox" element={<ProtectedRoute><PhoneLineInbox /></ProtectedRoute>} />
+              <Route path="/phone-line/call/:callSessionId" element={<ProtectedRoute><PhoneLineCall /></ProtectedRoute>} />
+              <Route path="/admin/call-tests" element={<AdminCallTests />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
