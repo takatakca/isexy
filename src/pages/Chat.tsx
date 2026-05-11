@@ -427,12 +427,11 @@ export default function Chat() {
   };
 
   const handleVideoCall = () => {
-    if (!profile?.is_premium && profile?.subscription_tier !== "gold" && profile?.subscription_tier !== "platinum") {
-      toast.error("Video calling requires a premium subscription");
-      navigate("/premium");
-      return;
-    }
-    navigate(`/video-call/${matchId}`);
+    navigate(`/video-call/${matchId}?type=video`);
+  };
+
+  const handlePhoneCall = () => {
+    navigate(`/video-call/${matchId}?type=phone`);
   };
 
   const renderReadReceipt = (message: Message) => {
