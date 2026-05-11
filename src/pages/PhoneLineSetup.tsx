@@ -21,6 +21,7 @@ interface PLProfile {
   headline: string | null;
   status: string;
   is_public: boolean;
+  last_active_at: string | null;
 }
 
 interface Greeting {
