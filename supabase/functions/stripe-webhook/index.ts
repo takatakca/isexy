@@ -20,6 +20,16 @@ const CREDIT_PACKAGES: Record<string, { credits: number }> = {
   credits_100: { credits: 140 }, // 100 + 40 bonus
 };
 
+// Authoritative server-side minute catalog (must match create-minute-purchase)
+const MINUTE_PACKAGES: Record<string, { minutes: number; type: "phone" | "video" }> = {
+  phone_20: { minutes: 20, type: "phone" },
+  phone_150: { minutes: 150, type: "phone" },
+  phone_450: { minutes: 450, type: "phone" },
+  video_20: { minutes: 20, type: "video" },
+  video_150: { minutes: 150, type: "video" },
+  video_450: { minutes: 450, type: "video" },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
