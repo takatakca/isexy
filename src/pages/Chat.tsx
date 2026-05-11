@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useContentModeration } from "@/hooks/useContentModeration";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Check, CheckCheck, Calendar, AlertTriangle, Gift } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Phone, Check, CheckCheck, Calendar, AlertTriangle, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TypingIndicator } from "@/components/TypingIndicator";
@@ -427,12 +427,11 @@ export default function Chat() {
   };
 
   const handleVideoCall = () => {
-    if (!profile?.is_premium && profile?.subscription_tier !== "gold" && profile?.subscription_tier !== "platinum") {
-      toast.error("Video calling requires a premium subscription");
-      navigate("/premium");
-      return;
-    }
-    navigate(`/video-call/${matchId}`);
+    navigate(`/video-call/${matchId}?type=video`);
+  };
+
+  const handlePhoneCall = () => {
+    navigate(`/video-call/${matchId}?type=phone`);
   };
 
   const renderReadReceipt = (message: Message) => {
@@ -494,6 +493,15 @@ export default function Chat() {
           className="text-muted-foreground"
         >
           <Calendar className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handlePhoneCall}
+          className="text-blue-500"
+        >
+          <Phone className="w-5 h-5" />
         </Button>
 
         <Button

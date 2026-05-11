@@ -20,6 +20,16 @@ const CREDIT_PACKAGES: Record<string, { credits: number }> = {
   credits_100: { credits: 140 }, // 100 + 40 bonus
 };
 
+// Authoritative server-side minute catalog (must match create-minute-purchase)
+const MINUTE_PACKAGES: Record<string, { minutes: number; type: "phone" | "video" }> = {
+  phone_20: { minutes: 20, type: "phone" },
+  phone_150: { minutes: 150, type: "phone" },
+  phone_450: { minutes: 450, type: "phone" },
+  video_20: { minutes: 20, type: "video" },
+  video_150: { minutes: 150, type: "video" },
+  video_450: { minutes: 450, type: "video" },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -205,6 +215,33 @@ serve(async (req) => {
             break;
           }
 
+          // ---- Chat subscription (chat_1mo) ----
+          if (meta.type === "chat_sub" || meta.package_id === "chat_1mo") {
+            const months = parseInt(meta.plan_months || "1", 10) || 1;
+            const { data: existingChatSub } = await supabaseClient
+              .from("chat_subscriptions").select("id")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingChatSub) {
+              logStep("Chat sub already fulfilled", { sessionId: session.id });
+              break;
+            }
+            const expiresAt = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+            await supabaseClient.from("chat_subscriptions").insert({
+              profile_id: profileId,
+              plan_months: months,
+              status: "active",
+              expires_at: expiresAt,
+              stripe_session_id: session.id,
+            });
+            await supabaseClient.from("credit_transactions").insert({
+              profile_id: profileId, amount: 0, type: "purchase", category: "chat_sub",
+              description: `Chat subscription ${months} month(s)`,
+              stripe_session_id: session.id,
+            });
+            logStep("Chat subscription fulfilled", { profileId, months });
+            break;
+          }
+
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const subMeta = (subscription.metadata ?? {}) as Record<string, string>;
           const appTier = tierFromMetadata(subMeta) ?? tierFromMetadata(meta);
@@ -282,7 +319,42 @@ serve(async (req) => {
             break;
           }
 
-          // ---- Gift fulfillment ----
+          // ---- Phone/Video Minute purchases ----
+          if (packageId && MINUTE_PACKAGES[packageId]) {
+            const { minutes, type } = MINUTE_PACKAGES[packageId];
+            const { data: existingTx } = await supabaseClient
+              .from("credit_transactions").select("id")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingTx) {
+              logStep("Minute purchase already fulfilled", { sessionId: session.id });
+              break;
+            }
+            const column = type === "phone" ? "phone_minutes" : "video_minutes";
+            const { data: existing } = await supabaseClient
+              .from("user_credits").select("phone_minutes, video_minutes")
+              .eq("profile_id", profileId).maybeSingle();
+            const currentVal = (existing as any)?.[column] ?? 0;
+            const newVal = currentVal + minutes;
+            await supabaseClient.from("user_credits").upsert(
+              {
+                profile_id: profileId,
+                [column]: newVal,
+                last_purchase_at: new Date().toISOString(),
+              },
+              { onConflict: "profile_id" }
+            );
+            await supabaseClient.from("credit_transactions").insert({
+              profile_id: profileId,
+              amount: minutes,
+              type: "purchase",
+              category: type,
+              description: `Purchased ${minutes} ${type} minutes (${packageId})`,
+              stripe_session_id: session.id,
+            });
+            logStep("Minutes added", { profileId, minutes, type, packageId });
+            break;
+          }
+
           if (productId.startsWith("gift_") || meta.type === "gift") {
             const giftPackageId = meta.gift_package_id || productId.replace(/^gift_/, "");
             const recipientId = meta.recipient_profile_id;

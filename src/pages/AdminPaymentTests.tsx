@@ -23,6 +23,9 @@ interface FulfillmentCounts {
   gifts: number;
   donations: number;
   subscriptions: number;
+  phoneMinutes: number;
+  videoMinutes: number;
+  chatSubs: number;
 }
 
 interface SubscriptionRow {
@@ -32,13 +35,16 @@ interface SubscriptionRow {
   current_period_end: string | null;
 }
 
-const CHECKLIST_ITEMS: { key: keyof FulfillmentCounts | "duplicate" | "subscription"; label: string }[] = [
+const CHECKLIST_ITEMS: { key: string; label: string }[] = [
   { key: "subscription", label: "Plus/Gold/Platinum subscription fulfilled" },
   { key: "credits", label: "Credit pack fulfilled" },
   { key: "superLikes", label: "Super-like pack fulfilled" },
   { key: "boosts", label: "Boost pack fulfilled" },
   { key: "gifts", label: "Gift completed" },
   { key: "donations", label: "Donation completed" },
+  { key: "phoneMinutes", label: "Phone minutes purchased" },
+  { key: "videoMinutes", label: "Video minutes purchased" },
+  { key: "chatSubs", label: "Chat subscription purchased" },
   { key: "duplicate", label: "Duplicate webhook resend handled" },
 ];
 
@@ -47,7 +53,7 @@ export default function AdminPaymentTests() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [events, setEvents] = useState<WebhookEvent[]>([]);
-  const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, superLikes: 0, gifts: 0, donations: 0, subscriptions: 0 });
+  const [counts, setCounts] = useState<FulfillmentCounts>({ credits: 0, boosts: 0, superLikes: 0, gifts: 0, donations: 0, subscriptions: 0, phoneMinutes: 0, videoMinutes: 0, chatSubs: 0 });
   const [subs, setSubs] = useState<SubscriptionRow[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [gate, setGate] = useState<{ liveEnabled: boolean; mode: string; blocked: boolean } | null>(null);
@@ -77,10 +83,10 @@ export default function AdminPaymentTests() {
     // Webhook fulfillment is signaled by stripe_session_id NOT NULL on each row.
     // boost_transactions.action from webhook is "credit" (not "purchase").
     // boost_transactions.boost_type values: "super_like" | "boost" | "primetime_boost" | "super_boost".
-    const [evRes, credRes, slRes, boostRes, giftRes, donRes, subRes, paidSubsRes] = await Promise.all([
+    const [evRes, credRes, slRes, boostRes, giftRes, donRes, subRes, paidSubsRes, phoneRes, videoRes, chatSubRes] = await Promise.all([
       supabase.from("stripe_webhook_events" as any).select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("credit_transactions").select("id", { count: "exact", head: true })
-        .gte("created_at", since).eq("type", "purchase").not("stripe_session_id", "is", null),
+        .gte("created_at", since).eq("type", "purchase").eq("category", "general").not("stripe_session_id", "is", null),
       supabase.from("boost_transactions").select("id", { count: "exact", head: true })
         .gte("created_at", since).eq("boost_type", "super_like").not("stripe_session_id", "is", null),
       supabase.from("boost_transactions").select("id", { count: "exact", head: true })
@@ -93,6 +99,12 @@ export default function AdminPaymentTests() {
         .neq("tier", "free").order("updated_at", { ascending: false }).limit(10),
       supabase.from("subscriptions").select("id", { count: "exact", head: true })
         .gte("updated_at", since).neq("tier", "free").eq("status", "active"),
+      supabase.from("credit_transactions").select("id", { count: "exact", head: true })
+        .gte("created_at", since).eq("type", "purchase").eq("category", "phone").not("stripe_session_id", "is", null),
+      supabase.from("credit_transactions").select("id", { count: "exact", head: true })
+        .gte("created_at", since).eq("type", "purchase").eq("category", "video").not("stripe_session_id", "is", null),
+      supabase.from("chat_subscriptions").select("id", { count: "exact", head: true })
+        .gte("created_at", since).not("stripe_session_id", "is", null),
     ]);
 
     const evs = (evRes.data || []) as unknown as WebhookEvent[];
@@ -104,6 +116,9 @@ export default function AdminPaymentTests() {
       gifts: giftRes.count ?? 0,
       donations: donRes.count ?? 0,
       subscriptions: paidSubsRes.count ?? 0,
+      phoneMinutes: phoneRes.count ?? 0,
+      videoMinutes: videoRes.count ?? 0,
+      chatSubs: chatSubRes.count ?? 0,
     };
     setCounts(newCounts);
     setSubs((subRes.data || []) as SubscriptionRow[]);
@@ -115,6 +130,9 @@ export default function AdminPaymentTests() {
       boosts: newCounts.boosts > 0,
       gifts: newCounts.gifts > 0,
       donations: newCounts.donations > 0,
+      phoneMinutes: newCounts.phoneMinutes > 0,
+      videoMinutes: newCounts.videoMinutes > 0,
+      chatSubs: newCounts.chatSubs > 0,
       duplicate: evs.some(e => e.processing_status === "skipped_duplicate"),
     });
     const { data: gateData } = await supabase.functions.invoke("payments-gate-status");
@@ -213,6 +231,9 @@ export default function AdminPaymentTests() {
                 { label: "Boosts", value: counts.boosts },
                 { label: "Gifts", value: counts.gifts },
                 { label: "Donations", value: counts.donations },
+                { label: "Phone min", value: counts.phoneMinutes },
+                { label: "Video min", value: counts.videoMinutes },
+                { label: "Chat sub", value: counts.chatSubs },
               ].map(c => (
                 <div key={c.label} className="text-center p-4 rounded-lg bg-muted">
                   <div className="text-2xl font-bold">{c.value}</div>
