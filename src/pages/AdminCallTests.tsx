@@ -89,8 +89,15 @@ export default function AdminCallTests() {
     }
     if (c.status === "completed" && !c.ended_at) flags.push("missing_ended_at");
     if (c.status === "failed" && c.minutes_charged > 0) flags.push("failed_with_charges");
+    if (["missed", "no-answer", "busy"].includes(c.status) && c.minutes_charged > 0) {
+      flags.push("missed_with_charges");
+    }
     const maxAllowed = Math.ceil((c.duration_seconds || 0) / 60) + 1;
     if (c.minutes_charged > maxAllowed) flags.push("overcharged_vs_duration");
+    if (c.provider === "twilio" && !c.caller_profile_id) flags.push("twilio_no_profile");
+    if (c.provider === "twilio" && c.status === "completed" && !c.ended_at) {
+      flags.push("twilio_completed_no_end");
+    }
     return flags;
   };
 
