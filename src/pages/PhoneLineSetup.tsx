@@ -12,6 +12,10 @@ import { toast } from "sonner";
 
 const MAX_SECONDS = 90;
 
+// MVP setting — auto-approves greetings on save so they go live immediately.
+// Set to false (and build a moderator review queue) before scaling to production.
+const AUTO_APPROVE_VOICE_GREETINGS = true;
+
 interface PLProfile {
   id: string;
   display_name: string;
@@ -241,12 +245,16 @@ export default function PhoneLineSetup() {
           audio_url: path,
           duration_seconds: Math.max(1, Math.min(elapsed || 1, MAX_SECONDS)),
           is_active: true,
-          moderation_status: "approved",
+          moderation_status: AUTO_APPROVE_VOICE_GREETINGS ? "approved" : "pending",
         });
         if (insErr) throw insErr;
       }
 
-      toast.success(activate ? "Voice profile is live" : "Saved");
+      if (recordedBlob && !AUTO_APPROVE_VOICE_GREETINGS) {
+        toast.success("Your greeting was saved and is pending review.");
+      } else {
+        toast.success(activate ? "Your greeting is live." : "Saved as draft.");
+      }
       navigate("/phone-line");
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save");
