@@ -101,6 +101,8 @@ import PhoneLine from "./pages/PhoneLine";
 import PhoneLineSetup from "./pages/PhoneLineSetup";
 import PhoneLineBrowse from "./pages/PhoneLineBrowse";
 import PhoneLineInbox from "./pages/PhoneLineInbox";
+import PhoneLineCall from "./pages/PhoneLineCall";
+import AdminCallTests from "./pages/AdminCallTests";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -229,6 +231,8 @@ const App = () => (
               <Route path="/phone-line/setup" element={<ProtectedRoute><PhoneLineSetup /></ProtectedRoute>} />
               <Route path="/phone-line/browse" element={<ProtectedRoute><PhoneLineBrowse /></ProtectedRoute>} />
               <Route path="/phone-line/inbox" element={<ProtectedRoute><PhoneLineInbox /></ProtectedRoute>} />
+              <Route path="/phone-line/call/:callSessionId" element={<ProtectedRoute><PhoneLineCall /></ProtectedRoute>} />
+              <Route path="/admin/call-tests" element={<AdminCallTests />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />

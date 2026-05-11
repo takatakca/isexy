@@ -185,6 +185,116 @@ export type Database = {
           },
         ]
       }
+      call_minute_transactions: {
+        Row: {
+          balance_after: number
+          balance_before: number
+          call_session_id: string
+          call_type: string
+          created_at: string
+          id: string
+          minutes_charged: number
+          profile_id: string
+        }
+        Insert: {
+          balance_after: number
+          balance_before: number
+          call_session_id: string
+          call_type: string
+          created_at?: string
+          id?: string
+          minutes_charged?: number
+          profile_id: string
+        }
+        Update: {
+          balance_after?: number
+          balance_before?: number
+          call_session_id?: string
+          call_type?: string
+          created_at?: string
+          id?: string
+          minutes_charged?: number
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_minute_transactions_call_session_id_fkey"
+            columns: ["call_session_id"]
+            isOneToOne: false
+            referencedRelation: "call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_sessions: {
+        Row: {
+          answered_at: string | null
+          call_type: string
+          caller_profile_id: string
+          created_at: string
+          duration_seconds: number
+          end_reason: string | null
+          ended_at: string | null
+          id: string
+          match_id: string | null
+          minutes_charged: number
+          phone_line_profile_id: string | null
+          phone_line_room_id: string | null
+          provider: string
+          provider_call_sid: string | null
+          provider_child_call_sid: string | null
+          provider_parent_call_sid: string | null
+          receiver_profile_id: string | null
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          answered_at?: string | null
+          call_type: string
+          caller_profile_id: string
+          created_at?: string
+          duration_seconds?: number
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          match_id?: string | null
+          minutes_charged?: number
+          phone_line_profile_id?: string | null
+          phone_line_room_id?: string | null
+          provider?: string
+          provider_call_sid?: string | null
+          provider_child_call_sid?: string | null
+          provider_parent_call_sid?: string | null
+          receiver_profile_id?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          answered_at?: string | null
+          call_type?: string
+          caller_profile_id?: string
+          created_at?: string
+          duration_seconds?: number
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          match_id?: string | null
+          minutes_charged?: number
+          phone_line_profile_id?: string | null
+          phone_line_room_id?: string | null
+          provider?: string
+          provider_call_sid?: string | null
+          provider_child_call_sid?: string | null
+          provider_parent_call_sid?: string | null
+          receiver_profile_id?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_subscriptions: {
         Row: {
           created_at: string
@@ -3042,6 +3152,10 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: number
       }
+      charge_call_session_minute: {
+        Args: { p_call_session_id: string }
+        Returns: Json
+      }
       check_promo_eligibility: {
         Args: { p_profile_id: string; p_tier: string }
         Returns: Json
@@ -3053,6 +3167,10 @@ export type Database = {
         Returns: Json
       }
       deduct_video_credit: { Args: never; Returns: Json }
+      end_call_session: {
+        Args: { p_call_session_id: string; p_end_reason?: string }
+        Returns: Json
+      }
       ensure_user_credits: { Args: never; Returns: Json }
       generate_referral_code: { Args: never; Returns: string }
       get_admin_users: {
@@ -3082,6 +3200,10 @@ export type Database = {
       }
       reset_monthly_allowances: { Args: never; Returns: number }
       reset_weekly_allowances: { Args: never; Returns: number }
+      start_phone_line_call_session: {
+        Args: { p_call_type?: string; p_target_profile_id: string }
+        Returns: Json
+      }
       sync_entitlements: { Args: { p_profile_id: string }; Returns: Json }
       unlock_conversation: {
         Args: {
