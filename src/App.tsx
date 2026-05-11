@@ -101,6 +101,8 @@ import PhoneLine from "./pages/PhoneLine";
 import PhoneLineSetup from "./pages/PhoneLineSetup";
 import PhoneLineBrowse from "./pages/PhoneLineBrowse";
 import PhoneLineInbox from "./pages/PhoneLineInbox";
+import PhoneLineCall from "./pages/PhoneLineCall";
+import AdminCallTests from "./pages/AdminCallTests";
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
