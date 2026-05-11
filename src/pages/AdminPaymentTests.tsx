@@ -23,6 +23,9 @@ interface FulfillmentCounts {
   gifts: number;
   donations: number;
   subscriptions: number;
+  phoneMinutes: number;
+  videoMinutes: number;
+  chatSubs: number;
 }
 
 interface SubscriptionRow {
@@ -32,13 +35,16 @@ interface SubscriptionRow {
   current_period_end: string | null;
 }
 
-const CHECKLIST_ITEMS: { key: keyof FulfillmentCounts | "duplicate" | "subscription"; label: string }[] = [
+const CHECKLIST_ITEMS: { key: string; label: string }[] = [
   { key: "subscription", label: "Plus/Gold/Platinum subscription fulfilled" },
   { key: "credits", label: "Credit pack fulfilled" },
   { key: "superLikes", label: "Super-like pack fulfilled" },
   { key: "boosts", label: "Boost pack fulfilled" },
   { key: "gifts", label: "Gift completed" },
   { key: "donations", label: "Donation completed" },
+  { key: "phoneMinutes", label: "Phone minutes purchased" },
+  { key: "videoMinutes", label: "Video minutes purchased" },
+  { key: "chatSubs", label: "Chat subscription purchased" },
   { key: "duplicate", label: "Duplicate webhook resend handled" },
 ];
 
