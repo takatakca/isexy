@@ -215,6 +215,33 @@ serve(async (req) => {
             break;
           }
 
+          // ---- Chat subscription (chat_1mo) ----
+          if (meta.type === "chat_sub" || meta.package_id === "chat_1mo") {
+            const months = parseInt(meta.plan_months || "1", 10) || 1;
+            const { data: existingChatSub } = await supabaseClient
+              .from("chat_subscriptions").select("id")
+              .eq("stripe_session_id", session.id).maybeSingle();
+            if (existingChatSub) {
+              logStep("Chat sub already fulfilled", { sessionId: session.id });
+              break;
+            }
+            const expiresAt = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+            await supabaseClient.from("chat_subscriptions").insert({
+              profile_id: profileId,
+              plan_months: months,
+              status: "active",
+              expires_at: expiresAt,
+              stripe_session_id: session.id,
+            });
+            await supabaseClient.from("credit_transactions").insert({
+              profile_id: profileId, amount: 0, type: "purchase", category: "chat_sub",
+              description: `Chat subscription ${months} month(s)`,
+              stripe_session_id: session.id,
+            });
+            logStep("Chat subscription fulfilled", { profileId, months });
+            break;
+          }
+
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const subMeta = (subscription.metadata ?? {}) as Record<string, string>;
           const appTier = tierFromMetadata(subMeta) ?? tierFromMetadata(meta);
