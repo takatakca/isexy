@@ -187,7 +187,7 @@ async function browseNext(
 
     const { data: g } = await supabase
       .from("voice_greetings")
-      .select("audio_path")
+      .select("audio_url")
       .eq("phone_line_profile_id", line.id)
       .eq("moderation_status", "approved")
       .eq("is_active", true)
@@ -196,11 +196,11 @@ async function browseNext(
       .limit(1)
       .maybeSingle();
 
-    if (!g?.audio_path) continue;
+    if (!g?.audio_url) continue;
 
     const { data: signed } = await supabase.storage
       .from("voice-greetings")
-      .createSignedUrl(g.audio_path, 600);
+      .createSignedUrl(g.audio_url, 600);
     if (!signed?.signedUrl) continue;
 
     const newSeen = encodeURIComponent([...seen, line.profile_id].join(","));
