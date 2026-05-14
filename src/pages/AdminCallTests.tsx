@@ -64,8 +64,42 @@ export default function AdminCallTests() {
       navigate("/discover");
       return;
     }
-    await fetchAll();
+    await Promise.all([fetchAll(), fetchLinkedPhone(user.id)]);
     setLoading(false);
+  };
+
+  const fetchLinkedPhone = async (userId: string) => {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!prof) return;
+    const { data: pln } = await supabase
+      .from("phone_line_numbers")
+      .select("phone_number_e164, phone_verified")
+      .eq("profile_id", prof.id)
+      .maybeSingle();
+    if (pln?.phone_verified) setLinkedPhone(pln.phone_number_e164);
+  };
+
+  const linkPhone = async () => {
+    const v = phoneInput.trim();
+    if (!/^\+\d{7,16}$/.test(v)) {
+      toast({ title: "Invalid format", description: "Use E.164, e.g. +15145551234", variant: "destructive" });
+      return;
+    }
+    setLinking(true);
+    const { data, error } = await supabase.rpc("link_my_phone_line_number", { p_phone_e164: v });
+    setLinking(false);
+    const res = data as { success?: boolean; error?: string; phone?: string } | null;
+    if (error || !res?.success) {
+      toast({ title: "Failed", description: error?.message || res?.error || "unknown", variant: "destructive" });
+      return;
+    }
+    setLinkedPhone(res.phone ?? v);
+    setPhoneInput("");
+    toast({ title: "Linked", description: `${res.phone} is now verified for the IVR.` });
   };
 
   const fetchAll = async () => {
