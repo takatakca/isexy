@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
+import { ArrowLeft, AlertTriangle, RefreshCw, Loader2, Phone } from "lucide-react";
 
 interface CallRow {
   id: string;
@@ -38,6 +40,9 @@ export default function AdminCallTests() {
   const [refreshing, setRefreshing] = useState(false);
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [txns, setTxns] = useState<MinTxnRow[]>([]);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkedPhone, setLinkedPhone] = useState<string | null>(null);
 
   useEffect(() => {
     void check();
@@ -59,8 +64,42 @@ export default function AdminCallTests() {
       navigate("/discover");
       return;
     }
-    await fetchAll();
+    await Promise.all([fetchAll(), fetchLinkedPhone(user.id)]);
     setLoading(false);
+  };
+
+  const fetchLinkedPhone = async (userId: string) => {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!prof) return;
+    const { data: pln } = await supabase
+      .from("phone_line_numbers")
+      .select("phone_number_e164, phone_verified")
+      .eq("profile_id", prof.id)
+      .maybeSingle();
+    if (pln?.phone_verified) setLinkedPhone(pln.phone_number_e164);
+  };
+
+  const linkPhone = async () => {
+    const v = phoneInput.trim();
+    if (!/^\+\d{7,16}$/.test(v)) {
+      toast({ title: "Invalid format", description: "Use E.164, e.g. +15145551234", variant: "destructive" });
+      return;
+    }
+    setLinking(true);
+    const { data, error } = await supabase.rpc("link_my_phone_line_number", { p_phone_e164: v });
+    setLinking(false);
+    const res = data as { success?: boolean; error?: string; phone?: string } | null;
+    if (error || !res?.success) {
+      toast({ title: "Failed", description: error?.message || res?.error || "unknown", variant: "destructive" });
+      return;
+    }
+    setLinkedPhone(res.phone ?? v);
+    setPhoneInput("");
+    toast({ title: "Linked", description: `${res.phone} is now verified for the IVR.` });
   };
 
   const fetchAll = async () => {
@@ -124,6 +163,40 @@ export default function AdminCallTests() {
       </header>
 
       <main className="mx-auto max-w-5xl space-y-6 p-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-4 w-4" /> Link my phone for IVR test
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Adds your cell number to <code>phone_line_numbers</code> as verified, so calling the
+              ISEXY Twilio number from this phone reaches the IVR menu instead of the unknown-caller message.
+            </p>
+            {linkedPhone && (
+              <div className="text-sm">
+                Currently linked: <span className="font-mono">{linkedPhone}</span>{" "}
+                <Badge variant="secondary">verified</Badge>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                placeholder="+15145551234"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                disabled={linking}
+              />
+              <Button onClick={linkPhone} disabled={linking}>
+                {linking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Link & verify"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              E.164 format (must start with +). Use the same number you'll call from.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Recent call sessions ({calls.length})</CardTitle>
