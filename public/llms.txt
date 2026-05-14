@@ -1,0 +1,35 @@
+# ISEXY
+
+> ISEXY is a dating app connecting Canadians with Cuban singles. It offers verified profiles, a voice-first phone line, and meaningful cross-border matches.
+
+ISEXY operates from Montreal, Canada and complies with WCAG 2.2 AA. Support: cubaresort.ca@gmail.com.
+
+## Pages
+
+- [Home](/): App overview and signup entry points.
+- [About](/about): Company background and mission.
+- [News](/news): Product updates and announcements.
+- [Love Stories](/love-stories): Real couples who met on ISEXY.
+- [FAQ](/faq): Common questions about accounts, matching, subscriptions, and safety.
+- [Help & Support](/help-support): Get help and contact options.
+- [Contact Us](/contact-us): Reach the support team.
+- [Knowledge Base](/knowledge-base): Self-serve articles.
+- [Safety](/safety): Safety overview.
+- [Safety Tips](/safety-tips): Practical tips for safe dating.
+- [Community Guidelines](/community-guidelines): Rules of conduct.
+- [House Rules](/house-rules): Behaviour expectations.
+- [Dating Regulations](/dating-regulations): Legal context for cross-border dating.
+- [Privacy](/privacy): Privacy policy.
+- [Terms](/terms): Terms of service.
+- [Cookie Policy](/cookie-policy): How cookies are used.
+- [Consumer Health Privacy](/consumer-health-privacy): Health data privacy.
+- [Licenses](/licenses): Open source attributions.
+- [Compare Plans](/compare-plans): Plus, Gold, and Platinum subscription comparison.
+- [Tourist Signup](/tourist-signup): Signup flow for Canadian / tourist users.
+- [Cuban Signup](/cuban-signup): Signup flow for Cuban users.
+- [Referrals](/referrals): Referral program.
+
+## Optional
+
+- [Team CubaDate](/team-cubadate): Team page.
+- [QA Events](/qa-events): Live Q&A events.
