@@ -40,6 +40,9 @@ export default function AdminCallTests() {
   const [refreshing, setRefreshing] = useState(false);
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [txns, setTxns] = useState<MinTxnRow[]>([]);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkedPhone, setLinkedPhone] = useState<string | null>(null);
 
   useEffect(() => {
     void check();
