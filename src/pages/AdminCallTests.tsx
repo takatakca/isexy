@@ -165,6 +165,40 @@ export default function AdminCallTests() {
       <main className="mx-auto max-w-5xl space-y-6 p-4">
         <Card>
           <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-4 w-4" /> Link my phone for IVR test
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Adds your cell number to <code>phone_line_numbers</code> as verified, so calling the
+              ISEXY Twilio number from this phone reaches the IVR menu instead of the unknown-caller message.
+            </p>
+            {linkedPhone && (
+              <div className="text-sm">
+                Currently linked: <span className="font-mono">{linkedPhone}</span>{" "}
+                <Badge variant="secondary">verified</Badge>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                placeholder="+15145551234"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                disabled={linking}
+              />
+              <Button onClick={linkPhone} disabled={linking}>
+                {linking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Link & verify"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              E.164 format (must start with +). Use the same number you'll call from.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Recent call sessions ({calls.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
