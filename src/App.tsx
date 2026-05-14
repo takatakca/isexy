@@ -110,6 +110,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AIChatWidget } from "./components/AIChatWidget";
 import { PushNotificationPrompt } from "./components/PushNotificationPrompt";
 import { IncomingCallNotification } from "./components/IncomingCallNotification";
+import { RouteSeo } from "./components/RouteSeo";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +123,7 @@ const App = () => (
         <AuthProvider>
           <LanguageProvider>
             <StreakProvider>
+            <RouteSeo />
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/welcome" element={<Navigate to="/" replace />} />
