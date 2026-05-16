@@ -107,6 +107,7 @@ import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 import { AIChatWidget } from "./components/AIChatWidget";
 import { PushNotificationPrompt } from "./components/PushNotificationPrompt";
 import { IncomingCallNotification } from "./components/IncomingCallNotification";
@@ -186,16 +187,16 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/contact-us" element={<ContactUs />} />
               <Route path="/ticket-tracking" element={<TicketTracking />} />
-              <Route path="/admin/tickets" element={<AdminTickets />} />
-              <Route path="/admin" element={<AdminDashboardFull />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/categories" element={<AdminCategories />} />
-              <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
-              <Route path="/admin/verifications" element={<AdminVerifications />} />
-              <Route path="/admin/agent" element={<AgentDashboard />} />
-              <Route path="/admin/analytics" element={<AdminAnalytics />} />
-              <Route path="/admin/knowledge-base" element={<AdminKnowledgeBase />} />
-              <Route path="/admin/moderation" element={<AdminModeration />} />
+              <Route path="/admin/tickets" element={<AdminRoute><AdminTickets /></AdminRoute>} />
+              <Route path="/admin" element={<AdminRoute><AdminDashboardFull /></AdminRoute>} />
+              <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
+              <Route path="/admin/email-templates" element={<AdminRoute><AdminEmailTemplates /></AdminRoute>} />
+              <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
+              <Route path="/admin/agent" element={<AdminRoute><AgentDashboard /></AdminRoute>} />
+              <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+              <Route path="/admin/knowledge-base" element={<AdminRoute><AdminKnowledgeBase /></AdminRoute>} />
+              <Route path="/admin/moderation" element={<AdminRoute><AdminModeration /></AdminRoute>} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/donate/:recipientId?" element={<CubanDonations />} />
               <Route path="/compare-plans" element={<ProtectedRoute><SubscriptionComparison /></ProtectedRoute>} />
@@ -227,14 +228,14 @@ const App = () => (
               <Route path="/agent-dashboard" element={<AgentDashboard />} />
               <Route path="/signup" element={<WebSignup />} />
               <Route path="/redeem-code" element={<RedeemCode />} />
-              <Route path="/admin/users" element={<AdminUserManagement />} />
-              <Route path="/admin/payment-tests" element={<AdminPaymentTests />} />
+              <Route path="/admin/users" element={<AdminRoute><AdminUserManagement /></AdminRoute>} />
+              <Route path="/admin/payment-tests" element={<AdminRoute><AdminPaymentTests /></AdminRoute>} />
               <Route path="/phone-line" element={<ProtectedRoute><PhoneLine /></ProtectedRoute>} />
               <Route path="/phone-line/setup" element={<ProtectedRoute><PhoneLineSetup /></ProtectedRoute>} />
               <Route path="/phone-line/browse" element={<ProtectedRoute><PhoneLineBrowse /></ProtectedRoute>} />
               <Route path="/phone-line/inbox" element={<ProtectedRoute><PhoneLineInbox /></ProtectedRoute>} />
               <Route path="/phone-line/call/:callSessionId" element={<ProtectedRoute><PhoneLineCall /></ProtectedRoute>} />
-              <Route path="/admin/call-tests" element={<AdminCallTests />} />
+              <Route path="/admin/call-tests" element={<AdminRoute><AdminCallTests /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
