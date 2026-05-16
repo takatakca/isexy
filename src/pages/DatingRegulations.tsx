@@ -23,7 +23,7 @@ export default function DatingRegulations() {
             {/* Introduction */}
             <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
               <p className="text-muted-foreground text-sm">
-                CubaDate operates under both Canadian and Cuban laws. As a user, you are responsible for 
+                ISEXY operates under both Canadian and Cuban laws. As a user, you are responsible for 
                 understanding and complying with the laws applicable to you based on your location. This 
                 page provides an overview of relevant regulations in both jurisdictions.
               </p>
@@ -45,7 +45,7 @@ export default function DatingRegulations() {
                     Age of Consent
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    The age of consent in Canada is <strong>16 years old</strong>. However, CubaDate requires all 
+                    The age of consent in Canada is <strong>16 years old</strong>. However, ISEXY requires all 
                     users to be at least <strong>18 years old</strong> to use our services. Sexual activity with 
                     persons under 18 may be illegal if there is a relationship of trust, authority, or dependency, 
                     or if there is exploitation.
@@ -97,7 +97,7 @@ export default function DatingRegulations() {
                     Quebec-Specific Laws
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    As CubaDate is headquartered in Montreal, Quebec, additional provincial laws apply. The 
+                    As ISEXY is headquartered in Montreal, Quebec, additional provincial laws apply. The 
                     Quebec Charter of Human Rights and Freedoms provides enhanced protections. Consumer Protection 
                     Act provisions apply to subscription services, including the right to cancel within 10 days 
                     of receiving a contract.
@@ -165,7 +165,7 @@ export default function DatingRegulations() {
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Cuba's Constitution guarantees the right to privacy. While comprehensive data protection 
-                    legislation is still developing, CubaDate applies international standards (GDPR-like 
+                    legislation is still developing, ISEXY applies international standards (GDPR-like 
                     protections) to all users regardless of location.
                   </p>
                 </div>
@@ -208,7 +208,7 @@ export default function DatingRegulations() {
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Be cautious of romance scams. Never send money to someone you haven't met in person. 
-                    CubaDate actively monitors for fraudulent activity, but users should remain vigilant. 
+                    ISEXY actively monitors for fraudulent activity, but users should remain vigilant. 
                     Report suspicious behavior immediately through our reporting system.
                   </p>
                 </div>
@@ -242,9 +242,9 @@ export default function DatingRegulations() {
               <h2 className="text-xl font-bold mb-4">Legal Questions?</h2>
               <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
                 <p className="text-muted-foreground text-sm mb-3">
-                  For legal questions regarding CubaDate's policies or cross-border dating considerations:
+                  For legal questions regarding ISEXY's policies or cross-border dating considerations:
                 </p>
-                <p className="text-foreground font-medium">Email: legal@cubadate.com</p>
+                <p className="text-foreground font-medium">Email: legal@isexy.ca</p>
                 <p className="text-muted-foreground text-sm">Canada: +1 450 999 4999</p>
                 <p className="text-muted-foreground text-sm">Cuba WhatsApp: +53 5307 1185</p>
                 <p className="text-xs text-muted-foreground mt-3">

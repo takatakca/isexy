@@ -231,7 +231,7 @@ export default function MySubscription() {
               <div className="flex items-center gap-2">
                 <Flame className={`w-6 h-6 ${tierConfig[tier].accentColor}`} />
                 <span className={`font-bold text-xl text-foreground`}>
-                  CubaDate
+                  ISEXY
                 </span>
                 {tier === "plus" ? (
                   <span className="text-rose-500 text-2xl font-bold">+</span>

@@ -20,7 +20,7 @@ const ActiveStatus = () => {
         </div>
 
         <p className="text-sm text-muted-foreground px-1">
-          Active status is displayed on your profile if you were active in the CubaDate app within the last 2 hours
+          Active status is displayed on your profile if you were active in the ISEXY app within the last 2 hours
         </p>
 
         <div className="bg-card rounded-lg mt-6">
@@ -34,7 +34,7 @@ const ActiveStatus = () => {
         </div>
 
         <p className="text-sm text-muted-foreground px-1">
-          Recently Active status is displayed on your profile if you were active in the CubaDate app within the last 24 hours
+          Recently Active status is displayed on your profile if you were active in the ISEXY app within the last 24 hours
         </p>
       </div>
     </AuthLayout>

@@ -67,7 +67,7 @@ serve(async (req) => {
         const resend = new Resend(resendApiKey);
         
         await resend.emails.send({
-          from: "CubaDate <notifications@cubadate.lovable.app>",
+          from: "ISEXY <notifications@isexy.lovable.app>",
           to: [receiverEmail],
           subject: `📞 Missed Video Call from ${callerName}`,
           html: `
@@ -94,7 +94,7 @@ serve(async (req) => {
                   <p class="message"><strong>${callerName}</strong> tried to video call you but couldn't reach you.</p>
                   <p class="message">You can call them back or send a message to schedule a call for later.</p>
                   <center>
-                    <a href="https://cubadate.lovable.app/chat/${matchId}" class="cta">Reply to ${callerName}</a>
+                    <a href="https://isexy.lovable.app/chat/${matchId}" class="cta">Reply to ${callerName}</a>
                   </center>
                 </div>
               </div>

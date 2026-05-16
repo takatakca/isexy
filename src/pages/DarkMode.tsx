@@ -67,7 +67,7 @@ export default function DarkMode() {
       </div>
 
       <p className="text-sm text-muted-foreground mt-4 px-2">
-        Using the system setting will automatically adjust CubaDate's appearance to match your device's system settings.
+        Using the system setting will automatically adjust ISEXY's appearance to match your device's system settings.
       </p>
     </AuthLayout>
   );

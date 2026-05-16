@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     let htmlContent: string;
 
     if (status === "approved") {
-      subject = "🎉 Your CubaDate Verification is Approved!";
+      subject = "🎉 Your ISEXY Verification is Approved!";
       htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
               </div>
               <div class="content">
                 <p style="font-size: 18px;">Your Cuban verification has been <span class="badge">APPROVED</span>!</p>
-                <p>You now have access to all CubaDate features:</p>
+                <p>You now have access to all ISEXY features:</p>
                 <ul>
                   <li>✅ Verified badge on your profile</li>
                   <li>✅ Priority visibility in searches</li>
@@ -90,10 +90,10 @@ Deno.serve(async (req) => {
                   <li>✅ Enhanced trust from other users</li>
                 </ul>
                 <p style="text-align: center;">
-                  <a href="https://cubadate.com/discover" class="button">Start Matching Now →</a>
+                  <a href="https://isexy.ca/discover" class="button">Start Matching Now →</a>
                 </p>
                 <p style="margin-top: 30px; color: #666; font-size: 14px;">
-                  ¡Bienvenido a la familia CubaDate!
+                  ¡Bienvenido a la familia ISEXY!
                 </p>
               </div>
             </div>
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         </html>
       `;
     } else if (status === "rejected") {
-      subject = "CubaDate Verification Update";
+      subject = "ISEXY Verification Update";
       htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
                   <li>🎤 Audio verification in Spanish</li>
                 </ul>
                 <p style="text-align: center;">
-                  <a href="https://cubadate.com/cuban-signup" class="button">Resubmit Verification →</a>
+                  <a href="https://isexy.ca/cuban-signup" class="button">Resubmit Verification →</a>
                 </p>
                 <p style="margin-top: 30px; color: #666; font-size: 14px;">
                   If you have questions, please contact our support team.
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "CubaDate <notifications@cubadate.com>",
+          from: "ISEXY <notifications@isexy.ca>",
           to: [userEmail],
           subject,
           html: htmlContent,

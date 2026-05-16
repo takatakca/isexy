@@ -117,7 +117,7 @@ export default function Likes() {
           <div className="flex-1 flex flex-col items-center justify-center px-8 py-16">
             <Heart className="w-16 h-16 text-primary fill-primary mb-6" />
             <p className="text-center text-lg text-muted-foreground mb-4">
-              See people who liked you with CubaDate Gold™
+              See people who liked you with ISEXY Gold™
             </p>
             <AuthButton
               variant="primary"

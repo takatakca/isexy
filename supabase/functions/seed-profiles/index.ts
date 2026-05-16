@@ -1,10 +1,69 @@
-// Edge function to seed sample Cuban profiles for testing
+// Edge function to seed sample Cuban profiles for testing.
+// SECURED: requires admin role AND SEED_PROFILES_ENABLED=true env flag.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+async function requireAdmin(req: Request): Promise<{ ok: true } | { ok: false; response: Response }> {
+  if (Deno.env.get("SEED_PROFILES_ENABLED") !== "true") {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "seed-profiles is disabled in this environment" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      ),
+    };
+  }
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return {
+      ok: false,
+      response: new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }),
+    };
+  }
+  const token = authHeader.replace("Bearer ", "");
+  const authed = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+  const { data, error } = await authed.auth.getClaims(token);
+  if (error || !data?.claims?.sub) {
+    return {
+      ok: false,
+      response: new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }),
+    };
+  }
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const { data: role } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", data.claims.sub)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!role) {
+    return {
+      ok: false,
+      response: new Response(JSON.stringify({ error: "Admin role required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }),
+    };
+  }
+  return { ok: true };
+}
 
 // Cuban cities with populations
 const cubanCities = [

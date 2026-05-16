@@ -16,7 +16,7 @@ export default function Privacy() {
             <section className="mb-8">
               <h2 className="text-xl font-bold mb-4">1. Introduction</h2>
               <p className="text-muted-foreground mb-4">
-                Welcome to CubaDate. We respect your privacy and are committed to protecting your personal data. 
+                Welcome to ISEXY. We respect your privacy and are committed to protecting your personal data. 
                 This privacy policy will inform you how we look after your personal data when you visit our website 
                 or use our mobile application and tell you about your privacy rights and how the law protects you.
               </p>
@@ -32,7 +32,7 @@ export default function Privacy() {
             <section className="mb-8">
               <h2 className="text-xl font-bold mb-4">2. Who We Are</h2>
               <p className="text-muted-foreground mb-4">
-                CubaDate is operated by CubaDate Inc., a company registered in Canada. We are the data controller 
+                ISEXY is operated by ISEXY Inc., a company registered in Canada. We are the data controller 
                 responsible for your personal data in accordance with the Personal Information Protection and 
                 Electronic Documents Act (PIPEDA) and applicable Cuban privacy laws. If you have any questions 
                 about this privacy policy, please contact our Data Protection Officer at:
@@ -195,7 +195,7 @@ export default function Privacy() {
             <section className="mb-8">
               <h2 className="text-xl font-bold mb-4">7. International Data Transfers</h2>
               <p className="text-muted-foreground mb-4">
-                As CubaDate connects users between Canada and Cuba, your personal data may be transferred to 
+                As ISEXY connects users between Canada and Cuba, your personal data may be transferred to 
                 and processed in countries outside your country of residence. We implement appropriate safeguards 
                 to protect your data during these transfers, including:
               </p>
@@ -309,7 +309,7 @@ export default function Privacy() {
               </div>
               
               <p className="text-muted-foreground mt-4">
-                To exercise any of these rights, please contact us at privacy@cubadate.com. We will respond 
+                To exercise any of these rights, please contact us at privacy@isexy.ca. We will respond 
                 within one month (or longer if the request is complex, in which case we will inform you).
               </p>
             </section>
@@ -400,9 +400,9 @@ export default function Privacy() {
                 If you have any questions about this privacy policy or our privacy practices, please contact us:
               </p>
               <div className="bg-primary/10 p-4 rounded-xl">
-                <p className="text-foreground font-medium">CubaDate Privacy Team</p>
-                <p className="text-muted-foreground">Email: privacy@cubadate.com</p>
-                <p className="text-muted-foreground">Website: www.cubadate.com/privacy</p>
+                <p className="text-foreground font-medium">ISEXY Privacy Team</p>
+                <p className="text-muted-foreground">Email: privacy@isexy.ca</p>
+                <p className="text-muted-foreground">Website: www.isexy.ca/privacy</p>
                 <p className="text-muted-foreground mt-2">
                   Response time: Within 30 days for general inquiries, within 72 hours for data breach notifications.
                 </p>

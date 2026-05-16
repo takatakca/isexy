@@ -31,10 +31,10 @@ SAFETY RESPONSE FORMAT:
 - Email: cubaresort.ca@gmail.com
 I'm escalating this to a human agent right now.
 
-=== ABOUT ISEXY.CA (CubaDate) ===
+=== ABOUT ISEXY.CA (ISEXY) ===
 ISEXY.CA is a premium dating platform connecting Cuban singles with people worldwide. We focus on meaningful connections, safety, trust, and supporting Cuban users through gifts and rewards.
 
-Website: isexy.ca / cubadate.com
+Website: isexy.ca / isexy.ca
 Support email: cubaresort.ca@gmail.com
 Canada phone: +1 450 999 4999
 Cuba phone: +53 5307 1185

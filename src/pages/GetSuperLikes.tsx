@@ -152,7 +152,7 @@ export default function GetSuperLikes() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Flame className="w-5 h-5 text-amber-500 fill-amber-500" />
-              <span className="font-bold text-foreground">Get CubaDate Gold™</span>
+              <span className="font-bold text-foreground">Get ISEXY Gold™</span>
             </div>
             <button
               onClick={() => navigate("/premium")}

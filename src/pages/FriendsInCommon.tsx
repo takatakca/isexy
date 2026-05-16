@@ -22,7 +22,7 @@ const FriendsInCommon = () => {
         </div>
 
         <p className="text-sm text-muted-foreground mt-4 px-1">
-          You and your contacts may be counted as mutuals for other CubaDate members who enable Friends in Common.{" "}
+          You and your contacts may be counted as mutuals for other ISEXY members who enable Friends in Common.{" "}
           <span className="text-primary cursor-pointer">Learn More</span>
         </p>
       </div>

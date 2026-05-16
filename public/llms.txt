@@ -31,5 +31,5 @@ ISEXY operates from Montreal, Canada and complies with WCAG 2.2 AA. Support: cub
 
 ## Optional
 
-- [Team CubaDate](/team-cubadate): Team page.
+- [Team ISEXY](/team-cubadate): Team page.
 - [QA Events](/qa-events): Live Q&A events.

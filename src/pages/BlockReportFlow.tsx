@@ -142,7 +142,7 @@ export default function BlockReportFlow() {
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Report Submitted</h1>
           <p className="text-muted-foreground mb-8">
-            Thank you for helping keep CubaDate safe. Our team will review your report within 24 hours.
+            Thank you for helping keep ISEXY safe. Our team will review your report within 24 hours.
           </p>
           
           {blockUser && (

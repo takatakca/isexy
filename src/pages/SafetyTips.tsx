@@ -37,7 +37,7 @@ export default function SafetyTips() {
               <div>
                 <h4 className="font-semibold text-foreground">Stay on the platform</h4>
                 <p className="text-muted-foreground text-sm">
-                  Keep conversations on the CubaDate platform while you're getting to know someone. Users with 
+                  Keep conversations on the ISEXY platform while you're getting to know someone. Users with 
                   bad intentions often try to move the conversation to text, messaging apps, email, or phone right away.
                 </p>
               </div>
@@ -67,7 +67,7 @@ export default function SafetyTips() {
               <div>
                 <h4 className="font-semibold text-foreground">Don't be in a rush</h4>
                 <p className="text-muted-foreground text-sm">
-                  Take your time and get to know the other person before agreeing to meet or chat off-CubaDate. 
+                  Take your time and get to know the other person before agreeing to meet or chat off-ISEXY. 
                   Don't be afraid to ask questions to screen for any red flags or personal dealbreakers.
                 </p>
               </div>

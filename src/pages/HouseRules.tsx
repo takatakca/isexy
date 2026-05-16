@@ -48,7 +48,7 @@ export default function HouseRules() {
         {/* Header */}
         <div className="space-y-2 mb-8">
           <h1 className="text-3xl font-extrabold text-foreground">
-            Welcome to CubaDate.
+            Welcome to ISEXY.
           </h1>
           <p className="text-muted-foreground">
             Please follow these House Rules.

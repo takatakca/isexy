@@ -78,7 +78,7 @@ export function LiveChatWidget() {
       // Add welcome message
       await supabase.from("live_chat_messages" as any).insert({
         session_id: (data as any).id,
-        content: "Welcome to CubaDate Support! An agent will be with you shortly. In the meantime, feel free to describe your issue.",
+        content: "Welcome to ISEXY Support! An agent will be with you shortly. In the meantime, feel free to describe your issue.",
         sender_type: "system",
       } as any);
 

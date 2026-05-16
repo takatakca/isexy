@@ -70,7 +70,7 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; margin: 0; padding: 20px;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <div style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); padding: 30px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px;">🔥 CubaDate</h1>
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px;">🔥 ISEXY</h1>
             <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Ticket Status Update</p>
           </div>
           
@@ -105,13 +105,13 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
             
             <p style="color: #374151; font-size: 14px; margin: 30px 0 0 0;">
               Best regards,<br>
-              <strong>The CubaDate Support Team</strong>
+              <strong>The ISEXY Support Team</strong>
             </p>
           </div>
           
           <div style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
             <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-              © 2024 CubaDate. All rights reserved.
+              © 2024 ISEXY. All rights reserved.
             </p>
           </div>
         </div>
@@ -185,7 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "CubaDate Support <onboarding@resend.dev>",
+        from: "ISEXY Support <onboarding@resend.dev>",
         to: [email],
         subject: emailSubject,
         html: emailHtml,

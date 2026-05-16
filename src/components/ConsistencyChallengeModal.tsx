@@ -150,7 +150,7 @@ export function ConsistencyChallengeModal({
           {/* Pro tip */}
           <div className="bg-muted/50 rounded-xl p-4 mb-6">
             <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">Pro tip:</span> The more you use CubaDate, the better your chances of matching. Daily users are 3x more likely to find their match!
+              <span className="font-semibold text-foreground">Pro tip:</span> The more you use ISEXY, the better your chances of matching. Daily users are 3x more likely to find their match!
             </p>
           </div>
 

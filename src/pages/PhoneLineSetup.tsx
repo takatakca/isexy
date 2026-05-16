@@ -12,9 +12,10 @@ import { toast } from "sonner";
 
 const MAX_SECONDS = 90;
 
-// MVP setting — auto-approves greetings on save so they go live immediately.
-// Set to false (and build a moderator review queue) before scaling to production.
-const AUTO_APPROVE_VOICE_GREETINGS = true;
+// Production-safe: greetings save as `pending` and only show publicly once approved.
+// To re-enable auto-approve for staging, set VITE_AUTO_APPROVE_VOICE_GREETINGS=true.
+const AUTO_APPROVE_VOICE_GREETINGS =
+  import.meta.env.VITE_AUTO_APPROVE_VOICE_GREETINGS === "true";
 
 interface PLProfile {
   id: string;

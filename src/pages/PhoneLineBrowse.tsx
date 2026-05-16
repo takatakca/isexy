@@ -15,7 +15,8 @@ import { ArrowLeft, Play, Pause, Mic, Square, RotateCcw, Send, Flag, Ban, Phone 
 import { toast } from "sonner";
 
 const MAX_REPLY_SECONDS = 90;
-const AUTO_APPROVE_VOICE_REPLIES = true;
+const AUTO_APPROVE_VOICE_REPLIES =
+  import.meta.env.VITE_AUTO_APPROVE_VOICE_REPLIES === "true";
 
 interface PLProfile {
   id: string;

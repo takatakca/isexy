@@ -13,7 +13,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("push", (event) => {
   console.log("Push event received:", event);
   
-  let data = { title: "CubaDate", body: "You have a new notification" };
+  let data = { title: "ISEXY", body: "You have a new notification" };
   
   if (event.data) {
     try {

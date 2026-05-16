@@ -520,7 +520,7 @@ export default function ProfileSetup() {
               We Value Your Privacy
             </h1>
             <p className="text-muted-foreground mb-8 max-w-sm">
-              We use tools to measure the audience and use of our app, personalize ads, enhance our own marketing operations, enable social features, and better understand how CubaDate services are used as a whole.
+              We use tools to measure the audience and use of our app, personalize ads, enhance our own marketing operations, enable social features, and better understand how ISEXY services are used as a whole.
             </p>
             
             <AuthButton

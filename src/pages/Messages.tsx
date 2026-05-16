@@ -29,7 +29,7 @@ const safetySlides = [
     id: 1,
     icon: "respect",
     title: "Be respectful",
-    content: "Don't bully, harass, or threaten others. We don't support discrimination of any kind. CubaDate is no place for hate.",
+    content: "Don't bully, harass, or threaten others. We don't support discrimination of any kind. ISEXY is no place for hate.",
     subtitle: "Respect boundaries",
     subcontent: "Always get consent from people before talking about sex or expressing sexual desires.",
   },

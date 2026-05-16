@@ -52,7 +52,7 @@ const EmailSettings = () => {
             <div>
               <span className="text-foreground block">Promotions</span>
               <span className="text-sm text-muted-foreground">
-                I want to receive news, updates and offers from CubaDate
+                I want to receive news, updates and offers from ISEXY
               </span>
             </div>
             <Switch checked={promotions} onCheckedChange={setPromotions} />

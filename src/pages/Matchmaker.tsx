@@ -15,8 +15,8 @@ export default function Matchmaker() {
   const handleInviteFriends = () => {
     if (navigator.share) {
       navigator.share({
-        title: "Join CubaDate Matchmaker",
-        text: "Help me find my match on CubaDate!",
+        title: "Join ISEXY Matchmaker",
+        text: "Help me find my match on ISEXY!",
         url: window.location.origin,
       });
     } else {
@@ -66,7 +66,7 @@ export default function Matchmaker() {
         </Button>
 
         <p className="text-sm text-muted-foreground px-1">
-          Invite a friend to recommend potential matches, without them needing to download the CubaDate app.
+          Invite a friend to recommend potential matches, without them needing to download the ISEXY app.
         </p>
       </div>
     </AuthLayout>

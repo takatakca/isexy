@@ -190,7 +190,7 @@ const PushNotifications = () => {
           <NotificationRow
             icon={Gift}
             title="Offers & Promotions"
-            description="Receive discounts, offers, promos, and other news from CubaDate"
+            description="Receive discounts, offers, promos, and other news from ISEXY"
             checked={offersPromotions}
             onChange={setOffersPromotions}
           />

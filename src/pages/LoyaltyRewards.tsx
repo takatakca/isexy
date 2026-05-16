@@ -80,7 +80,7 @@ const rewards: Reward[] = [
     name: "1 Month Platinum",
     points: 5000,
     icon: <Crown className="w-6 h-6 text-slate-600" />,
-    description: "Ultimate CubaDate experience",
+    description: "Ultimate ISEXY experience",
     type: "platinum",
   },
 ];
@@ -121,9 +121,9 @@ export default function LoyaltyRewards() {
 
   const handleShare = async () => {
     const shareData = {
-      title: "Join CubaDate!",
-      text: `Join me on CubaDate - the best way to connect with amazing people! Use my referral code: ${referralCode}`,
-      url: `https://cubadate.com/signup?ref=${referralCode}`,
+      title: "Join ISEXY!",
+      text: `Join me on ISEXY - the best way to connect with amazing people! Use my referral code: ${referralCode}`,
+      url: `https://isexy.ca/signup?ref=${referralCode}`,
     };
 
     try {

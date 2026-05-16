@@ -9,7 +9,7 @@ const WebProfile = () => {
   const [webProfileEnabled, setWebProfileEnabled] = useState(false);
   const [showOnSearch, setShowOnSearch] = useState(false);
   
-  const profileLink = "cubadate.com/u/yourprofile";
+  const profileLink = "isexy.ca/u/yourprofile";
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`https://${profileLink}`);
@@ -19,7 +19,7 @@ const WebProfile = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: "Check out my CubaDate profile",
+        title: "Check out my ISEXY profile",
         url: `https://${profileLink}`,
       });
     } else {
