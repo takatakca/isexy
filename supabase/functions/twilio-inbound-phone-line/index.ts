@@ -85,7 +85,29 @@ Deno.serve(async (req) => {
 
   const menuUrl = `${SUPABASE_URL}/functions/v1/twilio-phone-line-menu`;
 
+  // Helper: log unknown/unverified callers to the safe log table (no raw phone numbers)
+  const logUnknown = async (reason: string) => {
+    let callerHash: string | null = null;
+    let callerMasked: string | null = null;
+    if (fromE164) {
+      const enc = new TextEncoder().encode(fromE164);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      callerHash = Array.from(new Uint8Array(buf))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      callerMasked = fromE164.slice(0, 3) + "***" + fromE164.slice(-2);
+    }
+    await supabase.from("phone_line_inbound_call_logs").insert({
+      call_sid: callSid || null,
+      caller_hash: callerHash,
+      caller_masked: callerMasked,
+      call_status: callStatus || "received",
+      reason,
+    });
+  };
+
   if (!fromE164) {
+    await logUnknown("no_caller_id");
     return unknownCallerTwiml();
   }
 
@@ -112,7 +134,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Log call session (always log, even unknown — caller_profile_id may be null)
+  if (!callerProfileId) {
+    await logUnknown(pln ? "profile_inactive_or_underage" : "unverified_caller");
+    return unknownCallerTwiml();
+  }
+
+  // Verified caller — log full call session
   const sessionStatus = callStatus === "in-progress" ? "connected" : "initiating";
   await supabase.from("call_sessions").insert({
     caller_profile_id: callerProfileId,
@@ -123,10 +150,6 @@ Deno.serve(async (req) => {
     started_at: new Date().toISOString(),
     answered_at: new Date().toISOString(),
   });
-
-  if (!callerProfileId) {
-    return unknownCallerTwiml();
-  }
 
   return welcomeMenuTwiml(menuUrl, firstName);
 });
