@@ -783,7 +783,7 @@ export default function Licenses() {
 
   // Export licenses as text file
   const exportAsText = useCallback(() => {
-    let textContent = "CubaDate - Open Source Licenses\n";
+    let textContent = "ISEXY - Open Source Licenses\n";
     textContent += "=" .repeat(50) + "\n\n";
     
     licensesData.forEach(group => {
@@ -801,7 +801,7 @@ export default function Licenses() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'cubadate-licenses.txt';
+    link.download = 'isexy-licenses.txt';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -816,7 +816,7 @@ export default function Licenses() {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CubaDate - Open Source Licenses</title>
+  <title>ISEXY - Open Source Licenses</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
     h1 { color: #e94057; border-bottom: 2px solid #e94057; padding-bottom: 10px; }
@@ -829,7 +829,7 @@ export default function Licenses() {
   </style>
 </head>
 <body>
-  <h1>CubaDate - Open Source Licenses</h1>
+  <h1>ISEXY - Open Source Licenses</h1>
   <p>This application uses the following open source libraries:</p>
 `;
     

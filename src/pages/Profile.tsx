@@ -182,7 +182,7 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Flame className="w-6 h-6 text-yellow-600" />
-              <span className="font-bold text-yellow-800">CubaDate</span>
+              <span className="font-bold text-yellow-800">ISEXY</span>
               <span className="px-2 py-0.5 bg-yellow-600 text-white text-xs font-bold rounded">GOLD</span>
             </div>
             <button onClick={() => navigate("/premium")} className="px-4 py-2 bg-yellow-500 text-foreground font-bold rounded-full text-sm">Upgrade</button>

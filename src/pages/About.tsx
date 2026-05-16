@@ -23,7 +23,7 @@ const values = [
   {
     icon: Users,
     title: "Inclusive Community",
-    description: "CubaDate welcomes everyone. We celebrate diversity and are committed to making our platform accessible and welcoming to all.",
+    description: "ISEXY welcomes everyone. We celebrate diversity and are committed to making our platform accessible and welcoming to all.",
   },
   {
     icon: Sparkles,
@@ -79,7 +79,7 @@ const team = [
   {
     name: "Maria Rodriguez",
     role: "CEO & Co-Founder",
-    bio: "Former product lead at a major tech company, Maria founded CubaDate with a vision to create meaningful connections.",
+    bio: "Former product lead at a major tech company, Maria founded ISEXY with a vision to create meaningful connections.",
   },
   {
     name: "Carlos Mendez",
@@ -99,7 +99,7 @@ const team = [
   {
     name: "Sofia Alvarez",
     role: "VP of Marketing",
-    bio: "Sofia's creative campaigns have helped millions discover the CubaDate platform worldwide.",
+    bio: "Sofia's creative campaigns have helped millions discover the ISEXY platform worldwide.",
   },
   {
     name: "Miguel Torres",
@@ -109,7 +109,7 @@ const team = [
 ];
 
 const milestones = [
-  { year: "2019", event: "CubaDate founded in Miami with a mission to connect hearts" },
+  { year: "2019", event: "ISEXY founded in Miami with a mission to connect hearts" },
   { year: "2020", event: "Reached 1 million active users worldwide" },
   { year: "2021", event: "Launched Photo Verification and Video Profiles" },
   { year: "2022", event: "Expanded to 50+ countries with localized experiences" },
@@ -129,7 +129,7 @@ export default function About() {
           <button onClick={() => navigate(-1)} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">About CubaDate</h1>
+          <h1 className="text-xl font-bold text-foreground">About ISEXY</h1>
         </div>
       </header>
 
@@ -142,7 +142,7 @@ export default function About() {
           Where Sparks Fly
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto mb-6">
-          Launched to revolutionize how people meet, CubaDate has become the world's most popular app for meeting new people. We're on a mission to bring people together and create meaningful connections that last a lifetime.
+          Launched to revolutionize how people meet, ISEXY has become the world's most popular app for meeting new people. We're on a mission to bring people together and create meaningful connections that last a lifetime.
         </p>
         <div className="flex justify-center gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -187,7 +187,7 @@ export default function About() {
         <h3 className="text-xl font-bold text-foreground mb-6">Our Story</h3>
         <div className="space-y-4 text-muted-foreground">
           <p>
-            CubaDate was born from a simple observation: despite living in an increasingly connected world, many people struggle to find genuine, meaningful relationships. Our founders experienced this firsthand and set out to create a platform that prioritizes quality connections over superficial interactions.
+            ISEXY was born from a simple observation: despite living in an increasingly connected world, many people struggle to find genuine, meaningful relationships. Our founders experienced this firsthand and set out to create a platform that prioritizes quality connections over superficial interactions.
           </p>
           <p>
             Starting from a small team in Miami, we've grown into a global platform serving millions of users across 190+ countries. But our core mission remains unchanged: to help people find love and build lasting relationships.
@@ -288,7 +288,7 @@ export default function About() {
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Company Name</span>
-            <span className="text-foreground font-medium">CubaDate Inc.</span>
+            <span className="text-foreground font-medium">ISEXY Inc.</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Founded</span>
@@ -317,7 +317,7 @@ export default function About() {
             Love Stories
           </h3>
           <p className="text-primary-foreground/80 mb-4">
-            Explore real stories from couples who found love on CubaDate.
+            Explore real stories from couples who found love on ISEXY.
           </p>
           <button
             onClick={() => navigate("/love-stories")}
@@ -359,7 +359,7 @@ export default function About() {
       {/* Footer */}
       <div className="px-4 py-8 text-center border-t border-border">
         <p className="text-sm text-muted-foreground mb-4">
-          © 2025 CubaDate Inc. All rights reserved.
+          © 2025 ISEXY Inc. All rights reserved.
         </p>
         <div className="flex justify-center gap-4 flex-wrap">
           <button

@@ -20,7 +20,7 @@ const safetyTips = [
   {
     icon: Phone,
     title: "Stay on the platform",
-    description: "Keep conversations on CubaDate while getting to know someone. Bad actors often try to move to text, messaging apps, email, or phone immediately to avoid platform oversight.",
+    description: "Keep conversations on ISEXY while getting to know someone. Bad actors often try to move to text, messaging apps, email, or phone immediately to avoid platform oversight.",
   },
   {
     icon: AlertTriangle,
@@ -184,7 +184,7 @@ export default function Safety() {
         </div>
         <h2 className="text-2xl font-bold text-foreground mb-3">Your Safety Matters</h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Meeting new people is exciting, but safety should always come first. We're committed to creating a secure environment for everyone on CubaDate.
+          Meeting new people is exciting, but safety should always come first. We're committed to creating a secure environment for everyone on ISEXY.
         </p>
       </div>
 
@@ -233,7 +233,7 @@ export default function Safety() {
       <div className="px-4 py-6 bg-muted/30">
         <h3 className="text-lg font-bold text-foreground mb-2">Dating Safety Tips</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Follow these guidelines to stay safe while using CubaDate
+          Follow these guidelines to stay safe while using ISEXY
         </p>
         <div className="space-y-3">
           {safetyTips.map((tip, index) => (
@@ -323,7 +323,7 @@ export default function Safety() {
             <div className="flex items-start gap-2">
               <Globe className="w-4 h-4 text-primary mt-0.5" />
               <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Traveler Alert:</strong> When traveling to a new location, CubaDate may show a warning if local laws could affect you based on your orientation.
+                <strong className="text-foreground">Traveler Alert:</strong> When traveling to a new location, ISEXY may show a warning if local laws could affect you based on your orientation.
               </p>
             </div>
             <div className="flex items-start gap-2">
@@ -392,7 +392,7 @@ export default function Safety() {
         </div>
       </div>
 
-      {/* Contact CubaDate */}
+      {/* Contact ISEXY */}
       <div className="px-4 py-6 bg-muted/30">
         <h3 className="text-lg font-bold text-foreground mb-4">Contact Our Safety Team</h3>
         <div className="space-y-3">
@@ -407,7 +407,7 @@ export default function Safety() {
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
           <button
-            onClick={() => window.location.href = 'mailto:safety@cubadate.com'}
+            onClick={() => window.location.href = 'mailto:safety@isexy.ca'}
             className="w-full flex items-center justify-between p-4 bg-card rounded-xl border border-border"
           >
             <div className="flex items-center gap-3">

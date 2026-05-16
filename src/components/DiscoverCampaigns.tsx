@@ -17,7 +17,7 @@ interface Campaign {
 const campaigns: Campaign[] = [
   {
     id: "gold",
-    title: "CubaDate Gold™",
+    title: "ISEXY Gold™",
     subtitle: "See who likes you & match instantly",
     icon: <Crown className="w-6 h-6" />,
     gradient: "from-amber-400 to-amber-600",

@@ -87,7 +87,7 @@ export default function Terms() {
               1. Introduction & Acceptance
             </h2>
             <p className="text-muted-foreground mb-4">
-              Welcome to CubaDate! These Terms of Service ("Terms" or "Agreement") govern your access to and use of the CubaDate mobile application, website, and related services (collectively, the "Services") operated by CubaDate Inc. ("CubaDate," "we," "us," or "our").
+              Welcome to ISEXY! These Terms of Service ("Terms" or "Agreement") govern your access to and use of the ISEXY mobile application, website, and related services (collectively, the "Services") operated by ISEXY Inc. ("ISEXY," "we," "us," or "our").
             </p>
             <p className="text-muted-foreground mb-4">
               By accessing or using our Services, you agree to be bound by these Terms, our Privacy Policy, Cookie Policy, Community Guidelines, and Safety Tips. These documents are incorporated by reference into this Agreement.
@@ -107,11 +107,11 @@ export default function Terms() {
               2. Account Eligibility
             </h2>
             <p className="text-muted-foreground mb-4">
-              Before you create an account on CubaDate, you must confirm that you meet the following eligibility requirements:
+              Before you create an account on ISEXY, you must confirm that you meet the following eligibility requirements:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2 mb-4">
               <li><strong>Age Requirement:</strong> You must be at least 18 years old to use our Services. In some jurisdictions, the minimum age may be higher as required by local law.</li>
-              <li><strong>Legal Capacity:</strong> You must be legally capable of entering into a binding contract with CubaDate in your jurisdiction.</li>
+              <li><strong>Legal Capacity:</strong> You must be legally capable of entering into a binding contract with ISEXY in your jurisdiction.</li>
               <li><strong>Legal Status:</strong> You must not be prohibited by law from using our Services in your jurisdiction.</li>
               <li><strong>Sex Offender Registry:</strong> You must not be required to register as a sex offender with any government entity.</li>
               <li><strong>Previous Termination:</strong> You must not have been previously terminated from our Services, unless you have received our express written permission to create a new account.</li>
@@ -184,7 +184,7 @@ export default function Terms() {
               <li>Use our Services in relation to fraud, pyramid schemes, or similar practices</li>
               <li>Disclose private or confidential information of another person without their consent</li>
               <li>Copy, modify, transmit, create derivative works from, or reverse engineer any portion of the Services</li>
-              <li>Express or imply that any statements you make are endorsed by CubaDate</li>
+              <li>Express or imply that any statements you make are endorsed by ISEXY</li>
               <li>Use any automated system to access the Services (including bots, spiders, or scrapers)</li>
               <li>Collect usernames and/or email addresses of users for sending unsolicited communications</li>
               <li>Create, solicit, or distribute unsolicited promotional or advertising materials</li>
@@ -201,7 +201,7 @@ export default function Terms() {
               6. Prohibited Content
             </h2>
             <p className="text-muted-foreground mb-4">
-              CubaDate prohibits uploading, posting, sharing, or transmitting any content that:
+              ISEXY prohibits uploading, posting, sharing, or transmitting any content that:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Is offensive, harassing, abusive, or causes psychological distress to others</li>
@@ -231,7 +231,7 @@ export default function Terms() {
               7. Content Ownership & Licenses
             </h2>
             <p className="text-muted-foreground mb-4">
-              <strong>Your Content:</strong> You retain ownership of all content you submit, post, or display on or through our Services ("Your Content"). By submitting Your Content, you grant CubaDate a worldwide, non-exclusive, royalty-free, sublicensable, and transferable license to use, reproduce, modify, adapt, publish, translate, create derivative works from, distribute, and display Your Content in connection with operating and providing our Services.
+              <strong>Your Content:</strong> You retain ownership of all content you submit, post, or display on or through our Services ("Your Content"). By submitting Your Content, you grant ISEXY a worldwide, non-exclusive, royalty-free, sublicensable, and transferable license to use, reproduce, modify, adapt, publish, translate, create derivative works from, distribute, and display Your Content in connection with operating and providing our Services.
             </p>
             <p className="text-muted-foreground mb-4">
               <strong>Representations:</strong> You represent and warrant that: (i) you own Your Content or have the right to grant the license above; (ii) Your Content does not violate the rights of any third party; and (iii) Your Content complies with these Terms and all applicable laws.
@@ -240,7 +240,7 @@ export default function Terms() {
               <strong>Member Content:</strong> Other users' content ("Member Content") belongs to the user who posted it. You may not use, copy, reproduce, distribute, or create derivative works from Member Content without the express permission of the content owner.
             </p>
             <p className="text-muted-foreground">
-              <strong>Our Content:</strong> All content provided by CubaDate, including but not limited to text, graphics, logos, icons, images, audio clips, video clips, data compilations, and software, is the property of CubaDate or its licensors and is protected by intellectual property laws.
+              <strong>Our Content:</strong> All content provided by ISEXY, including but not limited to text, graphics, logos, icons, images, audio clips, video clips, data compilations, and software, is the property of ISEXY or its licensors and is protected by intellectual property laws.
             </p>
           </section>
 
@@ -268,12 +268,12 @@ export default function Terms() {
               9. Premium Features & Subscriptions
             </h2>
             <p className="text-muted-foreground mb-4">
-              CubaDate offers various premium features and subscription plans that provide enhanced functionality. Current subscription options include:
+              ISEXY offers various premium features and subscription plans that provide enhanced functionality. Current subscription options include:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2 mb-4">
-              <li><strong>CubaDate Plus:</strong> Basic premium features including unlimited likes, rewinds, and 1 boost per month</li>
-              <li><strong>CubaDate Gold:</strong> Includes all Plus features plus see who likes you, Top Picks, and weekly Super Likes</li>
-              <li><strong>CubaDate Platinum:</strong> Includes all Gold features plus priority likes, message before matching, and profile controls</li>
+              <li><strong>ISEXY Plus:</strong> Basic premium features including unlimited likes, rewinds, and 1 boost per month</li>
+              <li><strong>ISEXY Gold:</strong> Includes all Plus features plus see who likes you, Top Picks, and weekly Super Likes</li>
+              <li><strong>ISEXY Platinum:</strong> Includes all Gold features plus priority likes, message before matching, and profile controls</li>
             </ul>
             <p className="text-muted-foreground mb-4">
               <strong>Subscription Terms:</strong> When you purchase a subscription, you agree to the specific terms presented at the time of purchase. Subscriptions automatically renew at the end of each billing period unless you cancel before the renewal date.
@@ -290,7 +290,7 @@ export default function Terms() {
               10. Virtual Items & In-App Purchases
             </h2>
             <p className="text-muted-foreground mb-4">
-              CubaDate may offer virtual items for purchase, including but not limited to Super Likes, Boosts, and other premium features ("Virtual Items"). Virtual Items represent a limited license right governed by this Agreement.
+              ISEXY may offer virtual items for purchase, including but not limited to Super Likes, Boosts, and other premium features ("Virtual Items"). Virtual Items represent a limited license right governed by this Agreement.
             </p>
             <p className="text-muted-foreground mb-4">
               <strong>License:</strong> Virtual Items are not your property. You receive a limited, non-transferable, revocable license to use Virtual Items within our Services. Virtual Items have no monetary value and cannot be exchanged for cash or any other item of value.
@@ -355,7 +355,7 @@ export default function Terms() {
               <strong>Termination by You:</strong> You can delete your account at any time by logging into the app, going to "Settings," clicking "Delete Account," and following the instructions. Deleting your account will remove your profile and data from our active systems, subject to our data retention policies.
             </p>
             <p className="text-muted-foreground mb-4">
-              <strong>Termination by CubaDate:</strong> We reserve the right to investigate and, if appropriate, suspend or terminate your account without refund if we believe you have violated these Terms. We may also terminate accounts that are inactive for an extended period or for any other reason at our discretion.
+              <strong>Termination by ISEXY:</strong> We reserve the right to investigate and, if appropriate, suspend or terminate your account without refund if we believe you have violated these Terms. We may also terminate accounts that are inactive for an extended period or for any other reason at our discretion.
             </p>
             <p className="text-muted-foreground mb-4">
               <strong>Effect of Termination:</strong> Upon termination:
@@ -389,7 +389,7 @@ export default function Terms() {
               <li>Never share personal financial information with other users</li>
               <li>Meet in public places for initial in-person meetings</li>
               <li>Tell a friend or family member about your plans</li>
-              <li>Report any suspicious behavior to CubaDate and local authorities</li>
+              <li>Report any suspicious behavior to ISEXY and local authorities</li>
               <li>Review our Safety Tips regularly</li>
             </ul>
           </section>
@@ -401,10 +401,10 @@ export default function Terms() {
               15. Intellectual Property
             </h2>
             <p className="text-muted-foreground mb-4">
-              The CubaDate name, logo, and all related names, logos, product and service names, designs, and slogans are trademarks of CubaDate Inc. or its affiliates. You may not use such marks without our prior written permission.
+              The ISEXY name, logo, and all related names, logos, product and service names, designs, and slogans are trademarks of ISEXY Inc. or its affiliates. You may not use such marks without our prior written permission.
             </p>
             <p className="text-muted-foreground mb-4">
-              All content, features, and functionality of our Services, including but not limited to information, software, text, displays, images, video, and audio, are owned by CubaDate, its licensors, or other providers of such material and are protected by copyright, trademark, patent, and other intellectual property laws.
+              All content, features, and functionality of our Services, including but not limited to information, software, text, displays, images, video, and audio, are owned by ISEXY, its licensors, or other providers of such material and are protected by copyright, trademark, patent, and other intellectual property laws.
             </p>
             <p className="text-muted-foreground">
               <strong>DMCA:</strong> If you believe that any content on our Services infringes your copyright, please contact us with a DMCA notice. We will respond to valid notices in accordance with the Digital Millennium Copyright Act.
@@ -418,7 +418,7 @@ export default function Terms() {
               16. Third-Party Services
             </h2>
             <p className="text-muted-foreground mb-4">
-              Our Services may contain links to third-party websites, advertisers, services, or resources that are not owned or controlled by CubaDate. We have no control over, and assume no responsibility for, the content, privacy policies, or practices of any third-party sites or services.
+              Our Services may contain links to third-party websites, advertisers, services, or resources that are not owned or controlled by ISEXY. We have no control over, and assume no responsibility for, the content, privacy policies, or practices of any third-party sites or services.
             </p>
             <p className="text-muted-foreground mb-4">
               We may use third-party service providers to help operate our Services, process payments, send communications, or analyze data. These providers are subject to their own terms and privacy policies.
@@ -476,7 +476,7 @@ export default function Terms() {
               19. Indemnification
             </h2>
             <p className="text-muted-foreground mb-4">
-              You agree to indemnify, defend, and hold harmless CubaDate, its affiliates, and their respective officers, directors, employees, agents, licensors, and service providers from and against any and all claims, demands, damages, obligations, losses, liabilities, costs, or expenses (including reasonable attorneys' fees) arising from:
+              You agree to indemnify, defend, and hold harmless ISEXY, its affiliates, and their respective officers, directors, employees, agents, licensors, and service providers from and against any and all claims, demands, damages, obligations, losses, liabilities, costs, or expenses (including reasonable attorneys' fees) arising from:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Your access to or use of the Services</li>
@@ -500,7 +500,7 @@ export default function Terms() {
               <strong>Informal Resolution:</strong> Before filing a claim, you agree to try to resolve the dispute informally by contacting us. We'll try to resolve the dispute informally by contacting you via email within 30 days.
             </p>
             <p className="text-muted-foreground mb-4">
-              <strong>Binding Arbitration:</strong> If we cannot resolve a dispute informally, you and CubaDate agree to resolve any dispute arising out of or relating to these Terms or the Services through final and binding arbitration. The arbitration will be administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules.
+              <strong>Binding Arbitration:</strong> If we cannot resolve a dispute informally, you and ISEXY agree to resolve any dispute arising out of or relating to these Terms or the Services through final and binding arbitration. The arbitration will be administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules.
             </p>
             <p className="text-muted-foreground mb-4">
               <strong>Class Action Waiver:</strong> YOU AND CUBADATE AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE ACTION.
@@ -509,7 +509,7 @@ export default function Terms() {
               <strong>Exceptions:</strong> Either party may bring a claim in small claims court if eligible, or seek injunctive relief in any court of competent jurisdiction for intellectual property or unauthorized access violations.
             </p>
             <p className="text-muted-foreground">
-              <strong>Opt-Out:</strong> You can opt out of this arbitration provision by sending a written notice within 30 days of first accepting these Terms to: CubaDate Inc., Legal Department, [Address], or by email to legal@cubadate.com.
+              <strong>Opt-Out:</strong> You can opt out of this arbitration provision by sending a written notice within 30 days of first accepting these Terms to: ISEXY Inc., Legal Department, [Address], or by email to legal@isexy.ca.
             </p>
           </section>
 
@@ -523,7 +523,7 @@ export default function Terms() {
               These Terms and any dispute arising out of or related to these Terms or the Services shall be governed by and construed in accordance with the laws of the Province of Quebec and the federal laws of Canada applicable therein, as well as applicable Cuban regulations for users in Cuba, without regard to conflict of law principles.
             </p>
             <p className="text-muted-foreground mb-4">
-              For any disputes not subject to arbitration, you and CubaDate agree to submit to the personal and exclusive jurisdiction of the courts located in Montreal, Quebec, Canada.
+              For any disputes not subject to arbitration, you and ISEXY agree to submit to the personal and exclusive jurisdiction of the courts located in Montreal, Quebec, Canada.
             </p>
             <p className="text-muted-foreground">
               <strong>International Users:</strong> If you access the Services from Cuba or other countries, you do so subject to compliance with both Canadian privacy laws (PIPEDA) and applicable local laws and regulations.
@@ -556,7 +556,7 @@ export default function Terms() {
               23. General Provisions
             </h2>
             <p className="text-muted-foreground mb-4">
-              <strong>Entire Agreement:</strong> These Terms, together with our Privacy Policy and any other legal notices we provide, constitute the entire agreement between you and CubaDate regarding the Services.
+              <strong>Entire Agreement:</strong> These Terms, together with our Privacy Policy and any other legal notices we provide, constitute the entire agreement between you and ISEXY regarding the Services.
             </p>
             <p className="text-muted-foreground mb-4">
               <strong>Severability:</strong> If any provision of these Terms is held to be invalid or unenforceable, that provision will be enforced to the maximum extent permissible, and the other provisions will remain in full force and effect.
@@ -582,7 +582,7 @@ export default function Terms() {
               If you have any questions, concerns, or complaints about these Terms or our Services, please contact us:
             </p>
             <div className="bg-card p-4 rounded-xl border border-border">
-              <p className="text-foreground font-semibold mb-2">CubaDate Inc.</p>
+              <p className="text-foreground font-semibold mb-2">ISEXY Inc.</p>
               <p className="text-muted-foreground text-sm mb-1">Legal Department</p>
               <p className="text-muted-foreground text-sm mb-1">Montreal, Quebec, Canada</p>
               <p className="text-muted-foreground text-sm mt-3">Email: cubaresort.ca@gmail.com</p>
@@ -594,7 +594,7 @@ export default function Terms() {
           {/* Acknowledgment */}
           <section className="mt-8 pt-8 border-t border-border">
             <p className="text-sm text-muted-foreground text-center">
-              By using CubaDate, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+              By using ISEXY, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
             </p>
           </section>
         </div>

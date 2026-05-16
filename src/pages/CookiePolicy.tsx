@@ -374,9 +374,9 @@ export default function CookiePolicy() {
                 If you have any questions about our use of cookies or this Cookie Policy, please contact us:
               </p>
               <div className="bg-primary/10 p-4 rounded-xl">
-                <p className="text-foreground font-medium">CubaDate Privacy Team</p>
-                <p className="text-muted-foreground">Email: privacy@cubadate.com</p>
-                <p className="text-muted-foreground">Website: www.cubadate.com/cookies</p>
+                <p className="text-foreground font-medium">ISEXY Privacy Team</p>
+                <p className="text-muted-foreground">Email: privacy@isexy.ca</p>
+                <p className="text-muted-foreground">Website: www.isexy.ca/cookies</p>
               </div>
             </section>
 

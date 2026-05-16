@@ -244,7 +244,7 @@ export default function CubanRewards() {
                 </div>
                 <h4 className="font-bold text-foreground mb-1">Invite Friends</h4>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Earn 100 points for each friend who joins CubaDate!
+                  Earn 100 points for each friend who joins ISEXY!
                 </p>
                 <Button onClick={() => navigate("/referrals")} className="gradient-primary">
                   <UserPlus className="w-4 h-4 mr-2" />

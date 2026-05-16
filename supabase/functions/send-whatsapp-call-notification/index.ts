@@ -70,7 +70,7 @@ serve(async (req) => {
         body: {
           userId: receiverId,
           title: "📹 Incoming Video Call",
-          body: `${callerName} is calling you on CubaDate!`,
+          body: `${callerName} is calling you on ISEXY!`,
           data: {
             type: "video_call",
             matchId: matchId,
@@ -143,7 +143,7 @@ serve(async (req) => {
       body: {
         userId: receiverId,
         title: "📹 Incoming Video Call",
-        body: `${callerName} is calling you on CubaDate!`,
+        body: `${callerName} is calling you on ISEXY!`,
         data: {
           type: "video_call",
           matchId: matchId,

@@ -92,9 +92,9 @@ export default function Referrals() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Join CubaDate!",
-          text: `Use my referral code ${referralCode} to get 10 free credits when you sign up for CubaDate!`,
-          url: `https://cubadate.com/?ref=${referralCode}`,
+          title: "Join ISEXY!",
+          text: `Use my referral code ${referralCode} to get 10 free credits when you sign up for ISEXY!`,
+          url: `https://isexy.ca/?ref=${referralCode}`,
         });
       } catch (err) {
         copyToClipboard();

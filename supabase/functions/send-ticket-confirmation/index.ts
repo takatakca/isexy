@@ -49,7 +49,7 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
       <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #e11d48 0%, #be185d 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">💕 CubaDate</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">💕 ISEXY</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Support Ticket Confirmation</p>
         </div>
         
@@ -58,7 +58,7 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
           <h2 style="color: #1f2937; margin-top: 0;">Hello ${variables.name}! 👋</h2>
           
           <p style="color: #4b5563; line-height: 1.6;">
-            Thank you for contacting CubaDate Support. We have received your support request and our team is working on it.
+            Thank you for contacting ISEXY Support. We have received your support request and our team is working on it.
           </p>
           
           <!-- Ticket Details Box -->
@@ -102,13 +102,13 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
           
           <p style="color: #4b5563; line-height: 1.6; margin-bottom: 0;">
             Best regards,<br>
-            <strong style="color: #e11d48;">The CubaDate Support Team</strong>
+            <strong style="color: #e11d48;">The ISEXY Support Team</strong>
           </p>
         </div>
         
         <!-- Footer -->
         <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
-          <p style="margin: 0;">© 2024 CubaDate. All rights reserved.</p>
+          <p style="margin: 0;">© 2024 ISEXY. All rights reserved.</p>
           <p style="margin: 5px 0 0 0;">This is an automated message. Please do not reply directly to this email.</p>
         </div>
       </div>
@@ -176,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "CubaDate Support <onboarding@resend.dev>",
+        from: "ISEXY Support <onboarding@resend.dev>",
         to: [email],
         subject: emailSubject,
         html: emailHtml,

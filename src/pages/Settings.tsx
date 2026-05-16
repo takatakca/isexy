@@ -181,7 +181,7 @@ export default function Settings() {
               className="w-full p-4 text-center"
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-xl font-bold">🔥 CubaDate</span>
+                <span className="text-xl font-bold">🔥 ISEXY</span>
                 <span className="bg-gradient-to-r from-slate-600 to-slate-800 text-white text-xs px-2 py-0.5 rounded font-bold">PLATINUM</span>
               </div>
               <p className="text-sm text-muted-foreground">Priority Likes, See who Likes you & More</p>
@@ -194,7 +194,7 @@ export default function Settings() {
               className="w-full p-4 text-center"
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-xl font-bold">🔥 CubaDate</span>
+                <span className="text-xl font-bold">🔥 ISEXY</span>
                 <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs px-2 py-0.5 rounded font-bold">GOLD</span>
               </div>
               <p className="text-sm text-muted-foreground">See who Likes You & More!</p>
@@ -207,7 +207,7 @@ export default function Settings() {
               className="w-full p-4 text-center"
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-xl font-bold">🔥 CubaDate</span>
+                <span className="text-xl font-bold">🔥 ISEXY</span>
                 <span className="text-primary text-lg font-bold">+</span>
               </div>
               <p className="text-sm text-muted-foreground">Unlimited Likes & More!</p>
@@ -582,7 +582,7 @@ export default function Settings() {
           <SettingCard className="p-4">
             <p className="font-semibold text-foreground mb-1">Web Profile</p>
             <p className="text-sm text-muted-foreground mb-3">
-              Create a username. Share your username. Have people all over the world match with you right on CubaDate.
+              Create a username. Share your username. Have people all over the world match with you right on ISEXY.
             </p>
             <button 
               onClick={() => navigate("/web-profile")}
@@ -646,7 +646,7 @@ export default function Settings() {
               <div className="space-y-1">
                 <SettingRow label="Email" onClick={() => navigate("/email-settings")} />
                 <SettingRow label="Push Notifications" onClick={() => navigate("/push-notifications")} />
-                <SettingRow label="Team CubaDate" onClick={() => navigate("/team-cubadate")} />
+                <SettingRow label="Team ISEXY" onClick={() => navigate("/team-cubadate")} />
               </div>
             </div>
           </SettingCard>
@@ -741,7 +741,7 @@ export default function Settings() {
         {/* Share */}
         <section className="mb-6">
           <SettingCard>
-            <SettingRow label="Share CubaDate" onClick={() => navigate("/loyalty-rewards")} />
+            <SettingRow label="Share ISEXY" onClick={() => navigate("/loyalty-rewards")} />
           </SettingCard>
         </section>
 

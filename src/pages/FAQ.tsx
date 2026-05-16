@@ -25,18 +25,18 @@ const faqCategories: FAQCategory[] = [
     id: "getting-started",
     icon: Heart,
     title: "Getting Started",
-    description: "New to CubaDate? Start here",
+    description: "New to ISEXY? Start here",
     faqs: [
       {
-        question: "How do I create a CubaDate account?",
-        answer: "Download the CubaDate app from the App Store or Google Play, then sign up using your phone number or email address. You'll need to verify your identity, add photos, and complete your profile to start matching with other users.",
+        question: "How do I create a ISEXY account?",
+        answer: "Download the ISEXY app from the App Store or Google Play, then sign up using your phone number or email address. You'll need to verify your identity, add photos, and complete your profile to start matching with other users.",
       },
       {
         question: "What are the age requirements?",
-        answer: "You must be at least 18 years old to use CubaDate. In some jurisdictions, the minimum age may be higher as required by local law. We verify age during the registration process.",
+        answer: "You must be at least 18 years old to use ISEXY. In some jurisdictions, the minimum age may be higher as required by local law. We verify age during the registration process.",
       },
       {
-        question: "How does matching work on CubaDate?",
+        question: "How does matching work on ISEXY?",
         answer: "When you and another user both swipe right (like) on each other's profiles, it's a match! You can then start a conversation in your Messages. Our algorithm also suggests potential matches based on your preferences and behavior.",
       },
       {
@@ -48,7 +48,7 @@ const faqCategories: FAQCategory[] = [
         answer: "Go to your profile settings and tap 'Verify Profile.' You'll be asked to take a selfie mimicking a specific pose. Our Face Check™ technology will compare it to your profile photos to confirm you're real.",
       },
       {
-        question: "Can I use CubaDate without a phone number?",
+        question: "Can I use ISEXY without a phone number?",
         answer: "Yes! You can sign up with your email address instead. However, phone verification adds an extra layer of security and may unlock additional features.",
       },
     ],
@@ -61,7 +61,7 @@ const faqCategories: FAQCategory[] = [
     faqs: [
       {
         question: "What subscription plans are available?",
-        answer: "CubaDate offers three premium tiers: CubaDate Plus (unlimited likes, rewinds, 1 boost/month), CubaDate Gold (Plus features + See Who Likes You, Top Picks, weekly Super Likes), and CubaDate Platinum (Gold features + Priority Likes, Message Before Matching, Profile Controls).",
+        answer: "ISEXY offers three premium tiers: ISEXY Plus (unlimited likes, rewinds, 1 boost/month), ISEXY Gold (Plus features + See Who Likes You, Top Picks, weekly Super Likes), and ISEXY Platinum (Gold features + Priority Likes, Message Before Matching, Profile Controls).",
       },
       {
         question: "How do I cancel my subscription?",
@@ -93,10 +93,10 @@ const faqCategories: FAQCategory[] = [
     id: "safety",
     icon: Shield,
     title: "Safety & Privacy",
-    description: "Staying safe on CubaDate",
+    description: "Staying safe on ISEXY",
     faqs: [
       {
-        question: "How does CubaDate protect my privacy?",
+        question: "How does ISEXY protect my privacy?",
         answer: "We use industry-standard encryption to protect your data. You control what information appears on your profile, and we never share your personal information with other users without your consent. Review our Privacy Policy for complete details.",
       },
       {
@@ -137,7 +137,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "How do I change my location?",
-        answer: "CubaDate uses your device's GPS to determine your location. Free users can only match with people nearby. Premium subscribers can use Passport to change their location to anywhere in the world.",
+        answer: "ISEXY uses your device's GPS to determine your location. Free users can only match with people nearby. Premium subscribers can use Passport to change their location to anywhere in the world.",
       },
       {
         question: "How do I delete my account?",
@@ -145,7 +145,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "Can I recover a deleted account?",
-        answer: "No, deleted accounts cannot be recovered. All data, matches, and messages are permanently removed. If you want to use CubaDate again, you'll need to create a new account.",
+        answer: "No, deleted accounts cannot be recovered. All data, matches, and messages are permanently removed. If you want to use ISEXY again, you'll need to create a new account.",
       },
       {
         question: "How do I change my phone number or email?",
@@ -157,7 +157,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "How do I pause my account instead of deleting it?",
-        answer: "Go to Settings > Discovery Settings and turn off 'Show Me on CubaDate.' This hides your profile while preserving your matches and messages. Turn it back on when you're ready to date again.",
+        answer: "Go to Settings > Discovery Settings and turn off 'Show Me on ISEXY.' This hides your profile while preserving your matches and messages. Turn it back on when you're ready to date again.",
       },
     ],
   },
@@ -165,7 +165,7 @@ const faqCategories: FAQCategory[] = [
     id: "features",
     icon: Zap,
     title: "Features & Matching",
-    description: "How CubaDate features work",
+    description: "How ISEXY features work",
     faqs: [
       {
         question: "What is Passport?",
@@ -281,7 +281,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "How do I manage email notifications?",
-        answer: "Go to Settings > Email Settings to control which emails you receive from CubaDate, including new matches, messages, and promotional emails.",
+        answer: "Go to Settings > Email Settings to control which emails you receive from ISEXY, including new matches, messages, and promotional emails.",
       },
       {
         question: "How do I hide my active status?",
@@ -289,7 +289,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "Can I temporarily hide my profile?",
-        answer: "Yes! Go to Settings > Discovery Settings and turn off 'Show Me on CubaDate.' Your profile will be hidden but your matches and messages are preserved.",
+        answer: "Yes! Go to Settings > Discovery Settings and turn off 'Show Me on ISEXY.' Your profile will be hidden but your matches and messages are preserved.",
       },
     ],
   },
@@ -309,11 +309,11 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "Photos aren't uploading. How do I fix this?",
-        answer: "Ensure you have a stable internet connection and that CubaDate has permission to access your photos. Try a smaller file size or a different image format.",
+        answer: "Ensure you have a stable internet connection and that ISEXY has permission to access your photos. Try a smaller file size or a different image format.",
       },
       {
         question: "Location services aren't working.",
-        answer: "Go to your device settings and ensure CubaDate has permission to access your location. Select 'Always' or 'While Using' for best results.",
+        answer: "Go to your device settings and ensure ISEXY has permission to access your location. Select 'Always' or 'While Using' for best results.",
       },
       {
         question: "I can't log in to my account.",
@@ -360,7 +360,7 @@ export default function FAQ() {
         </div>
         <h2 className="text-2xl font-bold text-foreground mb-3">How can we help?</h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Find answers to commonly asked questions about CubaDate
+          Find answers to commonly asked questions about ISEXY
         </p>
       </div>
 

@@ -80,7 +80,7 @@ export default function LoveStories() {
           </div>
         </div>
         <h2 className="text-3xl font-bold text-foreground mb-2">
-          A new relationship starts on CubaDate
+          A new relationship starts on ISEXY
         </h2>
         <p className="text-lg text-primary font-semibold">
           every 3 seconds around the globe

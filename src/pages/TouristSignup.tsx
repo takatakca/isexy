@@ -180,7 +180,7 @@ export default function TouristSignup() {
         await supabase.from("profile_photos").insert(photoInserts);
       }
 
-      toast.success("Welcome to CubaDate! 🎉");
+      toast.success("Welcome to ISEXY! 🎉");
       navigate("/discover");
     } catch (error: any) {
       console.error("Profile creation error:", error);

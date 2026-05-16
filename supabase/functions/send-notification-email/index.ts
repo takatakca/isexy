@@ -37,7 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (type) {
       case "new_match":
-        subject = `🎉 You have a new match on CubaDate!`;
+        subject = `🎉 You have a new match on ISEXY!`;
         htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -61,7 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="font-size: 18px;">Hey ${firstName}!</p>
                   <p>Great news! You and <strong>${data.matchName || "someone special"}</strong> have liked each other. Start a conversation now!</p>
                   <center>
-                    <a href="https://cubadate.com/matches" class="button">Say Hello →</a>
+                    <a href="https://isexy.ca/matches" class="button">Say Hello →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px;">Don't keep them waiting! The best connections start with a simple hello.</p>
                 </div>
@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "new_message":
-        subject = `💬 New message from ${data.senderName || "someone"} on CubaDate`;
+        subject = `💬 New message from ${data.senderName || "someone"} on ISEXY`;
         htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -98,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <p style="margin: 0; font-style: italic;">"${data.messagePreview || "..."}"</p>
                   </div>
                   <center>
-                    <a href="https://cubadate.com/matches" class="button">Reply Now →</a>
+                    <a href="https://isexy.ca/matches" class="button">Reply Now →</a>
                   </center>
                 </div>
               </div>
@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "super_like":
-        subject = `⭐ Someone Super Liked you on CubaDate!`;
+        subject = `⭐ Someone Super Liked you on ISEXY!`;
         htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -132,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="font-size: 18px;">Wow, ${firstName}!</p>
                   <p>Someone really stands out from the crowd - they Super Liked your profile! This means they're <em>really</em> interested in getting to know you.</p>
                   <center>
-                    <a href="https://cubadate.com/likes" class="button">See Who →</a>
+                    <a href="https://isexy.ca/likes" class="button">See Who →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px;">Super Likes are 3x more likely to lead to a match!</p>
                 </div>
@@ -143,7 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "video_call_request":
-        subject = `📹 Video call request on CubaDate`;
+        subject = `📹 Video call request on ISEXY`;
         htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -165,7 +165,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="font-size: 18px;">Hey ${firstName}!</p>
                   <p><strong>${data.fromName || data.senderName || "Your match"}</strong> wants to video chat with you! Don't miss the chance to connect face-to-face.</p>
                   <center>
-                    <a href="https://cubadate.com/matches" class="button">Open App →</a>
+                    <a href="https://isexy.ca/matches" class="button">Open App →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px;">Video calls help you build real connections faster!</p>
                 </div>
@@ -176,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "welcome":
-        subject = `🔥 Welcome to CubaDate!`;
+        subject = `🔥 Welcome to ISEXY!`;
         htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -194,12 +194,12 @@ const handler = async (req: Request): Promise<Response> => {
             <body>
               <div class="container">
                 <div class="header">
-                  <h1 style="font-size: 32px;">🔥 CubaDate</h1>
+                  <h1 style="font-size: 32px;">🔥 ISEXY</h1>
                   <p style="font-size: 20px; margin: 0;">¡Bienvenido!</p>
                 </div>
                 <div class="content">
                   <p style="font-size: 18px;">Hello ${firstName}! 👋</p>
-                  <p>Welcome to CubaDate - where authentic Cuban connections meet the world!</p>
+                  <p>Welcome to ISEXY - where authentic Cuban connections meet the world!</p>
                   <div class="tips">
                     <p style="font-weight: bold; margin-bottom: 10px;">Quick tips to get started:</p>
                     <div class="tip">📸 Add at least 3 photos to boost your visibility</div>
@@ -208,7 +208,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <div class="tip">✅ Verify your profile for more trust</div>
                   </div>
                   <center>
-                    <a href="https://cubadate.com/discover" class="button">Start Matching →</a>
+                    <a href="https://isexy.ca/discover" class="button">Start Matching →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px; text-align: center;">Happy matching! 💕</p>
                 </div>
@@ -232,7 +232,7 @@ const handler = async (req: Request): Promise<Response> => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "CubaDate <notifications@cubadate.com>",
+          from: "ISEXY <notifications@isexy.ca>",
           to: [email],
           subject,
           html: htmlContent,

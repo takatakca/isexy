@@ -98,7 +98,7 @@ export default function WebSignup() {
           <div className="w-10 h-10 bg-gradient-to-br from-primary to-pink-500 rounded-xl flex items-center justify-center">
             <Heart className="w-6 h-6 text-white fill-white" />
           </div>
-          <span className="text-2xl font-bold text-foreground">CubaDate</span>
+          <span className="text-2xl font-bold text-foreground">ISEXY</span>
         </div>
       </header>
 
@@ -242,7 +242,7 @@ export default function WebSignup() {
 
       {/* Footer */}
       <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground text-sm">
-        <p>© 2024 CubaDate. All rights reserved.</p>
+        <p>© 2024 ISEXY. All rights reserved.</p>
         <div className="flex justify-center gap-6 mt-4">
           <a href="/privacy" className="hover:text-foreground">Privacy</a>
           <a href="/terms" className="hover:text-foreground">Terms</a>

@@ -7,22 +7,22 @@ export default function CommunityGuidelines() {
       <ScrollArea className="h-[calc(100vh-120px)]">
         <div className="space-y-6 pr-4">
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-2">Welcome to CubaDate!</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">Welcome to ISEXY!</h2>
             <p className="text-muted-foreground">
-              CubaDate is where meaningful connections can happen. It Starts With a Swipe™. Sometimes you click. 
+              ISEXY is where meaningful connections can happen. It Starts With a Swipe™. Sometimes you click. 
               Sometimes you don't. And sometimes the talking leads to more. Opportunity is overflowing. 
               Possibilities are endless. All (adults) are welcome to come explore.
             </p>
           </div>
 
           <p className="text-muted-foreground">
-            We want CubaDate to be a fun, safe and inclusive space where anyone can be themselves while getting 
+            We want ISEXY to be a fun, safe and inclusive space where anyone can be themselves while getting 
             to know others. That's what these Community Guidelines are for–to set expectations for everyone's 
             behavior, both on and off the app.
           </p>
 
           <div>
-            <h3 className="text-lg font-bold text-foreground mb-3">CubaDate's Rules:</h3>
+            <h3 className="text-lg font-bold text-foreground mb-3">ISEXY's Rules:</h3>
             
             <div className="space-y-4">
               <div>
@@ -55,7 +55,7 @@ export default function CommunityGuidelines() {
                 <h4 className="font-semibold text-foreground">4. Make personal connections, not biz ones</h4>
                 <p className="text-muted-foreground text-sm">
                   Don't advertise, promote, share your social handles to gain followers, sell stuff, fundraise, 
-                  or campaign. This also means CubaDate isn't the place for any sort of sex work, escort services, 
+                  or campaign. This also means ISEXY isn't the place for any sort of sex work, escort services, 
                   or compensated relationships.
                 </p>
               </div>
@@ -88,7 +88,7 @@ export default function CommunityGuidelines() {
               <div>
                 <h4 className="font-semibold text-foreground">8. Adults only</h4>
                 <p className="text-muted-foreground text-sm">
-                  You must be 18 years of age or older to use CubaDate. This also means we don't allow photos of 
+                  You must be 18 years of age or older to use ISEXY. This also means we don't allow photos of 
                   unaccompanied or unclothed minors.
                 </p>
               </div>
@@ -96,7 +96,7 @@ export default function CommunityGuidelines() {
               <div>
                 <h4 className="font-semibold text-foreground">9. Abide by the law</h4>
                 <p className="text-muted-foreground text-sm">
-                  No illegal content or activities are allowed, ever. This means you can't use CubaDate to buy or 
+                  No illegal content or activities are allowed, ever. This means you can't use ISEXY to buy or 
                   sell drugs or counterfeit goods, or ask for assistance to help you break the law.
                 </p>
               </div>
@@ -118,9 +118,9 @@ export default function CommunityGuidelines() {
               </div>
 
               <div>
-                <h4 className="font-semibold text-foreground">12. Be a good CubaDate user</h4>
+                <h4 className="font-semibold text-foreground">12. Be a good ISEXY user</h4>
                 <p className="text-muted-foreground text-sm">
-                  Don't abuse CubaDate. Don't use CubaDate to spread false or misleading information. Don't spam 
+                  Don't abuse ISEXY. Don't use ISEXY to spread false or misleading information. Don't spam 
                   harmful links or unsolicited content. Don't submit false, misleading, or malicious reports.
                 </p>
               </div>
@@ -130,7 +130,7 @@ export default function CommunityGuidelines() {
           <div>
             <h3 className="text-lg font-bold text-foreground mb-2">Reporting</h3>
             <p className="text-muted-foreground text-sm">
-              As a member of the CubaDate community, we encourage you to speak up and speak out. If someone is 
+              As a member of the ISEXY community, we encourage you to speak up and speak out. If someone is 
               causing you harm or is violating our Community Guidelines–report it. Your report is always treated 
               as confidential. By reporting, you can help us stop harmful behavior and protect others.
             </p>

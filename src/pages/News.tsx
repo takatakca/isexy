@@ -14,7 +14,7 @@ const newsArticles = [
   {
     id: 2,
     title: "New Safety Features Rolling Out Globally",
-    subtitle: "CubaDate expands facial verification feature across more countries, setting a new standard for dating safety.",
+    subtitle: "ISEXY expands facial verification feature across more countries, setting a new standard for dating safety.",
     date: "22 October 2025",
     category: "Safety",
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop",
