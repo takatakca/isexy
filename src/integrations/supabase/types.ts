@@ -1851,6 +1851,36 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_line_inbound_call_logs: {
+        Row: {
+          call_sid: string | null
+          call_status: string
+          caller_hash: string | null
+          caller_masked: string | null
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          call_sid?: string | null
+          call_status?: string
+          caller_hash?: string | null
+          caller_masked?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          call_sid?: string | null
+          call_status?: string
+          caller_hash?: string | null
+          caller_masked?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       phone_line_numbers: {
         Row: {
           created_at: string
