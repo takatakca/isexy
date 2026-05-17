@@ -35,7 +35,7 @@ export function PhotoVerificationModal({
         <div className="space-y-3">
           <button
             onClick={onContinue}
-            className="w-full py-4 bg-foreground text-background rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
+            className="w-full py-4 bg-background text-background rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
           >
             Continue
           </button>

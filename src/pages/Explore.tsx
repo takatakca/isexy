@@ -122,7 +122,7 @@ export default function Explore() {
                       )}
                       <div className={`absolute inset-0 bg-gradient-to-br ${item.color} mix-blend-multiply`} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                      <div className="absolute top-3 right-3 bg-foreground/90 text-background text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
+                      <div className="absolute top-3 right-3 bg-background/90 text-background text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
                         <Users className="w-3 h-3" />
                         {item.count}
                       </div>

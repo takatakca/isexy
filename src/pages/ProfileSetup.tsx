@@ -311,7 +311,7 @@ export default function ProfileSetup() {
               <div className="bg-muted/30 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold">About me</span>
-                  <button className="w-8 h-8 bg-foreground text-background rounded-full flex items-center justify-center">
+                  <button className="w-8 h-8 bg-background text-background rounded-full flex items-center justify-center">
                     <span className="text-xl">+</span>
                   </button>
                 </div>
@@ -533,7 +533,7 @@ export default function ProfileSetup() {
             
             <button
               onClick={() => navigate("/settings")}
-              className="mt-4 w-full py-3 bg-foreground text-background rounded-full font-semibold hover:bg-foreground/90 transition-colors"
+              className="mt-4 w-full py-3 bg-background text-background rounded-full font-semibold hover:bg-background/90 transition-colors"
             >
               Personalize
             </button>

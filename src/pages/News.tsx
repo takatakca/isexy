@@ -94,7 +94,7 @@ export default function News() {
               onClick={() => setSelectedCategory(category)}
               className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
                 selectedCategory === category
-                  ? "bg-foreground text-background"
+                  ? "bg-background text-background"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
@@ -118,7 +118,7 @@ export default function News() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-3 left-3">
-                <span className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full">
+                <span className="px-3 py-1 bg-primary text-foreground text-xs font-bold rounded-full">
                   {filteredArticles[0].category}
                 </span>
               </div>

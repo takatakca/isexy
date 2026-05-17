@@ -255,7 +255,7 @@ export default function MySubscription() {
             <div
               key={tier}
               className={`w-2 h-2 rounded-full transition-colors ${
-                activeTier === tier ? "bg-foreground" : "bg-muted"
+                activeTier === tier ? "bg-background" : "bg-muted"
               }`}
             />
           ))}

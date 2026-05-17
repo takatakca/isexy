@@ -18,10 +18,10 @@ export function AuthButton({
   
   const variants = {
     social: "bg-card text-foreground shadow-button hover:shadow-medium border border-border",
-    primary: "gradient-primary text-primary-foreground shadow-button hover:shadow-glow hover:opacity-95",
+    primary: "gradient-primary text-foreground shadow-button hover:shadow-glow hover:opacity-95",
     secondary: "bg-secondary text-secondary-foreground hover:bg-muted",
-    outline: "bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10",
-    dark: "bg-foreground text-background hover:bg-foreground/90",
+    outline: "bg-transparent border-2 border-primary-foreground text-foreground hover:bg-primary-foreground/10",
+    dark: "bg-background text-background hover:bg-background/90",
   };
 
   return (

@@ -260,7 +260,7 @@ export default function Messages() {
                 <div
                   key={idx}
                   className={`w-2 h-2 rounded-full ${
-                    idx === safetySlide ? "bg-foreground" : "bg-muted-foreground/30"
+                    idx === safetySlide ? "bg-background" : "bg-muted-foreground/30"
                   }`}
                 />
               ))}
@@ -380,7 +380,7 @@ export default function Messages() {
                     </h3>
                     {match.unread_count > 0 && (
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <span className="text-xs font-bold text-primary-foreground">
+                        <span className="text-xs font-bold text-foreground">
                           {match.unread_count > 9 ? "9+" : match.unread_count}
                         </span>
                       </span>
