@@ -95,7 +95,7 @@ export default function EditBio() {
         {/* Bio tip */}
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-foreground rounded-full">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-background rounded-full">
               <Lightbulb className="w-4 h-4 text-background" />
               <span className="text-sm font-semibold text-background">Bio tip</span>
             </div>
@@ -114,7 +114,7 @@ export default function EditBio() {
                 key={idx}
                 onClick={() => setCurrentTip(idx)}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  idx === currentTip ? "bg-foreground" : "bg-muted"
+                  idx === currentTip ? "bg-background" : "bg-muted"
                 }`}
               />
             ))}

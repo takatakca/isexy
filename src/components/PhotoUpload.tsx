@@ -116,7 +116,7 @@ export function PhotoUpload({ photos, onPhotosChange, maxPhotos = 6, userId }: P
             className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-colors ${
               photos[index]
                 ? "bg-destructive text-white hover:bg-destructive/90"
-                : "bg-foreground text-background hover:bg-foreground/90"
+                : "bg-background text-background hover:bg-background/90"
             }`}
           >
             {photos[index] ? (

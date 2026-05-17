@@ -86,7 +86,7 @@ export default function Profile() {
             </div>
             <button
               onClick={() => navigate("/edit-profile")}
-              className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-semibold text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-background text-background rounded-full font-semibold text-sm"
             >
               <Pencil className="w-4 h-4" />
               Edit profile

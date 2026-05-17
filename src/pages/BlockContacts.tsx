@@ -198,7 +198,7 @@ export default function BlockContacts() {
             <div className="flex-1 flex flex-col items-center justify-center py-20">
               <button
                 onClick={handleImportContacts}
-                className="px-8 py-3 bg-foreground text-background rounded-full font-semibold"
+                className="px-8 py-3 bg-background text-background rounded-full font-semibold"
               >
                 Import Contacts
               </button>

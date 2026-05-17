@@ -220,7 +220,7 @@ export function DraggablePhotoUpload({
                 
                 {/* Position badge */}
                 {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded">
+                  <div className="absolute top-2 left-2 bg-primary text-foreground text-xs font-bold px-2 py-1 rounded">
                     Main
                   </div>
                 )}
@@ -254,7 +254,7 @@ export function DraggablePhotoUpload({
               className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-colors ${
                 photo
                   ? "bg-destructive text-white hover:bg-destructive/90"
-                  : "bg-foreground text-background hover:bg-foreground/90"
+                  : "bg-background text-background hover:bg-background/90"
               }`}
             >
               {photo ? (

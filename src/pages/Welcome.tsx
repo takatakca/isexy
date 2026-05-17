@@ -86,7 +86,7 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen bg-foreground text-primary-foreground overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden">
       {/* Nav */}
       <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4 z-30">
         <div className="flex items-center gap-2">
@@ -95,7 +95,7 @@ export default function Welcome() {
         </div>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="w-10 h-10 flex items-center justify-center text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+          className="w-10 h-10 flex items-center justify-center text-foreground/80 hover:text-foreground transition-colors"
         >
           {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -109,16 +109,16 @@ export default function Welcome() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-20 bg-foreground flex flex-col"
+            className="fixed inset-0 z-20 bg-background flex flex-col"
           >
             <div className="flex items-center justify-between px-6 py-4">
               <div className="flex items-center gap-2">
                 <Logo size="sm" variant="light" showText={false} />
-                <span className="text-lg font-extrabold tracking-tight text-primary-foreground">ISEXY</span>
+                <span className="text-lg font-extrabold tracking-tight text-foreground">ISEXY</span>
               </div>
               <button
                 onClick={() => setMenuOpen(false)}
-                className="w-10 h-10 flex items-center justify-center text-primary-foreground/80 hover:text-primary-foreground"
+                className="w-10 h-10 flex items-center justify-center text-foreground/80 hover:text-foreground"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -138,14 +138,14 @@ export default function Welcome() {
                     className={`w-full flex items-center justify-between px-4 py-4 rounded-xl text-left font-semibold text-base transition-colors ${
                       expandedSection === section.title
                         ? "bg-primary-foreground/5 text-primary"
-                        : "bg-primary-foreground/[0.03] text-primary-foreground hover:bg-primary-foreground/5"
+                        : "bg-primary-foreground/[0.03] text-foreground hover:bg-primary-foreground/5"
                     }`}
                   >
                     {section.title}
                     {section.expandable && (
                       expandedSection === section.title
                         ? <ChevronUp className="w-5 h-5 text-primary" />
-                        : <ChevronDown className="w-5 h-5 text-primary-foreground/40" />
+                        : <ChevronDown className="w-5 h-5 text-foreground/40" />
                     )}
                   </button>
                   <AnimatePresence>
@@ -162,7 +162,7 @@ export default function Welcome() {
                             <button
                               key={item.label}
                               onClick={() => { setMenuOpen(false); navigate(item.path); }}
-                              className="w-full text-left px-4 py-3 text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+                              className="w-full text-left px-4 py-3 text-sm text-foreground/70 hover:text-foreground transition-colors"
                             >
                               {item.label}
                             </button>
@@ -181,8 +181,8 @@ export default function Welcome() {
               >
                 Log in
               </button>
-              <div className="flex items-center justify-center gap-2 text-primary-foreground/50">
-                <LanguageSelector variant="icon" className="text-primary-foreground/50 hover:text-primary-foreground" />
+              <div className="flex items-center justify-center gap-2 text-foreground/50">
+                <LanguageSelector variant="icon" className="text-foreground/50 hover:text-foreground" />
                 <span className="text-sm">Language</span>
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function Welcome() {
           >
             <button
               onClick={() => navigate("/signup")}
-              className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-full text-base shadow-lg hover:brightness-110 transition-all active:scale-[0.98]"
+              className="w-full py-3.5 bg-primary text-foreground font-bold rounded-full text-base shadow-lg hover:brightness-110 transition-all active:scale-[0.98]"
             >
               Create account
             </button>
@@ -274,7 +274,7 @@ export default function Welcome() {
       </section>
 
       {/* Cuban Registration Card - below hero */}
-      <section className="bg-foreground px-6 py-6">
+      <section className="bg-background px-6 py-6">
         <div className="max-w-md mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -285,13 +285,13 @@ export default function Welcome() {
             <div className="flex items-center gap-3 mb-3">
               <span className="text-xl">🇨🇺</span>
               <div>
-                <p className="font-bold text-sm text-primary-foreground">Cuban? Sign up FREE</p>
-                <p className="text-primary-foreground/50 text-xs">Get verified and start connecting</p>
+                <p className="font-bold text-sm text-foreground">Cuban? Sign up FREE</p>
+                <p className="text-foreground/50 text-xs">Get verified and start connecting</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/cuban-signup")}
-              className="w-full py-2.5 bg-primary text-primary-foreground font-bold rounded-xl hover:brightness-110 transition-all text-sm active:scale-[0.98]"
+              className="w-full py-2.5 bg-primary text-foreground font-bold rounded-xl hover:brightness-110 transition-all text-sm active:scale-[0.98]"
             >
               Cuban Registration (Free)
             </button>
@@ -315,7 +315,7 @@ export default function Welcome() {
               >
                 <f.icon className="w-6 h-6 text-primary mb-2" />
                 <p className="font-bold text-sm">{f.title}</p>
-                <p className="text-primary-foreground/50 text-xs mt-1">{f.desc}</p>
+                <p className="text-foreground/50 text-xs mt-1">{f.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -349,8 +349,8 @@ export default function Welcome() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm">{story.names}</p>
-                  <p className="text-primary-foreground/40 text-xs mb-1">{story.location}</p>
-                  <p className="text-primary-foreground/70 text-sm italic">"{story.quote}"</p>
+                  <p className="text-foreground/40 text-xs mb-1">{story.location}</p>
+                  <p className="text-foreground/70 text-sm italic">"{story.quote}"</p>
                 </div>
               </motion.div>
             ))}
@@ -363,15 +363,15 @@ export default function Welcome() {
         <div className="max-w-lg mx-auto flex justify-around text-center">
           <div>
             <p className="text-3xl font-extrabold text-primary">50K+</p>
-            <p className="text-primary-foreground/50 text-xs mt-1">Active Members</p>
+            <p className="text-foreground/50 text-xs mt-1">Active Members</p>
           </div>
           <div>
             <p className="text-3xl font-extrabold text-primary">12K+</p>
-            <p className="text-primary-foreground/50 text-xs mt-1">Matches Made</p>
+            <p className="text-foreground/50 text-xs mt-1">Matches Made</p>
           </div>
           <div>
             <p className="text-3xl font-extrabold text-primary">3K+</p>
-            <p className="text-primary-foreground/50 text-xs mt-1">Love Stories</p>
+            <p className="text-foreground/50 text-xs mt-1">Love Stories</p>
           </div>
         </div>
       </section>
@@ -379,7 +379,7 @@ export default function Welcome() {
       {/* About / SEO Text */}
       <section className="px-6 py-12">
         <div className="max-w-lg mx-auto">
-          <p className="text-primary-foreground/50 text-sm leading-relaxed mb-4">
+          <p className="text-foreground/50 text-sm leading-relaxed mb-4">
             Looking for love, new friends, or just want to have fun? ISEXY.CA is where it happens. 
             With thousands of matches made, it's the best way to meet your next date.
           </p>
@@ -395,19 +395,19 @@ export default function Welcome() {
           </div>
           <div className="grid grid-cols-2 gap-4 text-sm mb-6">
             <div className="space-y-2">
-              <Link to="/faq" className="block text-primary-foreground/50 hover:text-primary-foreground">FAQ</Link>
-              <Link to="/about" className="block text-primary-foreground/50 hover:text-primary-foreground">About</Link>
-              <Link to="/safety" className="block text-primary-foreground/50 hover:text-primary-foreground">Safety</Link>
-              <Link to="/contact-us" className="block text-primary-foreground/50 hover:text-primary-foreground">Contact</Link>
+              <Link to="/faq" className="block text-foreground/50 hover:text-foreground">FAQ</Link>
+              <Link to="/about" className="block text-foreground/50 hover:text-foreground">About</Link>
+              <Link to="/safety" className="block text-foreground/50 hover:text-foreground">Safety</Link>
+              <Link to="/contact-us" className="block text-foreground/50 hover:text-foreground">Contact</Link>
             </div>
             <div className="space-y-2">
-              <Link to="/terms" className="block text-primary-foreground/50 hover:text-primary-foreground">Terms</Link>
-              <Link to="/privacy" className="block text-primary-foreground/50 hover:text-primary-foreground">Privacy</Link>
-              <Link to="/cookie-policy" className="block text-primary-foreground/50 hover:text-primary-foreground">Cookies</Link>
-              <Link to="/consumer-health-privacy" className="block text-primary-foreground/50 hover:text-primary-foreground">Health Privacy</Link>
+              <Link to="/terms" className="block text-foreground/50 hover:text-foreground">Terms</Link>
+              <Link to="/privacy" className="block text-foreground/50 hover:text-foreground">Privacy</Link>
+              <Link to="/cookie-policy" className="block text-foreground/50 hover:text-foreground">Cookies</Link>
+              <Link to="/consumer-health-privacy" className="block text-foreground/50 hover:text-foreground">Health Privacy</Link>
             </div>
           </div>
-          <p className="text-primary-foreground/30 text-xs">© {new Date().getFullYear()} ISEXY.CA — All rights reserved.</p>
+          <p className="text-foreground/30 text-xs">© {new Date().getFullYear()} ISEXY.CA — All rights reserved.</p>
         </div>
       </footer>
     </div>
