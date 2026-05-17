@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Briefcase, GraduationCap, BadgeCheck, Languages } from "lucide-react";
+import { MapPin, Briefcase, GraduationCap, BadgeCheck, Languages, Heart, X, Star } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -28,7 +28,6 @@ interface SwipeCardProps {
 export function SwipeCard({
   profile,
   style,
-  onImageTap,
   showLikeIndicator,
   showNopeIndicator,
   showSuperLikeIndicator,
@@ -39,34 +38,32 @@ export function SwipeCard({
   const handleImageTap = (e: React.MouseEvent) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const isRightSide = x > rect.width / 2;
-
-    if (isRightSide) {
-      if (currentImageIndex < profile.photos.length - 1) {
-        setCurrentImageIndex((prev) => prev + 1);
-      }
-    } else {
-      if (currentImageIndex > 0) {
-        setCurrentImageIndex((prev) => prev - 1);
-      }
+    const isRightSide = e.clientX - rect.left > rect.width / 2;
+    if (isRightSide && currentImageIndex < profile.photos.length - 1) {
+      setCurrentImageIndex((prev) => prev + 1);
+    } else if (!isRightSide && currentImageIndex > 0) {
+      setCurrentImageIndex((prev) => prev - 1);
     }
   };
 
   return (
     <div
-      className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl bg-card select-none"
-      style={style}
+      className="absolute inset-0 rounded-3xl overflow-hidden bg-card select-none"
+      style={{
+        ...style,
+        boxShadow: "0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px hsl(var(--border))",
+      }}
     >
-      {/* Image segments indicator */}
-      <div className="absolute top-2 left-2 right-2 flex gap-1 z-20">
+      {/* Photo progress bars */}
+      <div className="absolute top-3 left-3 right-3 flex gap-1.5 z-20">
         {profile.photos.map((_, idx) => (
-          <div
-            key={idx}
-            className={`h-1 flex-1 rounded-full transition-colors ${
-              idx === currentImageIndex ? "bg-white" : "bg-white/40"
-            }`}
-          />
+          <div key={idx} className="h-1 flex-1 rounded-full overflow-hidden bg-white/25">
+            <div
+              className={`h-full bg-white transition-all duration-300 ${
+                idx === currentImageIndex ? "w-full" : idx < currentImageIndex ? "w-full opacity-60" : "w-0"
+              }`}
+            />
+          </div>
         ))}
       </div>
 
@@ -81,78 +78,69 @@ export function SwipeCard({
           />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
-            <span className="text-6xl font-bold text-muted-foreground">
+            <span className="text-7xl font-extrabold text-muted-foreground">
               {profile.first_name[0]}
             </span>
           </div>
         )}
       </div>
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+      {/* Richer gradient for legibility */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
 
-      {/* Swipe indicators */}
+      {/* Swipe indicators — premium pill style */}
       {showLikeIndicator && (
-        <div className="absolute top-24 left-6 px-6 py-3 border-4 border-green-500 text-green-500 font-bold text-3xl -rotate-12 z-30">
-          LIKE
+        <div className="absolute top-20 left-6 px-5 py-2 rounded-2xl bg-emerald-500/15 border-2 border-emerald-400 text-emerald-300 font-extrabold text-2xl -rotate-12 z-30 backdrop-blur-sm flex items-center gap-2">
+          <Heart className="w-6 h-6 fill-current" /> LIKE
         </div>
       )}
       {showNopeIndicator && (
-        <div className="absolute top-24 right-6 px-6 py-3 border-4 border-rose-500 text-rose-500 font-bold text-3xl rotate-12 z-30">
-          NOPE
+        <div className="absolute top-20 right-6 px-5 py-2 rounded-2xl bg-rose-500/15 border-2 border-rose-400 text-rose-300 font-extrabold text-2xl rotate-12 z-30 backdrop-blur-sm flex items-center gap-2">
+          <X className="w-6 h-6" /> NOPE
         </div>
       )}
       {showSuperLikeIndicator && (
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 px-6 py-3 border-4 border-cyan-400 text-cyan-400 font-bold text-3xl z-30">
-          SUPER LIKE
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 px-6 py-2 rounded-2xl bg-cyan-500/15 border-2 border-cyan-400 text-cyan-300 font-extrabold text-2xl z-30 backdrop-blur-sm flex items-center gap-2">
+          <Star className="w-6 h-6 fill-current" /> SUPER
         </div>
       )}
 
       {/* Profile info */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 text-white z-10">
-        <div className="flex items-center gap-2 mb-1">
-          <h2 className="text-2xl font-bold">
-            {profile.first_name}, {profile.age}
+      <div className="absolute bottom-0 left-0 right-0 p-5 pb-6 text-white z-10">
+        <div className="flex items-end gap-2 mb-2">
+          <h2 className="text-3xl font-extrabold leading-none tracking-tight">
+            {profile.first_name}
           </h2>
+          <span className="text-2xl font-light leading-none opacity-90">{profile.age}</span>
           {profile.is_verified && (
-            <BadgeCheck className="w-6 h-6 text-cyan-400 fill-cyan-400" />
+            <BadgeCheck className="w-6 h-6 text-cyan-300 fill-cyan-400/20 ml-1 mb-0.5" />
           )}
         </div>
 
-        {profile.distance && (
-          <p className="text-white/80 text-sm flex items-center gap-1 mb-1">
-            <MapPin className="w-3 h-3" />
-            {profile.distance} km away
-          </p>
-        )}
-
-        {(profile.job_title || profile.company) && (
-          <p className="text-white/80 text-sm flex items-center gap-1 mb-1">
-            <Briefcase className="w-3 h-3" />
-            {profile.job_title}
-            {profile.company && ` at ${profile.company}`}
-          </p>
-        )}
-
-        {profile.school && (
-          <p className="text-white/80 text-sm flex items-center gap-1">
-            <GraduationCap className="w-3 h-3" />
-            {profile.school}
-          </p>
-        )}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/85 mb-2">
+          {profile.distance != null && (
+            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{profile.distance} km</span>
+          )}
+          {profile.city && !profile.distance && (
+            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{profile.city}</span>
+          )}
+          {profile.job_title && (
+            <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{profile.job_title}{profile.company ? ` · ${profile.company}` : ""}</span>
+          )}
+          {profile.school && (
+            <span className="flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" />{profile.school}</span>
+          )}
+        </div>
 
         {profile.bio && (
-          <button
-            onClick={() => setShowInfo(!showInfo)}
-            className="mt-2 text-left"
-          >
-            <p className={`text-white/90 text-sm ${showInfo ? "" : "line-clamp-2"}`}>
+          <button onClick={() => setShowInfo(!showInfo)} className="mt-1 text-left w-full" aria-label="Toggle bio">
+            <p className={`text-white/95 text-sm leading-snug ${showInfo ? "" : "line-clamp-2"}`}>
               {profile.translatedBio || profile.bio}
             </p>
             {profile.translatedBio && (
               <div className="flex items-center gap-1 mt-1 text-white/60 text-xs">
-                <Languages className="w-3 h-3" />
-                <span>Translated</span>
+                <Languages className="w-3 h-3" /><span>Translated</span>
               </div>
             )}
           </button>

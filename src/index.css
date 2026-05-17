@@ -9,207 +9,145 @@
 
 @layer base {
   :root {
-    /* ISEXY - Tinder-inspired coral theme */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
+    /* ISEXY — Coral on dark, premium dating */
+    --background: 240 10% 6%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --card: 240 8% 10%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --popover: 240 8% 10%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Coral/Salmon primary - Tinder signature */
-    --primary: 350 89% 60%;
+    --primary: 353 100% 67%;        /* #ff5864 */
     --primary-foreground: 0 0% 100%;
+    --primary-light: 22 100% 78%;   /* #ffb199 */
+    --primary-dark: 353 70% 50%;
 
-    /* Lighter coral for hover states */
-    --primary-light: 355 100% 72%;
-    
-    /* Deep coral for accents */
-    --primary-dark: 345 82% 52%;
+    --secondary: 240 6% 14%;
+    --secondary-foreground: 0 0% 98%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 13%;
+    --muted: 240 5% 16%;
+    --muted-foreground: 240 5% 65%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-
-    --accent: 350 89% 60%;
+    --accent: 353 100% 67%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 75% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 350 89% 60%;
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 353 100% 67%;
 
-    --radius: 9999px;
+    --radius: 1rem;
 
-    /* Gradient colors for hero backgrounds */
-    --gradient-start: 350 89% 60%;
-    --gradient-end: 15 95% 60%;
+    --gradient-start: 353 100% 67%;
+    --gradient-end: 22 100% 70%;
 
-    /* Social button colors */
+    --link: 353 100% 72%;
     --google: 0 0% 100%;
     --facebook: 221 44% 41%;
     --phone: 0 0% 100%;
 
-    /* Link color */
-    --link: 350 89% 60%;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 240 8% 8%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 353 100% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 6% 14%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 6% 18%;
+    --sidebar-ring: 353 100% 67%;
   }
 
+  /* .dark mirrors :root — app is dark-first */
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 95%;
-
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 95%;
-
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 95%;
-
-    --primary: 350 89% 60%;
+    --background: 240 10% 6%;
+    --foreground: 0 0% 98%;
+    --card: 240 8% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 8% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 353 100% 67%;
     --primary-foreground: 0 0% 100%;
-
-    --primary-light: 355 100% 72%;
-    --primary-dark: 345 82% 52%;
-
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 95%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 350 89% 60%;
+    --primary-light: 22 100% 78%;
+    --primary-dark: 353 70% 50%;
+    --secondary: 240 6% 14%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 353 100% 67%;
     --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 95%;
-
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 350 89% 60%;
-
-    --gradient-start: 350 89% 60%;
-    --gradient-end: 15 95% 60%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 353 100% 67%;
+    --gradient-start: 353 100% 67%;
+    --gradient-end: 22 100% 70%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
-  html {
-    font-family: 'Nunito', sans-serif;
-  }
-
+  * { @apply border-border; }
+  html { font-family: 'Nunito', sans-serif; }
   body {
     @apply bg-background text-foreground antialiased;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer components {
   .gradient-primary {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--gradient-start)) 0%,
-      hsl(var(--gradient-end)) 100%
-    );
+    background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
   }
-
   .gradient-primary-vertical {
-    background: linear-gradient(
-      180deg,
-      hsl(var(--gradient-start)) 0%,
-      hsl(var(--gradient-end)) 100%
-    );
+    background: linear-gradient(180deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
   }
-
   .text-gradient {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--gradient-start)) 0%,
-      hsl(var(--gradient-end)) 100%
-    );
+    background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+  .glow-primary {
+    box-shadow: 0 10px 40px -10px hsl(var(--primary) / 0.55);
+  }
+  .surface-elevated {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+  }
+  .cta-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground font-bold px-6 py-3.5 transition-all active:scale-[0.98] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: 0 8px 24px -8px hsl(var(--primary) / 0.5);
+  }
+  .cta-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card text-foreground font-bold px-6 py-3.5 transition-colors hover:bg-muted active:scale-[0.98];
+  }
 }
 
 @layer utilities {
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .animate-pulse-soft {
-    animation: pulse-soft 2s ease-in-out infinite;
-  }
-
-  .animate-slide-up {
-    animation: slide-up 0.5s ease-out;
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.4s ease-out;
-  }
+  .animate-float { animation: float 3s ease-in-out infinite; }
+  .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+  .animate-slide-up { animation: slide-up 0.5s ease-out; }
+  .animate-fade-in { animation: fade-in 0.4s ease-out; }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-top { padding-top: env(safe-area-inset-top); }
 }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
-
 @keyframes pulse-soft {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
-
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
