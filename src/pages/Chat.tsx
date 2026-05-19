@@ -550,9 +550,13 @@ export default function Chat() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-muted-foreground">
-              Say hi to {otherProfile?.first_name}! 👋
+          <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
+              <span className="text-3xl">👋</span>
+            </div>
+            <h3 className="font-bold text-foreground mb-1">You matched!</h3>
+            <p className="text-sm text-muted-foreground">
+              Say hi to {otherProfile?.first_name} — break the ice.
             </p>
           </div>
         ) : (
