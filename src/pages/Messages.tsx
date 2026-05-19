@@ -259,8 +259,8 @@ export default function Messages() {
               {safetySlides.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-2 h-2 rounded-full ${
-                    idx === safetySlide ? "bg-background" : "bg-muted-foreground/30"
+                  className={`h-2 rounded-full transition-all ${
+                    idx === safetySlide ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30"
                   }`}
                 />
               ))}
