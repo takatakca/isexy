@@ -624,25 +624,29 @@ export default function Chat() {
       )}
 
       {/* Input */}
-      <footer className="p-4 border-t border-border bg-card">
+      <footer className="sticky bottom-0 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-border/60 bg-background/90 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={newMessage}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder={isBanned ? "Messaging restricted..." : "Type a message..."}
+            placeholder={isBanned ? "Messaging restricted…" : `Message ${otherProfile?.first_name ?? ""}…`}
             disabled={isBanned}
-            className="flex-1 px-4 py-3 bg-muted rounded-full outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            className="flex-1 px-5 py-3 bg-muted/60 border border-border/60 rounded-full outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground disabled:opacity-50 transition-all"
           />
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending || isBanned}
-            className="w-12 h-12 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 transition-opacity"
+            className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-full shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none enabled:active:scale-95 transition-all"
+            aria-label="Send message"
           >
-            <Send className="w-5 h-5" />
+            {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
         </div>
+        <p className="text-[10px] text-muted-foreground text-center mt-2">
+          Your phone number stays private. Be kind. Report anything off.
+        </p>
       </footer>
 
       {/* Schedule Call Modal */}
