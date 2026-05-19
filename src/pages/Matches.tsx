@@ -169,156 +169,200 @@ export default function Matches() {
   }, [profile]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <button onClick={() => navigate("/discover")} className="p-2">
+      <header className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+        <button
+          onClick={() => navigate("/discover")}
+          className="p-2 -ml-2 rounded-full hover:bg-muted/60 transition-colors"
+          aria-label="Back to discover"
+        >
           <Flame className="w-6 h-6 text-muted-foreground" />
         </button>
-        <h1 className="text-xl font-bold text-foreground">Matches</h1>
-        <button onClick={() => navigate("/messages")} className="p-2">
+        <h1 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          Matches
+        </h1>
+        <button
+          onClick={() => navigate("/messages")}
+          className="p-2 -mr-2 rounded-full hover:bg-muted/60 transition-colors"
+          aria-label="Open messages"
+        >
           <MessageCircle className="w-6 h-6 text-primary" />
         </button>
       </header>
 
-      <main className="p-4">
+      <main className="px-4 pt-4 safe-bottom">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        ) : matches.length === 0 ? (
-          <div className="text-center py-20">
-            <Heart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-bold text-foreground mb-2">No matches yet</h2>
-            <p className="text-muted-foreground">
-              Keep swiping to find your perfect match!
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-foreground">
-              Your Matches ({matches.length})
-            </h2>
-
-            {/* New Matches Grid */}
-            <div className="grid grid-cols-3 gap-2 mb-6">
-              {matches.slice(0, 6).map((match) => (
-                <button
-                  key={match.id}
-                  onClick={() => setContactModal({
-                    matchId: match.id,
-                    otherName: match.other_profile.first_name,
-                    otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
-                  })}
-                  className="relative aspect-square rounded-xl overflow-hidden"
-                >
-                  {match.other_profile.photos[0] ? (
-                    <img
-                      src={match.other_profile.photos[0].photo_url}
-                      alt={match.other_profile.first_name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-2xl font-bold text-muted-foreground">
-                        {match.other_profile.first_name[0]}
-                      </span>
-                    </div>
-                  )}
-                  {/* Online status indicator */}
-                  <div className="absolute top-2 right-2">
-                    <OnlineStatusIndicator 
-                      lastActiveAt={match.other_profile.last_active_at} 
-                      size="sm"
-                    />
-                  </div>
-                  {/* Unread badge */}
-                  {match.unread_count > 0 && (
-                    <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">
-                        {match.unread_count > 9 ? "9+" : match.unread_count}
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 p-2">
-                    <p className="text-white text-sm font-semibold truncate">
-                      {match.other_profile.first_name}
-                    </p>
-                  </div>
-                </button>
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-2xl bg-muted/40 animate-pulse" />
               ))}
             </div>
-
-            {/* Match List */}
             <div className="space-y-2">
-              {matches.map((match) => (
-                <button
-                  key={match.id}
-                  onClick={() => setContactModal({
-                    matchId: match.id,
-                    otherName: match.other_profile.first_name,
-                    otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
-                  })}
-                  className="w-full flex items-center gap-3 p-3 bg-card rounded-xl border border-border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3">
+                  <div className="w-14 h-14 rounded-full bg-muted/40 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-1/3 bg-muted/40 rounded animate-pulse" />
+                    <div className="h-3 w-2/3 bg-muted/30 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : matches.length === 0 ? (
+          <div className="text-center py-24 px-6">
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-secondary/20 blur-2xl" />
+              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-xl shadow-primary/30">
+                <Heart className="w-12 h-12 text-primary-foreground fill-current" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">No matches yet</h2>
+            <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+              Keep swiping — your next great conversation is one tap away.
+            </p>
+            <button
+              onClick={() => navigate("/discover")}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-shadow"
+            >
+              <Flame className="w-4 h-4" />
+              Start swiping
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-baseline justify-between mb-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  New matches
+                </h2>
+                <span className="text-xs text-muted-foreground">{matches.length} total</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {matches.slice(0, 6).map((match) => (
+                  <button
+                    key={match.id}
+                    onClick={() => setContactModal({
+                      matchId: match.id,
+                      otherName: match.other_profile.first_name,
+                      otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
+                    })}
+                    className="group relative aspect-square rounded-2xl overflow-hidden ring-1 ring-border/60 hover:ring-primary/60 transition-all"
+                  >
                     {match.other_profile.photos[0] ? (
                       <img
                         src={match.other_profile.photos[0].photo_url}
                         alt={match.other_profile.first_name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
                       />
                     ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <span className="text-xl font-bold text-muted-foreground">
+                      <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-muted-foreground">
                           {match.other_profile.first_name[0]}
                         </span>
                       </div>
                     )}
-                    {/* Online indicator on avatar */}
-                    <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-card rounded-full">
-                      <OnlineStatusIndicator 
-                        lastActiveAt={match.other_profile.last_active_at} 
+                    <div className="absolute top-2 right-2">
+                      <OnlineStatusIndicator
+                        lastActiveAt={match.other_profile.last_active_at}
                         size="sm"
                       />
                     </div>
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-foreground truncate">
+                    {match.unread_count > 0 && (
+                      <div className="absolute top-2 left-2 min-w-[20px] h-5 px-1 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
+                        <span className="text-[10px] font-bold text-primary-foreground">
+                          {match.unread_count > 9 ? "9+" : match.unread_count}
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2 pt-6">
+                      <p className="text-white text-sm font-semibold truncate">
                         {match.other_profile.first_name}
                         {match.other_profile.age ? `, ${match.other_profile.age}` : ""}
-                      </h3>
-                      {match.unread_count > 0 && (
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                          <span className="text-xs font-bold text-white">
-                            {match.unread_count > 9 ? "9+" : match.unread_count}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                    {match.other_profile.city && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {match.other_profile.city}
                       </p>
-                    )}
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      {match.last_message_preview && match.last_message_read && (
-                        <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Messages
+              </h2>
+              <div className="space-y-2">
+                {matches.map((match) => (
+                  <button
+                    key={match.id}
+                    onClick={() => setContactModal({
+                      matchId: match.id,
+                      otherName: match.other_profile.first_name,
+                      otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
+                    })}
+                    className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 transition-all active:scale-[0.99]"
+                  >
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-border/40">
+                      {match.other_profile.photos[0] ? (
+                        <img
+                          src={match.other_profile.photos[0].photo_url}
+                          alt={match.other_profile.first_name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
+                          <span className="text-xl font-bold text-muted-foreground">
+                            {match.other_profile.first_name[0]}
+                          </span>
+                        </div>
                       )}
-                      <span className="truncate">
-                        {match.last_message_preview || "Say hi! 👋"}
-                      </span>
-                      {match.last_message_at && (
-                        <span className="flex-shrink-0 text-xs">
-                          · {format(new Date(match.last_message_at), "MMM d")}
+                      <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-card rounded-full">
+                        <OnlineStatusIndicator
+                          lastActiveAt={match.other_profile.last_active_at}
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <h3 className={`font-bold truncate ${match.unread_count > 0 ? "text-foreground" : "text-foreground/90"}`}>
+                          {match.other_profile.first_name}
+                          {match.other_profile.age ? `, ${match.other_profile.age}` : ""}
+                        </h3>
+                        {match.last_message_at && (
+                          <span className="flex-shrink-0 text-[11px] text-muted-foreground">
+                            {format(new Date(match.last_message_at), "MMM d")}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-sm">
+                        {match.last_message_preview && match.last_message_read && (
+                          <CheckCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                        )}
+                        <span className={`truncate ${match.unread_count > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                          {match.last_message_preview || "Say hi! 👋"}
                         </span>
+                        {match.unread_count > 0 && (
+                          <span className="ml-auto flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-primary-foreground">
+                              {match.unread_count > 9 ? "9+" : match.unread_count}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                      {match.other_profile.city && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                          {match.other_profile.city}
+                        </p>
                       )}
                     </div>
-                  </div>
-                  <MessageCircle className="w-5 h-5 text-primary flex-shrink-0" />
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

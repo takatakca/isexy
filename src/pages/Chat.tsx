@@ -446,14 +446,21 @@ export default function Chat() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
-        <button onClick={() => navigate("/matches")} className="p-2 -ml-2">
-          <ArrowLeft className="w-6 h-6 text-foreground" />
+      <header className="sticky top-0 z-20 flex items-center gap-2 px-3 py-2.5 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+        <button
+          onClick={() => navigate("/matches")}
+          className="p-2 rounded-full hover:bg-muted/60 transition-colors"
+          aria-label="Back"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        
+
         {otherProfile && (
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-full overflow-hidden">
+          <button
+            onClick={() => navigate(`/profile-detail/${otherProfile.id}`)}
+            className="flex items-center gap-3 flex-1 min-w-0 px-1 py-1 rounded-xl hover:bg-muted/40 transition-colors text-left"
+          >
+            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/30 flex-shrink-0">
               {otherProfile.photo_url ? (
                 <img
                   src={otherProfile.photo_url}
@@ -461,77 +468,77 @@ export default function Chat() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
                   <span className="font-bold text-muted-foreground">
                     {otherProfile.first_name[0]}
                   </span>
                 </div>
               )}
             </div>
-            <div>
-              <span className="font-bold text-foreground block">{otherProfile.first_name}</span>
-              {otherIsTyping && (
-                <span className="text-xs text-primary">typing...</span>
+            <div className="min-w-0">
+              <span className="font-bold text-foreground block truncate">{otherProfile.first_name}</span>
+              {otherIsTyping ? (
+                <span className="text-xs text-primary">typing…</span>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">Tap to view profile</span>
               )}
             </div>
-          </div>
+          </button>
         )}
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowGiftModal(true)}
-          className="text-yellow-500"
-        >
-          <Gift className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowScheduleModal(true)}
-          className="text-muted-foreground"
-        >
-          <Calendar className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handlePhoneCall}
-          className="text-blue-500"
-        >
-          <Phone className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleVideoCall}
-          className="text-primary"
-        >
-          <Video className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTranslations}
-          className={translationsEnabled ? "text-primary" : "text-muted-foreground"}
-        >
-          <Languages className="w-5 h-5" />
-        </Button>
-
-        <LanguageSelector variant="icon" />
-
-        <button className="p-2 -mr-2">
-          <MoreVertical className="w-5 h-5 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handlePhoneCall}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Phone call"
+          >
+            <Phone className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleVideoCall}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Video call"
+          >
+            <Video className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowGiftModal(true)}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Send gift"
+          >
+            <Gift className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowScheduleModal(true)}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Schedule call"
+          >
+            <Calendar className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTranslations}
+            className={`h-9 w-9 ${translationsEnabled ? "text-primary" : "text-muted-foreground"}`}
+            aria-label="Translate"
+          >
+            <Languages className="w-5 h-5" />
+          </Button>
+          <LanguageSelector variant="icon" />
+        </div>
       </header>
 
       {/* Translation indicator */}
       {translationsEnabled && (
-        <div className="px-4 py-2 bg-primary/10 text-primary text-xs text-center">
+        <div className="px-4 py-1.5 bg-primary/10 text-primary text-xs text-center">
           Auto-translating to {language.flag} {language.nativeName}
         </div>
       )}
@@ -543,9 +550,13 @@ export default function Chat() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-muted-foreground">
-              Say hi to {otherProfile?.first_name}! 👋
+          <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
+              <span className="text-3xl">👋</span>
+            </div>
+            <h3 className="font-bold text-foreground mb-1">You matched!</h3>
+            <p className="text-sm text-muted-foreground">
+              Say hi to {otherProfile?.first_name} — break the ice.
             </p>
           </div>
         ) : (
@@ -617,25 +628,29 @@ export default function Chat() {
       )}
 
       {/* Input */}
-      <footer className="p-4 border-t border-border bg-card">
+      <footer className="sticky bottom-0 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-border/60 bg-background/90 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={newMessage}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder={isBanned ? "Messaging restricted..." : "Type a message..."}
+            placeholder={isBanned ? "Messaging restricted…" : `Message ${otherProfile?.first_name ?? ""}…`}
             disabled={isBanned}
-            className="flex-1 px-4 py-3 bg-muted rounded-full outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            className="flex-1 px-5 py-3 bg-muted/60 border border-border/60 rounded-full outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground disabled:opacity-50 transition-all"
           />
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending || isBanned}
-            className="w-12 h-12 flex items-center justify-center bg-primary text-primary-foreground rounded-full disabled:opacity-50 transition-opacity"
+            className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-full shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none enabled:active:scale-95 transition-all"
+            aria-label="Send message"
           >
-            <Send className="w-5 h-5" />
+            {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
         </div>
+        <p className="text-[10px] text-muted-foreground text-center mt-2">
+          Your phone number stays private. Be kind. Report anything off.
+        </p>
       </footer>
 
       {/* Schedule Call Modal */}
