@@ -446,14 +446,21 @@ export default function Chat() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
-        <button onClick={() => navigate("/matches")} className="p-2 -ml-2">
-          <ArrowLeft className="w-6 h-6 text-foreground" />
+      <header className="sticky top-0 z-20 flex items-center gap-2 px-3 py-2.5 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+        <button
+          onClick={() => navigate("/matches")}
+          className="p-2 rounded-full hover:bg-muted/60 transition-colors"
+          aria-label="Back"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        
+
         {otherProfile && (
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-full overflow-hidden">
+          <button
+            onClick={() => navigate(`/profile-detail/${otherProfile.id}`)}
+            className="flex items-center gap-3 flex-1 min-w-0 px-1 py-1 rounded-xl hover:bg-muted/40 transition-colors text-left"
+          >
+            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/30 flex-shrink-0">
               {otherProfile.photo_url ? (
                 <img
                   src={otherProfile.photo_url}
@@ -461,77 +468,77 @@ export default function Chat() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
                   <span className="font-bold text-muted-foreground">
                     {otherProfile.first_name[0]}
                   </span>
                 </div>
               )}
             </div>
-            <div>
-              <span className="font-bold text-foreground block">{otherProfile.first_name}</span>
-              {otherIsTyping && (
-                <span className="text-xs text-primary">typing...</span>
+            <div className="min-w-0">
+              <span className="font-bold text-foreground block truncate">{otherProfile.first_name}</span>
+              {otherIsTyping ? (
+                <span className="text-xs text-primary">typing…</span>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">Tap to view profile</span>
               )}
             </div>
-          </div>
+          </button>
         )}
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowGiftModal(true)}
-          className="text-yellow-500"
-        >
-          <Gift className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowScheduleModal(true)}
-          className="text-muted-foreground"
-        >
-          <Calendar className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handlePhoneCall}
-          className="text-blue-500"
-        >
-          <Phone className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleVideoCall}
-          className="text-primary"
-        >
-          <Video className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTranslations}
-          className={translationsEnabled ? "text-primary" : "text-muted-foreground"}
-        >
-          <Languages className="w-5 h-5" />
-        </Button>
-
-        <LanguageSelector variant="icon" />
-
-        <button className="p-2 -mr-2">
-          <MoreVertical className="w-5 h-5 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handlePhoneCall}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Phone call"
+          >
+            <Phone className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleVideoCall}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Video call"
+          >
+            <Video className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowGiftModal(true)}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Send gift"
+          >
+            <Gift className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowScheduleModal(true)}
+            className="text-foreground hover:text-primary h-9 w-9"
+            aria-label="Schedule call"
+          >
+            <Calendar className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTranslations}
+            className={`h-9 w-9 ${translationsEnabled ? "text-primary" : "text-muted-foreground"}`}
+            aria-label="Translate"
+          >
+            <Languages className="w-5 h-5" />
+          </Button>
+          <LanguageSelector variant="icon" />
+        </div>
       </header>
 
       {/* Translation indicator */}
       {translationsEnabled && (
-        <div className="px-4 py-2 bg-primary/10 text-primary text-xs text-center">
+        <div className="px-4 py-1.5 bg-primary/10 text-primary text-xs text-center">
           Auto-translating to {language.flag} {language.nativeName}
         </div>
       )}
