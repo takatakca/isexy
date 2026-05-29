@@ -11,7 +11,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Play, Pause, Mic, Square, RotateCcw, Send, Flag, Ban, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  Mic,
+  Square,
+  RotateCcw,
+  Send,
+  Flag,
+  Ban,
+  Phone,
+  Headphones,
+  Lock,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const MAX_REPLY_SECONDS = 90;
@@ -55,7 +68,6 @@ export default function PhoneLineBrowse() {
         setLoading(false);
         return;
       }
-      // 1. fetch active public phone-line profiles (excluding self)
       const { data: profs } = await supabase
         .from("phone_line_profiles")
         .select("id, profile_id, display_name, age, city, headline")
@@ -74,7 +86,6 @@ export default function PhoneLineBrowse() {
       const plIds = profs.map((p) => p.id);
       const profileIds = profs.map((p) => p.profile_id);
 
-      // 2. fetch latest approved active greetings for these profiles
       const { data: greetings } = await supabase
         .from("voice_greetings")
         .select("id, phone_line_profile_id, duration_seconds, created_at")
@@ -94,7 +105,6 @@ export default function PhoneLineBrowse() {
         }
       });
 
-      // 3. fetch blocks (either direction)
       const { data: blocks } = await supabase
         .from("blocks")
         .select("blocker_id, blocked_id")
@@ -121,7 +131,6 @@ export default function PhoneLineBrowse() {
           };
         });
 
-      // light suppression — use profileIds variable so TS doesn't complain
       void profileIds;
 
       setItems(result);
@@ -157,7 +166,6 @@ export default function PhoneLineBrowse() {
     }
   };
 
-  // ------ reply recorder ------
   const openReply = (g: PLProfile) => {
     setReplyTo(g);
     setRecordedBlob(null);
@@ -278,66 +286,123 @@ export default function PhoneLineBrowse() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
-        <button onClick={() => navigate(-1)} aria-label="Go back" className="rounded-full p-2 hover:bg-muted">
+    <div className="min-h-screen bg-background safe-bottom">
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border/60 bg-background/70 px-4 py-3 backdrop-blur-xl">
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          className="rounded-full p-2 transition-colors hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-lg font-bold">Browse voices</h1>
+        <div>
+          <h1 className="text-lg font-extrabold tracking-tight">Browse voices</h1>
+          <p className="text-[11px] text-muted-foreground">Tap play to listen</p>
+        </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-4 p-4">
-        <p className="text-xs text-muted-foreground">
-          Listen to real voices first. Your real phone number stays private. 18+ only.
-        </p>
+      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-10">
+        <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-2 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5 text-primary" />
+          Your real phone number stays private. 18+ only.
+        </div>
 
         {loading ? (
-          <div className="text-center text-muted-foreground">Loading voices…</div>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 animate-pulse rounded-2xl bg-card" />
+            ))}
+          </div>
         ) : items.length === 0 ? (
-          <Card className="p-6 text-center text-muted-foreground">
-            No voice profiles available right now. Check back soon.
+          <Card className="flex flex-col items-center gap-3 rounded-2xl border-border/60 bg-card p-10 text-center">
+            <div className="rounded-full bg-primary/10 p-4 text-primary">
+              <Headphones className="h-7 w-7" />
+            </div>
+            <div>
+              <div className="font-bold">No voice profiles available right now.</div>
+              <div className="mt-1 text-sm text-muted-foreground">Check back soon.</div>
+            </div>
           </Card>
         ) : (
           <div className="space-y-3">
             {items.map((g) => {
               const isPlaying = playingId === g.greeting_id;
               return (
-                <Card key={g.id} className="p-4">
-                  <div className="flex items-start justify-between gap-3">
+                <Card
+                  key={g.id}
+                  className="overflow-hidden rounded-2xl border-border/60 bg-card p-4 transition-all hover:border-primary/40"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Play circle */}
+                    <button
+                      onClick={() => playGreeting(g)}
+                      aria-label={isPlaying ? "Pause greeting" : "Play greeting"}
+                      className={`relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full transition-transform active:scale-95 ${
+                        isPlaying
+                          ? "bg-primary text-primary-foreground glow-primary"
+                          : "bg-primary/10 text-primary hover:bg-primary/20"
+                      }`}
+                    >
+                      {isPlaying && (
+                        <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                      )}
+                      {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="ml-0.5 h-6 w-6" />}
+                    </button>
+
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold">
-                        {g.display_name}, {g.age}
-                        {g.city ? ` · ${g.city}` : ""}
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold">
+                          {g.display_name}, {g.age}
+                        </div>
+                        {g.city && (
+                          <span className="text-xs text-muted-foreground">· {g.city}</span>
+                        )}
                       </div>
                       {g.headline && (
                         <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                           {g.headline}
                         </div>
                       )}
+                      <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary/80">
+                        {g.greeting_duration}s greeting
+                      </div>
                     </div>
-                    <Button
-                      onClick={() => playGreeting(g)}
-                      variant={isPlaying ? "secondary" : "default"}
-                      size="sm"
-                      className="gap-2"
-                    >
-                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      {g.greeting_duration}s
-                    </Button>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button size="sm" className="gap-1" onClick={() => callVoice(g)}>
-                      <Phone className="h-3.5 w-3.5" /> Call voice profile
+
+                  <div className="mt-3 flex flex-wrap gap-2 border-t border-border/40 pt-3">
+                    <Button
+                      size="sm"
+                      onClick={() => callVoice(g)}
+                      className="gap-1.5 rounded-full bg-primary text-primary-foreground hover:brightness-110"
+                    >
+                      <Phone className="h-3.5 w-3.5" /> Call
                     </Button>
-                    <Button size="sm" variant="outline" className="gap-1" onClick={() => openReply(g)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 rounded-full"
+                      onClick={() => openReply(g)}
+                    >
                       <Mic className="h-3.5 w-3.5" /> Voice reply
                     </Button>
-                    <Button size="sm" variant="ghost" className="gap-1" onClick={() => reportUser(g)}>
-                      <Flag className="h-3.5 w-3.5" /> Report
-                    </Button>
-                    <Button size="sm" variant="ghost" className="gap-1 text-destructive" onClick={() => blockUser(g)}>
-                      <Ban className="h-3.5 w-3.5" /> Block
-                    </Button>
+                    <div className="ml-auto flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1 rounded-full text-muted-foreground"
+                        onClick={() => reportUser(g)}
+                      >
+                        <Flag className="h-3.5 w-3.5" /> Report
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1 rounded-full text-destructive"
+                        onClick={() => blockUser(g)}
+                      >
+                        <Ban className="h-3.5 w-3.5" /> Block
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               );
@@ -348,49 +413,74 @@ export default function PhoneLineBrowse() {
 
       {/* Reply dialog */}
       <Dialog open={!!replyTo} onOpenChange={(o) => !o && setReplyTo(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>Voice reply to {replyTo?.display_name}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Up to {MAX_REPLY_SECONDS} seconds. Your real number stays private.
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {!recording && !recordedBlob && (
-                <Button onClick={startRec} className="gap-2">
-                  <Mic className="h-4 w-4" /> Record
-                </Button>
-              )}
-              {recording && (
-                <Button onClick={stopRec} variant="destructive" className="gap-2">
-                  <Square className="h-4 w-4" /> Stop ({elapsed}s / {MAX_REPLY_SECONDS}s)
-                </Button>
-              )}
-              {!recording && recordedBlob && recordedUrl && (
-                <>
-                  <audio src={recordedUrl} controls className="w-full" />
-                  <Button
-                    onClick={() => {
-                      setRecordedBlob(null);
-                      if (recordedUrl) URL.revokeObjectURL(recordedUrl);
-                      setRecordedUrl(null);
-                      setElapsed(0);
-                    }}
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <RotateCcw className="h-4 w-4" /> Re-record
-                  </Button>
-                </>
-              )}
+
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="relative">
+                {recording && (
+                  <span className="absolute inset-0 -m-2 animate-ping rounded-full bg-primary/40" />
+                )}
+                <button
+                  type="button"
+                  onClick={recording ? stopRec : startRec}
+                  disabled={!!recordedBlob}
+                  aria-label={recording ? "Stop recording" : "Start recording"}
+                  className={`relative flex h-20 w-20 items-center justify-center rounded-full transition-transform active:scale-95 ${
+                    recording
+                      ? "bg-destructive text-white"
+                      : recordedBlob
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-primary text-primary-foreground glow-primary"
+                  } disabled:cursor-not-allowed`}
+                >
+                  {recording ? <Square className="h-7 w-7" /> : <Mic className="h-7 w-7" />}
+                </button>
+              </div>
+              <div className="font-mono text-xl font-bold tabular-nums">
+                {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")}
+              </div>
+              <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${Math.min(100, (elapsed / MAX_REPLY_SECONDS) * 100)}%` }}
+                />
+              </div>
             </div>
+
+            {!recording && recordedBlob && recordedUrl && (
+              <div className="space-y-2 rounded-xl border border-border/60 bg-background/40 p-3">
+                <audio src={recordedUrl} controls className="w-full" />
+                <Button
+                  onClick={() => {
+                    setRecordedBlob(null);
+                    if (recordedUrl) URL.revokeObjectURL(recordedUrl);
+                    setRecordedUrl(null);
+                    setElapsed(0);
+                  }}
+                  variant="outline"
+                  className="w-full gap-2 rounded-full"
+                >
+                  <RotateCcw className="h-4 w-4" /> Re-record
+                </Button>
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setReplyTo(null)}>
+            <Button variant="ghost" onClick={() => setReplyTo(null)} className="rounded-full">
               Cancel
             </Button>
-            <Button onClick={sendReply} disabled={!recordedBlob || sending} className="gap-2">
+            <Button
+              onClick={sendReply}
+              disabled={!recordedBlob || sending}
+              className="gap-2 rounded-full bg-primary text-primary-foreground hover:brightness-110"
+            >
               <Send className="h-4 w-4" /> Send reply
             </Button>
           </DialogFooter>

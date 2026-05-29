@@ -7,7 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Mic, Square, Play, Pause, RotateCcw, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  Mic,
+  Square,
+  Play,
+  Pause,
+  RotateCcw,
+  Save,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  PauseCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const MAX_SECONDS = 90;
@@ -34,6 +46,7 @@ interface Greeting {
   audio_url: string;
   duration_seconds: number;
   is_active: boolean;
+  moderation_status?: string;
 }
 
 export default function PhoneLineSetup() {
@@ -87,7 +100,7 @@ export default function PhoneLineSetup() {
 
         const { data: g } = await supabase
           .from("voice_greetings")
-          .select("id, audio_url, duration_seconds, is_active")
+          .select("id, audio_url, duration_seconds, is_active, moderation_status")
           .eq("phone_line_profile_id", pl.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -194,11 +207,11 @@ export default function PhoneLineSetup() {
     if (!profile?.id || !user) return;
     if (!displayName.trim()) return toast.error("Display name is required");
     if (!ageOk) return toast.error("You must be 18 or older");
-    if (activate && !canActivate) return toast.error("Complete your main profile and add a photo first");
+    if (activate && !canActivate)
+      return toast.error("Complete your main profile and add a photo first");
 
     setSaving(true);
     try {
-      // upsert phone_line_profile
       const status = activate ? "active" : plProfile?.status === "active" ? "active" : "draft";
       const payload = {
         profile_id: profile.id,
@@ -226,7 +239,6 @@ export default function PhoneLineSetup() {
         plId = data.id;
       }
 
-      // upload greeting if a new recording exists
       if (recordedBlob && plId) {
         const path = `${user.id}/${plId}-${Date.now()}.webm`;
         const { error: upErr } = await supabase.storage
@@ -234,7 +246,6 @@ export default function PhoneLineSetup() {
           .upload(path, recordedBlob, { contentType: "audio/webm", upsert: false });
         if (upErr) throw upErr;
 
-        // deactivate older greetings
         await supabase
           .from("voice_greetings")
           .update({ is_active: false })
@@ -276,33 +287,95 @@ export default function PhoneLineSetup() {
   };
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+
+  // ---- moderation banner ----
+  const modStatus = greeting?.moderation_status;
+  let modBanner: { icon: typeof CheckCircle2; tone: string; label: string; desc: string } | null = null;
+  if (greeting) {
+    if (plProfile?.status === "paused") {
+      modBanner = {
+        icon: PauseCircle,
+        tone: "border-amber-500/40 bg-amber-500/10 text-amber-200",
+        label: "Paused",
+        desc: "Your voice profile is hidden until you go live again.",
+      };
+    } else if (modStatus === "pending") {
+      modBanner = {
+        icon: Clock,
+        tone: "border-primary/40 bg-primary/10 text-primary",
+        label: "Pending review",
+        desc: "We review every greeting to keep things safe. Usually under 24h.",
+      };
+    } else if (modStatus === "rejected") {
+      modBanner = {
+        icon: AlertTriangle,
+        tone: "border-destructive/40 bg-destructive/10 text-destructive",
+        label: "Rejected",
+        desc: "This greeting wasn't approved. Please re-record following the guidelines.",
+      };
+    } else if (modStatus === "approved" && plProfile?.status === "active") {
+      modBanner = {
+        icon: CheckCircle2,
+        tone: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+        label: "Live",
+        desc: "Your greeting is approved and visible on the phone line.",
+      };
+    }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
-        <button onClick={() => navigate(-1)} aria-label="Go back" className="rounded-full p-2 hover:bg-muted">
+    <div className="min-h-screen bg-background safe-bottom">
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border/60 bg-background/70 px-4 py-3 backdrop-blur-xl">
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          className="rounded-full p-2 transition-colors hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-lg font-bold">Set up your voice profile</h1>
+        <h1 className="text-lg font-extrabold tracking-tight">Voice profile</h1>
       </header>
 
-      <main className="mx-auto max-w-2xl space-y-6 p-4">
+      <main className="mx-auto max-w-2xl space-y-5 p-4 pb-10">
         {!canActivate && (
-          <Card className="border-amber-500/40 bg-amber-500/5 p-4 text-sm">
-            To go live on the phone line you must be 18+, complete your main profile, and add at least one photo.
+          <Card className="flex items-start gap-3 rounded-2xl border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <span>
+              To go live on the phone line you must be 18+, complete your main profile, and add at
+              least one photo.
+            </span>
           </Card>
         )}
 
-        <Card className="space-y-4 p-4">
-          <h2 className="font-semibold">About you</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {modBanner && (
+          <Card className={`flex items-start gap-3 rounded-2xl border p-4 text-sm ${modBanner.tone}`}>
+            <modBanner.icon className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <div>
-              <Label htmlFor="dn">Display name</Label>
-              <Input id="dn" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={40} />
+              <div className="font-bold">{modBanner.label}</div>
+              <div className="opacity-90">{modBanner.desc}</div>
             </div>
-            <div>
+          </Card>
+        )}
+
+        <Card className="space-y-4 rounded-2xl border-border/60 bg-card p-5">
+          <h2 className="font-bold">About you</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="dn">Display name</Label>
+              <Input
+                id="dn"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={40}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="age">Age</Label>
               <Input
                 id="age"
@@ -313,16 +386,21 @@ export default function PhoneLineSetup() {
                 onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
               />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label htmlFor="city">City</Label>
               <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} maxLength={60} />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label htmlFor="gender">Gender</Label>
-              <Input id="gender" value={gender} onChange={(e) => setGender(e.target.value)} maxLength={30} />
+              <Input
+                id="gender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                maxLength={30}
+              />
             </div>
           </div>
-          <div>
+          <div className="space-y-1.5">
             <Label htmlFor="headline">Headline</Label>
             <Textarea
               id="headline"
@@ -334,40 +412,80 @@ export default function PhoneLineSetup() {
           </div>
         </Card>
 
-        <Card className="space-y-4 p-4">
-          <h2 className="font-semibold">Your voice greeting (max {MAX_SECONDS}s)</h2>
+        {/* Recorder */}
+        <Card className="relative space-y-4 overflow-hidden rounded-2xl border-border/60 bg-card p-5">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
+          <div className="relative flex items-center justify-between">
+            <h2 className="font-bold">Your voice greeting</h2>
+            <span className="text-xs text-muted-foreground">max {MAX_SECONDS}s</span>
+          </div>
 
           {greeting && !recordedBlob && signedAudioUrl && (
-            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-              <div className="mb-2 text-muted-foreground">Current greeting · {greeting.duration_seconds}s</div>
+            <div className="relative rounded-xl border border-border/60 bg-background/40 p-3">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Current greeting · {greeting.duration_seconds}s
+              </div>
               <audio src={signedAudioUrl} controls className="w-full" />
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            {!recording && !recordedBlob && (
-              <Button onClick={startRecording} className="gap-2">
-                <Mic className="h-4 w-4" /> {greeting ? "Re-record" : "Start recording"}
-              </Button>
-            )}
-            {recording && (
-              <Button onClick={stopRecording} variant="destructive" className="gap-2">
-                <Square className="h-4 w-4" /> Stop ({elapsed}s / {MAX_SECONDS}s)
-              </Button>
-            )}
-            {!recording && recordedBlob && (
-              <>
-                <Button onClick={togglePlay} variant="secondary" className="gap-2">
-                  {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {playing ? "Pause" : "Play preview"}
-                </Button>
-                <Button onClick={reRecord} variant="outline" className="gap-2">
-                  <RotateCcw className="h-4 w-4" /> Re-record
-                </Button>
-                <span className="text-sm text-muted-foreground">{elapsed}s recorded</span>
-              </>
-            )}
+          {/* Big mic circle */}
+          <div className="relative flex flex-col items-center gap-4 py-4">
+            <div className="relative">
+              {recording && (
+                <span className="absolute inset-0 -m-2 animate-ping rounded-full bg-primary/40" />
+              )}
+              <button
+                type="button"
+                onClick={recording ? stopRecording : startRecording}
+                disabled={!!recordedBlob}
+                aria-label={recording ? "Stop recording" : "Start recording"}
+                className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-transform active:scale-95 ${
+                  recording
+                    ? "bg-destructive text-white"
+                    : recordedBlob
+                    ? "bg-muted text-muted-foreground"
+                    : "bg-primary text-primary-foreground glow-primary"
+                } disabled:cursor-not-allowed`}
+              >
+                {recording ? <Square className="h-9 w-9" /> : <Mic className="h-9 w-9" />}
+              </button>
+            </div>
+            <div className="text-center">
+              <div className="font-mono text-2xl font-bold tabular-nums">
+                {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {recording
+                  ? "Recording…"
+                  : recordedBlob
+                  ? "Preview your recording"
+                  : greeting
+                  ? "Tap to re-record"
+                  : "Tap to start recording"}
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${Math.min(100, (elapsed / MAX_SECONDS) * 100)}%` }}
+              />
+            </div>
           </div>
+
+          {!recording && recordedBlob && (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button onClick={togglePlay} variant="secondary" className="gap-2 rounded-full">
+                {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {playing ? "Pause" : "Play preview"}
+              </Button>
+              <Button onClick={reRecord} variant="outline" className="gap-2 rounded-full">
+                <RotateCcw className="h-4 w-4" /> Re-record
+              </Button>
+            </div>
+          )}
 
           {recordedUrl && (
             <audio
@@ -379,27 +497,40 @@ export default function PhoneLineSetup() {
           )}
         </Card>
 
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => saveProfile(false)} variant="outline" disabled={saving} className="gap-2">
-            <Save className="h-4 w-4" /> Save as draft
-          </Button>
-          <Button
-            onClick={() => saveProfile(true)}
-            disabled={saving || !canActivate}
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" /> Save & go live
-          </Button>
-          {plProfile?.status === "active" && (
-            <Button onClick={pauseLine} variant="ghost" disabled={saving}>
-              Pause my line
+        {/* Actions */}
+        <div className="sticky bottom-0 -mx-4 border-t border-border/60 bg-background/85 px-4 py-3 backdrop-blur-xl safe-bottom">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => saveProfile(false)}
+              variant="outline"
+              disabled={saving}
+              className="flex-1 gap-2 rounded-full"
+            >
+              <Save className="h-4 w-4" /> Save draft
             </Button>
-          )}
+            <Button
+              onClick={() => saveProfile(true)}
+              disabled={saving || !canActivate}
+              className="flex-1 gap-2 rounded-full bg-primary text-primary-foreground hover:brightness-110"
+            >
+              <Mic className="h-4 w-4" /> Go live
+            </Button>
+            {plProfile?.status === "active" && (
+              <Button
+                onClick={pauseLine}
+                variant="ghost"
+                disabled={saving}
+                className="w-full rounded-full text-muted-foreground"
+              >
+                Pause my line
+              </Button>
+            )}
+          </div>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          Your phone number is never shown to other users. By going live you confirm you are 18+ and
-          agree to ISEXY's community guidelines.
+        <p className="text-center text-xs text-muted-foreground">
+          Your phone number stays private. By going live you confirm you are 18+ and agree to ISEXY's
+          community guidelines.
         </p>
       </main>
     </div>
