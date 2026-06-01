@@ -152,7 +152,7 @@ export default function MySubscription() {
                     <Crown className="w-5 h-5 text-primary fill-primary/30" />
                     <span className="text-xs font-bold uppercase tracking-wider text-primary">Active plan</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">{profile?.email}</span>
+                  {endDate && <span className="text-xs text-muted-foreground">renews soon</span>}
                 </div>
                 <p className="text-2xl font-extrabold text-foreground">ISEXY {tierLabel[currentTier]}</p>
                 {endDate && (
