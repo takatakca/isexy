@@ -1,67 +1,40 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Check, Loader2, Flame } from "lucide-react";
+import { X, Check, Loader2, Crown, Sparkles, ShieldCheck, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { subscriptionTiers, SubscriptionTier, Duration } from "@/lib/subscriptionTiers";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { PromoCountdownBanner } from "@/components/PromoCountdownBanner";
+import { usePaymentsGate } from "@/hooks/usePaymentsGate";
 
-const tierConfig: Record<SubscriptionTier, {
-  gradient: string;
-  headerGradient: string;
-  buttonGradient: string;
-  badgeColor: string;
-  selectedBorder: string;
-  selectedBg: string;
-  checkBg: string;
-  headline: string;
-  label: string;
-}> = {
+const tierMeta: Record<SubscriptionTier, { label: string; headline: string; icon: React.ReactNode }> = {
   plus: {
-    gradient: "from-pink-400 to-rose-500",
-    headerGradient: "from-pink-100 to-rose-100",
-    buttonGradient: "from-pink-500 to-rose-500",
-    badgeColor: "text-rose-500",
-    selectedBorder: "border-rose-500",
-    selectedBg: "bg-rose-50",
-    checkBg: "bg-rose-500",
-    headline: "Unlimited Likes, Rewinds and Passport Mode with ISEXY Plus.",
     label: "Plus",
+    headline: "Unlimited Likes, Rewinds & Passport with ISEXY Plus.",
+    icon: <Sparkles className="w-4 h-4" />,
   },
   gold: {
-    gradient: "from-yellow-400 to-amber-500",
-    headerGradient: "from-yellow-100 to-amber-100",
-    buttonGradient: "from-yellow-400 to-amber-500",
-    badgeColor: "text-amber-600",
-    selectedBorder: "border-amber-500",
-    selectedBg: "bg-amber-50",
-    checkBg: "bg-amber-500",
-    headline: "See who likes you and match instantly with ISEXY Gold.",
     label: "Gold",
+    headline: "See who likes you and match instantly with ISEXY Gold.",
+    icon: <Crown className="w-4 h-4" />,
   },
   platinum: {
-    gradient: "from-slate-600 to-slate-800",
-    headerGradient: "from-slate-100 to-slate-200",
-    buttonGradient: "from-slate-700 to-slate-900",
-    badgeColor: "text-slate-700",
-    selectedBorder: "border-slate-700",
-    selectedBg: "bg-slate-50",
-    checkBg: "bg-slate-700",
-    headline: "Stand out and get priority with ISEXY Platinum.",
     label: "Platinum",
+    headline: "Stand out and get top-priority reach with ISEXY Platinum.",
+    icon: <Crown className="w-4 h-4" />,
   },
 };
 
 export default function Premium() {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const gate = usePaymentsGate();
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
   const [selectedDuration, setSelectedDuration] = useState<Duration>("week");
   const [loading, setLoading] = useState(false);
   const showPromo = !profile?.first_purchase_promo_used && !profile?.is_premium;
 
-  const config = tierConfig[activeTier];
   const tierData = subscriptionTiers[activeTier];
   const plans = tierData.plans;
   const features = tierData.features;
@@ -73,13 +46,10 @@ export default function Premium() {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { tier: activeTier, duration: selectedDuration },
       });
-
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
+      if (data?.url) window.open(data.url, "_blank");
     } catch (err: any) {
-      toast.error(err.message || "Failed to create checkout session");
+      toast.error(err.message || "Failed to start checkout");
     } finally {
       setLoading(false);
     }
@@ -87,39 +57,41 @@ export default function Premium() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className={`bg-gradient-to-b ${config.headerGradient} pb-6`}>
-        <div className="flex items-center justify-between p-4">
-          <button onClick={() => navigate(-1)} className="p-2" aria-label="Close">
-            <X className="w-6 h-6 text-foreground" />
-          </button>
-
-          <div className="flex items-center gap-1">
-            {(["plus", "gold", "platinum"] as SubscriptionTier[]).map((tier) => (
-              <button
-                key={tier}
-                onClick={() => {
-                  setActiveTier(tier);
-                  setSelectedDuration("week");
-                }}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
-                  activeTier === tier
-                    ? `bg-gradient-to-r ${tierConfig[tier].buttonGradient} text-white`
-                    : "text-muted-foreground"
-                }`}
-              >
-                <Flame className={`w-4 h-4 ${activeTier === tier ? "fill-white" : ""}`} />
-                {tierConfig[tier].label}
-              </button>
-            ))}
+      {/* Coral glow header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/25 via-primary/5 to-transparent" aria-hidden />
+        <div className="relative">
+          <div className="flex items-center justify-between p-4">
+            <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-muted/50" aria-label="Close">
+              <X className="w-6 h-6 text-foreground" />
+            </button>
+            <div className="flex items-center gap-1 glass-card rounded-full p-1">
+              {(["plus", "gold", "platinum"] as SubscriptionTier[]).map((tier) => (
+                <button
+                  key={tier}
+                  onClick={() => {
+                    setActiveTier(tier);
+                    setSelectedDuration("week");
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    activeTier === tier
+                      ? "gradient-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tierMeta[tier].icon}
+                  {tierMeta[tier].label}
+                </button>
+              ))}
+            </div>
+            <div className="w-10" />
           </div>
 
-          <div className="w-10" />
-        </div>
-
-        <div className="px-6 pt-2">
-          <h1 className="text-2xl font-bold text-foreground leading-tight">
-            {config.headline}
-          </h1>
+          <div className="px-6 pb-6 pt-2">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-foreground leading-tight">
+              {tierMeta[activeTier].headline}
+            </h1>
+          </div>
         </div>
       </div>
 
@@ -134,93 +106,98 @@ export default function Premium() {
         />
       )}
 
+      {/* Duration selector */}
       <div className="px-4 -mt-2">
-        <h2 className="text-lg font-semibold text-foreground mb-3">Select a Plan</h2>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-3">Choose duration</h2>
+        <div className="grid grid-cols-3 gap-2">
           {plans.map((plan) => {
             const selected = selectedDuration === plan.duration;
             return (
               <button
                 key={plan.duration}
                 onClick={() => setSelectedDuration(plan.duration)}
-                className={`flex-shrink-0 w-32 p-4 rounded-xl border-2 transition-all relative ${
-                  selected ? `${config.selectedBorder} ${config.selectedBg}` : "border-border bg-card"
+                className={`relative p-3 rounded-2xl border text-left transition-all ${
+                  selected
+                    ? "border-primary bg-primary/10 ring-coral"
+                    : "border-border bg-card hover:border-primary/40"
                 }`}
               >
-                {plan.popular && !selected && (
-                  <span className={`absolute -top-2 left-2 text-xs font-semibold ${config.badgeColor}`}>
-                    Popular
+                {(plan.popular || plan.bestValue) && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-bold gradient-primary text-primary-foreground whitespace-nowrap">
+                    {plan.bestValue ? "Best value" : "Popular"}
                   </span>
                 )}
-                {plan.bestValue && !selected && (
-                  <span className={`absolute -top-2 left-2 text-xs font-semibold ${config.badgeColor}`}>
-                    Best Value
-                  </span>
+                <p className="text-sm font-bold text-foreground">{plan.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">${plan.weeklyPrice.toFixed(2)}/wk</p>
+                {plan.savings && (
+                  <span className="inline-block mt-2 text-[10px] font-bold text-primary">Save {plan.savings}%</span>
                 )}
-
                 {selected && (
-                  <div className={`absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center ${config.checkBg}`}>
-                    <Check className="w-3 h-3 text-white" />
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
                 )}
-
-                <div className="text-left">
-                  <p className="text-xl font-bold text-foreground">{plan.label}</p>
-                  <p className="text-sm text-muted-foreground mt-2">${plan.weeklyPrice.toFixed(2)}/wk</p>
-                  {plan.savings && (
-                    <span className="inline-block mt-2 px-2 py-0.5 bg-muted rounded-full text-xs font-semibold text-muted-foreground">
-                      Save {plan.savings}%
-                    </span>
-                  )}
-                </div>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="flex-1 px-4 pb-48 overflow-y-auto mt-2">
-        <div className="border border-border rounded-2xl p-4">
+      {/* Features */}
+      <div className="flex-1 px-4 pb-56 overflow-y-auto mt-4">
+        <div className="glass-card rounded-2xl p-5">
           <div className="flex justify-center mb-4">
-            <span className="px-3 py-1 bg-muted rounded-full text-xs font-semibold text-muted-foreground">
+            <span className="px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-bold">
               Included with {tierData.name}
             </span>
           </div>
-
-          <div className="space-y-4">
+          <div className="space-y-3">
             {features.map((feature, idx) => (
               <div key={idx} className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-foreground flex-shrink-0 mt-0.5" />
-                <p className="font-semibold text-foreground">{feature}</p>
+                <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <p className="font-semibold text-foreground text-sm">{feature}</p>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Trust strip */}
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground justify-center">
+          <ShieldCheck className="w-4 h-4 text-primary" />
+          Secure checkout powered by Stripe
+        </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 space-y-3">
+      {/* Sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
+        {gate?.blocked && (
+          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
+            <Lock className="w-3.5 h-3.5" />
+            Live payments are disabled during testing
+          </div>
+        )}
         <button
           onClick={() => navigate("/compare-plans")}
-          className="w-full text-center text-sm text-primary font-semibold hover:underline"
+          className="w-full text-center text-xs text-primary font-bold hover:underline"
         >
           Compare all plans →
         </button>
-        <p className="text-xs text-muted-foreground text-center">
-          By tapping Continue, you agree that your subscription renews automatically until cancelled. You can cancel anytime in your account settings. Terms apply.
-        </p>
-
         <button
           onClick={handleSubscribe}
           disabled={loading}
-          className={`w-full py-4 px-6 rounded-full font-bold text-white transition-all bg-gradient-to-r ${config.buttonGradient} hover:opacity-90 disabled:opacity-50`}
+          className="cta-primary w-full text-base"
         >
           {loading ? (
-            <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            `Continue for $${selectedPlan.totalPrice.toFixed(2)} total`
+            <>Continue {tierMeta[activeTier].label} · {selectedPlan.label} — ${selectedPlan.totalPrice.toFixed(2)}</>
           )}
         </button>
+        <p className="text-[10px] text-muted-foreground text-center leading-snug">
+          Subscription renews automatically until cancelled. Cancel anytime in Settings. Purchases apply after successful payment.
+        </p>
       </div>
     </div>
   );

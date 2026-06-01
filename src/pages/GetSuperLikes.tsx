@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Star, Flame, Loader2 } from "lucide-react";
+import { X, Star, Crown, Loader2, ShieldCheck, Lock, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { usePaymentsGate } from "@/hooks/usePaymentsGate";
 
 interface Package {
   id: string;
@@ -21,8 +23,25 @@ const packages: Package[] = [
 
 export default function GetSuperLikes() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const gate = usePaymentsGate();
   const [selectedPackage, setSelectedPackage] = useState<string>("15");
   const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!profile?.id) return;
+      const { data } = await supabase
+        .from("user_credits")
+        .select("super_likes")
+        .eq("profile_id", profile.id)
+        .maybeSingle();
+      // @ts-ignore — column may not exist on every project
+      if (data) setBalance(data.super_likes ?? 0);
+    };
+    fetch();
+  }, [profile?.id]);
 
   const selected = packages.find((p) => p.id === selectedPackage)!;
   const total = selected.quantity * selected.pricePerItem;
@@ -34,11 +53,8 @@ export default function GetSuperLikes() {
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
         body: { productId, metadata: { type: "super_likes", quantity: String(selected.quantity) } },
       });
-
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
+      if (data?.url) window.open(data.url, "_blank");
     } catch (error) {
       console.error("Purchase error:", error);
       toast.error("Failed to start checkout. Please try again.");
@@ -50,109 +66,88 @@ export default function GetSuperLikes() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-to-b from-cyan-500/20 to-background pb-4">
-        <div className="flex items-center justify-between p-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-muted/50 rounded-full">
-            <X className="w-6 h-6 text-foreground" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-cyan-500 fill-cyan-500" />
-            <span className="font-bold text-foreground">Get Super Likes</span>
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/25 via-primary/5 to-transparent" aria-hidden />
+        <div className="relative">
+          <div className="flex items-center justify-between p-4">
+            <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-muted/50">
+              <X className="w-6 h-6 text-foreground" />
+            </button>
+            <div className="flex items-center gap-2 glass-card px-3 py-1 rounded-full">
+              <Star className="w-4 h-4 text-primary fill-primary" />
+              <span className="font-bold text-foreground text-sm">Super Likes</span>
+            </div>
+            <div className="w-10" />
           </div>
-          <div className="w-10" />
-        </div>
 
-        {/* Headline */}
-        <div className="px-6">
-          <h1 className="text-2xl font-bold text-foreground leading-tight">
-            Stand out with Super Like. You're 3x more likely to get a match!
-          </h1>
+          <div className="px-6 pb-6">
+            <h1 className="text-2xl font-extrabold text-foreground leading-tight">
+              Stand out with Super Like.<br />
+              <span className="text-primary">3× more likely</span> to match.
+            </h1>
+            {balance !== null && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Your balance: <span className="font-bold text-foreground">{balance} Super Like{balance === 1 ? "" : "s"}</span>
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Package selection */}
+      {/* Packages */}
       <div className="px-4 py-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Select a package</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-3">Select a package</h2>
 
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {packages.map((pkg) => (
-            <button
-              key={pkg.id}
-              onClick={() => setSelectedPackage(pkg.id)}
-              className={`flex-shrink-0 w-36 p-4 rounded-xl border-2 transition-all relative ${
-                selectedPackage === pkg.id
-                  ? "border-cyan-500 bg-cyan-500/10"
-                  : "border-border bg-card"
-              }`}
-            >
-              {pkg.popular && (
-                <span className="absolute -top-2 left-2 text-xs font-semibold text-cyan-500">
-                  Popular
-                </span>
-              )}
-              {pkg.bestValue && (
-                <span className="absolute -top-2 left-2 text-xs font-semibold text-cyan-500">
-                  Best Value
-                </span>
-              )}
-
-              <div className="text-left">
-                <p className="text-xl font-bold text-foreground">
-                  {pkg.quantity} Super Likes
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  ${pkg.pricePerItem.toFixed(2)}/ea
-                </p>
-                {pkg.savings && (
-                  <span className="inline-block mt-2 px-2 py-0.5 bg-cyan-500/20 rounded-full text-xs font-semibold text-cyan-600">
-                    Save {pkg.savings}%
-                  </span>
-                )}
-              </div>
-
-              <div
-                className={`w-full mt-4 py-3 rounded-full font-bold text-sm text-center transition-colors ${
-                  selectedPackage === pkg.id
-                    ? "bg-cyan-500 text-white"
-                    : "bg-muted text-muted-foreground"
+        <div className="grid grid-cols-3 gap-2">
+          {packages.map((pkg) => {
+            const isSel = selectedPackage === pkg.id;
+            return (
+              <button
+                key={pkg.id}
+                onClick={() => setSelectedPackage(pkg.id)}
+                className={`relative p-3 rounded-2xl border transition-all text-left ${
+                  isSel
+                    ? "border-primary bg-primary/10 ring-coral"
+                    : "border-border bg-card hover:border-primary/40"
                 }`}
               >
-                Select
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Dots indicator */}
-        <div className="flex justify-center gap-1.5 py-4">
-          {packages.map((pkg) => (
-            <div
-              key={pkg.id}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                selectedPackage === pkg.id ? "bg-cyan-500" : "bg-muted"
-              }`}
-            />
-          ))}
+                {(pkg.popular || pkg.bestValue) && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-bold gradient-primary text-primary-foreground whitespace-nowrap">
+                    {pkg.bestValue ? "Best value" : "Popular"}
+                  </span>
+                )}
+                <p className="text-lg font-extrabold text-foreground">{pkg.quantity}</p>
+                <p className="text-[11px] text-muted-foreground">Super Like{pkg.quantity > 1 ? "s" : ""}</p>
+                <p className="text-xs text-muted-foreground mt-2">${pkg.pricePerItem.toFixed(2)}/ea</p>
+                {pkg.savings && <span className="inline-block mt-1 text-[10px] font-bold text-primary">Save {pkg.savings}%</span>}
+                {isSel && (
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Divider with "or" */}
-      <div className="flex items-center gap-4 px-6 py-2">
+      {/* Divider */}
+      <div className="flex items-center gap-4 px-6">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-muted-foreground text-sm">or</span>
+        <span className="text-muted-foreground text-xs uppercase tracking-wider">or</span>
         <div className="flex-1 h-px bg-border" />
       </div>
 
       {/* Gold upsell */}
       <div className="px-4 py-4">
-        <div className="border border-border rounded-2xl p-4">
+        <div className="glass-card rounded-2xl p-4">
           <p className="text-xs font-semibold text-muted-foreground text-center mb-3">
-            Includes 5 Free Super Likes Every Week
+            Includes 5 free Super Likes every week
           </p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-amber-500 fill-amber-500" />
-              <span className="font-bold text-foreground">Get ISEXY Gold™</span>
+              <Crown className="w-5 h-5 text-primary fill-primary/30" />
+              <span className="font-bold text-foreground">Get ISEXY Gold</span>
             </div>
             <button
               onClick={() => navigate("/premium")}
@@ -164,21 +159,24 @@ export default function GetSuperLikes() {
         </div>
       </div>
 
-      {/* Bottom purchase button */}
-      <div className="mt-auto p-4 border-t border-border">
-        <button 
+      <div className="flex-1" />
+
+      {/* Bottom CTA */}
+      <div className="glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
+        {gate?.blocked && (
+          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
+            <Lock className="w-3.5 h-3.5" /> Live payments disabled during testing
+          </div>
+        )}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
+          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout powered by Stripe
+        </div>
+        <button
           onClick={handlePurchase}
           disabled={loading}
-          className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-full font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+          className="cta-primary w-full"
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            `Continue for $${total.toFixed(2)} CAD`
-          )}
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : `Continue — $${total.toFixed(2)} CAD`}
         </button>
       </div>
     </div>

@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Video, MessageCircle, Check, Sparkles, Loader2 } from "lucide-react";
+import { Phone, Video, Check, Sparkles, Loader2, ShieldCheck, Lock, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { usePaymentsGate } from "@/hooks/usePaymentsGate";
 
 interface MinutePackage {
   id: string;
@@ -20,20 +19,21 @@ interface MinutePackage {
 
 const phonePackages: MinutePackage[] = [
   { id: "phone_20", minutes: 20, price: 9.99, perMinute: "$0.50" },
-  { id: "phone_150", minutes: 150, price: 45.00, perMinute: "$0.30", popular: true },
-  { id: "phone_450", minutes: 450, price: 90.00, perMinute: "$0.20" },
+  { id: "phone_150", minutes: 150, price: 45.0, perMinute: "$0.30", popular: true },
+  { id: "phone_450", minutes: 450, price: 90.0, perMinute: "$0.20" },
 ];
 
 const videoPackages: MinutePackage[] = [
-  { id: "video_20", minutes: 20, price: 15.00, perMinute: "$0.75" },
-  { id: "video_150", minutes: 150, price: 100.00, perMinute: "$0.67", popular: true },
-  { id: "video_450", minutes: 450, price: 250.00, perMinute: "$0.56" },
+  { id: "video_20", minutes: 20, price: 15.0, perMinute: "$0.75" },
+  { id: "video_150", minutes: 150, price: 100.0, perMinute: "$0.67", popular: true },
+  { id: "video_450", minutes: 450, price: 250.0, perMinute: "$0.56" },
 ];
 
 export default function BuyMinutes() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useAuth();
+  const gate = usePaymentsGate();
   const [selectedPackage, setSelectedPackage] = useState<string>("phone_150");
   const [isLoading, setIsLoading] = useState(false);
   const [phoneBalance, setPhoneBalance] = useState(0);
@@ -41,12 +41,8 @@ export default function BuyMinutes() {
   const [activeTab, setActiveTab] = useState("phone");
 
   useEffect(() => {
-    if (searchParams.get("success") === "true") {
-      toast.success("Purchase successful! Minutes added to your account.");
-    }
-    if (searchParams.get("canceled") === "true") {
-      toast.error("Purchase was canceled.");
-    }
+    if (searchParams.get("success") === "true") toast.success("Purchase successful! Minutes added.");
+    if (searchParams.get("canceled") === "true") toast.error("Purchase was canceled.");
   }, [searchParams]);
 
   useEffect(() => {
@@ -66,7 +62,10 @@ export default function BuyMinutes() {
   }, [profile?.id]);
 
   const handlePurchase = async () => {
-    if (!profile) { navigate("/auth"); return; }
+    if (!profile) {
+      navigate("/auth");
+      return;
+    }
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-minute-purchase", {
@@ -83,106 +82,115 @@ export default function BuyMinutes() {
 
   const renderPackages = (packages: MinutePackage[]) => (
     <div className="space-y-3">
-      {packages.map((pkg) => (
-        <button
-          key={pkg.id}
-          onClick={() => setSelectedPackage(pkg.id)}
-          className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-            selectedPackage === pkg.id
-              ? "border-primary bg-primary/10"
-              : "border-border bg-card hover:border-primary/50"
-          }`}
-        >
-          <div className="text-left">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-foreground">{pkg.minutes} minutes</span>
-              {pkg.popular && (
-                <Badge className="text-xs bg-primary">
-                  <Sparkles className="w-3 h-3 mr-1" />Best Value
-                </Badge>
-              )}
+      {packages.map((pkg) => {
+        const isSel = selectedPackage === pkg.id;
+        return (
+          <button
+            key={pkg.id}
+            onClick={() => setSelectedPackage(pkg.id)}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+              isSel
+                ? "border-primary bg-primary/10 ring-coral"
+                : "border-border bg-card hover:border-primary/40"
+            }`}
+          >
+            <div className="text-left">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-foreground">{pkg.minutes} minutes</span>
+                {pkg.popular && (
+                  <Badge className="text-[10px] gradient-primary text-primary-foreground border-0">
+                    <Sparkles className="w-3 h-3 mr-1" /> Best value
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">${pkg.price.toFixed(2)} · {pkg.perMinute}/min</p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              ${pkg.price.toFixed(2)} · {pkg.perMinute}/min
-            </p>
-          </div>
-          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-            selectedPackage === pkg.id ? "border-primary bg-primary" : "border-muted-foreground"
-          }`}>
-            {selectedPackage === pkg.id && <Check className="w-4 h-4 text-primary-foreground" />}
-          </div>
-        </button>
-      ))}
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSel ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+              {isSel && <Check className="w-4 h-4 text-primary-foreground" />}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 
+  const currentPkg = [...phonePackages, ...videoPackages].find((p) => p.id === selectedPackage);
+
   return (
     <AuthLayout showBack variant="white">
-      <div className="space-y-6">
+      <div className="space-y-6 pb-40">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Buy Minutes</h1>
+          <h1 className="text-2xl font-extrabold text-foreground">Buy Minutes</h1>
           <p className="text-sm text-muted-foreground">Phone & video call packages</p>
         </div>
 
         {/* Balances */}
         <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-blue-500/10 border-blue-500/30">
-            <CardContent className="p-4 text-center">
-              <Phone className="w-6 h-6 text-blue-500 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-foreground">{phoneBalance}</p>
-              <p className="text-xs text-muted-foreground">Phone min</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-emerald-500/10 border-emerald-500/30">
-            <CardContent className="p-4 text-center">
-              <Video className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-foreground">{videoBalance}</p>
-              <p className="text-xs text-muted-foreground">Video min</p>
-            </CardContent>
-          </Card>
+          <div className="glass-card rounded-2xl p-4 text-center">
+            <Phone className="w-6 h-6 text-primary mx-auto mb-1" />
+            <p className="text-2xl font-extrabold text-foreground">{phoneBalance}</p>
+            <p className="text-xs text-muted-foreground">Phone min</p>
+          </div>
+          <div className="glass-card rounded-2xl p-4 text-center">
+            <Video className="w-6 h-6 text-primary mx-auto mb-1" />
+            <p className="text-2xl font-extrabold text-foreground">{videoBalance}</p>
+            <p className="text-xs text-muted-foreground">Video min</p>
+          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSelectedPackage(v === "phone" ? "phone_150" : "video_150"); }}>
-          <TabsList className="w-full">
-            <TabsTrigger value="phone" className="flex-1 gap-1">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            setSelectedPackage(v === "phone" ? "phone_150" : "video_150");
+          }}
+        >
+          <TabsList className="w-full bg-card">
+            <TabsTrigger value="phone" className="flex-1 gap-1 data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">
               <Phone className="w-4 h-4" /> Phone
             </TabsTrigger>
-            <TabsTrigger value="video" className="flex-1 gap-1">
+            <TabsTrigger value="video" className="flex-1 gap-1 data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">
               <Video className="w-4 h-4" /> Video
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="phone" className="mt-4">
-            <div className="bg-muted/50 rounded-xl p-3 mb-4">
-              <p className="text-sm text-muted-foreground">
-                <strong>Masked WhatsApp relay</strong> — your real number is never exposed. Verification code required before each call.
+          <TabsContent value="phone" className="mt-4 space-y-3">
+            <div className="glass-card rounded-2xl p-3 flex items-start gap-2">
+              <EyeOff className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">Phone calls use phone minutes.</strong> Your real number stays private — calls go through a masked relay.
               </p>
             </div>
             {renderPackages(phonePackages)}
           </TabsContent>
 
-          <TabsContent value="video" className="mt-4">
-            <div className="bg-muted/50 rounded-xl p-3 mb-4">
-              <p className="text-sm text-muted-foreground">
-                <strong>Secure in-app video</strong> — end-to-end encrypted WebRTC connection. Auto-terminates when minutes reach 0.
+          <TabsContent value="video" className="mt-4 space-y-3">
+            <div className="glass-card rounded-2xl p-3 flex items-start gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">Video calls use video minutes.</strong> End-to-end encrypted WebRTC. Auto-ends when minutes hit zero.
               </p>
             </div>
             {renderPackages(videoPackages)}
           </TabsContent>
         </Tabs>
 
-        <Button
-          onClick={handlePurchase}
-          disabled={isLoading}
-          className="w-full py-6 text-lg rounded-full"
-        >
-          {isLoading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
-          {isLoading ? "Processing..." : "Purchase Package"}
-        </Button>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
+          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout powered by Stripe
+        </div>
+      </div>
 
-        <p className="text-xs text-center text-muted-foreground">
-          Minutes never expire. Billed per minute, rounded up.
-        </p>
+      {/* Sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
+        {gate?.blocked && (
+          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
+            <Lock className="w-3.5 h-3.5" /> Live payments disabled during testing
+          </div>
+        )}
+        <button onClick={handlePurchase} disabled={isLoading} className="cta-primary w-full">
+          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : currentPkg ? `Buy ${currentPkg.minutes} minutes — $${currentPkg.price.toFixed(2)}` : "Purchase"}
+        </button>
+        <p className="text-[10px] text-muted-foreground text-center">Minutes never expire. Applied after successful payment.</p>
       </div>
     </AuthLayout>
   );
