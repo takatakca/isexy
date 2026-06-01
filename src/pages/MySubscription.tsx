@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Check, Crown, Sparkles, Loader2, Settings as SettingsIcon, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { subscriptionTiers, SubscriptionTier } from "@/lib/subscriptionTiers";
-import { useAuth } from "@/hooks/useAuth";
+import { subscriptionTiers as _tiers, SubscriptionTier } from "@/lib/subscriptionTiers";
+import { useAuth as _useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface FeatureItem { title: string; description?: string; included: boolean; }
