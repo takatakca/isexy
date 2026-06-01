@@ -85,7 +85,7 @@ const tierLabel: Record<SubscriptionTier, string> = { plus: "Plus", gold: "Gold"
 
 export default function MySubscription() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
   const [currentTier, setCurrentTier] = useState<SubscriptionTier | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
