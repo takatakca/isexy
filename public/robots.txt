@@ -1,18 +1,47 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /admin/
+Disallow: /agent-dashboard
+Disallow: /staff-login
+Disallow: /auth
+Disallow: /phone
+Disallow: /verify
+Disallow: /reset-password
+Disallow: /update-password
+Disallow: /onboarding
+Disallow: /profile
+Disallow: /edit-bio
+Disallow: /edit-profile
+Disallow: /settings
+Disallow: /email-settings
+Disallow: /push-notifications
+Disallow: /delete-account
+Disallow: /discover
+Disallow: /explore
+Disallow: /likes
+Disallow: /who-liked-you
+Disallow: /top-picks
+Disallow: /matches
+Disallow: /messages
+Disallow: /chat
+Disallow: /group-chat
+Disallow: /video-call
+Disallow: /phone-line
+Disallow: /web-profile
+Disallow: /block-report
+Disallow: /premium
+Disallow: /my-subscription
+Disallow: /manage-payment-account
+Disallow: /restore-purchase
+Disallow: /buy-credits
+Disallow: /buy-minutes
+Disallow: /get-boosts
+Disallow: /get-super-likes
+Disallow: /redeem-code
+Disallow: /donate
+Disallow: /cuban-cashout
+Disallow: /my-stars
+Disallow: /ticket-tracking
+Disallow: /compare-plans
 
-Sitemap: https://isexy.lovable.app/sitemap.xml
+Sitemap: https://isexy.ca/sitemap.xml

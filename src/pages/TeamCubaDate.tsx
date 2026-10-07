@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { BadgeCheck } from "lucide-react";
 
 const TeamCubaDate = () => {
-  const [receiveUpdates, setReceiveUpdates] = useState(true);
+  const [receiveUpdates, setReceiveUpdates] = useState(false); // CASL: news/offers are opt-in (unticked by default)
 
   return (
     <AuthLayout showBack variant="gray">

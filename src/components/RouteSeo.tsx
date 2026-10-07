@@ -1,7 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-
-const BASE = "https://isexy.lovable.app";
+import { Seo } from "@/seo/Seo";
 
 type Meta = {
   title: string;
@@ -170,27 +169,36 @@ const DEFAULT_META: Meta = {
   description: "Verified profiles and voice-first matching between Canadians and Cuban singles.",
 };
 
+/** Login page: listed above for its title, but not indexed. */
+const NOINDEX = new Set(["/auth"]);
+
+/**
+ * Per-route head tags. Title/description/canonical/OG/Twitter/robots go through the kit <Seo />,
+ * which updates the tags already in index.html (no duplicates). Helmet only adds page JSON-LD (FAQ).
+ * Paths not listed in META (app screens, account, admin, 404) are private: noindex, no canonical.
+ */
 export function RouteSeo() {
-  const { pathname } = useLocation();
-  const meta = META[pathname] ?? DEFAULT_META;
-  const url = `${BASE}${pathname === "/" ? "/" : pathname}`;
+  const { pathname: rawPath } = useLocation();
+  const pathname = rawPath.length > 1 ? rawPath.replace(/\/+$/, "") : rawPath;
+  const known = META[pathname];
+  const meta = known ?? DEFAULT_META;
+  const noindex = !known || NOINDEX.has(pathname);
   const schemas = Array.isArray(meta.jsonLd) ? meta.jsonLd : meta.jsonLd ? [meta.jsonLd] : [];
 
   return (
-    <Helmet>
-      <title>{meta.title}</title>
-      <meta name="description" content={meta.description} />
-      <link rel="canonical" href={url} />
-      <meta property="og:title" content={meta.title} />
-      <meta property="og:description" content={meta.description} />
-      <meta property="og:url" content={url} />
-      <meta property="og:type" content={meta.type ?? "website"} />
-      <meta property="og:site_name" content="ISEXY" />
-      <meta name="twitter:title" content={meta.title} />
-      <meta name="twitter:description" content={meta.description} />
-      {schemas.map((s, i) => (
-        <script key={i} type="application/ld+json">{JSON.stringify(s)}</script>
-      ))}
-    </Helmet>
+    <>
+      <Seo
+        title={meta.title}
+        description={meta.description}
+        path={pathname}
+        type={meta.type ?? "website"}
+        noindex={noindex}
+      />
+      <Helmet>
+        {schemas.map((s, i) => (
+          <script key={i} type="application/ld+json">{JSON.stringify(s)}</script>
+        ))}
+      </Helmet>
+    </>
   );
 }

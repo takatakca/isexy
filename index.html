@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="fr-CA" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -8,41 +8,28 @@
     <meta name="author" content="ISEXY" />
     <meta name="keywords" content="ISEXY, Cuban dating, Canadian dating, international dating, Cuba, Canada, voice dating, phone line dating" />
 
-    <!-- canonical is emitted per-route by RouteSeo (react-helmet-async) -->
+    <!-- Site defaults for crawlers without JavaScript; RouteSeo updates these tags per route (src/seo/Seo.tsx). -->
+    <link rel="canonical" href="https://isexy.ca/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ISEXY" />
+    <meta property="og:locale" content="fr_CA" />
     <meta property="og:title" content="ISEXY — Canadian & Cuban Dating App" />
     <meta property="og:description" content="Verified profiles and voice-first matching between Canadians and Cuban singles." />
-    <meta property="og:url" content="https://isexy.lovable.app/" />
+    <meta property="og:url" content="https://isexy.ca/" />
+    <meta property="og:image" content="https://isexy.ca/images/hero-bg.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@isexy" />
     <meta name="twitter:title" content="ISEXY — Canadian & Cuban Dating App" />
     <meta name="twitter:description" content="Verified profiles and voice-first matching between Canadians and Cuban singles." />
+    <meta name="twitter:image" content="https://isexy.ca/images/hero-bg.png" />
 
     <meta name="theme-color" content="#ef446e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "ISEXY",
-      "url": "https://isexy.lovable.app/",
-      "email": "cubaresort.ca@gmail.com",
-      "areaServed": ["CA", "CU"]
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "ISEXY",
-      "url": "https://isexy.lovable.app/"
-    }
-    </script>
+    <!-- Organization + WebSite JSON-LD: <SiteJsonLd /> (src/seo/Seo.tsx), built from src/site.config.ts -->
   </head>
 
   <body>

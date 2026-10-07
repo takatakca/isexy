@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Heart, Shield, Globe, Users, Sparkles, BadgeCheck, MapPin, Award, Target, Zap, Star, MessageCircle, Lock, Eye } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { ManageCookiesLink } from "@/consent/ManageCookiesLink";
 
 const stats = [
   { value: "190+", label: "Countries" },
@@ -386,6 +387,7 @@ export default function About() {
           >
             Cookies
           </button>
+          <ManageCookiesLink className="text-sm text-muted-foreground hover:text-foreground" />
           <button
             onClick={() => navigate("/licenses")}
             className="text-sm text-muted-foreground hover:text-foreground"

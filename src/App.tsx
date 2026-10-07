@@ -112,6 +112,8 @@ import { AIChatWidget } from "./components/AIChatWidget";
 import { PushNotificationPrompt } from "./components/PushNotificationPrompt";
 import { IncomingCallNotification } from "./components/IncomingCallNotification";
 import { RouteSeo } from "./components/RouteSeo";
+import { SiteJsonLd } from "@/seo/Seo";
+import { CookieBanner } from "@/consent/CookieBanner";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +127,7 @@ const App = () => (
           <LanguageProvider>
             <StreakProvider>
             <RouteSeo />
+            <SiteJsonLd />
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/welcome" element={<Navigate to="/" replace />} />
@@ -238,6 +241,7 @@ const App = () => (
               <Route path="/admin/call-tests" element={<AdminRoute><AdminCallTests /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <CookieBanner />
             <AIChatWidget />
             <PushNotificationPrompt />
             <IncomingCallNotification />

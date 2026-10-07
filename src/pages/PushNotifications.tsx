@@ -8,7 +8,7 @@ const PushNotifications = () => {
   const [messages, setMessages] = useState(true);
   const [messageLikes, setMessageLikes] = useState(true);
   const [superLikes, setSuperLikes] = useState(true);
-  const [offersPromotions, setOffersPromotions] = useState(true);
+  const [offersPromotions, setOffersPromotions] = useState(false); // CASL: promotions are opt-in
   const [newLikes, setNewLikes] = useState(true);
   const [likesFrequency, setLikesFrequency] = useState<"1" | "10" | "100">("1");
   const [topPicks, setTopPicks] = useState(true);
@@ -41,7 +41,7 @@ const PushNotifications = () => {
       setMessages(settings.messages ?? true);
       setMessageLikes(settings.messageLikes ?? true);
       setSuperLikes(settings.superLikes ?? true);
-      setOffersPromotions(settings.offersPromotions ?? true);
+      setOffersPromotions(settings.offersPromotions ?? false);
       setNewLikes(settings.newLikes ?? true);
       setLikesFrequency(settings.likesFrequency ?? "1");
       setTopPicks(settings.topPicks ?? true);

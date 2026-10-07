@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { useNavigate, Link } from "react-router-dom";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { ManageCookiesLink } from "@/consent/ManageCookiesLink";
 import {
   Heart, Shield, Globe, Star, ChevronRight, ChevronDown, ChevronUp,
   Menu, X,
@@ -404,6 +405,7 @@ export default function Welcome() {
               <Link to="/terms" className="block text-foreground/50 hover:text-foreground">Terms</Link>
               <Link to="/privacy" className="block text-foreground/50 hover:text-foreground">Privacy</Link>
               <Link to="/cookie-policy" className="block text-foreground/50 hover:text-foreground">Cookies</Link>
+              <ManageCookiesLink className="block text-left text-foreground/50 hover:text-foreground" />
               <Link to="/consumer-health-privacy" className="block text-foreground/50 hover:text-foreground">Health Privacy</Link>
             </div>
           </div>

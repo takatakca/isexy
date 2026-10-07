@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { SITE } from "@/site.config";
 
 interface SeoProps {
   title: string;
@@ -8,7 +9,7 @@ interface SeoProps {
   jsonLd?: object | object[];
 }
 
-const BASE = "https://isexy.lovable.app";
+const BASE = SITE.url;
 
 export function Seo({ title, description, path, type = "website", jsonLd }: SeoProps) {
   const url = `${BASE}${path}`;

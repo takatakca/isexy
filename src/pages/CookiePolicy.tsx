@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export default function CookiePolicy() {
   const [essentialCookies] = useState(true);
-  const [analyticsCookies, setAnalyticsCookies] = useState(true);
+  const [analyticsCookies, setAnalyticsCookies] = useState(false); // Law 25: optional cookies off by default
   const [marketingCookies, setMarketingCookies] = useState(false);
   const [functionalCookies, setFunctionalCookies] = useState(true);
 

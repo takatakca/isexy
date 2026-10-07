@@ -8,7 +8,7 @@ const EmailSettings = () => {
   const { user } = useAuth();
   const [newMatches, setNewMatches] = useState(true);
   const [newMessages, setNewMessages] = useState(true);
-  const [promotions, setPromotions] = useState(true);
+  const [promotions, setPromotions] = useState(false); // CASL: marketing email is opt-in (unticked by default)
 
   const userEmail = user?.email || "user@example.com";
 
