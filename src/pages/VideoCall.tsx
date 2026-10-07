@@ -203,11 +203,16 @@ export default function VideoCall() {
     (async () => {
       try {
         if (role === "caller") {
-          const { data: session, error } = await supabase
+          const row = { match_id: matchId, caller_id: profile.id, receiver_id: otherProfile.id, status: "ringing" };
+          let { data: session, error } = await supabase
             .from("video_call_sessions")
-            .insert({ match_id: matchId, caller_id: profile.id, receiver_id: otherProfile.id, status: "ringing", call_type: callType })
+            .insert({ ...row, call_type: callType })
             .select("id")
             .single();
+          // Database not migrated yet (no call_type column): ring without it.
+          if (error && /call_type/.test(error.message)) {
+            ({ data: session, error } = await supabase.from("video_call_sessions").insert(row).select("id").single());
+          }
           if (error || !session) {
             toast.error("Couldn't start the call. Please try again.");
             navigate(`/chat/${matchId}`, { replace: true });
