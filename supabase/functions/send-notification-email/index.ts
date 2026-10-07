@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,7 +8,10 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  email: string;
+  /** Service-role callers only. Members never choose the recipient. */
+  email?: string;
+  /** Member callers: the match the new message was sent in. */
+  matchId?: string;
   type: "new_match" | "new_message" | "super_like" | "profile_boost" | "welcome" | "video_call_request";
   data?: {
     matchName?: string;
@@ -19,17 +23,81 @@ interface NotificationEmailRequest {
   };
 }
 
+const recentlyNotified = new Map<string, number>();
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...corsHeaders } });
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, type, data = {} }: NotificationEmailRequest = await req.json();
+    const body: NotificationEmailRequest = await req.json();
+    const type = body.type;
+    let email = "";
+    let rawData: NonNullable<NotificationEmailRequest["data"]> = body.data ?? {};
+
+    // --- Who is calling? -----------------------------------------------------
+    // Previously this endpoint was public and sent any content to any address.
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+      auth: { persistSession: false },
+    });
+    const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+    const isServiceRole = token.length > 0 && token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (isServiceRole) {
+      email = body.email ?? "";
+    } else {
+      const { data: auth } = await admin.auth.getUser(token);
+      if (!auth?.user) return json({ error: "Sign in required" }, 401);
+      // Members may only notify the other participant of their own match.
+      if (type !== "new_message" || !body.matchId) return json({ error: "Not allowed" }, 403);
+
+      const { data: me } = await admin.from("profiles").select("id, first_name").eq("user_id", auth.user.id).maybeSingle();
+      const { data: match } = await admin
+        .from("matches")
+        .select("profile1_id, profile2_id, is_active")
+        .eq("id", body.matchId)
+        .maybeSingle();
+      if (!me || !match || match.is_active === false || (match.profile1_id !== me.id && match.profile2_id !== me.id)) {
+        return json({ error: "Not allowed" }, 403);
+      }
+      const otherId = match.profile1_id === me.id ? match.profile2_id : match.profile1_id;
+      const { data: other } = await admin.from("profiles").select("user_id, first_name").eq("id", otherId).maybeSingle();
+      if (!other?.user_id) return json({ success: true, skipped: "no_recipient" });
+
+      // At most one "new message" email per conversation every 10 minutes.
+      const key = `${body.matchId}:${otherId}`;
+      const last = recentlyNotified.get(key) ?? 0;
+      if (Date.now() - last < 10 * 60_000) return json({ success: true, skipped: "throttled" });
+      recentlyNotified.set(key, Date.now());
+      if (recentlyNotified.size > 10_000) recentlyNotified.clear();
+
+      const { data: recipient } = await admin.auth.admin.getUserById(other.user_id);
+      email = recipient?.user?.email ?? "";
+      if (!email || email.endsWith("@phone.isexy.ca")) return json({ success: true, skipped: "no_email" });
+      rawData = {
+        senderName: me.first_name,
+        firstName: other.first_name,
+        messagePreview: (body.data?.messagePreview ?? "").slice(0, 80),
+      };
+    }
 
     if (!email || !type) {
-      throw new Error("Email and type are required");
+      return json({ error: "Email and type are required" }, 400);
     }
+
+    // Everything interpolated into the HTML is escaped.
+    const data = Object.fromEntries(
+      Object.entries(rawData).map(([k, v]) => [k, typeof v === "string" ? escapeHtml(v) : v]),
+    ) as typeof rawData;
 
     let subject: string;
     let htmlContent: string;
@@ -254,13 +322,13 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: `Notification sent to ${email}` }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
     console.error("Error sending notification email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Could not send notification" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

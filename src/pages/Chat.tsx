@@ -4,12 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useContentModeration } from "@/hooks/useContentModeration";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Phone, Check, CheckCheck, Calendar, AlertTriangle, Gift } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Phone, Check, CheckCheck, Calendar, AlertTriangle, Gift, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { TypingIndicator } from "@/components/TypingIndicator";
 import { CallScheduleModal } from "@/components/CallScheduleModal";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { GiftModal } from "@/components/GiftModal";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
@@ -23,6 +24,24 @@ interface Message {
   read_at?: string;
   translatedContent?: string;
   isTranslating?: boolean;
+  /** Optimistic message not yet confirmed by the server. */
+  pending?: boolean;
+}
+
+const HISTORY_LIMIT = 200;
+
+/** Insert or merge a message, replacing my matching optimistic copy. */
+function upsertMessage(list: Message[], incoming: Message): Message[] {
+  if (list.some((m) => m.id === incoming.id)) {
+    return list.map((m) => (m.id === incoming.id ? { ...m, ...incoming, translatedContent: m.translatedContent } : m));
+  }
+  const pendingIdx = list.findIndex((m) => m.pending && m.sender_id === incoming.sender_id && m.content === incoming.content);
+  if (pendingIdx !== -1) {
+    const next = [...list];
+    next[pendingIdx] = { ...incoming };
+    return next;
+  }
+  return [...list, incoming].sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 interface OtherProfile {
@@ -49,6 +68,10 @@ export default function Chat() {
   const [isBanned, setIsBanned] = useState(false);
   const [banMessage, setBanMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const typingHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevCountRef = useRef(0);
+  const translateRef = useRef({ on: true, lang: "en" });
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { checkContent, reportViolation, checkUserBanStatus } = useContentModeration();
 
@@ -58,11 +81,26 @@ export default function Chat() {
       fetchMessages();
       checkBanStatus();
     }
-  }, [matchId, profile]);
+    // Load once per conversation, not on every profile refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, profile?.id]);
 
+  translateRef.current = { on: translationsEnabled && autoTranslate, lang: language.code };
+
+  // Scroll only when a message is added (not when one is translated or read),
+  // and only if the reader is already near the bottom or it's my own message.
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const added = messages.length > prevCountRef.current;
+    const first = prevCountRef.current === 0;
+    prevCountRef.current = messages.length;
+    if (!added) return;
+    const last = messages[messages.length - 1];
+    const scroller = document.scrollingElement;
+    const nearBottom = !scroller || scroller.scrollHeight - scroller.scrollTop - window.innerHeight < 240;
+    if (first || nearBottom || last?.sender_id === profile?.id) {
+      messagesEndRef.current?.scrollIntoView({ behavior: first ? "auto" : "smooth" });
+    }
+  }, [messages, profile?.id]);
 
   // Translate messages when language changes
   useEffect(() => {
@@ -71,83 +109,48 @@ export default function Chat() {
     }
   }, [language.code, translationsEnabled, autoTranslate]);
 
-  // Subscribe to new messages and typing indicators
+  // Live conversation: new messages, read receipts and typing (broadcast).
   useEffect(() => {
-    if (!matchId || !profile) return;
+    if (!matchId || !profile?.id) return;
+    const myId = profile.id;
 
-    // Messages channel
-    const messagesChannel = supabase
-      .channel(`messages-${matchId}`)
+    const channel = supabase
+      .channel(`chat-${matchId}`, { config: { broadcast: { self: false } } })
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `match_id=eq.${matchId}`,
-        },
-        async (payload) => {
-          const newMsg = payload.new as Message;
-          
-          if (translationsEnabled && autoTranslate && newMsg.sender_id !== profile?.id) {
-            const translatedContent = await translateMessage(newMsg.content);
-            newMsg.translatedContent = translatedContent;
-          }
-          
-          setMessages((prev) => [...prev, newMsg]);
-          
-          if (newMsg.sender_id !== profile?.id) {
-            markAsRead(newMsg.id);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "messages",
-          filter: `match_id=eq.${matchId}`,
-        },
+        { event: "INSERT", schema: "public", table: "messages", filter: `match_id=eq.${matchId}` },
         (payload) => {
-          const updatedMsg = payload.new as Message;
-          setMessages((prev) =>
-            prev.map((m) => (m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m))
-          );
-        }
+          const incoming = payload.new as Message;
+          // Show immediately; translate afterwards.
+          setMessages((prev) => upsertMessage(prev, incoming));
+          if (incoming.sender_id !== myId) {
+            setOtherIsTyping(false);
+            markAsRead(incoming.id);
+            if (translateRef.current.on) translateInto(incoming);
+          }
+        },
       )
-      .subscribe();
-
-    // Typing indicator channel
-    const typingChannel = supabase
-      .channel(`typing-${matchId}`)
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "matches",
-          filter: `id=eq.${matchId}`,
-        },
-        (payload) => {
-          const match = payload.new as any;
-          if (match.typing_user_id && match.typing_user_id !== profile?.id) {
-            const typingTime = new Date(match.typing_at).getTime();
-            const now = Date.now();
-            if (now - typingTime < 5000) {
-              setOtherIsTyping(true);
-              setTimeout(() => setOtherIsTyping(false), 3000);
-            }
-          }
-        }
+        { event: "UPDATE", schema: "public", table: "messages", filter: `match_id=eq.${matchId}` },
+        (payload) => setMessages((prev) => upsertMessage(prev, payload.new as Message)),
       )
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (payload?.profileId === myId) return;
+        setOtherIsTyping(true);
+        if (typingHideRef.current) clearTimeout(typingHideRef.current);
+        typingHideRef.current = setTimeout(() => setOtherIsTyping(false), 3500);
+      })
       .subscribe();
+    channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(typingChannel);
+      channelRef.current = null;
+      if (typingHideRef.current) clearTimeout(typingHideRef.current);
+      supabase.removeChannel(channel);
     };
-  }, [matchId, profile, translationsEnabled, autoTranslate, language.code]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, profile?.id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -224,16 +227,25 @@ export default function Chat() {
   const fetchMessages = async () => {
     if (!matchId) return;
 
-    const { data, error } = await supabase
+    const { data: latest, error } = await supabase
       .from("messages")
       .select("*")
       .eq("match_id", matchId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(HISTORY_LIMIT);
+    const data = (latest || []).reverse();
 
     if (error) {
       console.error("Error fetching messages:", error);
+      toast.error("Couldn't load this conversation. Pull to refresh or try again.");
     } else {
-      setMessages(data || []);
+      setMessages((prev) => {
+        // Keep anything that arrived over realtime while history was loading.
+        let merged: Message[] = data;
+        for (const m of prev) merged = upsertMessage(merged, m);
+        return merged;
+      });
+      if (translateRef.current.on) translateAllMessages(data);
       
       const unreadIds = (data || [])
         .filter((m) => !m.is_read && m.sender_id !== profile?.id)
@@ -252,7 +264,7 @@ export default function Chat() {
   const translateMessage = async (text: string): Promise<string | null> => {
     try {
       const response = await supabase.functions.invoke("translate-message", {
-        body: { text, targetLanguage: language.code }
+        body: { text, targetLanguage: translateRef.current.lang }
       });
 
       if (response.error) throw response.error;
@@ -263,26 +275,19 @@ export default function Chat() {
     }
   };
 
-  const translateAllMessages = async () => {
-    const messagesToTranslate = messages.filter(
-      m => m.sender_id !== profile?.id && !m.translatedContent
-    );
-
-    if (messagesToTranslate.length === 0) return;
-
-    setMessages(prev => prev.map(m => 
-      messagesToTranslate.find(mt => mt.id === m.id) 
-        ? { ...m, isTranslating: true }
-        : m
+  const translateInto = async (msg: Message) => {
+    setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, isTranslating: true } : m)));
+    const translated = await translateMessage(msg.content);
+    setMessages((prev) => prev.map((m) =>
+      m.id === msg.id ? { ...m, translatedContent: translated && translated !== m.content ? translated : undefined, isTranslating: false } : m,
     ));
+  };
 
-    for (const msg of messagesToTranslate) {
-      const translated = await translateMessage(msg.content);
-      setMessages(prev => prev.map(m => 
-        m.id === msg.id 
-          ? { ...m, translatedContent: translated || undefined, isTranslating: false }
-          : m
-      ));
+  /** Translate the other person's messages, 4 at a time, newest first. */
+  const translateAllMessages = async (source: Message[] = messages) => {
+    const todo = source.filter((m) => m.sender_id !== profile?.id && !m.translatedContent).reverse();
+    for (let i = 0; i < todo.length; i += 4) {
+      await Promise.all(todo.slice(i, i + 4).map(translateInto));
     }
   };
 
@@ -293,10 +298,9 @@ export default function Chat() {
       .eq("id", messageId);
   };
 
-  const sendTypingIndicator = useCallback(async () => {
-    // Typing indicators use real-time broadcast instead of database updates
-    // This is a UI-only feature using local state
-  }, [matchId, profile]);
+  const sendTypingIndicator = useCallback(() => {
+    channelRef.current?.send({ type: "broadcast", event: "typing", payload: { profileId: profile?.id } });
+  }, [profile?.id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
@@ -330,7 +334,7 @@ export default function Chat() {
   };
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !profile || !matchId || sending || isBanned) return;
+    if (!newMessage.trim() || !profile || !matchId || isBanned) return;
 
     // Check content for personal information
     const modResult = checkContent(newMessage);
@@ -347,20 +351,26 @@ export default function Chat() {
       return;
     }
 
-    setSending(true);
     const content = newMessage.trim();
     setNewMessage("");
     setIsTyping(false);
 
-    const { error } = await supabase.from("messages").insert({
-      match_id: matchId,
-      sender_id: profile.id,
-      content,
-    });
+    // Optimistic: show the message instantly, confirm (or roll back) after.
+    const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setMessages((prev) => [...prev, {
+      id: tempId, content, sender_id: profile.id, created_at: new Date().toISOString(), is_read: false, pending: true,
+    }]);
+
+    const { data: inserted, error } = await supabase
+      .from("messages")
+      .insert({ match_id: matchId, sender_id: profile.id, content })
+      .select()
+      .single();
 
     if (error) {
       console.error("Error sending message:", error);
-      setNewMessage(content);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setNewMessage((current) => current || content);
       const msg = error.message || "";
       if (msg.includes("blocked")) {
         toast.error("You can't message this user.");
@@ -371,39 +381,24 @@ export default function Chat() {
         toast.error("Failed to send message. Please try again.");
       }
     } else {
+      if (inserted) {
+        setMessages((prev) => {
+          const withoutTemp = prev.some((m) => m.id === inserted.id) ? prev.filter((m) => m.id !== tempId) : prev;
+          return upsertMessage(withoutTemp, inserted as Message);
+        });
+      }
       track("message_sent", { surface: "chat" });
       await supabase
         .from("matches")
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", matchId);
 
-      // Send email notification to the recipient
-      if (otherProfile) {
-        try {
-          // Get recipient's email through their profile
-          const { data: otherUser } = await supabase
-            .from("profiles")
-            .select("user_id")
-            .eq("id", otherProfile.id)
-            .single();
-
-          if (otherUser?.user_id) {
-            await supabase.functions.invoke("send-notification-email", {
-              body: {
-                email: otherUser.user_id, // Will be resolved in the edge function
-                type: "new_message",
-                data: {
-                  senderName: profile.first_name,
-                  messagePreview: content.substring(0, 50) + (content.length > 50 ? "..." : ""),
-                  firstName: otherProfile.first_name,
-                },
-              },
-            });
-          }
-        } catch (err) {
-          console.error("Failed to send message notification:", err);
-        }
-      }
+      // Email the other member (server resolves the recipient; throttled per conversation).
+      supabase.functions
+        .invoke("send-notification-email", {
+          body: { type: "new_message", matchId, data: { messagePreview: content.slice(0, 80) } },
+        })
+        .catch(() => undefined);
     }
 
     setSending(false);
@@ -438,6 +433,7 @@ export default function Chat() {
 
   const renderReadReceipt = (message: Message) => {
     if (message.sender_id !== profile?.id) return null;
+    if (message.pending) return <Clock className="w-3.5 h-3.5 text-muted-foreground" aria-label="Sending" />;
     
     if (message.read_at || message.is_read) {
       return <CheckCheck className="w-4 h-4 text-primary" />;
@@ -458,10 +454,7 @@ export default function Chat() {
         </button>
 
         {otherProfile && (
-          <button
-            onClick={() => navigate(`/profile-detail/${otherProfile.id}`)}
-            className="flex items-center gap-3 flex-1 min-w-0 px-1 py-1 rounded-xl hover:bg-muted/40 transition-colors text-left"
-          >
+          <div className="flex items-center gap-2.5 flex-1 min-w-0 px-1 py-1 text-left">
             <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/30 flex-shrink-0">
               {otherProfile.photo_url ? (
                 <img
@@ -479,13 +472,9 @@ export default function Chat() {
             </div>
             <div className="min-w-0">
               <span className="font-bold text-foreground block truncate">{otherProfile.first_name}</span>
-              {otherIsTyping ? (
-                <span className="text-xs text-primary">typing…</span>
-              ) : (
-                <span className="text-[11px] text-muted-foreground">Tap to view profile</span>
-              )}
+              {otherIsTyping && <span className="block text-xs text-primary whitespace-nowrap">typing…</span>}
             </div>
-          </button>
+          </div>
         )}
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -516,25 +505,27 @@ export default function Chat() {
           >
             <Gift className="w-5 h-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowScheduleModal(true)}
-            className="text-foreground hover:text-primary h-9 w-9"
-            aria-label="Schedule call"
-          >
-            <Calendar className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTranslations}
-            className={`h-9 w-9 ${translationsEnabled ? "text-primary" : "text-muted-foreground"}`}
-            aria-label="Translate"
-          >
-            <Languages className="w-5 h-5" />
-          </Button>
           <LanguageSelector variant="icon" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-foreground hover:text-primary h-9 w-9" aria-label="More options">
+                <MoreVertical className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setShowScheduleModal(true)}>
+                <Calendar className="w-4 h-4 mr-2" /> Schedule a call
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTranslations}>
+                <Languages className="w-4 h-4 mr-2" /> {translationsEnabled ? "Turn translation off" : "Turn translation on"}
+              </DropdownMenuItem>
+              {otherProfile && (
+                <DropdownMenuItem onClick={() => navigate(`/block-report/${otherProfile.id}`)} className="text-destructive focus:text-destructive">
+                  <AlertTriangle className="w-4 h-4 mr-2" /> Block or report
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

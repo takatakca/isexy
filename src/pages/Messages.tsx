@@ -1,28 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Shield, Search, Smile, X, CreditCard, Smartphone, AlertTriangle, CheckCheck, Lock } from "lucide-react";
+import { Shield, Search, Smile, X, CreditCard, Smartphone, AlertTriangle, CheckCheck, Lock, BadgeCheck, RefreshCw } from "lucide-react";
 import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { ScheduledCallsList } from "@/components/ScheduledCallsList";
 import { MissedCallBanner } from "@/components/MissedCallBanner";
 import { ContactMethodModal } from "@/components/ContactMethodModal";
+import { fetchInbox, relativeTime, type Conversation } from "@/lib/inbox";
 
-interface Match {
-  id: string;
-  other_profile: {
-    id: string;
-    first_name: string;
-    photo_url?: string;
-    last_active_at?: string | null;
-  };
-  last_message_at: string | null;
-  last_message_preview: string | null;
-  unread_count: number;
-  is_unlocked: boolean;
-}
+const SAFETY_SEEN_KEY = "cubadate_safety_seen";
 
 const safetySlides = [
   {
@@ -54,127 +44,78 @@ const safetySlides = [
 export default function Messages() {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [showSafetyModal, setShowSafetyModal] = useState(true);
+  const { language } = useLanguage();
+  // Read once synchronously so the safety dialog never flashes for returning members.
+  const [showSafetyModal, setShowSafetyModal] = useState(() => {
+    try { return !localStorage.getItem(SAFETY_SEEN_KEY); } catch { return false; }
+  });
   const [safetySlide, setSafetySlide] = useState(0);
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [query, setQuery] = useState("");
   const [contactModal, setContactModal] = useState<{
     matchId: string;
     otherName: string;
     otherPhotoUrl?: string;
   } | null>(null);
+  const refreshTimer = useRef<number>();
 
-  useEffect(() => {
-    // Check if user has seen safety tips
-    const hasSeen = localStorage.getItem("cubadate_safety_seen");
-    if (hasSeen) {
-      setShowSafetyModal(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchMatches();
-    }
-  }, [profile?.id]);
-
-  const fetchMatches = async () => {
+  const load = useCallback(async () => {
     if (!profile?.id) return;
-    
     try {
-      const [matchesRes, blocksRes] = await Promise.all([
-        supabase
-          .from("matches")
-          .select(`id, last_message_at, profile1_id, profile2_id`)
-          .or(`profile1_id.eq.${profile.id},profile2_id.eq.${profile.id}`)
-          .eq("is_active", true)
-          .order("last_message_at", { ascending: false, nullsFirst: false }),
-        supabase
-          .from("blocks")
-          .select("blocker_id, blocked_id")
-          .or(`blocker_id.eq.${profile.id},blocked_id.eq.${profile.id}`),
-      ]);
-
-      if (matchesRes.error) throw matchesRes.error;
-      const blockedIds = new Set<string>(
-        (blocksRes.data || []).map((b: any) =>
-          b.blocker_id === profile.id ? b.blocked_id : b.blocker_id
-        )
-      );
-      const data = (matchesRes.data || []).filter((m: any) => {
-        const other = m.profile1_id === profile.id ? m.profile2_id : m.profile1_id;
-        return !blockedIds.has(other);
-      });
-
-      // Get the other profile for each match
-      const matchesWithProfiles = await Promise.all(
-        (data || []).map(async (match) => {
-          const otherProfileId = match.profile1_id === profile.id ? match.profile2_id : match.profile1_id;
-          
-          const [profileResult, photoResult, unreadResult, unlockResult, lastMsgResult] = await Promise.all([
-            supabase
-              .from("profiles")
-              .select("id, first_name, last_active_at")
-              .eq("id", otherProfileId)
-              .single(),
-            supabase
-              .from("profile_photos")
-              .select("photo_url")
-              .eq("profile_id", otherProfileId)
-              .order("position")
-              .limit(1)
-              .maybeSingle(),
-            supabase
-              .from("messages")
-              .select("id")
-              .eq("match_id", match.id)
-              .neq("sender_id", profile.id)
-              .eq("is_read", false),
-            supabase
-              .from("conversation_unlocks")
-              .select("id")
-              .eq("match_id", match.id)
-              .eq("unlocked_by", profile.id)
-              .eq("unlock_type", "chat")
-              .maybeSingle(),
-            supabase
-              .from("messages")
-              .select("content, created_at")
-              .eq("match_id", match.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle(),
-          ]);
-
-          return {
-            id: match.id,
-            other_profile: {
-              id: otherProfileId,
-              first_name: profileResult.data?.first_name || "Unknown",
-              photo_url: photoResult.data?.photo_url,
-              last_active_at: profileResult.data?.last_active_at,
-            },
-            last_message_at: match.last_message_at || lastMsgResult.data?.created_at || null,
-            last_message_preview: lastMsgResult.data?.content || null,
-            unread_count: unreadResult.data?.length || 0,
-            is_unlocked: unlockResult.data !== null || profile.is_premium === true,
-          };
-        })
-      );
-
-      setMatches(matchesWithProfiles);
+      setConversations(await fetchInbox(profile));
+      setLoadError(false);
     } catch (error) {
-      console.error("Error fetching matches:", error);
+      console.error("Error fetching conversations:", error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, profile?.is_premium]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Live inbox: new messages, reads and new matches refresh the list (debounced).
+  useEffect(() => {
+    if (!profile?.id) return;
+    const schedule = () => {
+      window.clearTimeout(refreshTimer.current);
+      refreshTimer.current = window.setTimeout(load, 400);
+    };
+    const channel = supabase
+      .channel(`inbox-${profile.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, schedule)
+      .subscribe();
+    const onFocus = () => document.visibilityState === "visible" && schedule();
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.clearTimeout(refreshTimer.current);
+      document.removeEventListener("visibilitychange", onFocus);
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, load]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? conversations.filter((c) => c.first_name.toLowerCase().includes(q)) : conversations;
+  }, [conversations, query]);
+  const newMatches = filtered.filter((c) => !c.last_message_preview);
+  const threads = filtered.filter((c) => c.last_message_preview);
+  const totalUnread = conversations.reduce((n, c) => n + c.unread_count, 0);
+
+  const open = (c: Conversation) => {
+    if (c.is_unlocked) navigate(`/chat/${c.match_id}`);
+    else setContactModal({ matchId: c.match_id, otherName: c.first_name, otherPhotoUrl: c.photo_url ?? undefined });
   };
 
   const handleSafetyNext = () => {
     if (safetySlide < safetySlides.length - 1) {
       setSafetySlide(safetySlide + 1);
     } else {
-      localStorage.setItem("cubadate_safety_seen", "true");
+      try { localStorage.setItem(SAFETY_SEEN_KEY, "true"); } catch { /* ignore */ }
       setShowSafetyModal(false);
     }
   };
@@ -225,7 +166,7 @@ export default function Messages() {
           <div className="bg-background rounded-3xl max-w-sm w-full p-6 relative">
             <button
               onClick={() => {
-                localStorage.setItem("cubadate_safety_seen", "true");
+                try { localStorage.setItem(SAFETY_SEEN_KEY, "true"); } catch { /* ignore */ }
                 setShowSafetyModal(false);
               }}
               className="absolute top-4 right-4 p-2"
@@ -277,35 +218,34 @@ export default function Messages() {
       <div className="sticky top-0 z-10 bg-background/85 backdrop-blur-xl px-4 pt-12 pb-4 border-b border-border/40">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Chat
+            Chat{totalUnread > 0 && <span className="sr-only">, {totalUnread} unread</span>}
           </h1>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowSafetyModal(true)}
-              className="p-2 rounded-full hover:bg-muted/60 transition-colors"
-              aria-label="Safety tips"
-            >
+            <button onClick={() => setShowSafetyModal(true)} className="p-2 rounded-full hover:bg-muted/60 transition-colors" aria-label="Safety tips">
               <Shield className="w-5 h-5 text-muted-foreground" />
             </button>
-            <button
-              onClick={() => navigate("/referrals")}
-              className="p-2 rounded-full hover:bg-muted/60 transition-colors relative"
-              aria-label="Referrals"
-            >
+            <button onClick={() => navigate("/referrals")} className="p-2 rounded-full hover:bg-muted/60 transition-colors relative" aria-label="Referrals">
               <Smile className="w-5 h-5 text-muted-foreground" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-background" />
             </button>
           </div>
         </div>
-
-        {/* Search */}
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/40 border border-border/40">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Search {matches.length} matches</span>
-        </div>
+        <label className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/40 border border-border/40 focus-within:border-primary/60 transition-colors">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${conversations.length} ${conversations.length === 1 ? "match" : "matches"}`}
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            aria-label="Search matches by name"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} aria-label="Clear search"><X className="w-4 h-4 text-muted-foreground" /></button>
+          )}
+        </label>
       </div>
 
-      {/* Content */}
       <div className="px-4 pt-4">
         <ScheduledCallsList />
         <MissedCallBanner />
@@ -313,7 +253,7 @@ export default function Messages() {
 
       <div className="flex-1 px-4">
         {loading ? (
-          <div className="space-y-2 mt-4">
+          <div className="space-y-2 mt-4" aria-busy="true">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 p-3">
                 <div className="w-14 h-14 rounded-full bg-muted/40 animate-pulse" />
@@ -324,7 +264,15 @@ export default function Messages() {
               </div>
             ))}
           </div>
-        ) : matches.length === 0 ? (
+        ) : loadError && conversations.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-semibold text-foreground mb-1">Couldn't load your chats</p>
+            <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
+            <button onClick={() => { setLoading(true); load(); }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm">
+              <RefreshCw className="w-4 h-4" /> Retry
+            </button>
+          </div>
+        ) : conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-16 px-6">
             <div className="relative w-24 h-24 mb-6">
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-secondary/20 blur-2xl" />
@@ -333,89 +281,99 @@ export default function Messages() {
               </div>
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Get swiping</h2>
-            <p className="text-muted-foreground max-w-xs mb-6">
-              When you match with other users they'll appear here, ready to chat.
-            </p>
-            <button
-              onClick={() => navigate("/discover")}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-shadow"
-            >
+            <p className="text-muted-foreground max-w-xs mb-6">When you match with other users they'll appear here, ready to chat.</p>
+            <button onClick={() => navigate("/discover")} className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-lg shadow-primary/30">
               Start swiping
             </button>
           </div>
         ) : (
-          <div className="space-y-2 mt-2">
-            {matches.map((match) => (
-              <button
-                key={match.id}
-                onClick={() => {
-                  if (match.is_unlocked) {
-                    navigate(`/chat/${match.id}`);
-                  } else {
-                    setContactModal({
-                      matchId: match.id,
-                      otherName: match.other_profile.first_name,
-                      otherPhotoUrl: match.other_profile.photo_url,
-                    });
-                  }
-                }}
-                className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 transition-all active:scale-[0.99]"
-              >
-                <div className="relative w-14 h-14 rounded-full bg-muted overflow-hidden flex-shrink-0 ring-2 ring-border/40">
-                  {match.other_profile.photo_url ? (
-                    <img
-                      src={match.other_profile.photo_url}
-                      alt={match.other_profile.first_name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center text-muted-foreground text-xl font-bold">
-                      {match.other_profile.first_name[0]}
-                    </div>
-                  )}
-                  <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-card rounded-full">
-                    <OnlineStatusIndicator
-                      lastActiveAt={match.other_profile.last_active_at || null}
-                      size="sm"
-                    />
-                  </div>
+          <>
+            {newMatches.length > 0 && (
+              <section className="mt-3" aria-label="New matches">
+                <h2 className="text-sm font-bold text-foreground mb-3">New matches</h2>
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                  {newMatches.map((c) => (
+                    <button key={c.match_id} onClick={() => open(c)} className="shrink-0 w-[76px] text-center">
+                      <div className="relative w-[76px] h-[96px] rounded-2xl overflow-hidden bg-muted ring-2 ring-primary/70">
+                        {c.photo_url ? (
+                          <img src={c.photo_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-2xl font-bold text-muted-foreground">{c.first_name[0]}</span>
+                        )}
+                        {!c.is_unlocked && <Lock className="absolute top-1.5 right-1.5 w-4 h-4 text-white drop-shadow" />}
+                      </div>
+                      <p className="mt-1.5 text-xs font-semibold text-foreground truncate">{c.first_name}</p>
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-1 text-left min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className={`truncate ${match.unread_count > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/90"}`}>
-                      {match.other_profile.first_name}
-                    </h3>
-                    {match.unread_count > 0 && (
-                      <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-primary-foreground">
-                          {match.unread_count > 9 ? "9+" : match.unread_count}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                  <p className={`text-sm truncate ${match.unread_count > 0 ? "text-foreground/80 font-medium" : "text-muted-foreground"}`}>
-                    {!match.is_unlocked ? (
-                      <span className="flex items-center gap-1 text-amber-500">
-                        <Lock className="w-3 h-3" />
-                        Subscription required
-                      </span>
-                    ) : match.last_message_preview
-                      ? match.last_message_preview
-                      : "Say something!"}
-                  </p>
+              </section>
+            )}
+
+            {threads.length > 0 && (
+              <section className="mt-3" aria-label="Messages">
+                {newMatches.length > 0 && <h2 className="text-sm font-bold text-foreground mb-2">Messages</h2>}
+                <div className="space-y-2">
+                  {threads.map((c) => (
+                    <button
+                      key={c.match_id}
+                      onClick={() => open(c)}
+                      className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 active:scale-[0.99] transition-all"
+                    >
+                      <div className="relative w-14 h-14 rounded-full bg-muted overflow-hidden flex-shrink-0 ring-2 ring-border/40">
+                        {c.photo_url ? (
+                          <img src={c.photo_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center text-muted-foreground text-xl font-bold">{c.first_name[0]}</div>
+                        )}
+                        <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-card rounded-full">
+                          <OnlineStatusIndicator lastActiveAt={c.last_active_at} size="sm" />
+                        </div>
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className={`truncate flex items-center gap-1 ${c.unread_count > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/90"}`}>
+                            {c.first_name}
+                            {c.is_verified && <BadgeCheck className="w-4 h-4 text-cyan-400 shrink-0" aria-label="Verified" />}
+                          </h3>
+                          <span className={`text-xs shrink-0 ${c.unread_count > 0 ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                            {relativeTime(c.last_message_at, language.code)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-sm truncate ${c.unread_count > 0 ? "text-foreground/80 font-medium" : "text-muted-foreground"}`}>
+                            {!c.is_unlocked ? (
+                              <span className="flex items-center gap-1 text-amber-500"><Lock className="w-3 h-3" />Unlock to reply</span>
+                            ) : (
+                              <>
+                                {c.last_message_mine && <CheckCheck className="inline w-3.5 h-3.5 mr-1 -mt-0.5 text-muted-foreground" aria-label="You:" />}
+                                {c.last_message_preview}
+                              </>
+                            )}
+                          </p>
+                          {c.unread_count > 0 && (
+                            <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary flex items-center justify-center">
+                              <span className="text-[10px] font-bold text-primary-foreground">{c.unread_count > 9 ? "9+" : c.unread_count}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              </button>
-            ))}
-          </div>
+              </section>
+            )}
+
+            {filtered.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-10">No match named “{query}”.</p>
+            )}
+          </>
         )}
       </div>
 
-      {/* Contact Method Modal */}
       {contactModal && (
         <ContactMethodModal
           isOpen={true}
-          onClose={() => { setContactModal(null); fetchMatches(); }}
+          onClose={() => { setContactModal(null); load(); }}
           matchId={contactModal.matchId}
           otherName={contactModal.otherName}
           otherPhotoUrl={contactModal.otherPhotoUrl}

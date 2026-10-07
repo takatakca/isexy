@@ -61,6 +61,37 @@ sign-in shows an email fallback and sync is a silent no-op.
 > `/api/v1/auth/otp/verify` and `/api/v1/identity/resolve-person` (with
 > `source_application: "isexy"`). Never reuse the 1LV key for ISEXY.
 
+## Core experience (Discover · Matches · Chat)
+
+- **Discover** (`useDiscoverDeck` + `SwipeDeck` + `useSwipeGesture`): the deck
+  comes from `get_discover_feed` in one query (mutual preferences, age range,
+  blocks, already-swiped, ranking, distance and photos). Swipes are
+  optimistic — the card leaves instantly, the server call runs in the
+  background and a refused swipe (limits, errors) puts the card back. The
+  gesture moves the card without React re-renders; flick, spring-back,
+  keyboard (← → ↑, Backspace = undo) and haptics are supported. Explore
+  categories use the same engine with an interests filter.
+- **Matches** (`fetchInbox`): `get_my_conversations` returns the whole inbox in
+  one call (was 5 queries per match), updates live over Realtime, with real
+  search, a "New matches" row and relative times.
+- **Chat**: messages appear instantly (optimistic, confirmed or rolled back),
+  incoming messages render before translation, history is translated on open
+  (4 at a time), real typing indicator over Realtime broadcast, latest 200
+  messages loaded, smart scrolling.
+
+## Security fixes (October 2026)
+
+- `perform_like`, `check_swipe_rate_limit`, `use_boost`, `redeem_coupon`,
+  `unlock_conversation` and `sync_entitlements` trusted a client-supplied
+  profile id. They now verify ownership (`assert_profile_owner`); originals
+  live on as `*_unchecked`, callable only by the service role.
+- `send-notification-email` was a public open relay (any recipient, any
+  HTML). Members can now only trigger a throttled "new message" email to the
+  other participant of their own match; the recipient is resolved server-side
+  and all interpolated text is escaped.
+- Explore categories no longer bypass like limits; `/explore/:category`,
+  `/agent-dashboard` require sign-in / staff role.
+
 ## SEO
 
 - **One source of truth:** `src/seo/routes.json` (title, description, sitemap
@@ -113,6 +144,8 @@ in Edit Profile, safe Help Center view/feedback counters, the TAKATAK identity
 link table, the bot→agent transcript link, and cleans legacy Help Center
 content. `20261007130000_analytics_and_client_errors.sql` adds analytics,
 error reporting and the admin overview.
+`20261007140000_secure_rpcs_and_discover_feed.sql` adds the ownership guards and
+the Discover feed; `20261007150000_conversations_inbox.sql` adds the inbox RPC.
 
 ## CI
 

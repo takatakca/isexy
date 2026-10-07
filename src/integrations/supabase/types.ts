@@ -3212,6 +3212,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_conversations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          first_name: string
+          is_unlocked: boolean
+          is_verified: boolean
+          last_active_at: string | null
+          last_message_at: string | null
+          last_message_mine: boolean | null
+          last_message_preview: string | null
+          match_id: string
+          matched_at: string
+          other_id: string
+          photo_url: string | null
+          unread_count: number
+        }[]
+      }
       get_discover_feed: {
         Args: {
           p_exclude?: string[]

@@ -64,7 +64,7 @@ jobs:
       - name: Type-check edge functions
         # Functions with known legacy type errors (get-voice-reply-url, seed-profiles,
         # twilio-phone-line-menu) and npm:-specifier functions are excluded until fixed.
-        run: deno check supabase/functions/ai-chat/index.ts supabase/functions/takatak-bridge/index.ts
+        run: deno check supabase/functions/ai-chat/index.ts supabase/functions/takatak-bridge/index.ts supabase/functions/send-notification-email/index.ts
 
       - name: Upload web build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
