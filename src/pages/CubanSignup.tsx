@@ -11,7 +11,7 @@ import { Check, Phone, CreditCard, Video, Mic, Shield, Upload, Camera, X } from 
 import { Button } from "@/components/ui/button";
 
 const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
 const whatsappSchema = z.string().min(10, "Please enter a valid WhatsApp number");
 const carnetSchema = z.string().min(11, "Carnet ID must be 11 digits").max(11, "Carnet ID must be 11 digits");
 

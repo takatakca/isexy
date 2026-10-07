@@ -51,6 +51,9 @@ jobs:
           VITE_SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.lovable.app' }}
           VITE_GA4_ID: ${{ vars.VITE_GA4_ID }}
           VITE_META_PIXEL_ID: ${{ vars.VITE_META_PIXEL_ID }}
+          VITE_TURN_URLS: ${{ vars.VITE_TURN_URLS }}
+          VITE_TURN_USERNAME: ${{ vars.VITE_TURN_USERNAME }}
+          VITE_TURN_CREDENTIAL: ${{ secrets.VITE_TURN_CREDENTIAL }}
         run: npm run build
 
       - name: Lint (report only — legacy findings are being paid down)
@@ -64,7 +67,21 @@ jobs:
       - name: Type-check edge functions
         # Functions with known legacy type errors (get-voice-reply-url, seed-profiles,
         # twilio-phone-line-menu) and npm:-specifier functions are excluded until fixed.
-        run: deno check supabase/functions/ai-chat/index.ts supabase/functions/takatak-bridge/index.ts supabase/functions/send-notification-email/index.ts
+        run: >-
+          deno check
+          supabase/functions/ai-chat/index.ts
+          supabase/functions/takatak-bridge/index.ts
+          supabase/functions/send-notification-email/index.ts
+          supabase/functions/send-ticket-confirmation/index.ts
+          supabase/functions/send-ticket-status-update/index.ts
+          supabase/functions/send-verification-notification/index.ts
+          supabase/functions/subscription-resets/index.ts
+          supabase/functions/send-email-otp/index.ts
+          supabase/functions/update-user-password/index.ts
+          supabase/functions/send-whatsapp-otp/index.ts
+          supabase/functions/send-whatsapp-call-notification/index.ts
+          supabase/functions/send-missed-call-notification/index.ts
+          supabase/functions/send-push-notification/index.ts
 
       - name: Upload web build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -117,10 +134,12 @@ jobs:
           TAKATAK_API_URL: ${{ secrets.TAKATAK_API_URL }}
           TAKATAK_ISEXY_API_KEY: ${{ secrets.TAKATAK_ISEXY_API_KEY }}
           LOVABLE_API_KEY: ${{ secrets.LOVABLE_API_KEY }}
+          RESEND_FROM: ${{ secrets.RESEND_FROM }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -euo pipefail
           args=()
-          for name in TAKATAK_API_URL TAKATAK_ISEXY_API_KEY LOVABLE_API_KEY; do
+          for name in TAKATAK_API_URL TAKATAK_ISEXY_API_KEY LOVABLE_API_KEY RESEND_FROM CRON_SECRET; do
             if [ -n "${!name}" ]; then args+=("$name=${!name}"); fi
           done
           if [ ${#args[@]} -gt 0 ]; then

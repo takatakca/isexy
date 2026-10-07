@@ -121,6 +121,24 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
   return { subject, html };
 };
 
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/** Admins/moderators (or internal service-role calls) only. */
+async function isStaff(req: Request): Promise<boolean> {
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token) return false;
+  if (token === serviceKey) return true;
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, { auth: { persistSession: false } });
+  const { data: auth } = await admin.auth.getUser(token);
+  if (!auth?.user) return false;
+  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", auth.user.id).in("role", ["admin", "moderator"]);
+  return (roles?.length ?? 0) > 0;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -135,7 +153,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { email, name, ticketNumber, subject, oldStatus, newStatus, response }: StatusUpdateRequest = await req.json();
+    if (!(await isStaff(req))) {
+      return new Response(JSON.stringify({ error: "Staff only" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    const raw: StatusUpdateRequest = await req.json();
+    const email = raw.email;
+    const name = escapeHtml(raw.name);
+    const ticketNumber = escapeHtml(raw.ticketNumber);
+    const subject = escapeHtml(raw.subject);
+    const oldStatus = escapeHtml(raw.oldStatus);
+    const newStatus = escapeHtml(raw.newStatus);
+    const response = raw.response ? escapeHtml(raw.response) : undefined;
 
     console.log(`Sending status update email to ${email} for ticket ${ticketNumber}`);
 

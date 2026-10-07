@@ -24,6 +24,9 @@ independently.
 | `LOVABLE_API_KEY` | *(optional)* AI gateway key used by `ai-chat`; synced into Supabase function secrets |
 | `TAKATAK_API_URL` | *(optional)* e.g. `https://takatak.ca` |
 | `TAKATAK_ISEXY_API_KEY` | *(optional)* dedicated ≥ 32-char key issued by TAKATAK v1 for ISEXY |
+| `RESEND_FROM` | *(recommended)* verified sender for OTP / call / ticket emails, e.g. `ISEXY <no-reply@isexy.ca>` (domain must be verified in Resend) |
+| `CRON_SECRET` | *(recommended)* ≥ 16 random chars; lets `pg_cron` call `subscription-resets` with header `x-cron-secret` |
+| `VITE_TURN_CREDENTIAL` | *(recommended)* TURN password baked into the web build (use short-lived/limited credentials) |
 | `ISEXY_DEPLOY_HOST` | SSH host (e.g. MochaHost server) |
 | `ISEXY_DEPLOY_PORT` | SSH port (default 22) |
 | `ISEXY_DEPLOY_USER` | SSH user |
@@ -39,6 +42,21 @@ independently.
 | `SUPABASE_PROJECT_REF` | default `khvsudrwnqznuxnjurxp` |
 | `VITE_GA4_ID` | *(optional)* Google Analytics 4 measurement ID |
 | `VITE_META_PIXEL_ID` | *(optional)* Meta Pixel ID |
+| `VITE_TURN_URLS` | *(recommended)* comma-separated TURN URLs, e.g. `turn:turn.isexy.ca:3478,turns:turn.isexy.ca:5349` — needed for calls on strict mobile NAT (Cuba) |
+| `VITE_TURN_USERNAME` | *(recommended)* TURN username |
+
+## Scheduled jobs
+
+`subscription-resets` only accepts the service-role key or the `CRON_SECRET`. Schedule it with `pg_cron` + `pg_net`:
+
+```sql
+select cron.schedule('isexy-subscription-resets', '5 0 * * *', $$
+  select net.http_post(
+    url := 'https://khvsudrwnqznuxnjurxp.supabase.co/functions/v1/subscription-resets',
+    headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','<CRON_SECRET>'),
+    body := '{}'::jsonb);
+$$);
+```
 
 ## Static hosting notes
 

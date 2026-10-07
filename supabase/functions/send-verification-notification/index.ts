@@ -8,13 +8,36 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/** Admins/moderators (or internal service-role calls) only. */
+async function isStaff(req: Request): Promise<boolean> {
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token) return false;
+  if (token === serviceKey) return true;
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, { auth: { persistSession: false } });
+  const { data: auth } = await admin.auth.getUser(token);
+  if (!auth?.user) return false;
+  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", auth.user.id).in("role", ["admin", "moderator"]);
+  return (roles?.length ?? 0) > 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { profileId, status, rejectionReason } = await req.json();
+    if (!(await isStaff(req))) {
+      return new Response(JSON.stringify({ error: "Staff only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const body = await req.json();
+    const { profileId, status } = body;
+    const rejectionReason = body.rejectionReason ? escapeHtml(body.rejectionReason) : body.rejectionReason;
 
     if (!profileId || !status) {
       return new Response(
@@ -54,7 +77,7 @@ Deno.serve(async (req) => {
     }
 
     const userEmail = userData.user.email;
-    const firstName = profile.first_name;
+    const firstName = escapeHtml(profile.first_name);
 
     // Prepare email content based on status
     let subject: string;

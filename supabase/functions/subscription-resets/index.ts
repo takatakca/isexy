@@ -11,6 +11,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Scheduler only: anyone could previously call this to reset every free
+  // member's likes to 100 on demand. Accept the service-role key or the
+  // x-cron-secret header matching the CRON_SECRET function secret.
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  const authorized =
+    (token.length > 0 && token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) ||
+    (cronSecret.length >= 16 && req.headers.get("x-cron-secret") === cronSecret);
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",

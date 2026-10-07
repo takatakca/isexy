@@ -28,9 +28,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8 || password.length > 128) {
       return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters" }),
+        JSON.stringify({ error: "Password must be between 8 and 128 characters" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
@@ -61,25 +61,24 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Find user by email
-    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
-    if (listError) {
-      console.error("listUsers error:", listError);
+    // Exact lookup (auth.admin.listUsers() only returned the first 50 users,
+    // so later sign-ups could never reset their password).
+    const { data: userId, error: lookupError } = await supabase.rpc("get_auth_user_id_by_email", { p_email: email });
+    if (lookupError) {
+      console.error("user lookup error:", lookupError.message);
       return new Response(
         JSON.stringify({ error: "Failed to update password" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
-    const user = users.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-    if (!user) {
+    if (!userId) {
       // Generic response — do not reveal existence
       return new Response(
         JSON.stringify({ success: true }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
-
-    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, { password });
+    const { error: updateError } = await supabase.auth.admin.updateUserById(userId as string, { password });
     if (updateError) {
       console.error("updateUser error:", updateError);
       return new Response(

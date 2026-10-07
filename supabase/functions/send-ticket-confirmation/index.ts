@@ -118,6 +118,27 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
   return { subject, html };
 };
 
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/** Admins/moderators (or internal service-role calls) only. */
+async function isStaff(req: Request): Promise<boolean> {
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token) return false;
+  if (token === serviceKey) return true;
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, { auth: { persistSession: false } });
+  const { data: auth } = await admin.auth.getUser(token);
+  if (!auth?.user) return false;
+  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", auth.user.id).in("role", ["admin", "moderator"]);
+  return (roles?.length ?? 0) > 0;
+}
+
+// One confirmation per ticket (per isolate).
+const confirmed = new Set<string>();
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -125,7 +146,37 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { name, email, ticketNumber, subject, category, priority, message }: TicketEmailRequest = await req.json();
+    // Only the ticket number is trusted from the client. Everything else is
+    // read back from the stored ticket, so this can't be used to email
+    // arbitrary content to arbitrary addresses.
+    const body = (await req.json()) as Partial<TicketEmailRequest>;
+    const ticketNumber = String(body.ticketNumber ?? "").trim();
+    if (!ticketNumber) {
+      return new Response(JSON.stringify({ error: "ticketNumber is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    const db = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+    const { data: ticket } = await db
+      .from("support_tickets")
+      .select("name, email, subject, category, priority, message, created_at")
+      .eq("ticket_number", ticketNumber)
+      .maybeSingle();
+    if (!ticket || Date.now() - new Date(ticket.created_at).getTime() > 10 * 60_000) {
+      return new Response(JSON.stringify({ error: "Ticket not found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    if (confirmed.has(ticketNumber)) {
+      return new Response(JSON.stringify({ success: true, skipped: "already_sent" }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    confirmed.add(ticketNumber);
+    if (confirmed.size > 10_000) confirmed.clear();
+    const email: string = ticket.email;
+    const name = escapeHtml(ticket.name);
+    const subject = escapeHtml(ticket.subject);
+    const category = escapeHtml(ticket.category);
+    const priority = escapeHtml(ticket.priority);
+    const message = escapeHtml(ticket.message);
 
     console.log("Sending ticket confirmation email to:", email);
     console.log("Ticket number:", ticketNumber);

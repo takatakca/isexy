@@ -12,7 +12,23 @@ interface OTPRequest {
 }
 
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return (100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000)).toString();
+}
+
+// Per-isolate guard against SMS/WhatsApp pumping (cycling through many numbers).
+const sendsByUser = new Map<string, number[]>();
+const sendsByIp = new Map<string, number[]>();
+function overLimit(map: Map<string, number[]>, key: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  const recent = (map.get(key) ?? []).filter((t) => now - t < windowMs);
+  if (recent.length >= max) {
+    map.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  map.set(key, recent);
+  if (map.size > 20_000) map.clear();
+  return false;
 }
 
 Deno.serve(async (req) => {
@@ -27,6 +43,25 @@ Deno.serve(async (req) => {
 
     const { phoneNumber, action, code } = await req.json() as OTPRequest;
 
+    // The WhatsApp step happens after the account is created: require it.
+    const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+    const { data: auth } = await supabase.auth.getUser(token);
+    if (!auth?.user) {
+      return new Response(
+        JSON.stringify({ error: "Please sign in to verify your WhatsApp number." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (action === "send") {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+      if (overLimit(sendsByUser, auth.user.id, 5, 24 * 3600_000) || overLimit(sendsByIp, ip, 10, 3600_000)) {
+        return new Response(
+          JSON.stringify({ error: "Too many codes requested. Please try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     if (!phoneNumber || !action) {
       return new Response(
         JSON.stringify({ error: "Missing phoneNumber or action" }),
@@ -36,6 +71,12 @@ Deno.serve(async (req) => {
 
     // Normalize phone number
     const normalizedPhone = phoneNumber.replace(/[\s\-\(\)]/g, "");
+    if (!/^\+?\d{8,15}$/.test(normalizedPhone)) {
+      return new Response(
+        JSON.stringify({ error: "Enter a valid phone number with country code." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (action === "send") {
       // Rate limit: max 3 OTPs per phone within 1 hour

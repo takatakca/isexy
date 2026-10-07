@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Lock, CheckCircle } from "lucide-react";
 
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
 
 export default function UpdatePassword() {
   const navigate = useNavigate();
@@ -106,7 +106,7 @@ export default function UpdatePassword() {
           Create new password
         </h1>
         <p className="text-muted-foreground mb-8">
-          Enter your new password below. Make sure it's at least 6 characters.
+          Enter your new password below. Make sure it's at least 8 characters.
         </p>
 
         <div className="space-y-4 mb-8">

@@ -9,7 +9,7 @@ import { Heart, Check, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
 
 export default function WebSignup() {
   const navigate = useNavigate();
@@ -171,7 +171,7 @@ export default function WebSignup() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pr-10"

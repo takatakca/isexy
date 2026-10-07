@@ -14,6 +14,45 @@ interface WhatsAppCallPayload {
   callSessionId: string;
 }
 
+
+/**
+ * Only a signed-in participant of the match may notify the other participant.
+ * Recipient and display name come from the database, never from the request
+ * (this endpoint used to let anyone message any member with any name).
+ */
+async function resolveCall(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  req: Request,
+  matchId: unknown,
+): Promise<{ ok: true; callerId: string; callerName: string; receiverId: string } | { ok: false; status: number; error: string }> {
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const { data: auth } = await admin.auth.getUser(token);
+  if (!auth?.user) return { ok: false, status: 401, error: "Sign in required" };
+  if (typeof matchId !== "string") return { ok: false, status: 400, error: "matchId required" };
+  const { data: caller } = await admin.from("profiles").select("id, first_name").eq("user_id", auth.user.id).maybeSingle();
+  const { data: match } = await admin.from("matches").select("profile1_id, profile2_id, is_active").eq("id", matchId).maybeSingle();
+  if (!caller || !match || match.is_active === false || (match.profile1_id !== caller.id && match.profile2_id !== caller.id)) {
+    return { ok: false, status: 403, error: "Not allowed" };
+  }
+  const key = `${matchId}:${caller.id}`;
+  if (Date.now() - (recentCalls.get(key) ?? 0) < 60_000) return { ok: false, status: 429, error: "Please wait a minute" };
+  recentCalls.set(key, Date.now());
+  if (recentCalls.size > 10_000) recentCalls.clear();
+  return {
+    ok: true,
+    callerId: caller.id,
+    callerName: String(caller.first_name ?? "Someone").slice(0, 40),
+    receiverId: match.profile1_id === caller.id ? match.profile2_id : match.profile1_id,
+  };
+}
+
+const recentCalls = new Map<string, number>();
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,7 +65,16 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const { receiverId, callerId, callerName, matchId, callSessionId } = await req.json() as WhatsAppCallPayload;
+    const payload = await req.json() as WhatsAppCallPayload;
+    const { matchId, callSessionId } = payload;
+    const resolved = await resolveCall(supabaseClient, req, matchId);
+    if (!resolved.ok) {
+      return new Response(JSON.stringify({ error: resolved.error }), {
+        status: resolved.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { receiverId, callerId, callerName } = resolved;
+    void callerId;
 
     console.log(`[WHATSAPP-CALL] Notifying user ${receiverId} about call from ${callerName}`);
 
