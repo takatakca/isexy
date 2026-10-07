@@ -1,7 +1,17 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+
+/** Replace __SITE_URL__ / __SUPABASE_URL__ placeholders in index.html. */
+function siteUrlPlugin(env: Record<string, string>): Plugin {
+  const site = (env.VITE_SITE_URL || "https://isexy.lovable.app").replace(/\/+$/, "");
+  const supabase = env.VITE_SUPABASE_URL || "https://khvsudrwnqznuxnjurxp.supabase.co";
+  return {
+    name: "isexy-site-url",
+    transformIndexHtml: (html) => html.replaceAll("__SITE_URL__", site).replaceAll("__SUPABASE_URL__", supabase),
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -9,7 +19,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    siteUrlPlugin(loadEnv(mode, process.cwd(), "")),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
   build: {
     chunkSizeWarningLimit: 700,
     rollupOptions: {

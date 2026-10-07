@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { track } from "@/lib/analytics";
 
 interface Package {
   id: string;
@@ -50,6 +51,7 @@ export default function GetSuperLikes() {
     setLoading(true);
     try {
       const productId = `super_likes_${selected.quantity}`;
+      track("checkout_started", { product: "GetSuperLikes" });
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
         body: { productId, metadata: { type: "super_likes", quantity: String(selected.quantity) } },
       });

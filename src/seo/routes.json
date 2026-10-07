@@ -1,0 +1,188 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "title": "ISEXY — Premium Dating for Canada & Cuba",
+      "description": "Meet verified Canadian and Cuban singles. Live chat translation (EN/ES/FR), video calls, a private phone line and an AI dating concierge. Join ISEXY free.",
+      "changefreq": "weekly",
+      "priority": 1.0
+    },
+    {
+      "path": "/about",
+      "title": "About ISEXY — Our Story & Mission",
+      "description": "Learn how ISEXY connects Canadians with Cuban singles through verified profiles and voice-first dating.",
+      "changefreq": "monthly",
+      "priority": 0.7
+    },
+    {
+      "path": "/news",
+      "title": "ISEXY News — Updates & Announcements",
+      "description": "Latest product updates, feature launches, and community news from ISEXY.",
+      "changefreq": "weekly",
+      "priority": 0.6
+    },
+    {
+      "path": "/love-stories",
+      "title": "Love Stories — Real Couples on ISEXY",
+      "description": "Real stories from Canadian and Cuban couples who met on ISEXY.",
+      "changefreq": "monthly",
+      "priority": 0.6
+    },
+    {
+      "path": "/faq",
+      "title": "FAQ — ISEXY Help & Common Questions",
+      "description": "Answers to common questions about accounts, matching, subscriptions, safety, and verification on ISEXY.",
+      "changefreq": "monthly",
+      "priority": 0.7
+    },
+    {
+      "path": "/help-support",
+      "title": "Help & Support — ISEXY",
+      "description": "Get help with your ISEXY account, billing, matching, and safety.",
+      "changefreq": "monthly",
+      "priority": 0.5
+    },
+    {
+      "path": "/contact-us",
+      "title": "Contact ISEXY Support",
+      "description": "Reach the ISEXY support team. We respond to questions about safety, billing, and accounts.",
+      "changefreq": "monthly",
+      "priority": 0.5
+    },
+    {
+      "path": "/knowledge-base",
+      "title": "Help Center — ISEXY",
+      "description": "Guides for safe dating between Canada and Cuba: your account, verification, payments, gifts and recharges, video calls and more.",
+      "changefreq": "monthly",
+      "priority": 0.5
+    },
+    {
+      "path": "/safety",
+      "title": "Safety at ISEXY — Verified Profiles & Reporting",
+      "description": "How ISEXY keeps Canadian and Cuban daters safe with verification, reporting, and moderation.",
+      "changefreq": "monthly",
+      "priority": 0.6
+    },
+    {
+      "path": "/safety-tips",
+      "title": "Dating Safety Tips — ISEXY",
+      "description": "Practical safety tips for online dating, meeting in person, and protecting your privacy.",
+      "changefreq": "monthly",
+      "priority": 0.5
+    },
+    {
+      "path": "/community-guidelines",
+      "title": "Community Guidelines — ISEXY",
+      "description": "Rules of conduct that keep ISEXY respectful, safe, and welcoming for all members.",
+      "changefreq": "monthly",
+      "priority": 0.5
+    },
+    {
+      "path": "/house-rules",
+      "title": "House Rules — ISEXY",
+      "description": "Behaviour expectations for using ISEXY responsibly.",
+      "changefreq": "monthly",
+      "priority": 0.4
+    },
+    {
+      "path": "/dating-regulations",
+      "title": "Dating Regulations — ISEXY",
+      "description": "Legal context and regulatory information for cross-border dating between Canada and Cuba.",
+      "changefreq": "monthly",
+      "priority": 0.4
+    },
+    {
+      "path": "/privacy",
+      "title": "Privacy Policy — ISEXY",
+      "description": "How ISEXY collects, uses, and protects your personal information.",
+      "changefreq": "monthly",
+      "priority": 0.4
+    },
+    {
+      "path": "/terms",
+      "title": "Terms of Service — ISEXY",
+      "description": "The terms and conditions that govern your use of ISEXY.",
+      "changefreq": "monthly",
+      "priority": 0.4
+    },
+    {
+      "path": "/cookie-policy",
+      "title": "Cookie Policy — ISEXY",
+      "description": "How ISEXY uses cookies and similar technologies.",
+      "changefreq": "monthly",
+      "priority": 0.3
+    },
+    {
+      "path": "/consumer-health-privacy",
+      "title": "Consumer Health Privacy — ISEXY",
+      "description": "How ISEXY protects consumer health data in compliance with applicable laws.",
+      "changefreq": "monthly",
+      "priority": 0.3
+    },
+    {
+      "path": "/licenses",
+      "title": "Open Source Licenses — ISEXY",
+      "description": "Open source attributions and licenses used in ISEXY.",
+      "changefreq": "yearly",
+      "priority": 0.2
+    },
+    {
+      "path": "/compare-plans",
+      "title": "Compare Plans — ISEXY Plus, Gold & Platinum",
+      "description": "Compare ISEXY Plus, Gold, and Platinum subscription tiers and pick the right plan for you.",
+      "changefreq": "monthly",
+      "priority": 0.7,
+      "index": false
+    },
+    {
+      "path": "/tourist-signup",
+      "title": "Tourist Signup — Join ISEXY",
+      "description": "Sign up as a Canadian or international member and start matching with Cuban singles on ISEXY.",
+      "changefreq": "monthly",
+      "priority": 0.6
+    },
+    {
+      "path": "/cuban-signup",
+      "title": "Cuban Signup — Join ISEXY",
+      "description": "Sign up as a Cuban member on ISEXY and connect with Canadian singles looking for meaningful relationships.",
+      "changefreq": "monthly",
+      "priority": 0.6
+    },
+    {
+      "path": "/signup",
+      "title": "Sign Up — ISEXY",
+      "description": "Create your free ISEXY account and start matching today.",
+      "changefreq": "monthly",
+      "priority": 0.6
+    },
+    {
+      "path": "/auth",
+      "title": "Sign In — ISEXY",
+      "description": "Sign in to your ISEXY account.",
+      "changefreq": "monthly",
+      "priority": 0.5,
+      "index": false
+    },
+    {
+      "path": "/referrals",
+      "title": "Referrals — Invite Friends to ISEXY",
+      "description": "Earn rewards by inviting friends to join ISEXY.",
+      "changefreq": "monthly",
+      "priority": 0.4
+    },
+    {
+      "path": "/team-cubadate",
+      "title": "Team — ISEXY",
+      "description": "The people behind ISEXY.",
+      "changefreq": "monthly",
+      "priority": 0.3
+    },
+    {
+      "path": "/qa-events",
+      "title": "Live Q&A Events — ISEXY",
+      "description": "Join live Q&A events with the ISEXY community.",
+      "changefreq": "weekly",
+      "priority": 0.4
+    }
+  ]
+}

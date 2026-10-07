@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { OPEN_ASSISTANT_EVENT, type OpenAssistantDetail } from "@/lib/assistant";
+import { track } from "@/lib/analytics";
 
 interface Source {
   id: string;
@@ -217,6 +218,7 @@ export function AIChatWidget() {
     setState((prev) => ({ ...prev, messages: [...prev.messages.filter((m) => !m.error), userMsg, assistantMsg] }));
     setInput("");
     setStreaming(true);
+    track("assistant_message", { locale: lang, signed_in: !!session });
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -325,6 +327,7 @@ export function AIChatWidget() {
         },
       });
       if (error || !data?.ok) throw new Error("handoff failed");
+      track("assistant_handoff");
       setState((prev) => ({
         ...prev,
         conversationId: data.conversationId ?? prev.conversationId,
@@ -448,7 +451,7 @@ export function AIChatWidget() {
                         {m.sources.map((s) => (
                           <Link
                             key={s.id}
-                            to={`/knowledge-base?article=${s.id}`}
+                            to={`/knowledge-base/${s.id}`}
                             onClick={() => setIsOpen(false)}
                             className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-card border border-border hover:border-primary/50 text-foreground"
                           >

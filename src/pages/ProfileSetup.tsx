@@ -12,6 +12,7 @@ import {
   Wine, Cigarette, Dumbbell, PawPrint, MessageSquare,
   Heart, GraduationCap, MapPin, Shield, Users, Lightbulb
 } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 const TOTAL_STEPS = 10;
 
@@ -159,6 +160,7 @@ export default function ProfileSetup() {
       }
 
       await refreshProfile();
+      track("profile_completed");
       toast.success("Profile created successfully!");
       navigate("/discover");
     } catch (error: any) {

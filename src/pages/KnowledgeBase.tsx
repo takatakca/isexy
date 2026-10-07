@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Seo } from "@/components/Seo";
+import { articleSchema, breadcrumbSchema } from "@/seo/structuredData";
 import ReactMarkdown from "react-markdown";
 import {
   Search, BookOpen, ChevronRight, ThumbsUp, ThumbsDown, MessageCircle,
@@ -8,6 +10,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { openAssistant } from "@/lib/assistant";
+import { track } from "@/lib/analytics";
 
 interface Article {
   id: string;
@@ -18,6 +21,8 @@ interface Article {
   view_count: number;
   helpful_count: number;
   not_helpful_count: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const VOTES_KEY = "isexy_kb_votes";
@@ -70,7 +75,9 @@ export default function KnowledgeBase() {
 
   const query = searchParams.get("q") ?? "";
   const category = searchParams.get("category") ?? "";
-  const articleId = searchParams.get("article");
+  const { articleId: articleParam } = useParams<{ articleId?: string }>();
+  // Legacy ?article= links keep working; canonical form is /knowledge-base/:id.
+  const articleId = articleParam ?? searchParams.get("article");
 
   const updateParams = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams);
@@ -85,7 +92,7 @@ export default function KnowledgeBase() {
     let cancelled = false;
     supabase
       .from("knowledge_base")
-      .select("id, title, content, category, tags, view_count, helpful_count, not_helpful_count")
+      .select("id, title, content, category, tags, view_count, helpful_count, not_helpful_count, created_at, updated_at")
       .eq("is_published", true)
       .order("view_count", { ascending: false })
       .then(({ data, error }) => {
@@ -109,6 +116,7 @@ export default function KnowledgeBase() {
     if (!selected) return;
     window.scrollTo({ top: 0 });
     supabase.rpc("kb_record_view", { p_article_id: selected.id }).then(() => undefined);
+    track("help_article_view", { category: selected.category });
   }, [selected]);
 
   const categories = useMemo(
@@ -151,7 +159,7 @@ export default function KnowledgeBase() {
     <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b border-border">
       <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
         <button
-          onClick={() => (selected ? updateParams({ article: null }) : navigate(-1))}
+          onClick={() => (selected ? navigate("/knowledge-base") : navigate(-1))}
           className="p-2 -ml-2 text-foreground hover:opacity-70 flex items-center gap-2"
           aria-label="Go back"
         >
@@ -175,10 +183,35 @@ export default function KnowledgeBase() {
   }
 
   if (selected) {
+    const articlePath = `/knowledge-base/${selected.id}`;
+    const articleSeo = (
+      <Seo
+        title={`${selected.title} — ISEXY Help Center`}
+        description={excerpt(selected.content, 160)}
+        path={articlePath}
+        type="article"
+        jsonLd={[
+          articleSchema({
+            title: selected.title,
+            description: excerpt(selected.content, 160),
+            path: articlePath,
+            category: selected.category,
+            createdAt: selected.created_at,
+            updatedAt: selected.updated_at,
+          }),
+          breadcrumbSchema([
+            { name: "Help Center", path: "/knowledge-base" },
+            { name: selected.category, path: `/knowledge-base?category=${encodeURIComponent(selected.category)}` },
+            { name: selected.title, path: articlePath },
+          ]),
+        ]}
+      />
+    );
     const related = articles.filter((a) => a.category === selected.category && a.id !== selected.id).slice(0, 3);
     const myVote = votes[selected.id];
     return (
       <div className="min-h-screen bg-background">
+        {articleSeo}
         {header}
         <main className="max-w-3xl mx-auto px-4 pt-6 pb-28">
           <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold mb-3">
@@ -227,7 +260,7 @@ export default function KnowledgeBase() {
             <section className="mt-10">
               <h2 className="text-lg font-bold text-foreground mb-3">Related articles</h2>
               <div className="space-y-2">
-                {related.map((a) => <ArticleRow key={a.id} article={a} onOpen={() => updateParams({ article: a.id })} />)}
+                {related.map((a) => <ArticleRow key={a.id} article={a} onOpen={() => navigate(`/knowledge-base/${a.id}`)} />)}
               </div>
             </section>
           )}
@@ -307,7 +340,7 @@ export default function KnowledgeBase() {
               <section key={group.name}>
                 <h2 className="text-lg font-bold text-foreground mb-3">{group.name}</h2>
                 <div className="space-y-2">
-                  {group.articles.map((a) => <ArticleRow key={a.id} article={a} onOpen={() => updateParams({ article: a.id })} />)}
+                  {group.articles.map((a) => <ArticleRow key={a.id} article={a} onOpen={() => navigate(`/knowledge-base/${a.id}`)} />)}
                 </div>
               </section>
             ))}

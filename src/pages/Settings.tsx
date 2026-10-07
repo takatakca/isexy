@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { openConsentSettings } from "@/lib/consent";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthButton } from "@/components/AuthButton";
 import { Slider } from "@/components/ui/slider";
@@ -749,6 +750,7 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Privacy</h2>
           <SettingCard className="divide-y divide-border">
+            <SettingRow label="Privacy & cookie choices" onClick={openConsentSettings} />
             <SettingRow label="Cookie Policy" onClick={() => navigate("/cookie-policy")} />
             <SettingRow label="Privacy Policy" onClick={() => navigate("/privacy")} />
             <SettingRow label="Consumer Health Data Privacy" onClick={() => navigate("/consumer-health-privacy")} />

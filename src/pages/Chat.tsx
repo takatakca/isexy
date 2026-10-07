@@ -12,6 +12,7 @@ import { CallScheduleModal } from "@/components/CallScheduleModal";
 import { Button } from "@/components/ui/button";
 import { GiftModal } from "@/components/GiftModal";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 interface Message {
   id: string;
@@ -370,6 +371,7 @@ export default function Chat() {
         toast.error("Failed to send message. Please try again.");
       }
     } else {
+      track("message_sent", { surface: "chat" });
       await supabase
         .from("matches")
         .update({ last_message_at: new Date().toISOString() })

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { track } from "@/lib/analytics";
 
 interface MinutePackage {
   id: string;
@@ -68,6 +69,7 @@ export default function BuyMinutes() {
     }
     setIsLoading(true);
     try {
+      track("checkout_started", { product: "BuyMinutes" });
       const { data, error } = await supabase.functions.invoke("create-minute-purchase", {
         body: { packageId: selectedPackage },
       });

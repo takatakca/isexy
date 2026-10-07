@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { track } from "@/lib/analytics";
 
 interface CreditPackage {
   id: string;
@@ -59,6 +60,7 @@ export default function BuyCredits() {
     try {
       const pkg = creditPackages.find((p) => p.id === selectedPackage);
       if (!pkg) return;
+      track("checkout_started", { product: "BuyCredits" });
       const { data, error } = await supabase.functions.invoke("create-credit-purchase", {
         body: { packageId: pkg.id },
       });

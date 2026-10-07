@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 interface DiscoverProfile {
   id: string;
@@ -339,6 +340,8 @@ export default function Discover() {
         // Already swiped - just advance
       }
 
+      if (result?.success !== false) track(action, { source: "discover" });
+
       // Update local likes count
       if (result?.likes_remaining !== undefined) setLikesRemaining(result.likes_remaining);
 
@@ -355,6 +358,7 @@ export default function Discover() {
           .maybeSingle();
 
         if (matchData) {
+          track("match", { source: "discover" });
           setMatchCelebration({
             matchId: matchData.id,
             matchName: currentProfile.first_name,

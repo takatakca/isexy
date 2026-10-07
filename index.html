@@ -2,50 +2,55 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>ISEXY — Canadian & Cuban Dating App</title>
-    <meta name="description" content="ISEXY is the dating app connecting Canadians with Cuban singles. Verified profiles, voice-first phone line, and meaningful cross-border matches." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ISEXY — Premium Dating for Canada &amp; Cuba</title>
+    <meta name="description" content="Meet verified Canadian and Cuban singles. Live chat translation (EN/ES/FR), video calls, a private phone line and an AI dating concierge. Join ISEXY free." />
     <meta name="author" content="ISEXY" />
-    <meta name="keywords" content="ISEXY, Cuban dating, Canadian dating, international dating, Cuba, Canada, voice dating, phone line dating" />
+    <meta name="application-name" content="ISEXY" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <!-- canonical is emitted per-route by RouteSeo (react-helmet-async) -->
-
+    <!-- Per-route title/description/canonical/robots are set by RouteSeo; this
+         head is what non-JS crawlers and link previews see. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ISEXY" />
-    <meta property="og:title" content="ISEXY — Canadian & Cuban Dating App" />
-    <meta property="og:description" content="Verified profiles and voice-first matching between Canadians and Cuban singles." />
-    <meta property="og:url" content="https://isexy.lovable.app/" />
+    <meta property="og:title" content="ISEXY — Premium Dating for Canada &amp; Cuba" />
+    <meta property="og:description" content="Verified profiles, live translation EN/ES/FR, video calls and an AI dating concierge — between Canada and Cuba." />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:image" content="__SITE_URL__/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_CA" />
+    <meta property="og:locale:alternate" content="fr_CA" />
+    <meta property="og:locale:alternate" content="es_ES" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@isexy" />
-    <meta name="twitter:title" content="ISEXY — Canadian & Cuban Dating App" />
-    <meta name="twitter:description" content="Verified profiles and voice-first matching between Canadians and Cuban singles." />
+    <meta name="twitter:title" content="ISEXY — Premium Dating for Canada &amp; Cuba" />
+    <meta name="twitter:description" content="Verified profiles, live translation EN/ES/FR, video calls and an AI dating concierge — between Canada and Cuba." />
+    <meta name="twitter:image" content="__SITE_URL__/og-image.png" />
 
-    <meta name="theme-color" content="#ef446e" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ff5864" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ISEXY" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "ISEXY",
-      "url": "https://isexy.lovable.app/",
-      "email": "cubaresort.ca@gmail.com",
-      "areaServed": ["CA", "CU"]
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "ISEXY",
-      "url": "https://isexy.lovable.app/"
-    }
-    </script>
+    <link rel="preconnect" href="__SUPABASE_URL__" crossorigin />
+    <link rel="dns-prefetch" href="__SUPABASE_URL__" />
   </head>
 
   <body>
+    <noscript>
+      <div style="font-family:system-ui,sans-serif;max-width:560px;margin:15vh auto;padding:24px;text-align:center">
+        <h1>ISEXY — Premium Dating for Canada &amp; Cuba</h1>
+        <p>Meet verified Canadian and Cuban singles with live translation, video calls and an AI dating concierge.</p>
+        <p>Please enable JavaScript to use ISEXY.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

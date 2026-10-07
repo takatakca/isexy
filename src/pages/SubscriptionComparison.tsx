@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { track } from "@/lib/analytics";
 
 // All features across all tiers
 const allFeatures = [
@@ -64,6 +65,7 @@ export default function SubscriptionComparison() {
   const handleSubscribe = async (tier: SubscriptionTier) => {
     setLoading(tier);
     try {
+      track("checkout_started", { product: "SubscriptionComparison" });
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { tier, duration: "month" },
       });

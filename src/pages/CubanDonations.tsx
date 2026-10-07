@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 interface DonationOption {
   id: string;
@@ -133,6 +134,7 @@ export default function CubanDonations() {
     setProcessing(true);
 
     try {
+      track("checkout_started", { product: "CubanDonations" });
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
         body: {
           productId,

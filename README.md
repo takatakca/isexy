@@ -61,13 +61,58 @@ sign-in shows an email fallback and sync is a silent no-op.
 > `/api/v1/auth/otp/verify` and `/api/v1/identity/resolve-person` (with
 > `source_application: "isexy"`). Never reuse the 1LV key for ISEXY.
 
+## SEO
+
+- **One source of truth:** `src/seo/routes.json` (title, description, sitemap
+  priority, indexability) feeds both the in-app `RouteSeo` tags and the
+  build-time generator.
+- **Domain:** set `VITE_SITE_URL` (default `https://isexy.lovable.app`); switch
+  to `https://isexy.ca` and every canonical, social tag, sitemap and JSON-LD URL
+  follows.
+- `npm run build` runs `scripts/generate-seo.mjs`, which writes `sitemap.xml`
+  (public pages + every published Help Center article), `robots.txt`
+  (private app screens disallowed), `llms.txt`, and a pre-rendered `<head>` for
+  each public page so link previews and non-JS crawlers see real metadata.
+- Private app screens are `noindex`; Help Center articles live at
+  `/knowledge-base/:id` with Article + Breadcrumb JSON-LD; the home page ships
+  Organization, WebSite (sitelinks search) and WebApplication schema.
+- Brand assets: `public/og-image.png` (1200×630), PWA `manifest.webmanifest`,
+  icons (192/512/maskable/apple-touch), SVG favicon.
+
+## Analytics & privacy
+
+- Nothing is tracked until the visitor opts in through the consent banner
+  (Québec Law 25 / PIPEDA). "Essential only" is as easy as "Accept all";
+  choices can be changed from Settings or the Cookie Policy page.
+- `track(event, props)` (`src/lib/analytics.ts`) sends batched first-party
+  events to Supabase (`track_events` RPC → admin-only `analytics_events`),
+  plus optional Google Analytics 4 (`VITE_GA4_ID`, Consent Mode v2) and Meta
+  Pixel (`VITE_META_PIXEL_ID`, marketing consent only).
+- Funnel events: `page_view`, `sign_up`, `login`, `profile_completed`, `like`,
+  `super_like`, `match`, `message_sent`, `checkout_started`,
+  `assistant_message`, `assistant_handoff`, `help_article_view`, plus
+  real-user Core Web Vitals (`web_vital`).
+- Admin → Analytics → **Product** shows the funnel, daily sessions, sources, top
+  pages and Web Vitals (`analytics_overview` RPC, admins only).
+- Retention: run `select purge_old_telemetry();` on a schedule (events 13
+  months, errors 90 days).
+
+## Reliability
+
+- A route-level error boundary shows a recovery screen instead of a blank page
+  and resets on navigation; errors are reported (no personal data) to the
+  admin-only `client_errors` table.
+- After a deploy, a visitor holding an old tab automatically reloads once if a
+  lazy-loaded page file is gone.
+
 ## Database
 
 Migrations live in `supabase/migrations`. The October 2026 revamp
 (`20261007120000_revamp_profile_kb_takatak.sql`) adds the profile fields edited
 in Edit Profile, safe Help Center view/feedback counters, the TAKATAK identity
 link table, the bot→agent transcript link, and cleans legacy Help Center
-content.
+content. `20261007130000_analytics_and_client_errors.sql` adds analytics,
+error reporting and the admin overview.
 
 ## CI
 

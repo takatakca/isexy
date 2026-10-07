@@ -3212,6 +3212,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analytics_overview: {
+        Args: { p_days?: number }
+        Returns: Json
+      }
+      report_client_error: {
+        Args: {
+          p_context?: Json
+          p_message: string
+          p_path?: string
+          p_release?: string
+          p_stack?: string
+          p_user_agent?: string
+        }
+        Returns: undefined
+      }
+      track_events: {
+        Args: { p_events: Json }
+        Returns: number
+      }
       kb_record_feedback: {
         Args: { p_article_id: string; p_helpful: boolean }
         Returns: undefined

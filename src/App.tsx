@@ -1,11 +1,11 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 const ConsumerHealthPrivacy = lazy(() => import("./pages/ConsumerHealthPrivacy"));
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import Welcome from "./pages/Welcome";
@@ -114,10 +114,31 @@ import { AIChatWidget } from "./components/AIChatWidget";
 import { PushNotificationPrompt } from "./components/PushNotificationPrompt";
 import { IncomingCallNotification } from "./components/IncomingCallNotification";
 import { RouteSeo } from "./components/RouteSeo";
+import { ConsentBanner } from "./components/ConsentBanner";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { initAnalytics, trackPageView } from "@/lib/analytics";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
 });
+
+/** Page views on every route change (sent only with analytics consent). */
+function RouteAnalytics() {
+  const { pathname } = useLocation();
+  useEffect(() => { initAnalytics(); }, []);
+  useEffect(() => {
+    // Let RouteSeo update document.title first.
+    const t = window.setTimeout(() => trackPageView(pathname), 0);
+    return () => window.clearTimeout(t);
+  }, [pathname]);
+  return null;
+}
+
+/** Error boundary that recovers automatically when the user navigates away. */
+function RouteErrorBoundary({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>;
+}
 
 function PageLoader() {
   return (
@@ -137,6 +158,8 @@ const App = () => (
           <LanguageProvider>
             <StreakProvider>
             <RouteSeo />
+            <RouteAnalytics />
+            <RouteErrorBoundary>
             <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Welcome />} />
@@ -211,6 +234,7 @@ const App = () => (
               <Route path="/admin/knowledge-base" element={<AdminRoute><AdminKnowledgeBase /></AdminRoute>} />
               <Route path="/admin/moderation" element={<AdminRoute><AdminModeration /></AdminRoute>} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              <Route path="/knowledge-base/:articleId" element={<KnowledgeBase />} />
               <Route path="/donate/:recipientId?" element={<CubanDonations />} />
               <Route path="/compare-plans" element={<ProtectedRoute><SubscriptionComparison /></ProtectedRoute>} />
               <Route path="/tourist-signup" element={<TouristSignup />} />
@@ -252,9 +276,11 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
+            </RouteErrorBoundary>
             <AIChatWidget />
             <PushNotificationPrompt />
             <IncomingCallNotification />
+            <ConsentBanner />
             </StreakProvider>
           </LanguageProvider>
         </AuthProvider>

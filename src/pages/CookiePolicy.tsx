@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { Cookie, Shield, BarChart3, Target, Settings, Info, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { openConsentSettings } from "@/lib/consent";
 
 export default function CookiePolicy() {
   const [essentialCookies] = useState(true);
@@ -26,7 +27,13 @@ export default function CookiePolicy() {
     <AuthLayout showBack variant="white">
       <div className="flex-1">
         <h1 className="text-3xl font-extrabold text-foreground mb-2">Cookie Policy</h1>
-        <p className="text-muted-foreground mb-6">Last updated: December 24, 2024</p>
+        <p className="text-muted-foreground mb-4">Last updated: December 24, 2024</p>
+        <button
+          onClick={openConsentSettings}
+          className="mb-6 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm"
+        >
+          Manage my cookie choices
+        </button>
 
         <ScrollArea className="h-[calc(100vh-200px)]">
           <div className="prose prose-sm max-w-none text-foreground pr-4">

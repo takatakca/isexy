@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronDown, Loader2, MessageSquare, ShieldCheck } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 const COUNTRIES = [
   { iso: "CA", dial: "+1", flag: "🇨🇦", name: "Canada", digits: 10 },
@@ -96,6 +97,7 @@ export default function PhoneAuth() {
       const result = await bridge<{ tokenHash: string; isNewUser: boolean }>({ action: "phone_verify", phone: e164, code });
       const { error: sessionError } = await supabase.auth.verifyOtp({ token_hash: result.tokenHash, type: "magiclink" });
       if (sessionError) throw new Error("Verified, but we couldn't sign you in. Please try again.");
+      track(result.isNewUser ? "sign_up" : "login", { method: "phone" });
       toast.success(result.isNewUser ? "Welcome to ISEXY! Let's set up your profile." : "Welcome back!");
       navigate(result.isNewUser ? "/profile-setup" : from, { replace: true });
     } catch (err) {

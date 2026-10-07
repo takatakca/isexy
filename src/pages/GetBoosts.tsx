@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { track } from "@/lib/analytics";
 
 type BoostType = "boost" | "primetime" | "super";
 
@@ -119,6 +120,8 @@ export default function GetBoosts() {
         toast.error("Unknown package");
         return;
       }
+
+      track("checkout_started", { product: "GetBoosts" });
 
       const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
         body: {

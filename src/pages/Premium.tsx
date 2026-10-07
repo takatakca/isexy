@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { PromoCountdownBanner } from "@/components/PromoCountdownBanner";
 import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { track } from "@/lib/analytics";
 
 const tierMeta: Record<SubscriptionTier, { label: string; headline: string; icon: React.ReactNode }> = {
   plus: {
@@ -43,6 +44,7 @@ export default function Premium() {
   const handleSubscribe = async () => {
     setLoading(true);
     try {
+      track("checkout_started", { product: "Premium" });
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { tier: activeTier, duration: selectedDuration },
       });

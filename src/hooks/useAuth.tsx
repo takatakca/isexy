@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { friendlyAuthError } from "@/lib/authErrors";
 import type { Json } from "@/integrations/supabase/types";
+import { track } from "@/lib/analytics";
 
 interface Profile {
   id: string;
@@ -202,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!options.silent) {
       toast.success(needsConfirmation ? "Check your inbox to confirm your email." : "Account created — welcome to ISEXY!");
     }
+    track("sign_up", { method: "email", confirmation_required: needsConfirmation });
     if (data.session) syncTakatakIdentity();
     return { error: null, needsConfirmation };
   };
@@ -219,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!options.silent) toast.success("Welcome back!");
+    track("login", { method: "email" });
     syncTakatakIdentity();
     return { error: null };
   };
