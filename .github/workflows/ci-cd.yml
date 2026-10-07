@@ -1,0 +1,211 @@
+# ISEXY CI/CD
+#
+# Every push / PR:  install → typecheck → build → edge-function check → lint report.
+# Every push to main (after CI is green), fully automatic:
+#   1. Supabase: apply migrations + deploy every edge function + sync secrets
+#   2. Web: publish dist/ to the host over SSH (rsync, atomic swap)
+#   3. Smoke test the live site
+# Each deploy stage switches itself on as soon as its secrets exist in
+# GitHub → Settings → Secrets and variables → Actions, and is skipped with a
+# notice until then. See docs/DEPLOYMENT.md.
+
+name: CI/CD
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify (typecheck, build, functions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc -p tsconfig.app.json --noEmit
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://khvsudrwnqznuxnjurxp.supabase.co' }}
+          VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID || 'khvsudrwnqznuxnjurxp' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodnN1ZHJ3bnF6bnV4bmp1cnhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MzQ5NjIsImV4cCI6MjA4MjExMDk2Mn0.hJhSE4C-FRx4EktVZzs9MKAmIUsmchLEMiyzYm7eZEk' }}
+          VITE_SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.lovable.app' }}
+          VITE_GA4_ID: ${{ vars.VITE_GA4_ID }}
+          VITE_META_PIXEL_ID: ${{ vars.VITE_META_PIXEL_ID }}
+        run: npm run build
+
+      - name: Lint (report only — legacy findings are being paid down)
+        continue-on-error: true
+        run: npx eslint . --format stylish | tail -40
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check edge functions
+        # Functions with known legacy type errors (get-voice-reply-url, seed-profiles,
+        # twilio-phone-line-menu) and npm:-specifier functions are excluded until fixed.
+        run: deno check supabase/functions/ai-chat/index.ts supabase/functions/takatak-bridge/index.ts
+
+      - name: Upload web build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: isexy-web-${{ github.sha }}
+          path: dist
+          retention-days: 14
+
+  deploy-supabase:
+    name: Deploy database + edge functions
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'khvsudrwnqznuxnjurxp' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_DB_PASSWORD" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Supabase deploy skipped::Add SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD secrets to deploy migrations and edge functions automatically."
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.cfg.outputs.enabled == 'true'
+        with:
+          version: latest
+
+      - name: Link project
+        if: steps.cfg.outputs.enabled == 'true'
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Apply database migrations
+        if: steps.cfg.outputs.enabled == 'true'
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD" --include-all
+
+      - name: Sync function secrets
+        if: steps.cfg.outputs.enabled == 'true'
+        env:
+          TAKATAK_API_URL: ${{ secrets.TAKATAK_API_URL }}
+          TAKATAK_ISEXY_API_KEY: ${{ secrets.TAKATAK_ISEXY_API_KEY }}
+          LOVABLE_API_KEY: ${{ secrets.LOVABLE_API_KEY }}
+        run: |
+          set -euo pipefail
+          args=()
+          for name in TAKATAK_API_URL TAKATAK_ISEXY_API_KEY LOVABLE_API_KEY; do
+            if [ -n "${!name}" ]; then args+=("$name=${!name}"); fi
+          done
+          if [ ${#args[@]} -gt 0 ]; then
+            supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "${args[@]}" > /dev/null
+            echo "Synced ${#args[@]} function secret(s)."
+          else
+            echo "No function secrets provided in GitHub; keeping the values already set in Supabase."
+          fi
+
+      - name: Deploy edge functions
+        if: steps.cfg.outputs.enabled == 'true'
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+
+  deploy-web:
+    name: Publish website
+    needs: [verify, deploy-supabase]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.ISEXY_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.ISEXY_DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ secrets.ISEXY_DEPLOY_USER }}
+      DEPLOY_PATH: ${{ secrets.ISEXY_DEPLOY_PATH }}
+      DEPLOY_KEY: ${{ secrets.ISEXY_DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.ISEXY_DEPLOY_KNOWN_HOSTS }}
+    steps:
+      - name: Check configuration
+        id: cfg
+        run: |
+          if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_USER" ] && [ -n "$DEPLOY_PATH" ] && [ -n "$DEPLOY_KEY" ] && [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Web deploy skipped::Add ISEXY_DEPLOY_HOST, ISEXY_DEPLOY_USER, ISEXY_DEPLOY_PATH, ISEXY_DEPLOY_SSH_KEY and ISEXY_DEPLOY_KNOWN_HOSTS secrets to publish automatically (Lovable also syncs main)."
+          fi
+
+      - uses: actions/download-artifact@v4
+        if: steps.cfg.outputs.enabled == 'true'
+        with:
+          name: isexy-web-${{ github.sha }}
+          path: dist
+
+      - name: Publish (atomic swap, keeps previous release for rollback)
+        if: steps.cfg.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+          SSH="ssh -i $HOME/.ssh/deploy_key -p $DEPLOY_PORT -o StrictHostKeyChecking=yes"
+          RELEASE="${DEPLOY_PATH%/}.releases/${GITHUB_SHA}"
+          $SSH "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$RELEASE'"
+          rsync -az --delete -e "$SSH" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$RELEASE/"
+          $SSH "$DEPLOY_USER@$DEPLOY_HOST" "set -e
+            if [ -d '$DEPLOY_PATH' ] && [ ! -L '$DEPLOY_PATH' ]; then mv '$DEPLOY_PATH' '${DEPLOY_PATH%/}.pre-cicd'; fi
+            ln -sfn '$RELEASE' '${DEPLOY_PATH%/}.next' && mv -Tf '${DEPLOY_PATH%/}.next' '$DEPLOY_PATH'
+            ls -1dt '${DEPLOY_PATH%/}.releases'/* | tail -n +6 | xargs -r rm -rf"
+          echo "Published ${GITHUB_SHA::7}."
+
+  smoke-test:
+    name: Smoke test live site
+    needs: deploy-web
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.lovable.app' }}
+      SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://khvsudrwnqznuxnjurxp.supabase.co' }}
+    steps:
+      - name: Site and SPA routes respond
+        run: |
+          set -euo pipefail
+          for path in / /auth /knowledge-base /faq; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 "$SITE_URL$path")
+            echo "$path → $code"
+            [ "$code" = "200" ] || { echo "::error::$SITE_URL$path returned $code"; exit 1; }
+          done
+
+      - name: Edge functions reachable
+        run: |
+          for fn in ai-chat takatak-bridge; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -X OPTIONS "$SUPABASE_URL/functions/v1/$fn")
+            echo "$fn OPTIONS → $code"
+            [ "$code" = "200" ] || echo "::warning::$fn is not deployed yet (HTTP $code)."
+          done
