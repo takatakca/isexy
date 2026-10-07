@@ -257,7 +257,7 @@ const App = () => (
               <Route path="/buy-credits" element={<ProtectedRoute><BuyCredits /></ProtectedRoute>} />
               <Route path="/buy-minutes" element={<ProtectedRoute><BuyMinutes /></ProtectedRoute>} />
               <Route path="/group-chat/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
-              <Route path="/explore/:category" element={<CategorySwipe />} />
+              <Route path="/explore/:category" element={<ProtectedRoute><CategorySwipe /></ProtectedRoute>} />
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/staff-login" element={<ModeratorLogin />} />
               <Route path="/support" element={<SupportPortal />} />

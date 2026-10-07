@@ -140,7 +140,7 @@ export default function WhoLikedYou() {
         const { error } = await supabase.from("swipes").insert({
           swiper_id: profile.id,
           swiped_id: likerId,
-          action: "nope",
+          action: "pass", // swipes.action only accepts like | super_like | pass
         });
         if (error && error.code !== "23505") throw error;
         setLikers((prev) => prev.filter((l) => l.id !== likerId));

@@ -3212,6 +3212,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_discover_feed: {
+        Args: {
+          p_exclude?: string[]
+          p_interests?: string[]
+          p_limit?: number
+          p_verified_only?: boolean
+        }
+        Returns: {
+          bio: string | null
+          birth_date: string
+          city: string | null
+          company: string | null
+          distance_km: number | null
+          first_name: string
+          id: string
+          interests: string[] | null
+          is_verified: boolean
+          job_title: string | null
+          photos: string[]
+          school: string | null
+        }[]
+      }
       analytics_overview: {
         Args: { p_days?: number }
         Returns: Json
