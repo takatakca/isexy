@@ -172,6 +172,16 @@ for (const a of articles) {
   });
 }
 
+// SPA fallback for static hosts without rewrite rules (Render, GitHub Pages):
+// unknown paths get the app shell, which routes client-side. Never indexed.
+{
+  const shell = await readFile(path.join(dist, "index.html"), "utf8");
+  await writeFile(
+    path.join(dist, "404.html"),
+    shell.replace("<head>", '<head>\n    <meta name="robots" content="noindex" />'),
+  );
+}
+
 console.log(
   `[seo] ${SITE_URL}: sitemap ${urls.length} URLs, ${publicRoutes.length} pages + ${articles.length} articles pre-rendered`,
 );
