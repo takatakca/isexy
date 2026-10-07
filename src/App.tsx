@@ -1,108 +1,110 @@
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import ConsumerHealthPrivacy from "./pages/ConsumerHealthPrivacy";
+const ConsumerHealthPrivacy = lazy(() => import("./pages/ConsumerHealthPrivacy"));
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import Welcome from "./pages/Welcome";
-import Auth from "./pages/Auth";
-import CubanSignup from "./pages/CubanSignup";
-import AdminVerifications from "./pages/AdminVerifications";
-import PhoneAuth from "./pages/PhoneAuth";
-import CodeVerification from "./pages/CodeVerification";
-import HouseRules from "./pages/HouseRules";
-import ProfileSetup from "./pages/ProfileSetup";
-import Discover from "./pages/Discover";
-import Explore from "./pages/Explore";
-import Likes from "./pages/Likes";
-import Messages from "./pages/Messages";
-import Chat from "./pages/Chat";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Premium from "./pages/Premium";
-import EditBio from "./pages/EditBio";
-import EditProfile from "./pages/EditProfile";
-import GetSuperLikes from "./pages/GetSuperLikes";
-import GetBoosts from "./pages/GetBoosts";
-import MySubscription from "./pages/MySubscription";
-import Safety from "./pages/Safety";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import LoveStories from "./pages/LoveStories";
-import About from "./pages/About";
-import News from "./pages/News";
-import Matches from "./pages/Matches";
-import Interests from "./pages/Interests";
-import BlockContacts from "./pages/BlockContacts";
-import DarkMode from "./pages/DarkMode";
-import AutoplayVideos from "./pages/AutoplayVideos";
-import TopPicks from "./pages/TopPicks";
-import CommunityGuidelines from "./pages/CommunityGuidelines";
-import SafetyTips from "./pages/SafetyTips";
-import CookiePolicy from "./pages/CookiePolicy";
-import SwipeSurge from "./pages/SwipeSurge";
-import ActiveStatus from "./pages/ActiveStatus";
-import FriendsInCommon from "./pages/FriendsInCommon";
-import EmailSettings from "./pages/EmailSettings";
-import PushNotifications from "./pages/PushNotifications";
-import TeamCubaDate from "./pages/TeamCubaDate";
-import ManagePaymentAccount from "./pages/ManagePaymentAccount";
-import RestorePurchase from "./pages/RestorePurchase";
-import HelpSupport from "./pages/HelpSupport";
-import WebProfile from "./pages/WebProfile";
-import DeleteAccount from "./pages/DeleteAccount";
-import Licenses from "./pages/Licenses";
-import FAQ from "./pages/FAQ";
-import ContactUs from "./pages/ContactUs";
-import TicketTracking from "./pages/TicketTracking";
-import AdminTickets from "./pages/AdminTickets";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminDashboardFull from "./pages/AdminDashboardFull";
-import AdminCategories from "./pages/AdminCategories";
-import AdminEmailTemplates from "./pages/AdminEmailTemplates";
-import KnowledgeBase from "./pages/KnowledgeBase";
-import AgentDashboard from "./pages/AgentDashboard";
-import TouristSignup from "./pages/TouristSignup";
-import WhoLikedYou from "./pages/WhoLikedYou";
-import PassportMode from "./pages/PassportMode";
-import PhotoVerification from "./pages/PhotoVerification";
-import DoubleDate from "./pages/DoubleDate";
-import QAEvents from "./pages/QAEvents";
-import Matchmaker from "./pages/Matchmaker";
-import LoyaltyRewards from "./pages/LoyaltyRewards";
-import CubanCashout from "./pages/CubanCashout";
-import CubanRewards from "./pages/CubanRewards";
-import BlockReportFlow from "./pages/BlockReportFlow";
-import SubscriptionComparison from "./pages/SubscriptionComparison";
-import AdminAnalytics from "./pages/AdminAnalytics";
-import ResetPassword from "./pages/ResetPassword";
-import UpdatePassword from "./pages/UpdatePassword";
-import VideoCall from "./pages/VideoCall";
-import DatingRegulations from "./pages/DatingRegulations";
-import BuyCredits from "./pages/BuyCredits";
-import BuyMinutes from "./pages/BuyMinutes";
-import GroupChat from "./pages/GroupChat";
-import CategorySwipe from "./pages/CategorySwipe";
-import Referrals from "./pages/Referrals";
-import ModeratorLogin from "./pages/ModeratorLogin";
-import SupportPortal from "./pages/SupportPortal";
-import Onboarding from "./pages/Onboarding";
-import WebSignup from "./pages/WebSignup";
-import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
-import AdminModeration from "./pages/AdminModeration";
-import CubanDonations from "./pages/CubanDonations";
-import MyStars from "./pages/MyStars";
-import RedeemCode from "./pages/RedeemCode";
-import AdminUserManagement from "./pages/AdminUserManagement";
-import AdminPaymentTests from "./pages/AdminPaymentTests";
-import PhoneLine from "./pages/PhoneLine";
-import PhoneLineSetup from "./pages/PhoneLineSetup";
-import PhoneLineBrowse from "./pages/PhoneLineBrowse";
-import PhoneLineInbox from "./pages/PhoneLineInbox";
-import PhoneLineCall from "./pages/PhoneLineCall";
-import AdminCallTests from "./pages/AdminCallTests";
+const Auth = lazy(() => import("./pages/Auth"));
+const CubanSignup = lazy(() => import("./pages/CubanSignup"));
+const AdminVerifications = lazy(() => import("./pages/AdminVerifications"));
+const PhoneAuth = lazy(() => import("./pages/PhoneAuth"));
+const CodeVerification = lazy(() => import("./pages/CodeVerification"));
+const HouseRules = lazy(() => import("./pages/HouseRules"));
+const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
+const Discover = lazy(() => import("./pages/Discover"));
+const Explore = lazy(() => import("./pages/Explore"));
+const Likes = lazy(() => import("./pages/Likes"));
+const Messages = lazy(() => import("./pages/Messages"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Premium = lazy(() => import("./pages/Premium"));
+const EditBio = lazy(() => import("./pages/EditBio"));
+const EditProfile = lazy(() => import("./pages/EditProfile"));
+const GetSuperLikes = lazy(() => import("./pages/GetSuperLikes"));
+const GetBoosts = lazy(() => import("./pages/GetBoosts"));
+const MySubscription = lazy(() => import("./pages/MySubscription"));
+const Safety = lazy(() => import("./pages/Safety"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const LoveStories = lazy(() => import("./pages/LoveStories"));
+const About = lazy(() => import("./pages/About"));
+const News = lazy(() => import("./pages/News"));
+const Matches = lazy(() => import("./pages/Matches"));
+const Interests = lazy(() => import("./pages/Interests"));
+const BlockContacts = lazy(() => import("./pages/BlockContacts"));
+const DarkMode = lazy(() => import("./pages/DarkMode"));
+const AutoplayVideos = lazy(() => import("./pages/AutoplayVideos"));
+const TopPicks = lazy(() => import("./pages/TopPicks"));
+const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
+const SafetyTips = lazy(() => import("./pages/SafetyTips"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
+const SwipeSurge = lazy(() => import("./pages/SwipeSurge"));
+const ActiveStatus = lazy(() => import("./pages/ActiveStatus"));
+const FriendsInCommon = lazy(() => import("./pages/FriendsInCommon"));
+const EmailSettings = lazy(() => import("./pages/EmailSettings"));
+const PushNotifications = lazy(() => import("./pages/PushNotifications"));
+const TeamCubaDate = lazy(() => import("./pages/TeamCubaDate"));
+const ManagePaymentAccount = lazy(() => import("./pages/ManagePaymentAccount"));
+const RestorePurchase = lazy(() => import("./pages/RestorePurchase"));
+const HelpSupport = lazy(() => import("./pages/HelpSupport"));
+const WebProfile = lazy(() => import("./pages/WebProfile"));
+const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
+const Licenses = lazy(() => import("./pages/Licenses"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const ContactUs = lazy(() => import("./pages/ContactUs"));
+const TicketTracking = lazy(() => import("./pages/TicketTracking"));
+const AdminTickets = lazy(() => import("./pages/AdminTickets"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminDashboardFull = lazy(() => import("./pages/AdminDashboardFull"));
+const AdminCategories = lazy(() => import("./pages/AdminCategories"));
+const AdminEmailTemplates = lazy(() => import("./pages/AdminEmailTemplates"));
+const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
+const AgentDashboard = lazy(() => import("./pages/AgentDashboard"));
+const TouristSignup = lazy(() => import("./pages/TouristSignup"));
+const WhoLikedYou = lazy(() => import("./pages/WhoLikedYou"));
+const PassportMode = lazy(() => import("./pages/PassportMode"));
+const PhotoVerification = lazy(() => import("./pages/PhotoVerification"));
+const DoubleDate = lazy(() => import("./pages/DoubleDate"));
+const QAEvents = lazy(() => import("./pages/QAEvents"));
+const Matchmaker = lazy(() => import("./pages/Matchmaker"));
+const LoyaltyRewards = lazy(() => import("./pages/LoyaltyRewards"));
+const CubanCashout = lazy(() => import("./pages/CubanCashout"));
+const CubanRewards = lazy(() => import("./pages/CubanRewards"));
+const BlockReportFlow = lazy(() => import("./pages/BlockReportFlow"));
+const SubscriptionComparison = lazy(() => import("./pages/SubscriptionComparison"));
+const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const VideoCall = lazy(() => import("./pages/VideoCall"));
+const DatingRegulations = lazy(() => import("./pages/DatingRegulations"));
+const BuyCredits = lazy(() => import("./pages/BuyCredits"));
+const BuyMinutes = lazy(() => import("./pages/BuyMinutes"));
+const GroupChat = lazy(() => import("./pages/GroupChat"));
+const CategorySwipe = lazy(() => import("./pages/CategorySwipe"));
+const Referrals = lazy(() => import("./pages/Referrals"));
+const ModeratorLogin = lazy(() => import("./pages/ModeratorLogin"));
+const SupportPortal = lazy(() => import("./pages/SupportPortal"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const WebSignup = lazy(() => import("./pages/WebSignup"));
+const AdminKnowledgeBase = lazy(() => import("./pages/AdminKnowledgeBase"));
+const AdminModeration = lazy(() => import("./pages/AdminModeration"));
+const CubanDonations = lazy(() => import("./pages/CubanDonations"));
+const MyStars = lazy(() => import("./pages/MyStars"));
+const RedeemCode = lazy(() => import("./pages/RedeemCode"));
+const AdminUserManagement = lazy(() => import("./pages/AdminUserManagement"));
+const AdminPaymentTests = lazy(() => import("./pages/AdminPaymentTests"));
+const PhoneLine = lazy(() => import("./pages/PhoneLine"));
+const PhoneLineSetup = lazy(() => import("./pages/PhoneLineSetup"));
+const PhoneLineBrowse = lazy(() => import("./pages/PhoneLineBrowse"));
+const PhoneLineInbox = lazy(() => import("./pages/PhoneLineInbox"));
+const PhoneLineCall = lazy(() => import("./pages/PhoneLineCall"));
+const AdminCallTests = lazy(() => import("./pages/AdminCallTests"));
 import NotFound from "./pages/NotFound";
 
 import { StreakProvider } from "./components/StreakProvider";
@@ -113,7 +115,17 @@ import { PushNotificationPrompt } from "./components/PushNotificationPrompt";
 import { IncomingCallNotification } from "./components/IncomingCallNotification";
 import { RouteSeo } from "./components/RouteSeo";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+});
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background" aria-busy="true">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -125,6 +137,7 @@ const App = () => (
           <LanguageProvider>
             <StreakProvider>
             <RouteSeo />
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/welcome" element={<Navigate to="/" replace />} />
@@ -193,7 +206,7 @@ const App = () => (
               <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
               <Route path="/admin/email-templates" element={<AdminRoute><AdminEmailTemplates /></AdminRoute>} />
               <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
-              <Route path="/admin/agent" element={<AdminRoute><AgentDashboard /></AdminRoute>} />
+              <Route path="/admin/agent" element={<AdminRoute allowModerator><AgentDashboard /></AdminRoute>} />
               <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
               <Route path="/admin/knowledge-base" element={<AdminRoute><AdminKnowledgeBase /></AdminRoute>} />
               <Route path="/admin/moderation" element={<AdminRoute><AdminModeration /></AdminRoute>} />
@@ -225,7 +238,7 @@ const App = () => (
               <Route path="/staff-login" element={<ModeratorLogin />} />
               <Route path="/support" element={<SupportPortal />} />
               <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/agent-dashboard" element={<AgentDashboard />} />
+              <Route path="/agent-dashboard" element={<AdminRoute allowModerator><AgentDashboard /></AdminRoute>} />
               <Route path="/signup" element={<WebSignup />} />
               <Route path="/redeem-code" element={<RedeemCode />} />
               <Route path="/admin/users" element={<AdminRoute><AdminUserManagement /></AdminRoute>} />
@@ -238,6 +251,7 @@ const App = () => (
               <Route path="/admin/call-tests" element={<AdminRoute><AdminCallTests /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             <AIChatWidget />
             <PushNotificationPrompt />
             <IncomingCallNotification />

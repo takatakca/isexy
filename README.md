@@ -1,76 +1,79 @@
-# Welcome to your Lovable project
+# ISEXY
 
-## Project info
+Premium dating for Canada 🇨🇦 and Cuba 🇨🇺 — swipe matching, chat with live
+translation, video calls, PhoneLine voice dating, gifts and Cuban rewards, and
+an AI concierge, built on React + Supabase and connected to the TAKATAK v1
+identity platform.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+| Layer | Tech |
+| --- | --- |
+| Web app | Vite · React 18 · TypeScript · Tailwind · shadcn/ui (routes lazy-loaded) |
+| Backend | Supabase (Postgres + RLS, Auth, Storage, Realtime, Edge Functions on Deno) |
+| AI | `ai-chat` edge function → Lovable AI gateway, grounded in the `knowledge_base` table |
+| Identity | `takatak-bridge` edge function → TAKATAK v1 master API (`/api/v1/*`) |
+| Payments | Stripe (subscriptions, credits, minutes) |
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Run locally
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm ci
+npm run dev          # http://localhost:8080
+npx tsc -p tsconfig.app.json --noEmit
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+`.env` holds only public values (Supabase URL + publishable key).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## AI concierge & Help Center
 
-**Use GitHub Codespaces**
+- The floating **Concierge** popup (`src/components/AIChatWidget.tsx`) works for
+  guests and members, answers in English / Español / Français, cites Help Center
+  articles, can be stopped mid-answer, and hands off to a human agent
+  (`live_chat_sessions`, visible in `/agent-dashboard`).
+- `supabase/functions/ai-chat` validates input, rate-limits, retrieves the most
+  relevant published `knowledge_base` articles, streams the answer and stores
+  the transcript server-side. Requires the `LOVABLE_API_KEY` function secret
+  (optional `AI_CHAT_MODEL`).
+- Help Center (`/knowledge-base`) supports `?q=`, `?category=` and
+  `?article=<id>` deep links; any page can open the concierge with
+  `openAssistant(question)` from `src/lib/assistant.ts`.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## TAKATAK v1 integration
 
-## What technologies are used for this project?
+TAKATAK v1 (`takatakca/takatak-v1`) is the shared identity authority. Its master
+API is server-to-server only, so the browser never sees its key:
 
-This project is built with:
+| Action | What it does |
+| --- | --- |
+| `status` | Tells the app whether TAKATAK is configured |
+| `sync` | After sign-in, projects the member into a TAKATAK master identity (`takatak_identity_links`) |
+| `phone_send` / `phone_verify` | Phone sign-in: TAKATAK sends + verifies the SMS code, then the bridge issues a normal ISEXY session |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Function secrets: `TAKATAK_API_URL` (e.g. `https://takatak.ca`) and
+`TAKATAK_ISEXY_API_KEY` (dedicated ≥ 32-char key). Until both are set, phone
+sign-in shows an email fallback and sync is a silent no-op.
 
-## How can I deploy this project?
+> **TAKATAK side still required:** TAKATAK v1's master API currently accepts
+> only the 1LV key and `source_application: "1lv"`. It needs a dedicated
+> `TAKATAK_ISEXY_API_KEY` accepted on `/api/v1/auth/otp/send`,
+> `/api/v1/auth/otp/verify` and `/api/v1/identity/resolve-person` (with
+> `source_application: "isexy"`). Never reuse the 1LV key for ISEXY.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Database
 
-## Can I connect a custom domain to my Lovable project?
+Migrations live in `supabase/migrations`. The October 2026 revamp
+(`20261007120000_revamp_profile_kb_takatak.sql`) adds the profile fields edited
+in Edit Profile, safe Help Center view/feedback counters, the TAKATAK identity
+link table, the bot→agent transcript link, and cleans legacy Help Center
+content.
 
-Yes, you can!
+## CI
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+`.github/workflows/ci.yml` runs on every push and pull request: install,
+typecheck, production build, Deno type-check of the AI and TAKATAK edge
+functions, and a lint report. It does not deploy.
 
 ## Stripe Subscription Setup (admin only)
 

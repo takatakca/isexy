@@ -1,8 +1,9 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { friendlyAuthError } from "@/lib/authErrors";
+import type { Json } from "@/integrations/supabase/types";
 
 interface Profile {
   id: string;
@@ -34,7 +35,7 @@ interface Profile {
   latitude?: number;
   longitude?: number;
   interests?: string[];
-  prompts?: any;
+  prompts?: Json;
   education?: string;
   communication_style?: string;
   love_language?: string;
@@ -45,6 +46,11 @@ interface Profile {
   shadow_banned?: boolean;
   first_purchase_promo_used?: boolean;
   promo_expires_at?: string;
+  relationship_type?: string | null;
+  languages?: string[] | null;
+  zodiac?: string | null;
+  family_plans?: string | null;
+  social_media?: string | null;
 }
 
 interface AuthContextType {
@@ -53,10 +59,26 @@ interface AuthContextType {
   profile: Profile | null;
   photoCount: number;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, options?: AuthActionOptions) => Promise<{ error: Error | null; needsConfirmation: boolean }>;
+  signIn: (email: string, password: string, options?: AuthActionOptions) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+}
+
+interface AuthActionOptions {
+  /** Skip the built-in toasts so the caller can render its own feedback. */
+  silent?: boolean;
+}
+
+/**
+ * Best-effort projection of this ISEXY account into the TAKATAK master
+ * identity. Runs server-side in the takatak-bridge edge function; failures
+ * never block the user.
+ */
+function syncTakatakIdentity() {
+  supabase.functions
+    .invoke("takatak-bridge", { body: { action: "sync" } })
+    .catch(() => undefined);
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -160,38 +182,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
+  const signUp = async (email: string, password: string, options: AuthActionOptions = {}) => {
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
       password,
       options: {
-        emailRedirectTo: redirectUrl,
+        emailRedirectTo: `${window.location.origin}/profile-setup`,
       },
     });
 
     if (error) {
-      toast.error(error.message);
-      return { error };
+      const friendly = new Error(friendlyAuthError(error.message));
+      if (!options.silent) toast.error(friendly.message);
+      return { error: friendly, needsConfirmation: false };
     }
 
-    toast.success("Account created successfully!");
-    return { error: null };
+    // When email confirmation is enabled Supabase returns a user but no session.
+    const needsConfirmation = !data.session;
+    if (!options.silent) {
+      toast.success(needsConfirmation ? "Check your inbox to confirm your email." : "Account created — welcome to ISEXY!");
+    }
+    if (data.session) syncTakatakIdentity();
+    return { error: null, needsConfirmation };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, options: AuthActionOptions = {}) => {
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
 
     if (error) {
-      toast.error(error.message);
-      return { error };
+      const friendly = new Error(friendlyAuthError(error.message));
+      if (!options.silent) toast.error(friendly.message);
+      return { error: friendly };
     }
 
-    toast.success("Welcome back!");
+    if (!options.silent) toast.success("Welcome back!");
+    syncTakatakIdentity();
     return { error: null };
   };
 

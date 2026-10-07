@@ -65,3 +65,7 @@ verify_jwt = false
 
 [functions.payments-gate-status]
 verify_jwt = false
+
+# TAKATAK v1 bridge: status/phone actions are public; sync checks the member JWT itself.
+[functions.takatak-bridge]
+verify_jwt = false

@@ -1,427 +1,380 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
+/**
+ * ISEXY AI assistant.
+ *
+ * POST { action?: "chat", messages, conversationId?, guestSessionId?, locale? }
+ *   → text/event-stream (OpenAI-compatible SSE). Response headers:
+ *     X-Conversation-Id  conversation row the transcript is stored in
+ *     X-KB-Sources       JSON [{id,title,category}] of articles used to ground the answer
+ * POST { action: "handoff", conversationId, guestSessionId?, note? }
+ *   → { ok, sessionId } — queues the conversation for a human agent.
+ *
+ * Works for guests and signed-in members. All database writes use the service
+ * role so RLS on chatbot_* / live_chat_sessions never blocks a visitor; ownership
+ * of an existing conversation is checked here instead.
+ */
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Expose-Headers": "x-conversation-id, x-kb-sources",
 };
 
-const SYSTEM_PROMPT = `You are ISEXY.CA's intelligent AI Support Assistant — a world-class dating safety and support chatbot modeled after Airbnb's support system but optimized for dating.
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_MODEL = Deno.env.get("AI_CHAT_MODEL") ?? "google/gemini-3-flash-preview";
+const MAX_MESSAGES = 12;
+const MAX_CONTENT_CHARS = 2000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const GUEST_SESSION_RE = /^guest_[a-z0-9_-]{8,64}$/i;
 
-Your name is "ISEXY Support AI". You are warm, professional, empathetic, and extremely knowledgeable about every aspect of the platform.
+const SUPPORT = {
+  email: "cubaresort.ca@gmail.com",
+  canada: "+1 450 999 4999",
+  cuba: "+53 5307 1185",
+};
 
-=== CORE MISSION ===
-1. PROTECT users — detect abuse, scams, threats, emotional distress
-2. BUILD TRUST — provide accurate, helpful answers instantly
-3. RESOLVE issues — billing, matching, account, safety
-4. ESCALATE when needed — connect to human agents for emergencies
+const SYSTEM_PROMPT = `You are "ISEXY Concierge", the AI assistant of ISEXY.CA — the premium dating platform connecting Canada and Cuba (and Cubans worldwide).
 
-=== SAFETY PROTOCOL (HIGHEST PRIORITY) ===
-When you detect these keywords/patterns, IMMEDIATELY respond with safety resources:
-- Threats: "threatening", "kill", "stalk", "blackmail", "hurt"
-- Harassment: "harassing", "won't stop", "following me", "scared"
-- Emotional distress: "depressed", "feel used", "suicidal", "hopeless"
-- Scams: "asking for money", "crypto", "investment", "send money"
+PERSONALITY: warm, discreet, confident and genuinely helpful — like a five-star hotel concierge who also understands modern dating. Short paragraphs, clear steps, a touch of charm. Use emojis sparingly (❤️ 🛡️ ✅ 💡 🇨🇦 🇨🇺).
 
-SAFETY RESPONSE FORMAT:
-🚨 **Your safety is our #1 priority.**
-- If you're in immediate danger, call emergency services (911)
-- Canada: +1 450 999 4999
-- Cuba: +53 5307 1185
-- Email: cubaresort.ca@gmail.com
-I'm escalating this to a human agent right now.
+LANGUAGE: Always reply in the language the user writes in (English, Español, or Français). Use natural Cuban-friendly Spanish when replying in Spanish.
 
-=== ABOUT ISEXY.CA (ISEXY) ===
-ISEXY.CA is a premium dating platform connecting Cuban singles with people worldwide. We focus on meaningful connections, safety, trust, and supporting Cuban users through gifts and rewards.
+SAFETY FIRST (overrides everything):
+- If the user mentions threats, stalking, blackmail, sextortion, violence, self-harm, or being in danger: start with
+  "🚨 **Your safety comes first.** If you are in immediate danger call 911 (Canada) or 106 (Cuba police)."
+  then give support contacts and tell them they can tap **"Talk to a human"** to reach our team now.
+- If someone is asking them for money, gift cards, crypto, remittances "for an emergency", investment tips, or to move off the app: warn clearly that this is a common romance-scam pattern, advise not to send money, and suggest blocking/reporting (profile → ••• → Report).
+- Never ask for passwords, card numbers, or ID documents in chat.
 
-Website: isexy.ca / isexy.ca
-Support email: cubaresort.ca@gmail.com
-Canada phone: +1 450 999 4999
-Cuba phone: +53 5307 1185
+WHAT YOU KNOW (high level — prefer the KNOWLEDGE BASE excerpts below when they apply):
+- Matching: swipe Discover, Explore categories, Top Picks, Super Likes, Boosts, Passport Mode, Double Date, Who Liked You.
+- Messaging: chat with live translation (EN/ES/FR and more), voice/video calls billed in credits, scheduled calls, missed-call alerts by email/WhatsApp.
+- PhoneLine: private voice line to meet people by phone without sharing your number.
+- Plans: Free, Plus, Gold, Platinum (manage under Settings → My Subscription; compare at /compare-plans). Credits for calls at /buy-credits.
+- Cuba: Cuban verification badge (Carnet de Identidad), Cuban Rewards, Stars gifts and cash-out, ETECSA recharge and food-package gifts.
+- Safety: photo verification, block/report, automatic personal-info protection in chat and calls.
+- Account: reset password at /reset-password, edit profile at /edit-profile, delete account at /delete-account.
+- Support: AI (you), Help Center /knowledge-base, FAQ /faq, tickets /contact-us, email ${SUPPORT.email}, Canada ${SUPPORT.canada}, Cuba ${SUPPORT.cuba}.
 
-=== FEATURES ENCYCLOPEDIA ===
+RULES:
+1. Only answer about ISEXY, dating advice, safety and travel/culture between Canada and Cuba. Politely decline unrelated tasks.
+2. Never invent prices, policies or features. If the knowledge base and this prompt don't cover it, say so and offer "Talk to a human".
+3. When you use a knowledge-base article, mention its title so the user can open it.
+4. For refunds, billing disputes or account bans, collect a short description and suggest "Talk to a human".
+5. Keep answers under ~180 words unless the user asks for detail. End with one helpful next step.`;
 
-**PROFILE & MATCHING:**
-- Create profiles with up to 6 photos, bio, interests, and personality prompts
-- Swipe right to like, left to pass
-- Super Likes: highlight yourself to someone special
-- Boosts: increase visibility for 30 minutes
-- Passport Mode: match with people anywhere in the world
-- Filters: age range (18-100), distance (1-160km), gender preferences
-- 20+ interest categories: music, travel, sports, food, movies, dancing, art, cooking, fitness, reading, photography, gaming, nature, technology, fashion, yoga, pets, nightlife, volunteering, beach, culture
-- Profile prompts for showcasing personality
-- Photo Verification: take a selfie to get a blue checkmark ✅
+type ChatMessage = { role: "user" | "assistant"; content: string };
+type Article = { id: string; title: string; content: string; category: string; tags: string[] | null };
 
-**MESSAGING:**
-- Text chat with all matches
-- Real-time auto-translation between languages (powered by AI)
-- Typing indicators show when someone is writing
-- Read receipts confirm message delivery
-- Photo and media sharing in chat
-- Voice messages
+function json(body: unknown, status = 200, extra: Record<string, string> = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json", ...extra },
+  });
+}
 
-**VIDEO CALLING:**
-- In-app HD video calls with matches
-- Costs 1 credit per minute ($0.07-$0.10/credit depending on package)
-- Schedule calls in advance with reminders
-- Missed call notifications via email & WhatsApp
-- Content moderation: auto-disconnects if personal info shared (phone numbers, emails, addresses, social media handles)
-- This protects both users from scams
+// ---------------------------------------------------------------------------
+// Best-effort rate limiting (per isolate). Protects the AI budget from bursts.
+// ---------------------------------------------------------------------------
+const buckets = new Map<string, { count: number; resetAt: number }>();
+function rateLimited(key: string, limit: number, windowMs = 5 * 60_000): boolean {
+  const now = Date.now();
+  const bucket = buckets.get(key);
+  if (!bucket || bucket.resetAt < now) {
+    buckets.set(key, { count: 1, resetAt: now + windowMs });
+    if (buckets.size > 5000) buckets.clear();
+    return false;
+  }
+  bucket.count++;
+  return bucket.count > limit;
+}
 
-**DISCOVERY:**
-- Discover page: swipe through profiles
-- Explore: browse by 22+ categories (Long-term Partner, Foodies, Travelers, etc.)
-- Top Picks: daily curated selections
-- "Who Liked You": see who's interested (Gold/Platinum feature)
-- Category Swiping: focused browsing by interest
+// ---------------------------------------------------------------------------
+// Knowledge base retrieval (small table → cached in memory, ranked in code).
+// ---------------------------------------------------------------------------
+let kbCache: { at: number; articles: Article[] } | null = null;
+const STOP = new Set(
+  "the a an and or to of in on for is are i my me you your it this that with how what can do does be have from at as by not no yes please help el la los las de del y o en un una por para que como mi tu es son le les des et ou du pour est comment".split(" "),
+);
 
-**DOUBLE DATE:**
-- Invite a friend to form a pair
-- Match with other pairs for group dates
-- Group chat for matched pairs
-- Fun, safe way to meet new people
+function tokens(text: string): string[] {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length > 2 && !STOP.has(t));
+}
 
-=== SUBSCRIPTION PLANS ===
+async function loadArticles(admin: SupabaseClient): Promise<Article[]> {
+  if (kbCache && Date.now() - kbCache.at < 5 * 60_000) return kbCache.articles;
+  const { data, error } = await admin
+    .from("knowledge_base")
+    .select("id, title, content, category, tags")
+    .eq("is_published", true)
+    .limit(500);
+  if (error) {
+    console.error("KB load failed:", error.message);
+    return kbCache?.articles ?? [];
+  }
+  const clean = (t: string) =>
+    t.replace(/\\r\\n|\\n/g, "\n").replace(/cubadate\.com/gi, "isexy.ca").replace(/CubaDate/g, "ISEXY");
+  kbCache = {
+    at: Date.now(),
+    articles: ((data ?? []) as Article[]).map((a) => ({ ...a, title: clean(a.title), content: clean(a.content) })),
+  };
+  return kbCache.articles;
+}
 
-**Free Account:**
-- 10 daily likes
-- Basic matching
-- Messaging with matches
-- 1 Super Like per day
+function rankArticles(query: string, articles: Article[], limit = 3): Article[] {
+  const q = tokens(query);
+  if (q.length === 0) return [];
+  const scored = articles.map((a) => {
+    const title = new Set(tokens(a.title));
+    const tags = new Set((a.tags ?? []).flatMap((t) => tokens(t)));
+    const body = tokens(a.content);
+    const bodySet = new Set(body);
+    let score = 0;
+    for (const t of q) {
+      if (title.has(t)) score += 4;
+      if (tags.has(t)) score += 3;
+      if (bodySet.has(t)) score += 1;
+      // prefix match helps with plurals / conjugations (refund ↔ refunds, pago ↔ pagos)
+      else if (t.length > 4 && body.some((b) => b.startsWith(t.slice(0, 5)))) score += 0.5;
+    }
+    return { a, score };
+  });
+  return scored
+    .filter((s) => s.score >= 2)
+    .sort((x, y) => y.score - x.score)
+    .slice(0, limit)
+    .map((s) => s.a);
+}
 
-**Plus ($9.99/week):**
-- Unlimited Likes & Rewinds
-- Passport Mode (swipe anywhere)
-- No Ads
-- 5 Super Likes per week
+function kbContext(articles: Article[]): string {
+  if (articles.length === 0) return "";
+  const parts = articles.map(
+    (a, i) => `[${i + 1}] "${a.title}" (${a.category})\n${a.content.slice(0, 1500)}`,
+  );
+  return `\n\n=== KNOWLEDGE BASE EXCERPTS (authoritative; cite titles) ===\n${parts.join("\n\n")}`;
+}
 
-**Gold ($14.99/week):**
-- Everything in Plus
-- See Who Likes You
-- 1 Free Boost per month
-- Priority Matching
+// ---------------------------------------------------------------------------
+// Input validation
+// ---------------------------------------------------------------------------
+function sanitizeMessages(raw: unknown): ChatMessage[] | null {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 40) return null;
+  const out: ChatMessage[] = [];
+  for (const m of raw.slice(-MAX_MESSAGES)) {
+    if (!m || typeof m !== "object") return null;
+    const role = (m as Record<string, unknown>).role;
+    const content = (m as Record<string, unknown>).content;
+    if ((role !== "user" && role !== "assistant") || typeof content !== "string") return null;
+    const trimmed = content.trim().slice(0, MAX_CONTENT_CHARS);
+    if (trimmed) out.push({ role, content: trimmed });
+  }
+  if (out.length === 0 || out[out.length - 1].role !== "user") return null;
+  return out;
+}
 
-**Platinum ($19.99/week):**
-- Everything in Gold
-- Unlimited Super Likes
-- Message Before Matching
-- Priority Likes (appear first)
-- VIP customer support
+// ---------------------------------------------------------------------------
+// Conversation ownership
+// ---------------------------------------------------------------------------
+async function resolveConversation(
+  admin: SupabaseClient,
+  userId: string | null,
+  conversationId: unknown,
+  guestSessionId: string | null,
+): Promise<string | null> {
+  if (typeof conversationId === "string" && UUID_RE.test(conversationId)) {
+    const { data } = await admin
+      .from("chatbot_conversations")
+      .select("id, user_id, session_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (data) {
+      const owned = userId ? data.user_id === userId : !data.user_id && data.session_id === guestSessionId;
+      if (owned) return data.id;
+    }
+  }
+  const sessionId = guestSessionId ?? `member_${crypto.randomUUID()}`;
+  const { data, error } = await admin
+    .from("chatbot_conversations")
+    .insert({ user_id: userId, session_id: sessionId, status: "active" })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("Conversation create failed:", error.message);
+    return null;
+  }
+  return data.id;
+}
 
-To manage subscription: Settings → My Subscription
-To compare plans: Settings → Compare Plans
-
-=== CREDITS SYSTEM ===
-Credits are used for video calls (1 credit = 1 minute).
-
-**Packages:**
-- 100 credits = $9.99 ($0.10/credit)
-- 500 credits = $39.99 ($0.08/credit) — BEST VALUE
-- 1,000 credits = $69.99 ($0.07/credit)
-
-Purchase: Settings → Buy Credits
-Check balance: visible on Buy Credits page
-Can send credits as gifts to matches
-
-=== VIP / COUPON CODES ===
-- Redeem codes for premium access or discounts
-- Go to: Settings → Redeem Code
-- Code types: VIP (permanent), Trial (temporary), Discount
-- Contact support for promotional codes
-- Codes are case-insensitive
-
-=== CUBAN FEATURES ===
-
-**Cuban Verification:**
-- Verify Cuban identity for a special badge
-- Requirements: Carnet de Identidad (front + back photos), selfie video, WhatsApp number
-- One verification per Carnet ID (anti-fraud)
-- Verified users access exclusive rewards program
-- Submit at: Settings → Cuban Verification
-
-**Cuban Rewards Program:**
-- Earn points for daily activity (logins, matches, calls)
-- Redeem points for prizes and benefits
-- Track points: Cuban Rewards page
-
-**Stars System (Virtual Currency):**
-- Stars ≈ $0.01 each
-- Receive stars as gifts from matches
-- Cash out minimum: 1,000 stars ($10)
-- Cash out methods: Zelle, PayPal, Bank Transfer, Cryptocurrency
-- Track stars: My Stars page
-- Cash out: Cuban Cashout page
-
-**Gifts for Cuban Matches:**
-- Cell phone recharge (ETECSA)
-- Food packages
-- Stars (virtual currency)
-- Direct donations
-
-=== REFERRAL PROGRAM ===
-- Share your unique referral code
-- Earn bonus credits when friends join
-- Track referrals: Settings → Referrals
-- Both referrer and referee get rewards
-
-=== SAFETY & PRIVACY ===
-
-**Photo Verification:**
-- Take a selfie matching a specific pose
-- Get a blue checkmark badge ✅
-- Increases trust and match rate
-- Go to: Settings → Photo Verification
-
-**Blocking & Reporting:**
-- Block: prevents all contact, hides profiles from each other
-- Report categories: Fake Profile, Harassment, Scam/Fraud, Inappropriate Content, Underage, Spam, Threatening Behavior
-- Reports are reviewed by moderators within 24 hours
-- Block from: user's profile → "..." menu → Block/Report
-
-**Content Moderation:**
-- Automated detection of personal info sharing in chat
-- Video calls monitored for phone numbers, emails, addresses, social media
-- Progressive discipline: 1st offense = 24hr restriction, 2nd = 7 days, 3rd = permanent ban
-
-**Privacy Controls:**
-- Control profile visibility
-- Block phone contacts from seeing you
-- Toggle active status (online/offline indicator)
-- Location privacy controls
-- Delete account option with data removal
-
-=== ACCOUNT MANAGEMENT ===
-
-**Settings Hub:**
-- Edit Profile: photos, bio, interests, prompts
-- Preferences: age range, distance, gender
-- Notifications: push, email, WhatsApp
-- Privacy: visibility, blocking, contacts
-- Subscription management
-- Dark mode toggle
-- Language selection
-- Delete account
-
-**Account Issues:**
-- Forgot password: Auth page → "Forgot Password" → OTP sent to email → Enter code → Set new password
-- Can't log in: try clearing browser cache, check spam for verification emails
-- Account locked: contact support at cubaresort.ca@gmail.com
-- Delete account: Settings → Delete Account (permanent, cannot undo)
-
-=== BILLING & PAYMENTS ===
-- All payments processed securely via Stripe
-- Supported: credit/debit cards
-- Subscription auto-renews weekly
-- Cancel anytime: Settings → My Subscription
-- Refund requests: contact support (reviewed within 48 hours)
-- Refund policy: approved for technical issues or fake profiles; denied for user regret
-
-=== TROUBLESHOOTING ===
-
-**App Not Loading:**
-1. Clear browser cache and cookies
-2. Try incognito/private browsing
-3. Check internet connection
-4. Try a different browser
-5. Contact support if persists
-
-**No Matches:**
-1. Add more photos (6 photos = 3x more matches)
-2. Write a detailed bio
-3. Add interests and prompts
-4. Expand distance and age range
-5. Use Boost for visibility
-6. Be active daily (algorithm favors active users)
-
-**Messages Not Sending:**
-1. Check internet connection
-2. Verify match is still active
-3. Clear cache and refresh
-4. Re-login if needed
-
-**Video Call Issues:**
-1. Check camera/microphone permissions
-2. Use Chrome or Safari for best experience
-3. Ensure sufficient credits
-4. Check internet speed (minimum 1 Mbps recommended)
-
-**Payment Failed:**
-1. Verify card details
-2. Check sufficient funds
-3. Try a different payment method
-4. Contact your bank if declined
-5. Contact our support for billing help
-
-=== SUPPORT CHANNELS ===
-1. **AI Assistant** (that's me!) — instant help 24/7
-2. **Help Center** — searchable knowledge base at /help-support
-3. **FAQ** — common questions at /faq
-4. **Contact Form** — submit tickets at /contact-us
-5. **Live Chat** — connect with human agents
-6. **Email** — cubaresort.ca@gmail.com
-7. **Phone (Canada)** — +1 450 999 4999
-8. **Phone (Cuba)** — +53 5307 1185
-
-=== RESPONSE GUIDELINES ===
-1. Be warm, friendly, and empathetic — this is a dating app, emotions run high
-2. Give specific, actionable steps (numbered lists when appropriate)
-3. Use emojis sparingly but appropriately (❤️ 🛡️ ✅ 💡)
-4. For safety issues, ALWAYS offer human agent transfer
-5. Never share sensitive account data or passwords
-6. For payment disputes, direct to cubaresort.ca@gmail.com
-7. Always be encouraging and positive about finding love
-8. Respect privacy — never ask for personal details
-9. If you don't know something, say so and offer to connect to a human agent
-10. Detect emotional distress and respond with care, not automation
-11. For scam detection: if user describes someone asking for money, warn them immediately
-12. Always end with "Is there anything else I can help with?" or offer next steps`;
+/** Tee the SSE stream so the full assistant reply can be stored once finished. */
+function captureStream(body: ReadableStream<Uint8Array>, onComplete: (text: string) => void) {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let text = "";
+  return body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+        buffer += decoder.decode(chunk, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
+            if (typeof delta === "string") text += delta;
+          } catch {
+            /* partial JSON across chunks is re-assembled via buffer */
+          }
+        }
+      },
+      flush() {
+        if (text) onComplete(text);
+      },
+    }),
+  );
+}
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false },
+  });
 
   try {
-    // Require authenticated user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const authClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-    );
-    const { data: userData, error: userErr } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Identify the caller. A member sends their session JWT; a guest sends the
+    // publishable key, which simply fails getUser() and falls back to guest mode.
+    let userId: string | null = null;
+    const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+    if (token) {
+      const { data } = await admin.auth.getUser(token);
+      userId = data?.user?.id ?? null;
     }
 
-    const { messages, conversationId, stream: useStream } = await req.json();
-
-    if (Array.isArray(messages) && messages.length > 30) {
-      return new Response(JSON.stringify({ error: "Too many messages" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "Invalid JSON" }, 400);
     }
 
-    if (!messages || !Array.isArray(messages)) {
-      return new Response(
-        JSON.stringify({ error: "Messages array is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const guestSessionId =
+      typeof body.guestSessionId === "string" && GUEST_SESSION_RE.test(body.guestSessionId)
+        ? body.guestSessionId
+        : null;
+    if (!userId && !guestSessionId) return json({ error: "Missing guest session" }, 400);
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const limiterKey = userId ? `u:${userId}` : `g:${ip}`;
+    if (rateLimited(limiterKey, userId ? 60 : 25)) {
+      return json({ error: "You're sending messages quickly — please wait a moment and try again." }, 429);
     }
 
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableApiKey) {
-      return new Response(
-        JSON.stringify({ error: "AI service not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const chatMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...messages.slice(-12),
-    ];
-
-    // Streaming mode
-    if (useStream) {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${lovableApiKey}`,
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: chatMessages,
-          temperature: 0.7,
-          max_tokens: 2000,
-          stream: true,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AI Gateway error:", response.status, errorText);
-        if (response.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+    // ---- Human handoff --------------------------------------------------
+    if (body.action === "handoff") {
+      const conversationId = await resolveConversation(admin, userId, body.conversationId, guestSessionId);
+      if (!conversationId) return json({ error: "Conversation not found" }, 404);
+      await admin.from("chatbot_conversations").update({ status: "transferred" }).eq("id", conversationId);
+      const { data, error } = await admin
+        .from("live_chat_sessions")
+        .insert({ user_id: userId, status: "waiting", chatbot_conversation_id: conversationId })
+        .select("id")
+        .single();
+      if (error) {
+        // Older databases without the chatbot_conversation_id column.
+        const retry = await admin
+          .from("live_chat_sessions")
+          .insert({ user_id: userId, status: "waiting" })
+          .select("id")
+          .single();
+        if (retry.error) {
+          console.error("Handoff failed:", retry.error.message);
+          return json({ error: "Could not reach the support queue" }, 500);
         }
-        if (response.status === 402) {
-          return new Response(JSON.stringify({ error: "AI service temporarily unavailable." }), {
-            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        throw new Error(`AI request failed: ${response.status}`);
+        return json({ ok: true, sessionId: retry.data.id, conversationId });
       }
-
-      return new Response(response.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
+      return json({ ok: true, sessionId: data.id, conversationId });
     }
 
-    // Non-streaming fallback
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // ---- Chat -----------------------------------------------------------
+    const messages = sanitizeMessages(body.messages);
+    if (!messages) return json({ error: "A non-empty messages array ending with a user message is required" }, 400);
+
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) return json({ error: "AI assistant is not configured yet" }, 503);
+
+    const latest = messages[messages.length - 1].content;
+    const articles = rankArticles(
+      // Include the previous user turn so follow-ups ("how much is it?") keep context.
+      messages.filter((m) => m.role === "user").slice(-2).map((m) => m.content).join(" "),
+      await loadArticles(admin),
+    );
+
+    const conversationId = await resolveConversation(admin, userId, body.conversationId, guestSessionId);
+    if (conversationId) {
+      await admin.from("chatbot_messages").insert({ conversation_id: conversationId, role: "user", content: latest });
+    }
+
+    const locale = typeof body.locale === "string" ? body.locale.slice(0, 8) : "";
+    const system =
+      SYSTEM_PROMPT +
+      (locale ? `\n\nThe app UI language is "${locale}"; if the user's language is unclear, use it.` : "") +
+      (userId ? "\n\nThe user is a signed-in member." : "\n\nThe user is a guest who has not signed in yet; you may invite them to create a free account when relevant.") +
+      kbContext(articles);
+
+    const aiResponse = await fetch(AI_GATEWAY_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${lovableApiKey}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: chatMessages,
-        temperature: 0.7,
-        max_tokens: 2000,
+        model: AI_MODEL,
+        messages: [{ role: "system", content: system }, ...messages],
+        temperature: 0.5,
+        max_tokens: 900,
+        stream: true,
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI service temporarily unavailable." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`AI request failed: ${response.status}`);
+    if (!aiResponse.ok || !aiResponse.body) {
+      const detail = await aiResponse.text().catch(() => "");
+      console.error("AI gateway error:", aiResponse.status, detail.slice(0, 300));
+      if (aiResponse.status === 429) return json({ error: "The assistant is busy right now. Please try again in a moment." }, 429);
+      if (aiResponse.status === 402) return json({ error: "The assistant is temporarily unavailable." }, 503);
+      return json({ error: "The assistant could not answer right now." }, 502);
     }
 
-    const aiResponse = await response.json();
-    const assistantMessage = aiResponse.choices?.[0]?.message?.content ||
-      "I'm having trouble right now. Please try again or contact support at cubaresort.ca@gmail.com";
+    const sources = articles.map((a) => ({ id: a.id, title: a.title, category: a.category }));
+    const stream = captureStream(aiResponse.body, (text) => {
+      if (!conversationId) return;
+      admin
+        .from("chatbot_messages")
+        .insert({ conversation_id: conversationId, role: "assistant", content: text })
+        .then(({ error }) => error && console.error("Store reply failed:", error.message));
+    });
 
-    // Save to database
-    if (conversationId) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      await supabase.from("chatbot_messages").insert({
-        conversation_id: conversationId,
-        role: "assistant",
-        content: assistantMessage,
-      });
-    }
-
-    return new Response(
-      JSON.stringify({ message: assistantMessage, conversationId }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: any) {
-    console.error("AI chat error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to process your message. Please try again.", details: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "X-Conversation-Id": conversationId ?? "",
+        "X-KB-Sources": encodeURIComponent(JSON.stringify(sources)),
+      },
+    });
+  } catch (error) {
+    console.error("ai-chat error:", error instanceof Error ? error.message : error);
+    return json({ error: "Something went wrong. Please try again." }, 500);
   }
 });

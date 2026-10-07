@@ -1,0 +1,53 @@
+# ISEXY CI — verification only. Deploys nothing.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, build, edge functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc -p tsconfig.app.json --noEmit
+
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: https://khvsudrwnqznuxnjurxp.supabase.co
+          VITE_SUPABASE_PROJECT_ID: khvsudrwnqznuxnjurxp
+          # Publishable (anon) key — public by design, already shipped in the web bundle.
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodnN1ZHJ3bnF6bnV4bmp1cnhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MzQ5NjIsImV4cCI6MjA4MjExMDk2Mn0.hJhSE4C-FRx4EktVZzs9MKAmIUsmchLEMiyzYm7eZEk
+        run: npm run build
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check edge functions (AI assistant, TAKATAK bridge)
+        run: deno check supabase/functions/ai-chat/index.ts supabase/functions/takatak-bridge/index.ts
+
+      - name: Lint (report only — legacy findings are being paid down)
+        continue-on-error: true
+        run: npx eslint . --format stylish | tail -40

@@ -1,105 +1,244 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AuthLayout } from "@/components/AuthLayout";
-import { AuthInput } from "@/components/AuthInput";
-import { AuthButton } from "@/components/AuthButton";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, ChevronDown, Loader2, MessageSquare, ShieldCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const countryCodes = [
-  { code: "+1", country: "CA", flag: "🇨🇦" },
-  { code: "+53", country: "CU", flag: "🇨🇺" },
-  { code: "+1", country: "US", flag: "🇺🇸" },
+const COUNTRIES = [
+  { iso: "CA", dial: "+1", flag: "🇨🇦", name: "Canada", digits: 10 },
+  { iso: "CU", dial: "+53", flag: "🇨🇺", name: "Cuba", digits: 8 },
+  { iso: "US", dial: "+1", flag: "🇺🇸", name: "United States", digits: 10 },
+  { iso: "MX", dial: "+52", flag: "🇲🇽", name: "México", digits: 10 },
+  { iso: "ES", dial: "+34", flag: "🇪🇸", name: "España", digits: 9 },
+  { iso: "FR", dial: "+33", flag: "🇫🇷", name: "France", digits: 9 },
 ];
+
+type Step = "phone" | "code";
+type Availability = "checking" | "available" | "unavailable";
+
+async function bridge<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("takatak-bridge", { body });
+  if (error) {
+    // FunctionsHttpError carries the JSON body in `context`.
+    let message = "Something went wrong. Please try again.";
+    try {
+      const payload = await (error as { context?: Response }).context?.json();
+      if (payload?.error) message = payload.error;
+    } catch { /* keep default */ }
+    throw new Error(message);
+  }
+  return data as T;
+}
 
 export default function PhoneAuth() {
   const navigate = useNavigate();
-  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const location = useLocation();
+  const { user, loading } = useAuth();
+  const from = (location.state as { from?: string } | null)?.from ?? "/discover";
 
-  const handleSubmit = () => {
-    // Phone OTP provider is not yet wired up. Inform the user instead of
-    // navigating to a verification screen that cannot verify the code.
-    toast.info("Phone login is coming soon. Please use email sign-in for now.");
-    navigate("/auth");
+  const [availability, setAvailability] = useState<Availability>("checking");
+  const [country, setCountry] = useState(COUNTRIES[0]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [number, setNumber] = useState("");
+  const [step, setStep] = useState<Step>("phone");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const codeRef = useRef<HTMLInputElement>(null);
+
+  const e164 = `${country.dial}${number}`;
+
+  useEffect(() => {
+    if (!loading && user) navigate(from, { replace: true });
+  }, [user, loading, from, navigate]);
+
+  useEffect(() => {
+    bridge<{ phoneLogin: boolean }>({ action: "status" })
+      .then((s) => setAvailability(s.phoneLogin ? "available" : "unavailable"))
+      .catch(() => setAvailability("unavailable"));
+  }, []);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  useEffect(() => {
+    if (step === "code") setTimeout(() => codeRef.current?.focus(), 100);
+  }, [step]);
+
+  const sendCode = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (busy || number.length < Math.min(country.digits, 8)) return;
+    setBusy(true);
+    setError("");
+    try {
+      await bridge({ action: "phone_send", phone: e164, intent: "login" });
+      setStep("code");
+      setCooldown(60);
+      toast.success("Code sent by SMS");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't send the code.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const isValid = phoneNumber.length >= 10;
+  const verify = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (busy || code.length !== 6) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await bridge<{ tokenHash: string; isNewUser: boolean }>({ action: "phone_verify", phone: e164, code });
+      const { error: sessionError } = await supabase.auth.verifyOtp({ token_hash: result.tokenHash, type: "magiclink" });
+      if (sessionError) throw new Error("Verified, but we couldn't sign you in. Please try again.");
+      toast.success(result.isNewUser ? "Welcome to ISEXY! Let's set up your profile." : "Welcome back!");
+      navigate(result.isNewUser ? "/profile-setup" : from, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid code.");
+      setCode("");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
-    <AuthLayout showBack variant="white">
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="space-y-2 mb-8">
-          <h1 className="text-3xl font-extrabold text-foreground">
-            Can we get your number?
-          </h1>
-        </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center p-4 h-14">
+        <button
+          onClick={() => (step === "code" ? (setStep("phone"), setCode(""), setError("")) : navigate(-1))}
+          className="p-2 -ml-2 text-foreground hover:opacity-70"
+          aria-label="Go back"
+        >
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+      </header>
 
-        {/* Phone input */}
-        <div className="flex items-end gap-4 mb-4">
-          {/* Country code picker */}
-          <button
-            onClick={() => setShowCountryPicker(!showCountryPicker)}
-            className="flex items-center gap-1 pb-3 border-b-2 border-muted text-foreground font-semibold"
-          >
-            <span>{selectedCountry.flag}</span>
-            <span>{selectedCountry.country} {selectedCountry.code}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
+      <main className="flex-1 w-full max-w-md mx-auto px-6 pb-10 animate-fade-in">
+        {availability === "checking" ? (
+          <div className="flex justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+        ) : availability === "unavailable" ? (
+          <div className="pt-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-5">
+              <MessageSquare className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-extrabold text-foreground mb-2">Phone sign-in is warming up</h1>
+            <p className="text-muted-foreground mb-8">
+              We're connecting SMS sign-in through TAKATAK. Meanwhile, continue with your email — it takes 30 seconds.
+            </p>
+            <Link to="/auth" state={{ from }} className="block w-full py-4 rounded-full gradient-primary text-white font-bold">
+              Continue with email
+            </Link>
+          </div>
+        ) : step === "phone" ? (
+          <form onSubmit={sendCode} noValidate>
+            <h1 className="text-3xl font-extrabold text-foreground mt-2 mb-2">What's your number?</h1>
+            <p className="text-muted-foreground mb-8">We'll text you a 6-digit code. Your number is never shown on your profile.</p>
 
-          {/* Phone number input */}
-          <div className="flex-1">
-            <AuthInput
-              type="tel"
-              placeholder="Phone Number"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-              maxLength={10}
+            <div className="flex gap-3 mb-2">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen((o) => !o)}
+                  className="h-14 px-3 rounded-xl border border-border bg-card flex items-center gap-1.5 font-semibold text-foreground"
+                  aria-haspopup="listbox"
+                  aria-expanded={pickerOpen}
+                >
+                  <span className="text-xl">{country.flag}</span>
+                  <span>{country.dial}</span>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </button>
+                {pickerOpen && (
+                  <ul role="listbox" className="absolute z-20 mt-2 w-60 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+                    {COUNTRIES.map((c) => (
+                      <li key={c.iso}>
+                        <button
+                          type="button"
+                          onClick={() => { setCountry(c); setPickerOpen(false); setNumber(""); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted text-left"
+                        >
+                          <span className="text-xl">{c.flag}</span>
+                          <span className="flex-1 text-foreground">{c.name}</span>
+                          <span className="text-muted-foreground">{c.dial}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={number}
+                onChange={(e) => { setNumber(e.target.value.replace(/\D/g, "").slice(0, 12)); setError(""); }}
+                placeholder={country.iso === "CU" ? "5 123 4567" : "514 555 0123"}
+                className="flex-1 h-14 px-4 rounded-xl border border-border bg-card text-lg text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                aria-label="Phone number"
+              />
+            </div>
+            {error && <p role="alert" className="text-sm text-destructive mt-2">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={busy || number.length < Math.min(country.digits, 8)}
+              className="mt-8 w-full h-14 rounded-full gradient-primary text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {busy && <Loader2 className="w-5 h-5 animate-spin" />}
+              Send code
+            </button>
+            <p className="text-center mt-6 text-sm text-muted-foreground">
+              Prefer email? <Link to="/auth" state={{ from }} className="text-primary font-semibold">Use email instead</Link>
+            </p>
+          </form>
+        ) : (
+          <form onSubmit={verify} noValidate>
+            <h1 className="text-3xl font-extrabold text-foreground mt-2 mb-2">Enter your code</h1>
+            <p className="text-muted-foreground mb-8">Sent to <span className="font-semibold text-foreground">{country.flag} {e164}</span></p>
+            <input
+              ref={codeRef}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => {
+                const next = e.target.value.replace(/\D/g, "").slice(0, 6);
+                setCode(next);
+                setError("");
+              }}
+              placeholder="••••••"
+              className="w-full h-16 text-center tracking-[0.6em] text-3xl font-bold rounded-xl border border-border bg-card text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              aria-label="6-digit code"
             />
-          </div>
-        </div>
-
-        {/* Country picker dropdown */}
-        {showCountryPicker && (
-          <div className="bg-card border border-border rounded-xl shadow-medium mb-4 overflow-hidden animate-fade-in">
-            {countryCodes.map((country) => (
-              <button
-                key={`${country.country}-${country.code}`}
-                onClick={() => {
-                  setSelectedCountry(country);
-                  setShowCountryPicker(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
-              >
-                <span className="text-xl">{country.flag}</span>
-                <span className="font-medium">{country.country}</span>
-                <span className="text-muted-foreground">{country.code}</span>
-              </button>
-            ))}
-          </div>
+            {error && <p role="alert" className="text-sm text-destructive mt-2">{error}</p>}
+            <button
+              type="submit"
+              disabled={busy || code.length !== 6}
+              className="mt-8 w-full h-14 rounded-full gradient-primary text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {busy && <Loader2 className="w-5 h-5 animate-spin" />}
+              Verify & continue
+            </button>
+            <p className="text-center mt-6 text-sm text-muted-foreground">
+              Didn't get it?{" "}
+              {cooldown > 0 ? (
+                <span>Resend in {cooldown}s</span>
+              ) : (
+                <button type="button" onClick={() => sendCode()} className="text-primary font-semibold">Resend code</button>
+              )}
+            </p>
+          </form>
         )}
 
-        {/* Info text */}
-        <p className="text-muted-foreground text-sm mb-4">
-          Phone sign-in is coming soon. For now, please use email to sign in or create your account.
+        <p className="mt-10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck className="w-4 h-4" />
+          Phone verification by TAKATAK identity
         </p>
-        <p className="text-muted-foreground text-sm mb-8">
-          <button onClick={() => navigate("/auth")} className="text-foreground underline font-semibold">
-            Use email instead
-          </button>
-        </p>
-
-        {/* Submit button */}
-        <AuthButton
-          variant={isValid ? "primary" : "secondary"}
-          onClick={handleSubmit}
-          disabled={!isValid}
-        >
-          Next
-        </AuthButton>
-      </div>
-    </AuthLayout>
+      </main>
+    </div>
   );
 }

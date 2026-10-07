@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, ChevronRight, Search } from "lucide-react";
 const newsArticles = [
   {
     id: 1,
-    title: "CUBADATE'S YEAR IN SWIPE™ 2025",
+    title: "ISEXY'S YEAR IN SWIPE™ 2025",
     subtitle: "HOPE IS HOT AND BARE-MINIMUM IS NOT - From clear-coding to hot take dating, singles show that clarity, confidence and strong opinions will lead the way in 2026.",
     date: "03 December 2025",
     category: "Trends",

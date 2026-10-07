@@ -5,13 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface AdminRouteProps {
   children: ReactNode;
+  /** Also admit support moderators (agent dashboard). */
+  allowModerator?: boolean;
 }
 
 /**
  * Wraps admin-only pages. Requires login + a row in user_roles with role = 'admin'.
  * Non-admins are redirected to /discover. Unauthenticated users are sent to /auth.
  */
-export function AdminRoute({ children }: AdminRouteProps) {
+export function AdminRoute({ children, allowModerator = false }: AdminRouteProps) {
   const [state, setState] = useState<"loading" | "admin" | "denied" | "anon">(
     "loading",
   );
@@ -29,15 +31,14 @@ export function AdminRoute({ children }: AdminRouteProps) {
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+        .in("role", allowModerator ? ["admin", "moderator"] : ["admin"]);
       if (cancelled) return;
-      setState(data ? "admin" : "denied");
+      setState(data && data.length > 0 ? "admin" : "denied");
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [allowModerator]);
 
   if (state === "loading") {
     return (

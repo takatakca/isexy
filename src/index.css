@@ -136,6 +136,8 @@
 }
 
 @layer utilities {
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
   .animate-float { animation: float 3s ease-in-out infinite; }
   .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
   .animate-slide-up { animation: slide-up 0.5s ease-out; }

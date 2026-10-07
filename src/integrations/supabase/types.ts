@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      takatak_identity_links: {
+        Row: {
+          created_at: string
+          last_synced_at: string
+          master_identity_id: string
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          last_synced_at?: string
+          master_identity_id: string
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          last_synced_at?: string
+          master_identity_id?: string
+          phone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       allowances: {
         Row: {
           created_at: string
@@ -2082,6 +2106,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          family_plans: string | null
+          languages: string[] | null
+          relationship_type: string | null
+          social_media: string | null
+          zodiac: string | null
           age_max: number | null
           age_min: number | null
           bio: string | null
@@ -2140,6 +2169,11 @@ export type Database = {
           workout: string | null
         }
         Insert: {
+          family_plans?: string | null
+          languages?: string[] | null
+          relationship_type?: string | null
+          social_media?: string | null
+          zodiac?: string | null
           age_max?: number | null
           age_min?: number | null
           bio?: string | null
@@ -2198,6 +2232,11 @@ export type Database = {
           workout?: string | null
         }
         Update: {
+          family_plans?: string | null
+          languages?: string[] | null
+          relationship_type?: string | null
+          social_media?: string | null
+          zodiac?: string | null
           age_max?: number | null
           age_min?: number | null
           bio?: string | null
@@ -3173,6 +3212,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      kb_record_feedback: {
+        Args: { p_article_id: string; p_helpful: boolean }
+        Returns: undefined
+      }
+      kb_record_view: {
+        Args: { p_article_id: string }
+        Returns: undefined
+      }
       apply_referral_code: { Args: { p_friend_code: string }; Returns: Json }
       award_streak_badge: {
         Args: { p_badge_type: string; p_streak_count: number }
