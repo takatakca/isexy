@@ -7,15 +7,15 @@
 import { SITE } from "@/site.config";
 
 export type SeoInput = {
-  title?: string;
-  description?: string;
+  title?: string | undefined;
+  description?: string | undefined;
   /** Route path, e.g. "/contact". Used for the absolute canonical + og:url. */
-  path?: string;
+  path?: string | undefined;
   /** Share image: path under /public or absolute URL. Defaults to SITE.ogImage. */
-  image?: string;
+  image?: string | undefined;
   /** true for account, admin, cart, checkout and other private pages. */
-  noindex?: boolean;
-  type?: "website" | "article";
+  noindex?: boolean | undefined;
+  type?: "website" | "article" | undefined;
 };
 
 export type HeadMeta =

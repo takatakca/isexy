@@ -139,20 +139,20 @@ function loadTikTokPixel(w: TagWindow) {
     target[method] = (...args: unknown[]) => target.push([method, ...args]);
   };
   methods.forEach((m) => defer(ttq, m));
-  ttq.instance = (pixelId: string) => {
-    const all = ttq._i as Record<string, unknown[] & Record<string, unknown>>;
+  ttq["instance"] = (pixelId: string) => {
+    const all = ttq["_i"] as Record<string, unknown[] & Record<string, unknown>>;
     const inst = all[pixelId] ?? ([] as unknown as unknown[] & Record<string, unknown>);
     methods.forEach((m) => defer(inst, m));
     return inst;
   };
   const sdk = "https://analytics.tiktok.com/i18n/pixel/events.js";
-  ttq._i = { [TAG_IDS.tiktokPixel]: Object.assign([], { _u: sdk }) };
-  ttq._t = { [TAG_IDS.tiktokPixel]: Date.now() };
-  ttq._o = { [TAG_IDS.tiktokPixel]: {} };
+  ttq["_i"] = { [TAG_IDS.tiktokPixel]: Object.assign([], { _u: sdk }) };
+  ttq["_t"] = { [TAG_IDS.tiktokPixel]: Date.now() };
+  ttq["_o"] = { [TAG_IDS.tiktokPixel]: {} };
   w.TiktokAnalyticsObject = "ttq";
   w.ttq = ttq;
   addScript(`${sdk}?sdkid=${encodeURIComponent(TAG_IDS.tiktokPixel)}&lib=ttq`, "kit-tiktok-pixel");
-  (ttq.page as Fn)();
+  (ttq["page"] as Fn)();
 }
 
 /**

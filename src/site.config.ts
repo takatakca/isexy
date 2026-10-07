@@ -19,7 +19,7 @@ export type PostalAddress = {
   streetAddress: string;
   addressLocality: string;
   addressRegion: string;
-  postalCode?: string;
+  postalCode?: string | undefined;
   addressCountry: string;
 };
 
@@ -27,7 +27,7 @@ export type SiteConfig = {
   /** Public business name. */
   name: string;
   /** Legal name if different (TODO(owner) when unknown). */
-  legalName?: string;
+  legalName?: string | undefined;
   /** Real production origin, no trailing slash. */
   url: string;
   /** <html lang>. French first (Québec). */
@@ -37,20 +37,20 @@ export type SiteConfig = {
   defaultTitle: string;
   defaultDescription: string;
   /** Default share image: path under /public or absolute URL. undefined = no og:image. */
-  ogImage?: string;
+  ogImage?: string | undefined;
   /** Logo: path under /public or absolute URL. */
-  logo?: string;
+  logo?: string | undefined;
   schemaType: SchemaType;
-  email?: string;
+  email?: string | undefined;
   /** E.164, e.g. "+15145550000". */
-  phone?: string;
-  address?: PostalAddress;
+  phone?: string | undefined;
+  address?: PostalAddress | undefined;
   /** Real social profile URLs only (no "#", no generic facebook.com). */
   sameAs: string[];
   /** Privacy policy route, used by the cookie banner. undefined = no page yet (TODO(owner)). */
-  privacyPath?: string;
+  privacyPath?: string | undefined;
   /** Law 25 privacy officer. */
-  privacyOfficer: { name?: string; email?: string };
+  privacyOfficer: { name?: string | undefined; email?: string | undefined };
 };
 
 export const SITE: SiteConfig = {
