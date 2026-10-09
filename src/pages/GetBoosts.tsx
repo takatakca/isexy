@@ -123,7 +123,7 @@ export default function GetBoosts() {
 
       track("checkout_started", { product: "GetBoosts" });
 
-      const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-one-time-payment", {
         body: {
           productId,
           metadata: {

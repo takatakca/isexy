@@ -86,8 +86,8 @@ export default function Messages() {
     };
     const channel = supabase
       .channel(`inbox-${profile.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, schedule)
-      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "isexy", table: "messages" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "isexy", table: "matches" }, schedule)
       .subscribe();
     const onFocus = () => document.visibilityState === "visible" && schedule();
     document.addEventListener("visibilitychange", onFocus);

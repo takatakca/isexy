@@ -52,7 +52,7 @@ export default function GroupChat() {
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "isexy",
           table: "group_messages",
           filter: `group_chat_id=eq.${groupId}`,
         },

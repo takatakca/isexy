@@ -105,7 +105,7 @@ export default function CubanSignup() {
     setSendingCode(true);
     
     try {
-      const response = await supabase.functions.invoke("send-whatsapp-otp", {
+      const response = await supabase.functions.invoke("isexy-send-whatsapp-otp", {
         body: { phoneNumber: whatsappNumber, action: "send" }
       });
       if (response.error) throw response.error;
@@ -127,7 +127,7 @@ export default function CubanSignup() {
       return;
     }
     try {
-      const response = await supabase.functions.invoke("send-whatsapp-otp", {
+      const response = await supabase.functions.invoke("isexy-send-whatsapp-otp", {
         body: { phoneNumber: whatsappNumber, action: "verify", code: whatsappCode }
       });
       if (response.error) throw response.error;
@@ -275,7 +275,7 @@ export default function CubanSignup() {
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase.storage
-        .from('cuban-verifications')
+        .from('isexy-cuban-verifications')
         .upload(path, file, { upsert: true });
       if (error) {
         console.error('Upload error:', error);

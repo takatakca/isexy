@@ -19,7 +19,7 @@ type Step = "phone" | "code";
 type Availability = "checking" | "available" | "unavailable";
 
 async function bridge<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke("takatak-bridge", { body });
+  const { data, error } = await supabase.functions.invoke("isexy-takatak-bridge", { body });
   if (error) {
     // FunctionsHttpError carries the JSON body in `context`.
     let message = "Something went wrong. Please try again.";

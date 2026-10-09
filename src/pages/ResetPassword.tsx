@@ -36,7 +36,7 @@ export default function ResetPassword() {
       const firstName = profiles?.[0]?.first_name || email.split("@")[0];
 
       // Send OTP via edge function
-      const { error } = await supabase.functions.invoke("send-email-otp", {
+      const { error } = await supabase.functions.invoke("isexy-send-email-otp", {
         body: { 
           email, 
           type: "password_reset",

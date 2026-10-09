@@ -59,7 +59,7 @@ export default function WebSignup() {
     
     try {
       // Send verification code first
-      const { data, error: otpError } = await supabase.functions.invoke("send-email-otp", {
+      const { data, error: otpError } = await supabase.functions.invoke("isexy-send-email-otp", {
         body: { 
           email, 
           type: "verification",

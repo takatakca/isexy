@@ -26,7 +26,7 @@ export function useNotificationCounts() {
         'postgres_changes',
         { 
           event: '*', 
-          schema: 'public', 
+          schema: 'isexy', 
           table: 'messages'
         },
         () => fetchCounts()
@@ -35,7 +35,7 @@ export function useNotificationCounts() {
         'postgres_changes',
         { 
           event: 'INSERT', 
-          schema: 'public', 
+          schema: 'isexy', 
           table: 'matches'
         },
         () => fetchCounts()

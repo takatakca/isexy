@@ -73,12 +73,12 @@ export default function AgentDashboard() {
       .channel('agent-dashboard')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'live_chat_sessions' },
+        { event: '*', schema: 'isexy', table: 'live_chat_sessions' },
         () => fetchData()
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'live_chat_messages' },
+        { event: 'INSERT', schema: 'isexy', table: 'live_chat_messages' },
         (payload) => {
           if (selectedSession && payload.new.session_id === selectedSession.id) {
             setMessages(prev => [...prev, payload.new as ChatMessage]);

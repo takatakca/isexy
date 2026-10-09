@@ -104,7 +104,7 @@ const COPY: Record<Lang, {
   },
 };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/isexy-ai-chat`;
 const STORAGE_KEY = "isexy_assistant_v2";
 const TEASER_KEY = "isexy_assistant_teaser_seen";
 // Pages with their own fixed composer / call UI where a floating button gets in the way.
@@ -319,7 +319,7 @@ export function AIChatWidget() {
     if (handingOff) return;
     setHandingOff(true);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
+      const { data, error } = await supabase.functions.invoke("isexy-ai-chat", {
         body: {
           action: "handoff",
           conversationId: state.conversationId,

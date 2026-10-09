@@ -108,7 +108,7 @@ export default function PhoneLineSetup() {
         if (g) {
           setGreeting(g as Greeting);
           const { data: signed } = await supabase.storage
-            .from("voice-greetings")
+            .from("isexy-voice-greetings")
             .createSignedUrl(g.audio_url, 3600);
           if (signed) setSignedAudioUrl(signed.signedUrl);
         }
@@ -242,7 +242,7 @@ export default function PhoneLineSetup() {
       if (recordedBlob && plId) {
         const path = `${user.id}/${plId}-${Date.now()}.webm`;
         const { error: upErr } = await supabase.storage
-          .from("voice-greetings")
+          .from("isexy-voice-greetings")
           .upload(path, recordedBlob, { contentType: "audio/webm", upsert: false });
         if (upErr) throw upErr;
 

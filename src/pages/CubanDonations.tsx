@@ -135,7 +135,7 @@ export default function CubanDonations() {
 
     try {
       track("checkout_started", { product: "CubanDonations" });
-      const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-one-time-payment", {
         body: {
           productId,
           metadata: {

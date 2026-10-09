@@ -95,7 +95,7 @@ export default function PhoneLineInbox() {
         setPlayingId(null);
         return;
       }
-      const { data, error } = await supabase.functions.invoke("get-voice-reply-url", {
+      const { data, error } = await supabase.functions.invoke("isexy-get-voice-reply-url", {
         body: { reply_id: r.id },
       });
       if (error || !data?.signed_url) throw new Error(error?.message ?? "Cannot load audio");

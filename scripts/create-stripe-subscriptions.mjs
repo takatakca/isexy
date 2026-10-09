@@ -8,7 +8,7 @@
  *   STRIPE_SECRET_KEY=sk_test_... node scripts/create-stripe-subscriptions.mjs
  *
  * After it runs, copy the printed STRIPE_PRICE_* values into
- * Lovable / Supabase project secrets.
+ * ISEXY function secrets on TAKATAK V1 (see docs/V1-MIGRATION.md).
  */
 
 import Stripe from "stripe";
@@ -122,7 +122,7 @@ for (const [tier, cfg] of Object.entries(TIERS)) {
 }
 
 console.log("\n========================================");
-console.log("Copy these into Lovable / Supabase secrets:");
+console.log("Copy these into the ISEXY_* function secrets on TAKATAK V1:");
 console.log("========================================\n");
 for (const [k, v] of Object.entries(envOut)) {
   console.log(`${k}=${v}`);

@@ -3,7 +3,7 @@
  * (e.g. https://isexy.ca) — canonical URLs, social tags, structured data and
  * the generated sitemap/robots all follow it.
  */
-export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://isexy.lovable.app").replace(/\/+$/, "");
+export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://isexy.onrender.com").replace(/\/+$/, "");
 export const SITE_NAME = "ISEXY";
 export const SITE_TAGLINE = "Premium Dating for Canada & Cuba";
 export const OG_IMAGE = `${SITE_URL}/og-image.png`;

@@ -75,7 +75,7 @@ export function GiftModal({ isOpen, onClose, recipientId, recipientName }: GiftM
     setProcessing(true);
     try {
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
-        "create-one-time-payment",
+        "isexy-create-one-time-payment",
         {
           body: {
             productId: `gift_${selectedPackage.id}`,

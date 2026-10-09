@@ -118,7 +118,7 @@ export default function Chat() {
       .channel(`chat-${matchId}`, { config: { broadcast: { self: false } } })
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `match_id=eq.${matchId}` },
+        { event: "INSERT", schema: "isexy", table: "messages", filter: `match_id=eq.${matchId}` },
         (payload) => {
           const incoming = payload.new as Message;
           // Show immediately; translate afterwards.
@@ -132,7 +132,7 @@ export default function Chat() {
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "messages", filter: `match_id=eq.${matchId}` },
+        { event: "UPDATE", schema: "isexy", table: "messages", filter: `match_id=eq.${matchId}` },
         (payload) => setMessages((prev) => upsertMessage(prev, payload.new as Message)),
       )
       .on("broadcast", { event: "typing" }, ({ payload }) => {
@@ -263,7 +263,7 @@ export default function Chat() {
 
   const translateMessage = async (text: string): Promise<string | null> => {
     try {
-      const response = await supabase.functions.invoke("translate-message", {
+      const response = await supabase.functions.invoke("isexy-translate-message", {
         body: { text, targetLanguage: translateRef.current.lang }
       });
 
@@ -395,7 +395,7 @@ export default function Chat() {
 
       // Email the other member (server resolves the recipient; throttled per conversation).
       supabase.functions
-        .invoke("send-notification-email", {
+        .invoke("isexy-send-notification-email", {
           body: { type: "new_message", matchId, data: { messagePreview: content.slice(0, 80) } },
         })
         .catch(() => undefined);

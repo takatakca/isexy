@@ -78,7 +78,7 @@ interface AuthActionOptions {
  */
 function syncTakatakIdentity() {
   supabase.functions
-    .invoke("takatak-bridge", { body: { action: "sync" } })
+    .invoke("isexy-takatak-bridge", { body: { action: "sync" } })
     .catch(() => undefined);
 }
 

@@ -52,7 +52,7 @@ export default function GetSuperLikes() {
     try {
       const productId = `super_likes_${selected.quantity}`;
       track("checkout_started", { product: "GetSuperLikes" });
-      const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-one-time-payment", {
         body: { productId, metadata: { type: "super_likes", quantity: String(selected.quantity) } },
       });
       if (error) throw error;

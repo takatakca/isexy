@@ -1,13 +1,18 @@
-# ISEXY CI/CD
+# ISEXY CI/CD — ISEXY runs on TAKATAK V1 (Supabase project pcjfahhlozsseqqevimi).
 #
-# Every push / PR:  install → typecheck → build → edge-function check → lint report.
-# Every push to main (after CI is green), fully automatic:
-#   1. Supabase: apply migrations + deploy every edge function + sync secrets
-#   2. Web: publish dist/ to the host over SSH (rsync, atomic swap)
-#   3. Smoke test the live site
-# Each deploy stage switches itself on as soon as its secrets exist in
-# GitHub → Settings → Secrets and variables → Actions, and is skipped with a
-# notice until then. See docs/DEPLOYMENT.md.
+# Every push / PR:
+#   verify      install → typecheck → build → type-check every isexy-* edge function → lint report
+#   migrations  apply supabase/isexy-migrations to a Postgres stand-in of V1 (dry run, apply,
+#               re-run) with the guard that proves V1's public/auth/storage objects never change
+#   rules       fail if anything could touch V1 outside ISEXY's lane (db push, bare functions deploy)
+# Every push to main (after the above are green), each stage switching itself on once its
+# secrets exist (GitHub → Settings → Secrets and variables → Actions):
+#   1. ISEXY database: scripts/isexy/migrate.sh dry run, then --apply   (secret ISEXY_DB_URL)
+#   2. ISEXY edge functions: deploy each isexy-* function by name        (secret SUPABASE_ACCESS_TOKEN)
+#   3. Web: Render auto-deploys main; optional SSH publish                (ISEXY_DEPLOY_* secrets)
+#   4. Smoke test the live site
+# Never `supabase db push` here: V1's migration history belongs to takatak-v1.
+# See docs/V1-MIGRATION.md.
 
 name: CI/CD
 
@@ -23,6 +28,10 @@ concurrency:
 
 permissions:
   contents: read
+
+env:
+  SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'pcjfahhlozsseqqevimi' }}
+  SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.onrender.com' }}
 
 jobs:
   verify:
@@ -45,10 +54,10 @@ jobs:
 
       - name: Build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://khvsudrwnqznuxnjurxp.supabase.co' }}
-          VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID || 'khvsudrwnqznuxnjurxp' }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodnN1ZHJ3bnF6bnV4bmp1cnhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MzQ5NjIsImV4cCI6MjA4MjExMDk2Mn0.hJhSE4C-FRx4EktVZzs9MKAmIUsmchLEMiyzYm7eZEk' }}
-          VITE_SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.lovable.app' }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://pcjfahhlozsseqqevimi.supabase.co' }}
+          VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID || 'pcjfahhlozsseqqevimi' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjamZhaGhsb3pzc2VxcWV2aW1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDA0NzQsImV4cCI6MjEwMDY3NjQ3NH0.jhy7N0I7uRjDt0Frzsu_F00lDL6cGr2ZxHPKsnoWY3Q' }}
+          VITE_SITE_URL: ${{ env.SITE_URL }}
           VITE_GA4_ID: ${{ vars.VITE_GA4_ID }}
           VITE_META_PIXEL_ID: ${{ vars.VITE_META_PIXEL_ID }}
           VITE_TURN_URLS: ${{ vars.VITE_TURN_URLS }}
@@ -64,97 +73,121 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Type-check edge functions
-        # Functions with known legacy type errors (get-voice-reply-url, seed-profiles,
-        # twilio-phone-line-menu) and npm:-specifier functions are excluded until fixed.
-        run: >-
-          deno check
-          supabase/functions/ai-chat/index.ts
-          supabase/functions/takatak-bridge/index.ts
-          supabase/functions/send-notification-email/index.ts
-          supabase/functions/send-ticket-confirmation/index.ts
-          supabase/functions/send-ticket-status-update/index.ts
-          supabase/functions/send-verification-notification/index.ts
-          supabase/functions/subscription-resets/index.ts
-          supabase/functions/send-email-otp/index.ts
-          supabase/functions/update-user-password/index.ts
-          supabase/functions/send-whatsapp-otp/index.ts
-          supabase/functions/send-whatsapp-call-notification/index.ts
-          supabase/functions/send-missed-call-notification/index.ts
-          supabase/functions/send-push-notification/index.ts
+      - name: Type-check every edge function
+        run: deno check supabase/functions/isexy-*/index.ts
 
-      - name: Upload web build
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: isexy-web-${{ github.sha }}
-          path: dist
-          retention-days: 14
+  migrations:
+    name: ISEXY migrations on a V1 stand-in
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ISEXY_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load the V1 stand-in
+        run: psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1 -f scripts/isexy/test/v1-mock.sql
+
+      - name: Dry run (rolled back)
+        run: scripts/isexy/migrate.sh --dry-run
+
+      - name: Apply
+        run: scripts/isexy/migrate.sh --apply
+
+      - name: Re-run is a no-op
+        run: scripts/isexy/migrate.sh | tee /tmp/rerun.txt && grep -q "up to date" /tmp/rerun.txt
+
+  rules:
+    name: V1 safety rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nothing outside ISEXY's lane
+        run: |
+          set -euo pipefail
+          fail=0
+          if [ -d supabase/migrations ]; then
+            echo "::error::supabase/migrations must not exist: ISEXY migrations live in supabase/isexy-migrations and run through scripts/isexy/migrate.sh"; fail=1
+          fi
+          if grep -rnE "supabase +db +push" .github/ scripts/ package.json | grep -vE ":[0-9]+:\s*#|echo "; then
+            echo "::error::'supabase db push' is forbidden here (V1 migration history belongs to takatak-v1)"; fail=1
+          fi
+          if grep -rnE "functions +deploy *(--.*)?$" .github/ scripts/ package.json; then
+            echo "::error::Deploy edge functions one by one by name (isexy-*), never a bare 'supabase functions deploy'"; fail=1
+          fi
+          for d in supabase/functions/*/; do
+            n=$(basename "$d")
+            case "$n" in isexy-*|_shared) ;; *) echo "::error::Edge function '$n' must be named isexy-<name>"; fail=1 ;; esac
+          done
+          if grep -rnE "public\.[a-z_]+" supabase/isexy-migrations/; then
+            echo "::error::ISEXY migrations must not reference V1's public schema"; fail=1
+          fi
+          if grep -rniE "lovable" --include=*.ts --include=*.tsx --include=*.mjs --include=*.json --include=*.toml src supabase package.json vite.config.ts | grep -v "convert-lovable\|Lovable-era\|Lovable migration\|Replaces the Lovable"; then
+            echo "::error::Lovable dependency found"; fail=1
+          fi
+          exit $fail
 
   deploy-supabase:
-    name: Deploy database + edge functions
-    needs: verify
+    name: Deploy ISEXY to TAKATAK V1 (isexy schema + isexy-* functions)
+    needs: [verify, migrations, rules]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
     env:
+      ISEXY_DB_URL: ${{ secrets.ISEXY_DB_URL }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'khvsudrwnqznuxnjurxp' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Check configuration
         id: cfg
         run: |
-          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_DB_PASSWORD" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Supabase deploy skipped::Add SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD secrets to deploy migrations and edge functions automatically."
+          if [ -n "$ISEXY_DB_URL" ]; then echo "db=true" >> "$GITHUB_OUTPUT"; else
+            echo "db=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=ISEXY migrations skipped::Add the ISEXY_DB_URL secret (V1 session pooler URL) to apply supabase/isexy-migrations automatically."
+          fi
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then echo "fn=true" >> "$GITHUB_OUTPUT"; else
+            echo "fn=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=ISEXY functions skipped::Add the SUPABASE_ACCESS_TOKEN secret to deploy the isexy-* edge functions automatically."
           fi
 
+      - name: Migrations — dry run on V1 (rolled back)
+        if: steps.cfg.outputs.db == 'true'
+        run: scripts/isexy/migrate.sh --dry-run
+
+      - name: Migrations — apply to the isexy schema
+        if: steps.cfg.outputs.db == 'true'
+        run: scripts/isexy/migrate.sh --apply
+
       - uses: supabase/setup-cli@v1
-        if: steps.cfg.outputs.enabled == 'true'
+        if: steps.cfg.outputs.fn == 'true'
         with:
           version: latest
 
-      - name: Link project
-        if: steps.cfg.outputs.enabled == 'true'
-        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
-
-      - name: Apply database migrations
-        if: steps.cfg.outputs.enabled == 'true'
-        run: supabase db push --password "$SUPABASE_DB_PASSWORD" --include-all
-
-      - name: Sync function secrets
-        if: steps.cfg.outputs.enabled == 'true'
-        env:
-          TAKATAK_API_URL: ${{ secrets.TAKATAK_API_URL }}
-          TAKATAK_ISEXY_API_KEY: ${{ secrets.TAKATAK_ISEXY_API_KEY }}
-          LOVABLE_API_KEY: ${{ secrets.LOVABLE_API_KEY }}
-          RESEND_FROM: ${{ secrets.RESEND_FROM }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      - name: Deploy isexy-* edge functions by name
+        if: steps.cfg.outputs.fn == 'true'
         run: |
           set -euo pipefail
-          args=()
-          for name in TAKATAK_API_URL TAKATAK_ISEXY_API_KEY LOVABLE_API_KEY RESEND_FROM CRON_SECRET; do
-            if [ -n "${!name}" ]; then args+=("$name=${!name}"); fi
+          for dir in supabase/functions/isexy-*/; do
+            name="$(basename "$dir")"
+            case "$name" in isexy-*) ;; *) echo "refusing to deploy $name"; exit 1 ;; esac
+            echo "::group::$name"
+            supabase functions deploy "$name" --project-ref "$SUPABASE_PROJECT_REF"
+            echo "::endgroup::"
           done
-          if [ ${#args[@]} -gt 0 ]; then
-            supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "${args[@]}" > /dev/null
-            echo "Synced ${#args[@]} function secret(s)."
-          else
-            echo "No function secrets provided in GitHub; keeping the values already set in Supabase."
-          fi
-
-      - name: Deploy edge functions
-        if: steps.cfg.outputs.enabled == 'true'
-        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
 
   deploy-web:
-    name: Publish website
+    name: Publish website (optional SSH host; Render deploys main itself)
     needs: [verify, deploy-supabase]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -175,14 +208,23 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Web deploy skipped::Add ISEXY_DEPLOY_HOST, ISEXY_DEPLOY_USER, ISEXY_DEPLOY_PATH, ISEXY_DEPLOY_SSH_KEY and ISEXY_DEPLOY_KNOWN_HOSTS secrets to publish automatically (Lovable also syncs main)."
+            echo "::notice title=SSH publish skipped::Render (isexy.onrender.com) auto-deploys main. Add ISEXY_DEPLOY_* secrets only to also publish to an SSH host."
           fi
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.enabled == 'true'
+
+      - uses: actions/setup-node@v4
         if: steps.cfg.outputs.enabled == 'true'
         with:
-          name: isexy-web-${{ github.sha }}
-          path: dist
+          node-version: 22
+          cache: npm
+
+      - name: Build
+        if: steps.cfg.outputs.enabled == 'true'
+        env:
+          VITE_SITE_URL: ${{ env.SITE_URL }}
+        run: npm ci --no-audit --no-fund && npm run build
 
       - name: Publish (atomic swap, keeps previous release for rollback)
         if: steps.cfg.outputs.enabled == 'true'
@@ -209,21 +251,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.lovable.app' }}
-      SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://khvsudrwnqznuxnjurxp.supabase.co' }}
+      SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://pcjfahhlozsseqqevimi.supabase.co' }}
     steps:
       - name: Site and SPA routes respond
         run: |
           set -euo pipefail
-          for path in / /auth /knowledge-base /faq; do
+          for path in / /auth /discover /knowledge-base /faq; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 "$SITE_URL$path")
             echo "$path → $code"
             [ "$code" = "200" ] || { echo "::error::$SITE_URL$path returned $code"; exit 1; }
           done
 
-      - name: Edge functions reachable
+      - name: ISEXY edge functions reachable
         run: |
-          for fn in ai-chat takatak-bridge; do
+          for fn in isexy-ai-chat isexy-payments-gate-status; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' -X OPTIONS "$SUPABASE_URL/functions/v1/$fn")
             echo "$fn OPTIONS → $code"
             [ "$code" = "200" ] || echo "::warning::$fn is not deployed yet (HTTP $code)."

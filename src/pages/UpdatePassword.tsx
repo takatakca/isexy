@@ -55,7 +55,7 @@ export default function UpdatePassword() {
 
     try {
       // Use admin API to update password for the user
-      const { data, error } = await supabase.functions.invoke("update-user-password", {
+      const { data, error } = await supabase.functions.invoke("isexy-update-user-password", {
         body: { email, password, otp },
       });
 

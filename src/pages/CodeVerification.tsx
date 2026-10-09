@@ -67,7 +67,7 @@ export default function CodeVerification() {
     if (countdown > 0 || !email) return;
     setIsResending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-email-otp", {
+      const { data, error } = await supabase.functions.invoke("isexy-send-email-otp", {
         body: { email, type },
       });
       if (error) throw error;

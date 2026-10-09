@@ -151,7 +151,7 @@ export default function PhoneLineBrowse() {
         setPlayingId(null);
         return;
       }
-      const { data, error } = await supabase.functions.invoke("get-voice-greeting-url", {
+      const { data, error } = await supabase.functions.invoke("isexy-get-voice-greeting-url", {
         body: { greeting_id: g.greeting_id },
       });
       if (error || !data?.signed_url) throw new Error(error?.message ?? "Cannot load audio");
@@ -217,7 +217,7 @@ export default function PhoneLineBrowse() {
     try {
       const path = `${user.id}/${replyTo.id}-${Date.now()}.webm`;
       const { error: upErr } = await supabase.storage
-        .from("voice-replies")
+        .from("isexy-voice-replies")
         .upload(path, recordedBlob, { contentType: "audio/webm", upsert: false });
       if (upErr) throw upErr;
 

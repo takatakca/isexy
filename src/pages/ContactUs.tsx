@@ -122,7 +122,7 @@ const ContactUs = () => {
 
       // Send confirmation email via edge function
       try {
-        const { error: emailError } = await supabase.functions.invoke("send-ticket-confirmation", {
+        const { error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
           body: {
             name: formData.name.trim(),
             email: formData.email.trim().toLowerCase(),

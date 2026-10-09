@@ -67,7 +67,7 @@ export const FileUpload = ({
         const fileName = `${uid}/${timestamp}-${randomStr}.${ext}`;
 
         const { data, error } = await supabase.storage
-          .from("ticket-attachments")
+          .from("isexy-ticket-attachments")
           .upload(fileName, file);
 
         if (error) {
@@ -78,7 +78,7 @@ export const FileUpload = ({
 
         // Generate a short-lived signed URL (bucket is private)
         const { data: signed } = await supabase.storage
-          .from("ticket-attachments")
+          .from("isexy-ticket-attachments")
           .createSignedUrl(data.path, 60 * 60 * 24 * 7);
 
         newFiles.push({

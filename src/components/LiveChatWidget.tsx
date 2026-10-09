@@ -42,7 +42,7 @@ export function LiveChatWidget() {
         "postgres_changes" as any,
         {
           event: "INSERT",
-          schema: "public",
+          schema: "isexy",
           table: "live_chat_messages",
           filter: `session_id=eq.${sessionId}`,
         },

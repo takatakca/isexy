@@ -95,7 +95,7 @@ export default function MySubscription() {
   useEffect(() => {
     const check = async () => {
       try {
-        const { data } = await supabase.functions.invoke("check-subscription");
+        const { data } = await supabase.functions.invoke("isexy-check-subscription");
         if (data?.subscribed && data?.tier && ["plus","gold","platinum"].includes(data.tier)) {
           setCurrentTier(data.tier as SubscriptionTier);
           setActiveTier(data.tier as SubscriptionTier);
@@ -114,7 +114,7 @@ export default function MySubscription() {
   const handleManage = async () => {
     setPortalLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
+      const { data, error } = await supabase.functions.invoke("isexy-customer-portal");
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
     } catch (e: any) {

@@ -36,7 +36,7 @@ async function loadDotEnv() {
 
 const fileEnv = await loadDotEnv();
 const env = (k) => process.env[k] || fileEnv[k] || "";
-const SITE_URL = (env("VITE_SITE_URL") || "https://isexy.lovable.app").replace(/\/+$/, "");
+const SITE_URL = (env("VITE_SITE_URL") || "https://isexy.onrender.com").replace(/\/+$/, "");
 const SUPABASE_URL = env("VITE_SUPABASE_URL");
 const SUPABASE_KEY = env("VITE_SUPABASE_PUBLISHABLE_KEY");
 const today = new Date().toISOString().slice(0, 10);
@@ -63,7 +63,7 @@ async function fetchArticles() {
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/knowledge_base?select=id,title,content,category,updated_at&is_published=eq.true&order=view_count.desc&limit=500`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: controller.signal },
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Accept-Profile": "isexy" }, signal: controller.signal },
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()).map((a) => ({ ...a, title: clean(a.title), content: clean(a.content) }));
