@@ -50,7 +50,7 @@ const getDefaultTemplate = (variables: Record<string, string>): { subject: strin
       <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #e11d48 0%, #be185d 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">💕 ISEXY</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">ISEXY</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Support Ticket Confirmation</p>
         </div>
         

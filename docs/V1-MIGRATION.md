@@ -62,7 +62,7 @@ every data call returns HTTP 406.
   harmless for it).
 - **SMS:** Authentication → Providers → Phone. Confirm the SMS provider
   (Twilio / MessageBird / Vonage) delivers to **Cuba (+53)** and Canada (+1),
-  and that rate limits suit a dating launch.
+  and that rate limits suit a public launch.
 - **Google:** nothing ISEXY-specific beyond the redirect URL already added.
   When `isexy.ca` is live, add `https://isexy.ca/**` to the redirect URLs too.
 
@@ -120,7 +120,7 @@ are provided by Supabase.
 | `ISEXY_STRIPE_PRICE_{PHONE_20,PHONE_150,PHONE_450,VIDEO_20,VIDEO_150,VIDEO_450,CHAT_1MO}` | minute packs (7) | optional: overrides the price ids built into `isexy-create-minute-purchase` (needed if ISEXY uses a different Stripe account than before) |
 | `ISEXY_RESEND_API_KEY`, `ISEXY_RESEND_FROM` | notification emails | sender on a domain verified in Resend, e.g. `ISEXY <no-reply@isexy.ca>`; falls back to V1's `RESEND_API_KEY` |
 | `ISEXY_CRON_SECRET` | `isexy-subscription-resets` | ≥ 16 random characters |
-| `ISEXY_TWILIO_ACCOUNT_SID`, `ISEXY_TWILIO_AUTH_TOKEN`, `ISEXY_TWILIO_PHONE_LINE_NUMBER` | PhoneLine voice dating | Twilio webhooks verify `X-Twilio-Signature` with this token |
+| `ISEXY_TWILIO_ACCOUNT_SID`, `ISEXY_TWILIO_AUTH_TOKEN`, `ISEXY_TWILIO_PHONE_LINE_NUMBER` | PhoneLine voice messages | Twilio webhooks verify `X-Twilio-Signature` with this token |
 | `ISEXY_WHATSAPP_API_TOKEN`, `ISEXY_WHATSAPP_BUSINESS_TOKEN`, `ISEXY_WHATSAPP_PHONE_NUMBER_ID` | WhatsApp codes and call alerts | |
 | `ISEXY_VAPID_PUBLIC_KEY`, `ISEXY_VAPID_PRIVATE_KEY` | web push | |
 | `ISEXY_SEED_PROFILES_ENABLED` | never in production | admin demo seeding |
@@ -201,7 +201,7 @@ and GitHub variable `ISEXY_SITE_URL`) and `ISEXY_APP_URL`.
 4. Open the Concierge popup and ask a question (Claude answers, Help Center
    sources shown).
 5. Stripe test mode: buy a boost, then check `isexy.stripe_webhook_events`.
-6. `select * from isexy.schema_migrations;` lists `0001_isexy_baseline` and
-   `0002_takatak_identity`.
+6. `select * from isexy.schema_migrations;` lists `0001_isexy_baseline`,
+   `0002_takatak_identity` and `0003_social_network_wording`.
 7. takatak.ca still works as before (sign in, its own data): V1's `public`
    schema was never changed.

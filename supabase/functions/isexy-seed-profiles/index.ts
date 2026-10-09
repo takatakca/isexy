@@ -117,25 +117,25 @@ const interests = [
 
 // Bios
 const maleBios = [
-  "Cubano de corazón. Me encanta la música y bailar salsa. Busco alguien especial para compartir la vida.",
-  "Trabajo como músico. La música es mi pasión. Busco una mujer sincera y cariñosa.",
+  "Cubano de corazón. Me encanta la música y bailar salsa. Busco buenas amistades y gente con quien conversar.",
+  "Trabajo como músico. La música es mi pasión. Me gusta conocer gente nueva y compartir buenas charlas.",
   "Soy un hombre sencillo que valora la familia y la honestidad. Me gusta el béisbol y la buena conversación.",
-  "Artista cubano buscando su musa. Creo en el amor verdadero y las conexiones genuinas.",
+  "Artista cubano. Me gusta hablar de arte, música y cultura con gente de todas partes.",
   "Me fascina la cultura canadiense. Quiero conocer a alguien que me enseñe sobre su país mientras comparto mi hermosa Cuba.",
-  "Ingeniero de profesión, romántico de corazón. Busco una relación seria y duradera.",
-  "La vida es mejor acompañado. Soy un hombre fiel, trabajador y con muchos sueños por cumplir.",
-  "Amante de la naturaleza y las playas cubanas. Busco a alguien que disfrute de las cosas simples de la vida.",
+  "Ingeniero de profesión, curioso por naturaleza. Me gusta aprender idiomas y hacer nuevos amigos.",
+  "La vida es mejor con buenos amigos. Soy trabajador, alegre y con muchos sueños por cumplir.",
+  "Amante de la naturaleza y las playas cubanas. Busco gente que disfrute de las cosas simples de la vida.",
 ];
 
 const femaleBios = [
-  "Cubana alegre y cariñosa. Me encanta cocinar y bailar. Busco a alguien especial con quien compartir mi vida.",
-  "Soy una mujer sincera y romántica. Creo en el amor verdadero y las relaciones duraderas.",
-  "Trabajo como enfermera. Me apasiona ayudar a los demás. Busco un hombre serio y responsable.",
-  "Me encanta la música cubana y pasar tiempo con mi familia. Busco a alguien que valore estas cosas.",
-  "Soy creativa y soñadora. Me gustaría conocer nuevas culturas y encontrar el amor.",
+  "Cubana alegre y conversadora. Me encanta cocinar y bailar. Busco nuevas amistades para charlar y compartir.",
+  "Soy una mujer sincera y sociable. Me gusta conocer gente nueva y las buenas conversaciones.",
+  "Trabajo como enfermera. Me apasiona ayudar a los demás. Me gusta hablar con gente de otros países.",
+  "Me encanta la música cubana y pasar tiempo con mi familia. Busco amigos que valoren estas cosas.",
+  "Soy creativa y soñadora. Me gustaría conocer nuevas culturas y hacer amigos en Canadá.",
   "Mujer cubana tradicional pero con mente abierta. Valoro la honestidad y la comunicación.",
-  "La felicidad está en las pequeñas cosas. Busco a alguien para crear memorias juntos.",
-  "Apasionada de la vida y el arte. Creo que el amor no tiene fronteras.",
+  "La felicidad está en las pequeñas cosas. Busco gente con quien conversar y reír.",
+  "Apasionada de la vida y el arte. Creo que la amistad no tiene fronteras.",
 ];
 
 function getRandomElement<T>(arr: T[]): T {
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
         gender: isMale ? "Male" : "Female",
         sexual_orientation: "Straight",
         interested_in: isMale ? ["Women"] : ["Men"],
-        looking_for: getRandomElement(["Long-term partner", "Serious dating", "Marriage", "Relationship"]),
+        looking_for: getRandomElement(["New friends", "Someone to talk to", "Language exchange", "People to do things with"]),
         bio: isMale ? getRandomElement(maleBios) : getRandomElement(femaleBios),
         city: city.name,
         country: "Cuba",

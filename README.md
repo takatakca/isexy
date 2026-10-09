@@ -1,8 +1,12 @@
 # ISEXY
 
-Premium dating for Canada 🇨🇦 and Cuba 🇨🇺 — swipe matching, chat with live
-translation, video calls, PhoneLine voice dating, gifts and Cuban rewards, and
-an AI concierge. A GROUPE TAKATAK app: it runs on **TAKATAK V1** (Supabase project
+A Canadian social network for adults (18+): member profiles, swipes to find
+people to talk with and become friends, chat with live translation, phone
+calls, webcam video calls and PhoneLine voice messages, plus an AI concierge.
+Launching in Canada (English and French). Positioning and what changed:
+[`docs/REPOSITIONING.md`](docs/REPOSITIONING.md).
+
+A GROUPE TAKATAK app: it runs on **TAKATAK V1** (Supabase project
 `pcjfahhlozsseqqevimi`, shared with takatak.ca) in its own `isexy` schema, and
 members sign in with **Takatak Auth**. Live at https://isexy.onrender.com
 (Render, auto-deployed from `main`).

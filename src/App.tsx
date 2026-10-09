@@ -191,7 +191,8 @@ const App = () => (
               <Route path="/safety" element={<Safety />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
-              <Route path="/love-stories" element={<LoveStories />} />
+              <Route path="/community-stories" element={<LoveStories />} />
+              <Route path="/love-stories" element={<Navigate to="/community-stories" replace />} />
               <Route path="/about" element={<About />} />
               <Route path="/news" element={<News />} />
               <Route path="/matches-list" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
@@ -238,9 +239,11 @@ const App = () => (
               <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
               <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
               <Route path="/photo-verification" element={<PhotoVerification />} />
-              <Route path="/double-date" element={<DoubleDate />} />
+              <Route path="/double-hangout" element={<DoubleDate />} />
+              <Route path="/double-date" element={<Navigate to="/double-hangout" replace />} />
               <Route path="/qa-events" element={<QAEvents />} />
-              <Route path="/matchmaker" element={<Matchmaker />} />
+              <Route path="/introductions" element={<Matchmaker />} />
+              <Route path="/matchmaker" element={<Navigate to="/introductions" replace />} />
               <Route path="/loyalty-rewards" element={<LoyaltyRewards />} />
               <Route path="/cuban-rewards" element={<CubanRewards />} />
               <Route path="/cuban-cashout" element={<CubanCashout />} />
@@ -249,7 +252,8 @@ const App = () => (
               <Route path="/reset-password" element={<Navigate to="/auth" replace />} />
               <Route path="/update-password" element={<Navigate to="/auth" replace />} />
               <Route path="/video-call/:matchId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
-              <Route path="/dating-regulations" element={<DatingRegulations />} />
+              <Route path="/regulations" element={<DatingRegulations />} />
+              <Route path="/dating-regulations" element={<Navigate to="/regulations" replace />} />
               <Route path="/buy-credits" element={<ProtectedRoute><BuyCredits /></ProtectedRoute>} />
               <Route path="/buy-minutes" element={<ProtectedRoute><BuyMinutes /></ProtectedRoute>} />
               <Route path="/group-chat/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />

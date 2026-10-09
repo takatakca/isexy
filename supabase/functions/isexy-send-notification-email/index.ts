@@ -106,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (type) {
       case "new_match":
-        subject = `🎉 You have a new match on ISEXY!`;
+        subject = `👋 You have a new match on ISEXY — say hi!`;
         htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -123,16 +123,16 @@ const handler = async (req: Request): Promise<Response> => {
             <body>
               <div class="container">
                 <div class="header">
-                  <div class="emoji">💕</div>
-                  <h1>It's a Match!</h1>
+                  <div class="emoji">👋</div>
+                  <h1>Someone wants to talk!</h1>
                 </div>
                 <div class="content">
                   <p style="font-size: 18px;">Hey ${firstName}!</p>
-                  <p>Great news! You and <strong>${data.matchName || "someone special"}</strong> have liked each other. Start a conversation now!</p>
+                  <p>Great news! You and <strong>${data.matchName || "a new member"}</strong> both want to talk. Start a conversation now!</p>
                   <center>
                     <a href="https://isexy.ca/matches" class="button">Say Hello →</a>
                   </center>
-                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Don't keep them waiting! The best connections start with a simple hello.</p>
+                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Don't keep them waiting! Every new friendship starts with a simple hello.</p>
                 </div>
               </div>
             </body>
@@ -199,11 +199,11 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
                 <div class="content">
                   <p style="font-size: 18px;">Wow, ${firstName}!</p>
-                  <p>Someone really stands out from the crowd - they Super Liked your profile! This means they're <em>really</em> interested in getting to know you.</p>
+                  <p>Someone really stands out from the crowd - they Super Liked your profile! This means they'd <em>really</em> like to get to know you.</p>
                   <center>
                     <a href="https://isexy.ca/likes" class="button">See Who →</a>
                   </center>
-                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Super Likes are 3x more likely to lead to a match!</p>
+                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Super Likes are 3x more likely to start a conversation!</p>
                 </div>
               </div>
             </body>
@@ -232,11 +232,11 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
                 <div class="content">
                   <p style="font-size: 18px;">Hey ${firstName}!</p>
-                  <p><strong>${data.fromName || data.senderName || "Your match"}</strong> wants to video chat with you! Don't miss the chance to connect face-to-face.</p>
+                  <p><strong>${data.fromName || data.senderName || "A member"}</strong> wants to video chat with you! Don't miss the chance to connect face-to-face.</p>
                   <center>
                     <a href="https://isexy.ca/matches" class="button">Open App →</a>
                   </center>
-                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Video calls help you build real connections faster!</p>
+                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Video calls are the easiest way to get to know someone new!</p>
                 </div>
               </div>
             </body>
@@ -264,11 +264,11 @@ const handler = async (req: Request): Promise<Response> => {
               <div class="container">
                 <div class="header">
                   <h1 style="font-size: 32px;">🔥 ISEXY</h1>
-                  <p style="font-size: 20px; margin: 0;">¡Bienvenido!</p>
+                  <p style="font-size: 20px; margin: 0;">Welcome · Bienvenue!</p>
                 </div>
                 <div class="content">
                   <p style="font-size: 18px;">Hello ${firstName}! 👋</p>
-                  <p>Welcome to ISEXY - where authentic Cuban connections meet the world!</p>
+                  <p>Welcome to ISEXY — the Canadian social network for adults to meet new people, make friends, chat, call and video chat!</p>
                   <div class="tips">
                     <p style="font-weight: bold; margin-bottom: 10px;">Quick tips to get started:</p>
                     <div class="tip">📸 Add at least 3 photos to boost your visibility</div>
@@ -277,9 +277,9 @@ const handler = async (req: Request): Promise<Response> => {
                     <div class="tip">✅ Verify your profile for more trust</div>
                   </div>
                   <center>
-                    <a href="https://isexy.ca/discover" class="button">Start Matching →</a>
+                    <a href="https://isexy.ca/discover" class="button">Start Meeting People →</a>
                   </center>
-                  <p style="color: #666; font-size: 14px; margin-top: 30px; text-align: center;">Happy matching! 💕</p>
+                  <p style="color: #666; font-size: 14px; margin-top: 30px; text-align: center;">Have fun meeting new people! 👋</p>
                 </div>
               </div>
             </body>

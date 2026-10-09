@@ -100,7 +100,7 @@ export function ProductAnalyticsPanel() {
           </div>
 
           <section className="rounded-2xl border border-border bg-card p-4">
-            <h3 className="font-semibold text-foreground">Dating funnel</h3>
+            <h3 className="font-semibold text-foreground">Connection funnel</h3>
             <p className="text-xs text-muted-foreground mb-3">Sessions reaching each step · % of visits</p>
             {funnel[0]?.sessions ? (
               <div className="h-[260px]" role="img" aria-label="Funnel of sessions by step">
