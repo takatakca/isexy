@@ -9,7 +9,7 @@
 # secrets exist (GitHub → Settings → Secrets and variables → Actions):
 #   1. ISEXY database: scripts/isexy/migrate.sh dry run, then --apply   (secret ISEXY_DB_URL)
 #   2. ISEXY edge functions: deploy each isexy-* function by name        (secret SUPABASE_ACCESS_TOKEN)
-#   3. Web: Render auto-deploys main; optional SSH publish                (ISEXY_DEPLOY_* secrets)
+#   3. Web: Coolify (nixpacks.toml) and Render (fallback) auto-deploy main; optional SSH publish (ISEXY_DEPLOY_* secrets)
 #   4. Smoke test the live site
 # Never `supabase db push` here: V1's migration history belongs to takatak-v1.
 # See docs/V1-MIGRATION.md.
@@ -119,6 +119,11 @@ jobs:
         run: |
           set -euo pipefail
           fail=0
+          for lock in bun.lockb bun.lock yarn.lock pnpm-lock.yaml; do
+            if [ -e "$lock" ]; then
+              echo "::error::$lock found: package-lock.json is the only lockfile (Coolify/Nixpacks would switch package manager)"; fail=1
+            fi
+          done
           if [ -d supabase/migrations ]; then
             echo "::error::supabase/migrations must not exist: ISEXY migrations live in supabase/isexy-migrations and run through scripts/isexy/migrate.sh"; fail=1
           fi
@@ -191,7 +196,7 @@ jobs:
           done
 
   deploy-web:
-    name: Publish website (optional SSH host; Render deploys main itself)
+    name: Publish website (optional SSH host; Coolify and Render deploy main themselves)
     needs: [verify, deploy-supabase]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -212,7 +217,7 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=SSH publish skipped::Render (isexy.onrender.com) auto-deploys main. Add ISEXY_DEPLOY_* secrets only to also publish to an SSH host."
+            echo "::notice title=SSH publish skipped::Coolify (coolify.takatak.ca, project ISEXY) and Render (fallback) auto-deploy main. Add ISEXY_DEPLOY_* secrets only to also publish to an SSH host."
           fi
 
       - uses: actions/checkout@v4

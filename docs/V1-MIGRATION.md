@@ -39,7 +39,8 @@ policies named `isexy: %`, delete the `isexy-*` functions and `ISEXY_*` secrets.
 
 ## 2. Already done in the dashboards (per the owner)
 
-- Render: rewrite `/*` → `/index.html` (`/auth`, `/discover` return 200).
+- Render (fallback host): rewrite `/*` → `/index.html` (`/auth`, `/discover` return 200).
+- Coolify (main host): project ISEXY created, Nixpacks static site, publish `/dist` (first build failed on `main` because of `bun.lockb`; see 3.9).
 - V1 Auth → URL configuration: `https://isexy.onrender.com/**` added to redirect URLs.
 - V1 Auth providers: Email, Phone (OTP) and Google enabled.
 
@@ -171,14 +172,50 @@ V1 dashboard → Integrations → **Cron** → new job, daily, *HTTP request*:
 `POST https://pcjfahhlozsseqqevimi.supabase.co/functions/v1/isexy-subscription-resets`
 with header `x-cron-secret: <ISEXY_CRON_SECRET>`. Name it `isexy-subscription-resets`.
 
-### 3.9 Website (Render)
+### 3.9 Website: Coolify (main), Render (fallback)
 
-Nothing required: Render builds `main` with the public values in `.env`
-(V1 URL, anon key, `VITE_SITE_URL=https://isexy.onrender.com`). To override,
-set the same `VITE_*` names in Render → isexy → Environment. For calls from Cuba,
-add a TURN server: `VITE_TURN_URLS`, `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL`.
-When `isexy.ca` points to Render, set `VITE_SITE_URL=https://isexy.ca` (Render
-and GitHub variable `ISEXY_SITE_URL`) and `ISEXY_APP_URL`.
+**Coolify** (coolify.takatak.ca, project **ISEXY**) is the hosting target.
+MochaHost is no longer used.
+
+| Setting | Value |
+| --- | --- |
+| Source | GitHub `takatakca/isexy`, branch `main` |
+| Build pack | Nixpacks, **"Is it a static site?" on** |
+| Publish directory | `/dist` |
+| Install / build | taken from `nixpacks.toml`: Node 22, `npm ci`, `npm run build` (no bun, no deno) |
+| Environment (optional) | `VITE_SITE_URL` = the public URL (default in `.env`: `https://isexy.onrender.com`); `VITE_TURN_URLS`, `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` for calls from strict mobile networks |
+
+Why `nixpacks.toml` exists: `package-lock.json` is the only lockfile, but
+Nixpacks auto-detection is unreliable for this repo. The Lovable-era `bun.lockb`
+made Coolify pick bun (npm missing, exit code 127), and without that file
+Nixpacks picks **Deno** because of `supabase/functions/`. Checked with the
+Nixpacks CLI plan: without the file, deno and no install step; with it,
+`nodejs_22` + npm, `npm ci`, `npm run build`. CI fails if `bun.lockb`,
+`bun.lock`, `yarn.lock` or `pnpm-lock.yaml` comes back.
+
+**The first Coolify build failed because it builds `main`**, which still has
+`bun.lockb` until this PR is merged. To test before merging, point the Coolify
+app at branch `claude/zealous-brown-kv2hmx` once, then back to `main`.
+
+After the first successful deploy:
+1. Open `<coolify domain>/auth` and `<coolify domain>/discover` directly; both
+   must return the app (HTTP 200), not a 404. The build also writes
+   `dist/404.html` as the app shell. If deep links still 404, enable Coolify's
+   SPA option for the static site, or add an nginx `try_files $uri $uri/ /index.html;`
+   rule.
+2. Add the Coolify domain to V1 → Authentication → URL configuration → redirect
+   URLs (`https://<domain>/**`), the same way `https://isexy.onrender.com/**` was.
+3. Set `VITE_SITE_URL` (Coolify environment and the GitHub variable
+   `ISEXY_SITE_URL`) and the `ISEXY_APP_URL` function secret to that domain,
+   so canonical URLs, the sitemap and Stripe return links point to it.
+
+**Render** (`https://isexy.onrender.com`, static site `isexy`, rewrite
+`/*` → `/index.html`) stays as a fallback for now. It also auto-deploys `main`.
+Remove it once Coolify is confirmed.
+
+When `isexy.ca` is pointed at Coolify, set `VITE_SITE_URL=https://isexy.ca`,
+`ISEXY_SITE_URL` and `ISEXY_APP_URL` the same way, and add
+`https://isexy.ca/**` to the V1 redirect URLs.
 
 ### 3.10 Clean-up
 

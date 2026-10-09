@@ -8,8 +8,9 @@ Launching in Canada (English and French). Positioning and what changed:
 
 A GROUPE TAKATAK app: it runs on **TAKATAK V1** (Supabase project
 `pcjfahhlozsseqqevimi`, shared with takatak.ca) in its own `isexy` schema, and
-members sign in with **Takatak Auth**. Live at https://isexy.onrender.com
-(Render, auto-deployed from `main`).
+members sign in with **Takatak Auth**. Hosted on **Coolify** (coolify.takatak.ca,
+project ISEXY, auto-deployed from `main`); https://isexy.onrender.com (Render) is
+the fallback for now.
 
 ## Stack
 
@@ -20,7 +21,7 @@ members sign in with **Takatak Auth**. Live at https://isexy.onrender.com
 | Identity | Takatak Auth on V1 (shared `auth.users`): Google, email code, SMS code. `isexy.profiles.id = user_id = auth.users.id` |
 | AI | `isexy-ai-chat` / `isexy-translate-message` → Claude (Anthropic API), grounded in `isexy.knowledge_base` |
 | Payments | Stripe, server-side only (checkout sessions + webhook in edge functions) |
-| Hosting | Render static site `isexy` (rewrite `/*` → `/index.html`) |
+| Hosting | Coolify (Nixpacks static site, `/dist`, npm only via `nixpacks.toml`); Render static site `isexy` as fallback |
 
 ## Run locally
 
@@ -152,8 +153,8 @@ never `supabase db push` (V1's migration history belongs to takatak-v1).
 of every `isexy-*` function, the migrations on a Postgres stand-in of V1 (with a
 guard proving V1's objects are unchanged) and the V1 safety rules. On `main`,
 it applies migrations with `migrate.sh` and deploys each `isexy-*` function by
-name, once the `ISEXY_DB_URL` / `SUPABASE_ACCESS_TOKEN` secrets exist. Render
-deploys the website itself. Details: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+name, once the `ISEXY_DB_URL` / `SUPABASE_ACCESS_TOKEN` secrets exist. Coolify
+(and Render, fallback) deploy the website themselves. Details: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Stripe Subscription Setup (admin only)
 

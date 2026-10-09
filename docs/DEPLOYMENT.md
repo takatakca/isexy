@@ -1,7 +1,9 @@
 # ISEXY deployment
 
 ISEXY runs on **TAKATAK V1** (Supabase `pcjfahhlozsseqqevimi`, `isexy` schema,
-`isexy-*` edge functions) and is hosted on **Render** (`https://isexy.onrender.com`).
+`isexy-*` edge functions) and is hosted on **Coolify** (coolify.takatak.ca, project ISEXY;
+Nixpacks static site from `/dist`, configured by `nixpacks.toml`), with **Render**
+(`https://isexy.onrender.com`) kept as a fallback for now.
 First-time setup and every human step: [`V1-MIGRATION.md`](V1-MIGRATION.md).
 
 `.github/workflows/ci-cd.yml` runs on every push and pull request:
@@ -12,7 +14,7 @@ First-time setup and every human step: [`V1-MIGRATION.md`](V1-MIGRATION.md).
 | **ISEXY migrations on a V1 stand-in** | Postgres 16 + `scripts/isexy/test/v1-mock.sql` (Supabase roles, auth, storage, realtime, plus V1 lookalike objects in `public`) → `migrate.sh` dry run → `--apply` → re-run is a no-op; the guard fails the job if any V1 object changes | always |
 | **V1 safety rules** | fails on `supabase/migrations/`, `supabase db push`, a bare `supabase functions deploy`, a function not named `isexy-*`, `public.*` in ISEXY migrations, or any Lovable dependency | always |
 | **Deploy ISEXY to TAKATAK V1** | `migrate.sh` dry run on V1 → `migrate.sh --apply` (isexy schema only) → deploy each `isexy-*` function by name | push to `main`; migrations when `ISEXY_DB_URL` exists, functions when `SUPABASE_ACCESS_TOKEN` exists; waits for the `production` environment's reviewers |
-| **Publish website** | Render deploys `main` on its own. Optional: rsync `dist/` to an SSH host with an atomic swap | SSH part only when all `ISEXY_DEPLOY_*` secrets exist |
+| **Publish website** | Coolify (and Render, fallback) deploy `main` on their own. Optional: rsync `dist/` to an SSH host with an atomic swap | SSH part only when all `ISEXY_DEPLOY_*` secrets exist |
 | **Smoke test** | `/`, `/auth`, `/discover`, `/knowledge-base`, `/faq` must return 200; warns if `isexy-*` functions are missing | push to `main` |
 
 Stages without their secrets are skipped with a notice, so the pipeline stays
@@ -60,7 +62,7 @@ the top. Never edit a file that was already applied (checksummed).
 
 The app is a single-page app: the host must serve `index.html` for unknown paths.
 Public pages also exist as `dist/<page>/index.html` with pre-rendered meta tags.
-On Apache (cPanel/MochaHost) add to the web root `.htaccess`:
+On Coolify see `V1-MIGRATION.md` › 3.9. On an Apache host (if ever used again) add to the web root `.htaccess`:
 
 ```apache
 RewriteEngine On
@@ -86,7 +88,7 @@ Releases live in `<ISEXY_DEPLOY_PATH>.releases/<sha>`. Point the symlink back:
 ln -sfn <path>.releases/<previous-sha> <path>.next && mv -Tf <path>.next <path>
 ```
 
-Website on Render: Render → isexy → Deploys → *Rollback* to a previous deploy.
+Website: Coolify → ISEXY → Deployments → redeploy a previous one (Render fallback: Deploys → *Rollback*).
 
 Database migrations are forward-only: fix forward with a new
 `supabase/isexy-migrations/000N_*.sql`. Removing ISEXY entirely is described in
