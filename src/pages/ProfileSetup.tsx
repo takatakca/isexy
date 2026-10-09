@@ -21,7 +21,7 @@ const smokingOptions = ["Social smoker", "Smoker when drinking", "Non-smoker", "
 const workoutOptions = ["Everyday", "Often", "Sometimes", "Never"];
 const petOptions = ["Dog", "Cat", "Bird", "Fish", "Reptile", "Other", "No pets"];
 const communicationOptions = ["Big time texter", "Phone caller", "Video chatter", "Bad texter", "Better in person"];
-const loveLanguageOptions = ["Thoughtful gestures", "Presents", "Touch", "Compliments", "Time together"];
+const loveLanguageOptions = ["Deep conversations", "Quality time", "Shared activities", "Helping each other out", "Humour and banter"];
 const educationOptions = ["High School", "In College", "Bachelors", "In Grad School", "Masters", "PhD"];
 const interestCategories = {
   "🎨 Creativity": ["Freelancing", "Photography", "Choir", "Cosplay", "Content Creation", "Vintage fashion", "Investing", "Singing", "Poetry", "Sneakers", "Language Exchange", "Writing", "Literature", "NFTs", "Tattoos", "Painting", "Upcycling", "Entrepreneurship", "Acapella", "Musical Instrument", "Musical Writing", "Dancing", "Art", "Real Estate"],
@@ -248,7 +248,7 @@ export default function ProfileSetup() {
             </div>
 
             <h2 className="text-xl font-bold text-foreground mb-4">
-              Who are you interested in?
+              Show me
             </h2>
             <div className="flex flex-wrap gap-2 mb-4">
               {["Women", "Men", "Everyone"].map((option) => {
@@ -306,7 +306,7 @@ export default function ProfileSetup() {
               Share more about yourself
             </h1>
             <p className="text-muted-foreground mb-6">
-              Write a bio and a prompt to help your profile stand out and spark conversations.
+              Write a bio and a prompt to help your profile stand out and start conversations.
             </p>
             
             <div className="space-y-4">
@@ -330,7 +330,7 @@ export default function ProfileSetup() {
                 <Lightbulb className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm">
                   Adding a short intro about you could lead to{" "}
-                  <span className="text-primary font-semibold">25% more matches</span>
+                  <span className="text-primary font-semibold">more conversations</span>
                 </p>
               </div>
             </div>
@@ -413,7 +413,7 @@ export default function ProfileSetup() {
               
               <ChipSelector
                 icon={<Heart className="w-5 h-5" />}
-                title="How do you receive love?"
+                title="What's your friendship style?"
                 options={loveLanguageOptions}
                 selected={loveLanguage}
                 onChange={(v) => setLoveLanguage(v as string)}
@@ -439,7 +439,7 @@ export default function ProfileSetup() {
               What are you into?
             </h1>
             <p className="text-muted-foreground mb-6">
-              Add up to 10 interests to your profile to help you find people who share what you love.
+              Add up to 10 interests to your profile to help you find people who share your interests.
             </p>
             
             <div className="space-y-6 pb-4">
@@ -488,7 +488,7 @@ export default function ProfileSetup() {
               So, are you from around here?
             </h1>
             <p className="text-muted-foreground mb-8 max-w-xs">
-              Set your location to see who's in your neighborhood or beyond. You won't be able to match with people otherwise.
+              Set your location to see who's in your neighbourhood or beyond. You won't be able to match with people otherwise.
             </p>
             
             <AuthButton

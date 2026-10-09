@@ -135,7 +135,7 @@ export default function AdminPaymentTests() {
       chatSubs: newCounts.chatSubs > 0,
       duplicate: evs.some(e => e.processing_status === "skipped_duplicate"),
     });
-    const { data: gateData } = await supabase.functions.invoke("payments-gate-status");
+    const { data: gateData } = await supabase.functions.invoke("isexy-payments-gate-status");
     if (gateData) setGate(gateData as any);
     setRefreshing(false);
   };

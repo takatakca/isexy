@@ -2,9 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { friendlyAuthError } from "@/lib/authErrors";
 import type { Json } from "@/integrations/supabase/types";
-import { track } from "@/lib/analytics";
 
 interface Profile {
   id: string;
@@ -60,26 +58,8 @@ interface AuthContextType {
   profile: Profile | null;
   photoCount: number;
   loading: boolean;
-  signUp: (email: string, password: string, options?: AuthActionOptions) => Promise<{ error: Error | null; needsConfirmation: boolean }>;
-  signIn: (email: string, password: string, options?: AuthActionOptions) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-}
-
-interface AuthActionOptions {
-  /** Skip the built-in toasts so the caller can render its own feedback. */
-  silent?: boolean;
-}
-
-/**
- * Best-effort projection of this ISEXY account into the TAKATAK master
- * identity. Runs server-side in the takatak-bridge edge function; failures
- * never block the user.
- */
-function syncTakatakIdentity() {
-  supabase.functions
-    .invoke("takatak-bridge", { body: { action: "sync" } })
-    .catch(() => undefined);
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -183,49 +163,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, options: AuthActionOptions = {}) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/profile-setup`,
-      },
-    });
-
-    if (error) {
-      const friendly = new Error(friendlyAuthError(error.message));
-      if (!options.silent) toast.error(friendly.message);
-      return { error: friendly, needsConfirmation: false };
-    }
-
-    // When email confirmation is enabled Supabase returns a user but no session.
-    const needsConfirmation = !data.session;
-    if (!options.silent) {
-      toast.success(needsConfirmation ? "Check your inbox to confirm your email." : "Account created — welcome to ISEXY!");
-    }
-    track("sign_up", { method: "email", confirmation_required: needsConfirmation });
-    if (data.session) syncTakatakIdentity();
-    return { error: null, needsConfirmation };
-  };
-
-  const signIn = async (email: string, password: string, options: AuthActionOptions = {}) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    if (error) {
-      const friendly = new Error(friendlyAuthError(error.message));
-      if (!options.silent) toast.error(friendly.message);
-      return { error: friendly };
-    }
-
-    if (!options.silent) toast.success("Welcome back!");
-    track("login", { method: "email" });
-    syncTakatakIdentity();
-    return { error: null };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
@@ -241,8 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         photoCount,
         loading,
-        signUp,
-        signIn,
         signOut,
         refreshProfile,
       }}

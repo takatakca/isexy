@@ -15,7 +15,7 @@ const safetyTips = [
   {
     icon: Shield,
     title: "Protect your personal information",
-    description: "Never share personal information like your social security number, home or work address, daily routine, or banking details with people you don't know well.",
+    description: "Never share personal information like your Social Insurance Number (SIN), home or work address, daily routine, or banking details with people you don't know well.",
   },
   {
     icon: Phone,
@@ -24,8 +24,8 @@ const safetyTips = [
   },
   {
     icon: AlertTriangle,
-    title: "Be wary of long distance relationships",
-    description: "Watch out for scammers who claim to be from your country but stuck somewhere else, especially if they ask for financial help to return home.",
+    title: "Be wary of people you've never met who need help",
+    description: "Watch out for scammers who claim to be from your country but stuck somewhere else, especially if they ask for financial help to return home. Never invest money or buy gift cards or crypto because someone you met online asked you to.",
   },
   {
     icon: Users,
@@ -35,7 +35,7 @@ const safetyTips = [
   {
     icon: MapPin,
     title: "Meet in public places",
-    description: "Meet in populated, public places—never at your home, your date's home, or any private location. If your date pressures you, end the date immediately.",
+    description: "If you decide to meet someone from ISEXY, meet in a populated, public place—never at your home, their home, or any private location. If they pressure you, leave immediately.",
   },
   {
     icon: Eye,
@@ -45,7 +45,7 @@ const safetyTips = [
   {
     icon: Smartphone,
     title: "Keep your phone charged",
-    description: "Make sure your phone is fully charged before going on a date. Have emergency contacts readily accessible and consider carrying a portable charger.",
+    description: "Make sure your phone is fully charged before meeting someone new. Have emergency contacts readily accessible and consider carrying a portable charger.",
   },
   {
     icon: Lock,
@@ -55,7 +55,7 @@ const safetyTips = [
   {
     icon: Heart,
     title: "Trust your instincts",
-    description: "If something feels wrong, it probably is. Don't feel obligated to continue a date or conversation that makes you uncomfortable. Your safety comes first.",
+    description: "If something feels wrong, it probably is. Don't feel obligated to continue a meetup, call or conversation that makes you uncomfortable. Your safety comes first.",
   },
 ];
 
@@ -94,20 +94,21 @@ const reportingReasons = [
 
 const emergencyResources = [
   {
+    country: "Canada",
+    resources: [
+      { name: "Canadian Anti-Fraud Centre", phone: "1-888-495-8501", available: "Mon-Fri" },
+      { name: "Victim Services Directory", phone: "1-866-863-0511", available: "24/7" },
+      { name: "Crisis Services Canada", phone: "1-833-456-4566", available: "24/7" },
+      { name: "Kids Help Phone", phone: "1-800-668-6868", available: "24/7" },
+      { name: "Emergency Services", phone: "911", available: "24/7" },
+    ],
+  },
+  {
     country: "United States",
     resources: [
       { name: "National Domestic Violence Hotline", phone: "1-800-799-7233", available: "24/7" },
       { name: "RAINN Sexual Assault Hotline", phone: "1-800-656-4673", available: "24/7" },
       { name: "National Suicide Prevention Lifeline", phone: "988", available: "24/7" },
-      { name: "Emergency Services", phone: "911", available: "24/7" },
-    ],
-  },
-  {
-    country: "Canada",
-    resources: [
-      { name: "Victim Services Directory", phone: "1-866-863-0511", available: "24/7" },
-      { name: "Crisis Services Canada", phone: "1-833-456-4566", available: "24/7" },
-      { name: "Kids Help Phone", phone: "1-800-668-6868", available: "24/7" },
       { name: "Emergency Services", phone: "911", available: "24/7" },
     ],
   },
@@ -133,7 +134,7 @@ const safetyFeatures = [
   {
     icon: BadgeCheck,
     title: "Photo Verification",
-    description: "Our Face Check™ technology helps confirm users are real and match their profile photos, reducing catfishing and fake profiles.",
+    description: "Profile verification helps confirm members are real and match their profile photos, reducing catfishing and fake profiles.",
   },
   {
     icon: Flag,
@@ -231,7 +232,7 @@ export default function Safety() {
 
       {/* Safety Tips */}
       <div className="px-4 py-6 bg-muted/30">
-        <h3 className="text-lg font-bold text-foreground mb-2">Dating Safety Tips</h3>
+        <h3 className="text-lg font-bold text-foreground mb-2">Safety Tips</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Follow these guidelines to stay safe while using ISEXY
         </p>

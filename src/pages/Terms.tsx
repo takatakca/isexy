@@ -32,7 +32,7 @@ export default function Terms() {
               <div>
                 <h3 className="font-bold text-foreground mb-2">Important Notice</h3>
                 <p className="text-sm text-muted-foreground">
-                  PLEASE READ THESE TERMS CAREFULLY BEFORE USING OUR SERVICES. BY ACCESSING OR USING CUBADATE, YOU AGREE TO BE BOUND BY THESE TERMS. IF YOU DO NOT AGREE TO ALL OF THESE TERMS, DO NOT USE OUR SERVICES.
+                  PLEASE READ THESE TERMS CAREFULLY BEFORE USING OUR SERVICES. BY ACCESSING OR USING ISEXY, YOU AGREE TO BE BOUND BY THESE TERMS. IF YOU DO NOT AGREE TO ALL OF THESE TERMS, DO NOT USE OUR SERVICES.
                 </p>
               </div>
             </div>
@@ -87,7 +87,7 @@ export default function Terms() {
               1. Introduction & Acceptance
             </h2>
             <p className="text-muted-foreground mb-4">
-              Welcome to ISEXY! These Terms of Service ("Terms" or "Agreement") govern your access to and use of the ISEXY mobile application, website, and related services (collectively, the "Services") operated by ISEXY Inc. ("ISEXY," "we," "us," or "our").
+              Welcome to ISEXY! These Terms of Service ("Terms" or "Agreement") govern your access to and use of the ISEXY mobile application, website, and related services (collectively, the "Services") operated by ISEXY Inc. ("ISEXY," "we," "us," or "our"). ISEXY is a social network for adults (18+) that lets members create profiles, find people to talk with through swipes and mutual matches, chat (with live translation), make phone and video calls, and make new friends.
             </p>
             <p className="text-muted-foreground mb-4">
               By accessing or using our Services, you agree to be bound by these Terms, our Privacy Policy, Cookie Policy, Community Guidelines, and Safety Tips. These documents are incorporated by reference into this Agreement.
@@ -136,7 +136,7 @@ export default function Terms() {
               <strong>Account Information:</strong> You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete. Inaccurate, false, or incomplete information may result in immediate termination of your account.
             </p>
             <p className="text-muted-foreground mb-4">
-              <strong>Profile Content:</strong> You are solely responsible for the content you include in your profile and for all activity on your account. Your profile should accurately represent who you are and should be appropriate for a dating platform.
+              <strong>Profile Content:</strong> You are solely responsible for the content you include in your profile and for all activity on your account. Your profile should accurately represent who you are and should be appropriate for a social network for adults where members meet new people and make friends.
             </p>
             <p className="text-muted-foreground">
               <strong>Account Sharing:</strong> Your account is personal and non-transferable. You may not share your account or login credentials with any other person or allow others to access your account.
@@ -376,7 +376,7 @@ export default function Terms() {
             </h2>
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-4">
               <p className="text-sm text-foreground uppercase font-semibold">
-                YOU UNDERSTAND AND AGREE THAT CUBADATE DOES NOT CONDUCT CRIMINAL BACKGROUND CHECKS OR IDENTITY VERIFICATION ON ITS USERS. CUBADATE MAKES NO REPRESENTATIONS OR WARRANTIES AS TO THE CONDUCT, IDENTITY, HEALTH, PHYSICAL CONDITION, INTENTIONS, LEGITIMACY, OR VERACITY OF USERS.
+                YOU UNDERSTAND AND AGREE THAT ISEXY DOES NOT CONDUCT CRIMINAL BACKGROUND CHECKS OR IDENTITY VERIFICATION ON ITS USERS. ISEXY MAKES NO REPRESENTATIONS OR WARRANTIES AS TO THE CONDUCT, IDENTITY, HEALTH, PHYSICAL CONDITION, INTENTIONS, LEGITIMACY, OR VERACITY OF USERS.
               </p>
             </div>
             <p className="text-muted-foreground mb-4">
@@ -436,7 +436,7 @@ export default function Terms() {
             </h2>
             <div className="bg-muted/50 p-4 rounded-xl">
               <p className="text-sm text-muted-foreground uppercase mb-4">
-                CUBADATE PROVIDES OUR SERVICES ON AN "AS IS" AND "AS AVAILABLE" BASIS AND TO THE EXTENT PERMITTED BY APPLICABLE LAW, GRANTS NO WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY OR OTHERWISE WITH RESPECT TO OUR SERVICES, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT.
+                ISEXY PROVIDES OUR SERVICES ON AN "AS IS" AND "AS AVAILABLE" BASIS AND TO THE EXTENT PERMITTED BY APPLICABLE LAW, GRANTS NO WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY OR OTHERWISE WITH RESPECT TO OUR SERVICES, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT.
               </p>
               <p className="text-sm text-muted-foreground uppercase mb-4">
                 WE DO NOT WARRANT THAT (A) THE SERVICES WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE; (B) ANY DEFECTS OR ERRORS WILL BE CORRECTED; (C) THE SERVICES OR ANY CONTENT ARE FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS; OR (D) THE RESULTS OF USING THE SERVICES WILL MEET YOUR REQUIREMENTS.
@@ -455,7 +455,7 @@ export default function Terms() {
             </h2>
             <div className="bg-muted/50 p-4 rounded-xl">
               <p className="text-sm text-muted-foreground uppercase mb-4">
-                TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL CUBADATE, ITS AFFILIATES, EMPLOYEES, LICENSORS, OR SERVICE PROVIDERS BE LIABLE FOR ANY INDIRECT, CONSEQUENTIAL, EXEMPLARY, INCIDENTAL, SPECIAL, PUNITIVE, FIXED, OR ENHANCED DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, GOODWILL, USE, DATA, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF OR IN CONNECTION WITH:
+                TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL ISEXY, ITS AFFILIATES, EMPLOYEES, LICENSORS, OR SERVICE PROVIDERS BE LIABLE FOR ANY INDIRECT, CONSEQUENTIAL, EXEMPLARY, INCIDENTAL, SPECIAL, PUNITIVE, FIXED, OR ENHANCED DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, GOODWILL, USE, DATA, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF OR IN CONNECTION WITH:
               </p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2 uppercase text-sm mb-4">
                 <li>YOUR ACCESS TO OR USE OF (OR INABILITY TO ACCESS OR USE) THE SERVICES</li>
@@ -464,7 +464,7 @@ export default function Terms() {
                 <li>UNAUTHORIZED ACCESS, USE, OR ALTERATION OF YOUR CONTENT</li>
               </ul>
               <p className="text-sm text-muted-foreground uppercase">
-                IN NO EVENT SHALL THE AGGREGATE LIABILITY OF CUBADATE EXCEED THE AMOUNT YOU PAID, IF ANY, IN THE LAST 12 MONTHS FOR THE SERVICES GIVING RISE TO THE CLAIM, OR $100 USD, WHICHEVER IS GREATER.
+                IN NO EVENT SHALL THE AGGREGATE LIABILITY OF ISEXY EXCEED THE AMOUNT YOU PAID, IF ANY, IN THE LAST 12 MONTHS FOR THE SERVICES GIVING RISE TO THE CLAIM, OR $100 USD, WHICHEVER IS GREATER.
               </p>
             </div>
           </section>
@@ -503,7 +503,7 @@ export default function Terms() {
               <strong>Binding Arbitration:</strong> If we cannot resolve a dispute informally, you and ISEXY agree to resolve any dispute arising out of or relating to these Terms or the Services through final and binding arbitration. The arbitration will be administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules.
             </p>
             <p className="text-muted-foreground mb-4">
-              <strong>Class Action Waiver:</strong> YOU AND CUBADATE AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE ACTION.
+              <strong>Class Action Waiver:</strong> YOU AND ISEXY AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN YOUR OR ITS INDIVIDUAL CAPACITY AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS OR REPRESENTATIVE ACTION.
             </p>
             <p className="text-muted-foreground mb-4">
               <strong>Exceptions:</strong> Either party may bring a claim in small claims court if eligible, or seek injunctive relief in any court of competent jurisdiction for intellectual property or unauthorized access violations.

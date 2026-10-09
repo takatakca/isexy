@@ -1,71 +1,73 @@
-project_id = "khvsudrwnqznuxnjurxp"
+project_id = "pcjfahhlozsseqqevimi"
 
-[functions.check-subscription]
+[functions.isexy-check-subscription]
 verify_jwt = false
 
-[functions.create-checkout]
+[functions.isexy-create-checkout]
 verify_jwt = false
 
-[functions.customer-portal]
+[functions.isexy-customer-portal]
 verify_jwt = false
 
-[functions.send-ticket-confirmation]
+[functions.isexy-send-ticket-confirmation]
 verify_jwt = false
 
-[functions.send-ticket-status-update]
+[functions.isexy-send-ticket-status-update]
 verify_jwt = false
 
-[functions.send-email-otp]
+[functions.isexy-send-notification-email]
 verify_jwt = false
 
-[functions.send-notification-email]
+[functions.isexy-send-verification-notification]
 verify_jwt = false
 
-[functions.send-verification-notification]
+[functions.isexy-send-push-notification]
 verify_jwt = false
 
-[functions.send-push-notification]
+[functions.isexy-stripe-webhook]
 verify_jwt = false
 
-[functions.stripe-webhook]
+[functions.isexy-send-whatsapp-call-notification]
 verify_jwt = false
 
-[functions.send-whatsapp-call-notification]
+[functions.isexy-create-credit-purchase]
 verify_jwt = false
 
-[functions.create-credit-purchase]
+[functions.isexy-create-one-time-payment]
 verify_jwt = false
 
-[functions.create-one-time-payment]
-verify_jwt = false
-
-# [functions.seed-profiles] requires JWT (default). Function additionally
+# [functions.isexy-seed-profiles] requires JWT (default). Function additionally
 # enforces admin role + SEED_PROFILES_ENABLED env flag.
 
-[functions.send-whatsapp-otp]
+[functions.isexy-send-whatsapp-otp]
 verify_jwt = false
 
-[functions.translate-message]
+[functions.isexy-translate-message]
 verify_jwt = false
 
-[functions.send-missed-call-notification]
+[functions.isexy-send-missed-call-notification]
 verify_jwt = false
 
-[functions.ai-chat]
+[functions.isexy-ai-chat]
 verify_jwt = false
 
-[functions.update-user-password]
+[functions.isexy-subscription-resets]
 verify_jwt = false
 
-[functions.subscription-resets]
+[functions.isexy-create-minute-purchase]
 verify_jwt = false
 
-[functions.create-minute-purchase]
+[functions.isexy-payments-gate-status]
 verify_jwt = false
 
-[functions.payments-gate-status]
+
+# Twilio calls these webhooks without a Supabase JWT; each one verifies the
+# X-Twilio-Signature header itself (ISEXY_TWILIO_AUTH_TOKEN).
+[functions.isexy-twilio-inbound-phone-line]
 verify_jwt = false
 
-# TAKATAK v1 bridge: status/phone actions are public; sync checks the member JWT itself.
-[functions.takatak-bridge]
+[functions.isexy-twilio-phone-line-menu]
+verify_jwt = false
+
+[functions.isexy-twilio-call-status]
 verify_jwt = false

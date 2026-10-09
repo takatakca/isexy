@@ -1,19 +1,27 @@
 # ISEXY
 
-Premium dating for Canada 🇨🇦 and Cuba 🇨🇺 — swipe matching, chat with live
-translation, video calls, PhoneLine voice dating, gifts and Cuban rewards, and
-an AI concierge, built on React + Supabase and connected to the TAKATAK v1
-identity platform.
+A Canadian social network for adults (18+): member profiles, swipes to find
+people to talk with and become friends, chat with live translation, phone
+calls, webcam video calls and PhoneLine voice messages, plus an AI concierge.
+Launching in Canada (English and French). Positioning and what changed:
+[`docs/REPOSITIONING.md`](docs/REPOSITIONING.md).
+
+A GROUPE TAKATAK app: it runs on **TAKATAK V1** (Supabase project
+`pcjfahhlozsseqqevimi`, shared with takatak.ca) in its own `isexy` schema, and
+members sign in with **Takatak Auth**. Hosted on **Coolify** (coolify.takatak.ca,
+project ISEXY, auto-deployed from `main`); https://isexy.onrender.com (Render) is
+the fallback for now.
 
 ## Stack
 
 | Layer | Tech |
 | --- | --- |
 | Web app | Vite · React 18 · TypeScript · Tailwind · shadcn/ui (routes lazy-loaded) |
-| Backend | Supabase (Postgres + RLS, Auth, Storage, Realtime, Edge Functions on Deno) |
-| AI | `ai-chat` edge function → Lovable AI gateway, grounded in the `knowledge_base` table |
-| Identity | `takatak-bridge` edge function → TAKATAK v1 master API (`/api/v1/*`) |
-| Payments | Stripe (subscriptions, credits, minutes) |
+| Backend | TAKATAK V1 Supabase: Postgres `isexy` schema + RLS, Storage (`isexy-*` buckets), Realtime, Edge Functions (`isexy-*`, Deno) |
+| Identity | Takatak Auth on V1 (shared `auth.users`): Google, email code, SMS code. `isexy.profiles.id = user_id = auth.users.id` |
+| AI | `isexy-ai-chat` / `isexy-translate-message` → Claude (Anthropic API), grounded in `isexy.knowledge_base` |
+| Payments | Stripe, server-side only (checkout sessions + webhook in edge functions) |
+| Hosting | Coolify (Nixpacks static site, `/dist`, npm only via `nixpacks.toml`); Render static site `isexy` as fallback |
 
 ## Run locally
 
@@ -24,7 +32,8 @@ npx tsc -p tsconfig.app.json --noEmit
 npm run build
 ```
 
-`.env` holds only public values (Supabase URL + publishable key).
+`.env` holds only public values (V1 URL + anon key). Moving off Lovable and
+onto V1, and every human step that remains: [`docs/V1-MIGRATION.md`](docs/V1-MIGRATION.md).
 
 ## AI concierge & Help Center
 
@@ -32,34 +41,25 @@ npm run build
   guests and members, answers in English / Español / Français, cites Help Center
   articles, can be stopped mid-answer, and hands off to a human agent
   (`live_chat_sessions`, visible in `/agent-dashboard`).
-- `supabase/functions/ai-chat` validates input, rate-limits, retrieves the most
+- `supabase/functions/isexy-ai-chat` validates input, rate-limits, retrieves the most
   relevant published `knowledge_base` articles, streams the answer and stores
-  the transcript server-side. Requires the `LOVABLE_API_KEY` function secret
-  (optional `AI_CHAT_MODEL`).
+  the transcript server-side. Answers come from Claude (`claude-opus-5-5` by
+  default, low effort, server-side refusal fallback). Requires the
+  `ISEXY_ANTHROPIC_API_KEY` function secret (optional `ISEXY_AI_CHAT_MODEL`).
 - Help Center (`/knowledge-base`) supports `?q=`, `?category=` and
   `?article=<id>` deep links; any page can open the concierge with
   `openAssistant(question)` from `src/lib/assistant.ts`.
 
-## TAKATAK v1 integration
+## Takatak Auth (TAKATAK V1)
 
-TAKATAK v1 (`takatakca/takatak-v1`) is the shared identity authority. Its master
-API is server-to-server only, so the browser never sees its key:
-
-| Action | What it does |
-| --- | --- |
-| `status` | Tells the app whether TAKATAK is configured |
-| `sync` | After sign-in, projects the member into a TAKATAK master identity (`takatak_identity_links`) |
-| `phone_send` / `phone_verify` | Phone sign-in: TAKATAK sends + verifies the SMS code, then the bridge issues a normal ISEXY session |
-
-Function secrets: `TAKATAK_API_URL` (e.g. `https://takatak.ca`) and
-`TAKATAK_ISEXY_API_KEY` (dedicated ≥ 32-char key). Until both are set, phone
-sign-in shows an email fallback and sync is a silent no-op.
-
-> **TAKATAK side still required:** TAKATAK v1's master API currently accepts
-> only the 1LV key and `source_application: "1lv"`. It needs a dedicated
-> `TAKATAK_ISEXY_API_KEY` accepted on `/api/v1/auth/otp/send`,
-> `/api/v1/auth/otp/verify` and `/api/v1/identity/resolve-person` (with
-> `source_application: "isexy"`). Never reuse the 1LV key for ISEXY.
+ISEXY has no accounts of its own: a member signs in with their TAKATAK account
+(`src/components/TakatakSignIn.tsx`), by Google, an email code or an SMS code,
+on V1's shared `auth.users`. No passwords. The ISEXY profile is created by the
+signup flow (`/profile-setup`, `/cuban-signup`, `/tourist-signup`) and is keyed
+by the auth user id. Nothing is added to `auth.users` (no trigger), so a
+takatak.ca account only becomes an ISEXY member when that person signs up here.
+Staff (`/staff-login`) use the same sign-in; `isexy.user_roles` grants
+admin/moderator.
 
 ## Core experience (Discover · Matches · Chat)
 
@@ -97,7 +97,7 @@ sign-in shows an email fallback and sync is a silent no-op.
 - **One source of truth:** `src/seo/routes.json` (title, description, sitemap
   priority, indexability) feeds both the in-app `RouteSeo` tags and the
   build-time generator.
-- **Domain:** set `VITE_SITE_URL` (default `https://isexy.lovable.app`); switch
+- **Domain:** set `VITE_SITE_URL` (default `https://isexy.onrender.com`); switch
   to `https://isexy.ca` and every canonical, social tag, sitemap and JSON-LD URL
   follows.
 - `npm run build` runs `scripts/generate-seo.mjs`, which writes `sitemap.xml`
@@ -138,20 +138,23 @@ sign-in shows an email fallback and sync is a silent no-op.
 
 ## Database
 
-Migrations live in `supabase/migrations`. The October 2026 revamp
-(`20261007120000_revamp_profile_kb_takatak.sql`) adds the profile fields edited
-in Edit Profile, safe Help Center view/feedback counters, the TAKATAK identity
-link table, the bot→agent transcript link, and cleans legacy Help Center
-content. `20261007130000_analytics_and_client_errors.sql` adds analytics,
-error reporting and the admin overview.
-`20261007140000_secure_rpcs_and_discover_feed.sql` adds the ownership guards and
-the Discover feed; `20261007150000_conversations_inbox.sql` adds the inbox RPC.
+ISEXY's tables, functions, policies and triggers live in the `isexy` schema on
+TAKATAK V1; V1's `public` schema is never touched. Migrations are in
+`supabase/isexy-migrations/` and run through `scripts/isexy/migrate.sh`
+(dry run by default, `--apply` to apply, tracked in `isexy.schema_migrations`),
+never `supabase db push` (V1's migration history belongs to takatak-v1).
+`0001_isexy_baseline.sql` is the Lovable-era history converted by
+`scripts/isexy/convert-lovable-migrations.mjs`; add new work as
+`0003_<name>.sql`, `0004_…`. Applied files are immutable (checksummed).
 
-## CI
+## CI/CD
 
-`.github/workflows/ci.yml` runs on every push and pull request: install,
-typecheck, production build, Deno type-check of the AI and TAKATAK edge
-functions, and a lint report. It does not deploy.
+`.github/workflows/ci-cd.yml`: every push runs typecheck, build, `deno check`
+of every `isexy-*` function, the migrations on a Postgres stand-in of V1 (with a
+guard proving V1's objects are unchanged) and the V1 safety rules. On `main`,
+it applies migrations with `migrate.sh` and deploys each `isexy-*` function by
+name, once the `ISEXY_DB_URL` / `SUPABASE_ACCESS_TOKEN` secrets exist. Coolify
+(and Render, fallback) deploy the website themselves. Details: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Stripe Subscription Setup (admin only)
 
@@ -165,9 +168,10 @@ To create the ISEXY subscription products and prices in Stripe automatically:
    ```
    STRIPE_SECRET_KEY=sk_test_or_live_key node scripts/create-stripe-subscriptions.mjs
    ```
-3. The script will print 9 `STRIPE_PRICE_*` env vars and `APP_URL`. Copy them
-   into Lovable / Supabase project secrets.
-4. After secrets are added, re-deploy edge functions (automatic in Lovable).
+3. The script will print 9 `STRIPE_PRICE_*` env vars and `APP_URL`. Add each one
+   on TAKATAK V1 as an **`ISEXY_`-prefixed** function secret (e.g.
+   `ISEXY_STRIPE_PRICE_GOLD_MONTH`, `ISEXY_APP_URL`). See `docs/V1-MIGRATION.md` › Stripe.
+4. Function secrets apply on the next invocation; no redeploy needed.
 
 The script:
 - Refuses to run without `STRIPE_SECRET_KEY`.

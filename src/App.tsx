@@ -12,8 +12,6 @@ import Welcome from "./pages/Welcome";
 const Auth = lazy(() => import("./pages/Auth"));
 const CubanSignup = lazy(() => import("./pages/CubanSignup"));
 const AdminVerifications = lazy(() => import("./pages/AdminVerifications"));
-const PhoneAuth = lazy(() => import("./pages/PhoneAuth"));
-const CodeVerification = lazy(() => import("./pages/CodeVerification"));
 const HouseRules = lazy(() => import("./pages/HouseRules"));
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
 const Discover = lazy(() => import("./pages/Discover"));
@@ -79,8 +77,6 @@ const CubanRewards = lazy(() => import("./pages/CubanRewards"));
 const BlockReportFlow = lazy(() => import("./pages/BlockReportFlow"));
 const SubscriptionComparison = lazy(() => import("./pages/SubscriptionComparison"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 const VideoCall = lazy(() => import("./pages/VideoCall"));
 const DatingRegulations = lazy(() => import("./pages/DatingRegulations"));
 const BuyCredits = lazy(() => import("./pages/BuyCredits"));
@@ -91,7 +87,6 @@ const Referrals = lazy(() => import("./pages/Referrals"));
 const ModeratorLogin = lazy(() => import("./pages/ModeratorLogin"));
 const SupportPortal = lazy(() => import("./pages/SupportPortal"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
-const WebSignup = lazy(() => import("./pages/WebSignup"));
 const AdminKnowledgeBase = lazy(() => import("./pages/AdminKnowledgeBase"));
 const AdminModeration = lazy(() => import("./pages/AdminModeration"));
 const CubanDonations = lazy(() => import("./pages/CubanDonations"));
@@ -172,11 +167,12 @@ const App = () => (
               <Route path="/super-likes" element={<Navigate to="/get-super-likes" replace />} />
               <Route path="/subscription-comparison" element={<Navigate to="/compare-plans" replace />} />
               <Route path="/login" element={<Navigate to="/auth" replace />} />
-              <Route path="/forgot-password" element={<Navigate to="/reset-password" replace />} />
+              <Route path="/forgot-password" element={<Navigate to="/auth" replace />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cuban-signup" element={<CubanSignup />} />
-              <Route path="/phone" element={<PhoneAuth />} />
-              <Route path="/verify" element={<CodeVerification />} />
+              {/* Takatak Auth (Google, email code, SMS code) lives on /auth; old entry points redirect. */}
+              <Route path="/phone" element={<Navigate to="/auth?method=phone" replace />} />
+              <Route path="/verify" element={<Navigate to="/auth" replace />} />
               <Route path="/house-rules" element={<HouseRules />} />
               <Route path="/profile-setup" element={<ProtectedRoute requireCompleteProfile={false}><ProfileSetup /></ProtectedRoute>} />
               <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
@@ -195,7 +191,8 @@ const App = () => (
               <Route path="/safety" element={<Safety />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
-              <Route path="/love-stories" element={<LoveStories />} />
+              <Route path="/community-stories" element={<LoveStories />} />
+              <Route path="/love-stories" element={<Navigate to="/community-stories" replace />} />
               <Route path="/about" element={<About />} />
               <Route path="/news" element={<News />} />
               <Route path="/matches-list" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
@@ -242,18 +239,21 @@ const App = () => (
               <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
               <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
               <Route path="/photo-verification" element={<PhotoVerification />} />
-              <Route path="/double-date" element={<DoubleDate />} />
+              <Route path="/double-hangout" element={<DoubleDate />} />
+              <Route path="/double-date" element={<Navigate to="/double-hangout" replace />} />
               <Route path="/qa-events" element={<QAEvents />} />
-              <Route path="/matchmaker" element={<Matchmaker />} />
+              <Route path="/introductions" element={<Matchmaker />} />
+              <Route path="/matchmaker" element={<Navigate to="/introductions" replace />} />
               <Route path="/loyalty-rewards" element={<LoyaltyRewards />} />
               <Route path="/cuban-rewards" element={<CubanRewards />} />
               <Route path="/cuban-cashout" element={<CubanCashout />} />
               <Route path="/my-stars" element={<MyStars />} />
               <Route path="/block-report/:userId" element={<BlockReportFlow />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/update-password" element={<UpdatePassword />} />
+              <Route path="/reset-password" element={<Navigate to="/auth" replace />} />
+              <Route path="/update-password" element={<Navigate to="/auth" replace />} />
               <Route path="/video-call/:matchId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
-              <Route path="/dating-regulations" element={<DatingRegulations />} />
+              <Route path="/regulations" element={<DatingRegulations />} />
+              <Route path="/dating-regulations" element={<Navigate to="/regulations" replace />} />
               <Route path="/buy-credits" element={<ProtectedRoute><BuyCredits /></ProtectedRoute>} />
               <Route path="/buy-minutes" element={<ProtectedRoute><BuyMinutes /></ProtectedRoute>} />
               <Route path="/group-chat/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
@@ -263,7 +263,7 @@ const App = () => (
               <Route path="/support" element={<SupportPortal />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/agent-dashboard" element={<AdminRoute allowModerator><AgentDashboard /></AdminRoute>} />
-              <Route path="/signup" element={<WebSignup />} />
+              <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
               <Route path="/redeem-code" element={<RedeemCode />} />
               <Route path="/admin/users" element={<AdminRoute><AdminUserManagement /></AdminRoute>} />
               <Route path="/admin/payment-tests" element={<AdminRoute><AdminPaymentTests /></AdminRoute>} />

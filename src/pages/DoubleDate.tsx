@@ -223,7 +223,7 @@ export default function DoubleDate() {
       .eq("id", pairId);
 
     if (!error) {
-      toast.success(accept ? "You're now paired up for Double Date!" : "Invitation declined");
+      toast.success(accept ? "You're now paired up for Double Hangout!" : "Invitation declined");
       fetchPairs();
     }
   };
@@ -235,7 +235,7 @@ export default function DoubleDate() {
       .eq("id", pairId);
 
     if (!error) {
-      toast.success("Double Date pair ended");
+      toast.success("Double Hangout pair ended");
       fetchPairs();
     }
   };
@@ -250,8 +250,8 @@ export default function DoubleDate() {
               <Users className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Double Date</h1>
-              <p className="text-sm text-muted-foreground">Pair up with a friend and match together!</p>
+              <h1 className="text-2xl font-bold text-foreground">Double Hangout</h1>
+              <p className="text-sm text-muted-foreground">Bring a friend and meet another pair of friends!</p>
             </div>
           </div>
         </div>
@@ -283,7 +283,7 @@ export default function DoubleDate() {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" onClick={async () => {
-                      // Find group chat for this pair's double date match
+                      // Find group chat for this pair's Double Hangout match
                       const { data: matches } = await supabase
                         .from("double_date_matches")
                         .select("id")
@@ -373,7 +373,7 @@ export default function DoubleDate() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Find a Friend to Pair Up</DialogTitle>
-              <DialogDescription>Search for a friend to start your Double Date adventure!</DialogDescription>
+              <DialogDescription>Search for a friend to pair up with for Double Hangout!</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div className="flex gap-2">
@@ -413,20 +413,20 @@ export default function DoubleDate() {
         {/* Share Button */}
         <Button variant="outline" className="w-full py-6 text-lg rounded-full">
           <Share2 className="w-5 h-5 mr-2" />
-          Share Double Date with Friends
+          Share Double Hangout with Friends
         </Button>
 
         {/* Settings */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Settings</CardTitle>
-            <CardDescription>Control how Double Date works for you</CardDescription>
+            <CardDescription>Control how Double Hangout works for you</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-medium text-foreground">Show me on my friend's profile</span>
-                <p className="text-xs text-muted-foreground">Your name and photo may appear on your Double Date friend's profile.</p>
+                <p className="text-xs text-muted-foreground">Your name and photo may appear on your Double Hangout friend's profile.</p>
               </div>
               <Switch
                 checked={settings.show_me_on_friend_profile}
@@ -437,7 +437,7 @@ export default function DoubleDate() {
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-medium text-foreground">Show friends on my profile</span>
-                <p className="text-xs text-muted-foreground">Your Double Date friend's name and photo may appear on your profile.</p>
+                <p className="text-xs text-muted-foreground">Your Double Hangout friend's name and photo may appear on your profile.</p>
               </div>
               <Switch
                 checked={settings.show_friends_on_profile}
@@ -447,8 +447,8 @@ export default function DoubleDate() {
 
             <div className="flex items-center justify-between">
               <div>
-                <span className="font-medium text-foreground">Show Double Date profiles</span>
-                <p className="text-xs text-muted-foreground">When turned off, you won't see Double Date profiles in For You mode.</p>
+                <span className="font-medium text-foreground">Show Double Hangout profiles</span>
+                <p className="text-xs text-muted-foreground">When turned off, you won't see Double Hangout profiles in For You mode.</p>
               </div>
               <Switch
                 checked={settings.show_double_date_profiles}
@@ -462,13 +462,13 @@ export default function DoubleDate() {
         <div className="bg-gradient-to-r from-pink-500/10 to-orange-500/10 rounded-2xl p-4 border border-primary/20">
           <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            How Double Date Works
+            How Double Hangout Works
           </h3>
           <ul className="text-sm text-muted-foreground space-y-2">
             <li>1. Pair up with a friend</li>
             <li>2. Browse other friend pairs together</li>
             <li>3. When both pairs swipe right, it's a group match!</li>
-            <li>4. Start a group chat and plan your double date</li>
+            <li>4. Start a group chat and plan your hangout</li>
           </ul>
         </div>
       </div>

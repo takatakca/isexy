@@ -16,22 +16,22 @@ interface ExploreCategory {
 
 const categories: { section: string; description: string; items: ExploreCategory[] }[] = [
   {
-    section: "Goal-driven dating",
-    description: "Find people with similar relationship goals",
+    section: "What you're here for",
+    description: "Find people who want the same thing from ISEXY",
     items: [
-      { id: "long-term", title: "Long-term partner", color: "from-orange-600/90 to-rose-500/90", count: "3K", featured: true },
-      { id: "serious", title: "Serious Daters", color: "from-red-600/90 to-orange-500/90", count: "2K" },
+      { id: "long-term", title: "Long-term friendships", color: "from-orange-600/90 to-rose-500/90", count: "3K", featured: true },
+      { id: "serious", title: "Deep Conversations", color: "from-red-600/90 to-orange-500/90", count: "2K" },
       { id: "tonight", title: "Free Tonight", color: "from-purple-600/90 to-violet-500/90", count: "776" },
-      { id: "short-term", title: "Short-term fun", color: "from-pink-600/90 to-rose-500/90", count: "448" },
+      { id: "short-term", title: "Just for Fun", color: "from-pink-600/90 to-rose-500/90", count: "448" },
       { id: "friends", title: "New friends", color: "from-rose-500/90 to-pink-500/90", count: "243" },
-      { id: "non-mono", title: "Non-monogamous", color: "from-cyan-600/90 to-teal-500/90", count: "357" },
+      { id: "non-mono", title: "Language Exchange", color: "from-cyan-600/90 to-teal-500/90", count: "357" },
     ],
   },
   {
     section: "Similar plans and lifestyles",
-    description: "Find people with similar life goals",
+    description: "Find people at a similar stage of life",
     items: [
-      { id: "wants-kids", title: "Wants Kids", color: "from-green-600/90 to-emerald-500/90", count: "685" },
+      { id: "wants-kids", title: "Family-Oriented", color: "from-green-600/90 to-emerald-500/90", count: "685" },
       { id: "child-free", title: "Child-Free", color: "from-cyan-600/90 to-teal-500/90", count: "339" },
     ],
   },
@@ -42,15 +42,15 @@ const categories: { section: string; description: string; items: ExploreCategory
       { id: "travel", title: "Travel", color: "from-rose-600/90 to-pink-500/90", count: "1K" },
       { id: "anthem", title: "Add an Anthem", color: "from-cyan-600/90 to-blue-500/90", count: "1K" },
       { id: "foodies", title: "Foodies", color: "from-red-800/90 to-rose-600/90", count: "1K" },
-      { id: "nature", title: "Nature Lovers", color: "from-green-600/90 to-emerald-500/90", count: "1K" },
-      { id: "music", title: "Music Lovers", color: "from-purple-700/90 to-violet-500/90", count: "1K" },
+      { id: "nature", title: "Outdoor Fans", color: "from-green-600/90 to-emerald-500/90", count: "1K" },
+      { id: "music", title: "Music Fans", color: "from-purple-700/90 to-violet-500/90", count: "1K" },
       { id: "self-care", title: "Self Care", color: "from-green-600/90 to-teal-500/90", count: "1K" },
       { id: "gamers", title: "Gamers", color: "from-green-700/90 to-emerald-600/90", count: "436" },
       { id: "pets", title: "Animal Parents", color: "from-red-700/90 to-orange-600/90", count: "147" },
       { id: "binge", title: "Binge Watchers", color: "from-green-600/90 to-teal-500/90", count: "1K" },
       { id: "sporty", title: "Sporty", color: "from-red-600/90 to-orange-500/90", count: "1K" },
-      { id: "coffee", title: "Coffee Date", color: "from-yellow-600/90 to-amber-500/90", count: "192" },
-      { id: "date-night", title: "Date Night", color: "from-pink-700/90 to-rose-600/90", count: "1K" },
+      { id: "coffee", title: "Coffee Chats", color: "from-yellow-600/90 to-amber-500/90", count: "192" },
+      { id: "date-night", title: "Night Out", color: "from-pink-700/90 to-rose-600/90", count: "1K" },
       { id: "thrill", title: "Thrill Seekers", color: "from-orange-600/90 to-amber-500/90", count: "1K" },
       { id: "creatives", title: "Creatives", color: "from-purple-600/90 to-violet-500/90", count: "1K" },
     ],
@@ -59,7 +59,7 @@ const categories: { section: string; description: string; items: ExploreCategory
 
 // Placeholder images for categories (using gradients as fallback)
 const categoryImages: Record<string, string> = {
-  "long-term": "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=400&h=500&fit=crop",
+  "long-term": "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&h=500&fit=crop",
   "serious": "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&h=500&fit=crop",
   "tonight": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&h=500&fit=crop",
   "wants-kids": "https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=400&h=500&fit=crop",
@@ -69,7 +69,7 @@ const categoryImages: Record<string, string> = {
   "foodies": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=500&fit=crop",
   "nature": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=500&fit=crop",
   "music": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=500&fit=crop",
-  "self-care": "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=500&fit=crop",
+  "self-care": "https://images.unsplash.com/photo-1545389336-cf090694435e?w=400&h=500&fit=crop",
   "gamers": "https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=400&h=500&fit=crop",
   "pets": "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=500&fit=crop",
   "binge": "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=400&h=500&fit=crop",

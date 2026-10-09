@@ -21,7 +21,7 @@ const safetySlides = [
     title: "Be respectful",
     content: "Don't bully, harass, or threaten others. We don't support discrimination of any kind. ISEXY is no place for hate.",
     subtitle: "Respect boundaries",
-    subcontent: "Always get consent from people before talking about sex or expressing sexual desires.",
+    subcontent: "Keep it respectful: no sexual messages or images without clear consent, and stop when someone says no.",
   },
   {
     id: 2,
@@ -86,8 +86,8 @@ export default function Messages() {
     };
     const channel = supabase
       .channel(`inbox-${profile.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, schedule)
-      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "isexy", table: "messages" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "isexy", table: "matches" }, schedule)
       .subscribe();
     const onFocus = () => document.visibilityState === "visible" && schedule();
     document.addEventListener("visibilitychange", onFocus);
@@ -176,7 +176,7 @@ export default function Messages() {
 
             <div className="flex items-center gap-2 mb-6">
               <Shield className="w-5 h-5 text-cyan-500" />
-              <span className="font-semibold text-foreground">Date Safely</span>
+              <span className="font-semibold text-foreground">Stay Safe</span>
             </div>
 
             {renderSafetyIcon(safetySlides[safetySlide].icon)}

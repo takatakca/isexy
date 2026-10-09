@@ -36,7 +36,7 @@ const campaigns: Campaign[] = [
   {
     id: "superlike",
     title: "Stand Out",
-    subtitle: "3x more likely to match",
+    subtitle: "Show you really want to talk",
     icon: <Star className="w-6 h-6" />,
     gradient: "from-cyan-400 to-blue-500",
     cta: "Get Super Likes",

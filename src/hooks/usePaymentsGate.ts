@@ -19,7 +19,7 @@ export function usePaymentsGate() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase.functions.invoke("payments-gate-status");
+        const { data } = await supabase.functions.invoke("isexy-payments-gate-status");
         if (!cancelled && data) {
           cached = data as GateStatus;
           setStatus(cached);

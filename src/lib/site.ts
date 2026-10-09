@@ -3,9 +3,9 @@
  * (e.g. https://isexy.ca) — canonical URLs, social tags, structured data and
  * the generated sitemap/robots all follow it.
  */
-export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://isexy.lovable.app").replace(/\/+$/, "");
+export const SITE_URL = (import.meta.env.VITE_SITE_URL || "https://isexy.onrender.com").replace(/\/+$/, "");
 export const SITE_NAME = "ISEXY";
-export const SITE_TAGLINE = "Premium Dating for Canada & Cuba";
+export const SITE_TAGLINE = "Meet new people & make friends in Canada (18+)";
 export const OG_IMAGE = `${SITE_URL}/og-image.png`;
 export const LOGO_URL = `${SITE_URL}/icons/icon-512.png`;
 

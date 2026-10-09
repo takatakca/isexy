@@ -7,9 +7,10 @@ export interface Language {
 }
 
 export const languages: Language[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
+  // Canada first: English and French (Canada's official languages).
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇨🇦' },
+  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇨🇦' },
   { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
   { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
   { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
   { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
@@ -44,5 +45,7 @@ export const getLanguageByCode = (code: string): Language | undefined => {
 };
 
 export const getDefaultLanguage = (): Language => {
-  return languages[0]; // English
+  // Canada: French when the browser asks for it, English otherwise.
+  const browser = typeof navigator !== 'undefined' ? navigator.language?.toLowerCase() ?? '' : '';
+  return browser.startsWith('fr') ? languages[1] : languages[0];
 };

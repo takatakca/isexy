@@ -1,18 +1,18 @@
 export const LOOKING_FOR_OPTIONS = [
-  "Long-term partner",
-  "Long-term, open to short",
-  "Short-term, open to long",
-  "Short-term fun",
   "New friends",
+  "Someone to talk to",
+  "People to do things with",
+  "Language exchange",
+  "Networking",
   "Still figuring it out",
 ];
 
 export const RELATIONSHIP_TYPE_OPTIONS = [
-  "Monogamy",
-  "Ethical non-monogamy",
-  "Open relationship",
-  "Polyamory",
-  "Open to exploring",
+  "Chatting",
+  "Phone calls",
+  "Video calls",
+  "Meeting up in public",
+  "Group hangouts",
 ];
 
 export const ZODIAC_OPTIONS = [
@@ -57,11 +57,11 @@ export const COMMUNICATION_STYLE_OPTIONS = [
 ];
 
 export const LOVE_LANGUAGE_OPTIONS = [
-  "Words of affirmation",
+  "Deep conversations",
   "Quality time",
-  "Physical touch",
-  "Acts of service",
-  "Receiving gifts",
+  "Shared activities",
+  "Helping each other out",
+  "Humour and banter",
 ];
 
 export const PETS_OPTIONS = [
@@ -74,7 +74,7 @@ export const PETS_OPTIONS = [
   "Hamster",
   "Turtle",
   "Other",
-  "Don't have but love",
+  "Don't have but would like one",
   "Allergic to pets",
   "Pet-free",
 ];

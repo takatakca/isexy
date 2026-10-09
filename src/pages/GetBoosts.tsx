@@ -53,7 +53,7 @@ const boostTypeConfig: Record<BoostType, {
   },
   primetime: {
     title: "Primetime Boost",
-    description: "We boost you when the most users are active so you're seen by more potential matches.",
+    description: "We boost you when the most users are active so more people see your profile.",
     icon: <Timer className="w-6 h-6 text-primary-foreground" />,
     packages: primetimePackages,
     goldUpsell: "1 free Boost a month",
@@ -123,7 +123,7 @@ export default function GetBoosts() {
 
       track("checkout_started", { product: "GetBoosts" });
 
-      const { data, error } = await supabase.functions.invoke("create-one-time-payment", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-one-time-payment", {
         body: {
           productId,
           metadata: {

@@ -61,7 +61,7 @@ export default function BuyCredits() {
       const pkg = creditPackages.find((p) => p.id === selectedPackage);
       if (!pkg) return;
       track("checkout_started", { product: "BuyCredits" });
-      const { data, error } = await supabase.functions.invoke("create-credit-purchase", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-credit-purchase", {
         body: { packageId: pkg.id },
       });
       if (error) throw error;

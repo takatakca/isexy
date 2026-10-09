@@ -36,7 +36,7 @@ const COPY: Record<Lang, {
   en: {
     title: "ISEXY Concierge",
     subtitle: "AI assistant · replies instantly",
-    greeting: "Hi! 👋 I'm your **ISEXY Concierge**.\n\nI can help with your profile, matches, payments, safety, and connecting between **Canada 🇨🇦 and Cuba 🇨🇺**.\n\nPick a topic or ask me anything.",
+    greeting: "Hi! 👋 I'm your **ISEXY Concierge**.\n\nI can help with your profile, meeting new people, chats and calls, payments and safety — across **Canada 🇨🇦** and with **Cuba 🇨🇺**.\n\nPick a topic or ask me anything.",
     placeholder: "Ask me anything…",
     human: "Talk to a human",
     teaser: "Need help? I answer in English, Español & Français.",
@@ -48,18 +48,18 @@ const COPY: Record<Lang, {
     related: "Related articles",
     disclaimer: "AI can make mistakes. In an emergency call 911 (Canada) or 106 (Cuba).",
     actions: [
-      { label: "Get more matches", query: "How can I get more matches?", icon: Heart },
-      { label: "Safety & scams", query: "How do I stay safe and spot romance scams?", icon: Shield },
+      { label: "Meet more people", query: "How can I meet more people to talk with?", icon: Heart },
+      { label: "Safety & scams", query: "How do I stay safe and spot scams and fraud?", icon: Shield },
       { label: "Plans & billing", query: "What do the premium plans include and how do I manage billing?", icon: CreditCard },
       { label: "Account help", query: "I need help with my account.", icon: Users },
-      { label: "Dating in Cuba", query: "Tips for meeting someone in Cuba and visiting safely?", icon: Plane },
+      { label: "Connecting with people in Cuba", query: "Tips for connecting with people in Cuba and visiting safely?", icon: Plane },
       { label: "Report someone", query: "I want to report a user.", icon: AlertTriangle },
     ],
   },
   es: {
     title: "Conserje ISEXY",
     subtitle: "Asistente IA · responde al instante",
-    greeting: "¡Hola! 👋 Soy tu **Conserje ISEXY**.\n\nTe ayudo con tu perfil, matches, pagos, seguridad y a conectar entre **Canadá 🇨🇦 y Cuba 🇨🇺**.\n\nElige un tema o pregúntame lo que quieras.",
+    greeting: "¡Hola! 👋 Soy tu **Conserje ISEXY**.\n\nTe ayudo con tu perfil, a conocer gente nueva, chats y llamadas, pagos y seguridad — en **Canadá 🇨🇦** y con **Cuba 🇨🇺**.\n\nElige un tema o pregúntame lo que quieras.",
     placeholder: "Escribe tu pregunta…",
     human: "Hablar con una persona",
     teaser: "¿Necesitas ayuda? Respondo en Español, English y Français.",
@@ -71,18 +71,18 @@ const COPY: Record<Lang, {
     related: "Artículos relacionados",
     disclaimer: "La IA puede equivocarse. En una emergencia llama al 106 (Cuba) o 911 (Canadá).",
     actions: [
-      { label: "Más matches", query: "¿Cómo consigo más matches?", icon: Heart },
-      { label: "Seguridad y estafas", query: "¿Cómo me protejo de estafas románticas?", icon: Shield },
+      { label: "Conocer más gente", query: "¿Cómo puedo conocer más personas para conversar?", icon: Heart },
+      { label: "Seguridad y estafas", query: "¿Cómo me protejo de estafas y fraudes?", icon: Shield },
       { label: "Planes y pagos", query: "¿Qué incluyen los planes premium y cómo gestiono mis pagos?", icon: CreditCard },
       { label: "Mi cuenta", query: "Necesito ayuda con mi cuenta.", icon: Users },
-      { label: "Citas en Cuba", query: "Consejos para conocer a alguien en Cuba de forma segura.", icon: Plane },
+      { label: "Conectar con gente en Cuba", query: "Consejos para conectar con gente en Cuba y visitar de forma segura.", icon: Plane },
       { label: "Reportar a alguien", query: "Quiero reportar a un usuario.", icon: AlertTriangle },
     ],
   },
   fr: {
     title: "Concierge ISEXY",
     subtitle: "Assistant IA · réponse immédiate",
-    greeting: "Bonjour ! 👋 Je suis votre **Concierge ISEXY**.\n\nJe vous aide avec votre profil, vos matchs, les paiements, la sécurité et les rencontres entre le **Canada 🇨🇦 et Cuba 🇨🇺**.\n\nChoisissez un sujet ou posez votre question.",
+    greeting: "Bonjour ! 👋 Je suis votre **Concierge ISEXY**.\n\nJe vous aide avec votre profil, à rencontrer de nouvelles personnes, les clavardages et appels, les paiements et la sécurité — partout au **Canada 🇨🇦** et avec **Cuba 🇨🇺**.\n\nChoisissez un sujet ou posez votre question.",
     placeholder: "Posez votre question…",
     human: "Parler à un humain",
     teaser: "Besoin d'aide ? Je réponds en Français, English et Español.",
@@ -94,17 +94,17 @@ const COPY: Record<Lang, {
     related: "Articles liés",
     disclaimer: "L'IA peut se tromper. En cas d'urgence, composez le 911 (Canada) ou le 106 (Cuba).",
     actions: [
-      { label: "Plus de matchs", query: "Comment obtenir plus de matchs ?", icon: Heart },
-      { label: "Sécurité & arnaques", query: "Comment éviter les arnaques sentimentales ?", icon: Shield },
+      { label: "Rencontrer plus de monde", query: "Comment rencontrer plus de personnes avec qui discuter ?", icon: Heart },
+      { label: "Sécurité & arnaques", query: "Comment repérer et éviter les arnaques et la fraude ?", icon: Shield },
       { label: "Forfaits & paiement", query: "Que comprennent les forfaits premium et comment gérer la facturation ?", icon: CreditCard },
       { label: "Mon compte", query: "J'ai besoin d'aide avec mon compte.", icon: Users },
-      { label: "Rencontres à Cuba", query: "Conseils pour rencontrer quelqu'un à Cuba en toute sécurité ?", icon: Plane },
+      { label: "Se connecter avec des gens à Cuba", query: "Conseils pour échanger avec des gens à Cuba et visiter en toute sécurité ?", icon: Plane },
       { label: "Signaler quelqu'un", query: "Je veux signaler un utilisateur.", icon: AlertTriangle },
     ],
   },
 };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/isexy-ai-chat`;
 const STORAGE_KEY = "isexy_assistant_v2";
 const TEASER_KEY = "isexy_assistant_teaser_seen";
 // Pages with their own fixed composer / call UI where a floating button gets in the way.
@@ -319,7 +319,7 @@ export function AIChatWidget() {
     if (handingOff) return;
     setHandingOff(true);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
+      const { data, error } = await supabase.functions.invoke("isexy-ai-chat", {
         body: {
           action: "handoff",
           conversationId: state.conversationId,

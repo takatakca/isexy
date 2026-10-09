@@ -212,7 +212,7 @@ function flushOnExit() {
   fetch(url, {
     method: "POST",
     keepalive: true,
-    headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
+    headers: { "Content-Type": "application/json", "Content-Profile": "isexy", apikey: key, Authorization: `Bearer ${key}` },
     body,
   }).catch(() => undefined);
 }

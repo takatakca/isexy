@@ -27,8 +27,8 @@ const PAGE_SCHEMAS: Record<string, object[]> = {
 
 const FALLBACK: RouteMeta = {
   path: "/",
-  title: `${SITE_NAME} — Premium Dating for Canada & Cuba`,
-  description: "Meet verified Canadian and Cuban singles on ISEXY.",
+  title: `${SITE_NAME} — Meet new people & make friends in Canada (18+)`,
+  description: "ISEXY is a social network for adults (18+) in Canada: verified profiles, chat, phone and video calls.",
   index: false,
 };
 
@@ -65,7 +65,7 @@ export function RouteSeo() {
       <meta property="og:image" content={OG_IMAGE} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="ISEXY — Premium dating between Canada and Cuba" />
+      <meta property="og:image:alt" content="ISEXY — Meet new people and make friends in Canada (18+)" />
       <meta property="og:locale" content={OG_LOCALES[lang]} />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={meta.title} />

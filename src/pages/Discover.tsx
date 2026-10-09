@@ -53,7 +53,7 @@ export default function Discover() {
       const looksSpanish = SPANISH_HINT.test(bio);
       if ((looksSpanish && language.code === "es") || (!looksSpanish && language.code === "en")) continue;
       supabase.functions
-        .invoke("translate-message", { body: { text: bio, targetLanguage: language.code } })
+        .invoke("isexy-translate-message", { body: { text: bio, targetLanguage: language.code } })
         .then(({ data }) => {
           const text = data?.translatedText;
           if (text && text !== bio) setTranslated((prev) => ({ ...prev, [p.id]: text }));

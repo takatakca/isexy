@@ -12,8 +12,8 @@ export default function DatingRegulations() {
             <Scale className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-foreground">Dating Regulations</h1>
-            <p className="text-sm text-muted-foreground">Canada & Cuba Laws</p>
+            <h1 className="text-2xl font-extrabold text-foreground">Online Safety & Regulations</h1>
+            <p className="text-sm text-muted-foreground">Canada (and Cuba)</p>
           </div>
         </div>
 
@@ -23,9 +23,11 @@ export default function DatingRegulations() {
             {/* Introduction */}
             <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
               <p className="text-muted-foreground text-sm">
-                ISEXY operates under both Canadian and Cuban laws. As a user, you are responsible for 
+                ISEXY is a social network for adults (18+) based in Montréal, Québec. It operates under 
+                Canadian law, and Cuban law also applies to members in Cuba. As a user, you are responsible for 
                 understanding and complying with the laws applicable to you based on your location. This 
-                page provides an overview of relevant regulations in both jurisdictions.
+                page gives an overview of Canadian online safety and privacy rules, how to report harmful 
+                behaviour, and the relevant rules in Cuba.
               </p>
             </div>
 
@@ -35,20 +37,20 @@ export default function DatingRegulations() {
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <MapPin className="w-5 h-5 text-red-500" />
-                <h2 className="text-xl font-bold">🇨🇦 Canadian Dating Laws & Regulations</h2>
+                <h2 className="text-xl font-bold">🇨🇦 Canadian Online Safety Laws & Regulations</h2>
               </div>
 
               <div className="space-y-4">
                 <div className="bg-card border border-border rounded-xl p-4">
                   <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
                     <Users className="w-4 h-4 text-primary" />
-                    Age of Consent
+                    18+ Requirement
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    The age of consent in Canada is <strong>16 years old</strong>. However, ISEXY requires all 
-                    users to be at least <strong>18 years old</strong> to use our services. Sexual activity with 
-                    persons under 18 may be illegal if there is a relationship of trust, authority, or dependency, 
-                    or if there is exploitation.
+                    ISEXY is for adults only: all users must be at least <strong>18 years old</strong>. We may 
+                    ask for proof of age at any time, and accounts belonging to minors are removed. If you believe 
+                    a user is under 18, report their profile right away. Any sexual exploitation of a minor is a 
+                    serious crime in Canada and is reported to the police.
                   </p>
                 </div>
 
@@ -62,19 +64,23 @@ export default function DatingRegulations() {
                     <li><strong>Section 264:</strong> Criminal harassment (stalking) is prohibited and includes repeated unwanted communication.</li>
                     <li><strong>Section 264.1:</strong> Uttering threats is a criminal offense.</li>
                     <li><strong>Section 372:</strong> False messages and harassing communications are prohibited.</li>
-                    <li><strong>Section 380:</strong> Fraud (including romance scams) is punishable by up to 14 years imprisonment.</li>
+                    <li><strong>Section 346:</strong> Extortion, including threats to share intimate images unless you pay ("sextortion"), is a criminal offense.</li>
+                    <li><strong>Section 380:</strong> Fraud (including online scams such as fake emergencies or investment schemes) is punishable by up to 14 years imprisonment.</li>
                   </ul>
                 </div>
 
                 <div className="bg-card border border-border rounded-xl p-4">
                   <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" />
-                    Privacy Laws (PIPEDA)
+                    Privacy Laws (PIPEDA & Québec Law 25)
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Under Canada's Personal Information Protection and Electronic Documents Act (PIPEDA), 
                     organizations must obtain meaningful consent for the collection, use, and disclosure of 
-                    personal information. Users have the right to access their personal data and request corrections.
+                    personal information. Users have the right to access their personal data and request corrections. 
+                    In Québec, the Act respecting the protection of personal information in the private sector, as 
+                    amended by Law 25, also applies, including the obligation to report serious privacy incidents 
+                    to the Commission d'accès à l'information. See our Privacy Policy for how to exercise your rights.
                   </p>
                 </div>
 
@@ -86,7 +92,7 @@ export default function DatingRegulations() {
                   <p className="text-sm text-muted-foreground">
                     The Canadian Human Rights Act prohibits discrimination based on race, national or ethnic 
                     origin, colour, religion, age, sex, sexual orientation, gender identity, marital status, 
-                    family status, genetic characteristics, or disability. While dating preferences are personal, 
+                    family status, genetic characteristics, or disability. While who you choose to talk with is personal, 
                     users should treat all other users with dignity and respect.
                   </p>
                 </div>
@@ -103,6 +109,20 @@ export default function DatingRegulations() {
                     of receiving a contract.
                   </p>
                 </div>
+
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    Reporting Harmful Behaviour
+                  </h3>
+                  <ul className="text-sm text-muted-foreground space-y-2 list-disc pl-5">
+                    <li>Use <strong>Block</strong> and <strong>Report</strong> on any profile or conversation. Reports go to our moderation team.</li>
+                    <li>If you are in immediate danger, call <strong>911</strong>.</li>
+                    <li>Report scams and fraud to the <strong>Canadian Anti-Fraud Centre</strong> (1-888-495-8501).</li>
+                    <li>Report the online sexual exploitation of a child to <strong>Cybertip.ca</strong>.</li>
+                    <li>Keep screenshots and messages as evidence before blocking, if it is safe to do so.</li>
+                  </ul>
+                </div>
               </div>
             </section>
 
@@ -112,7 +132,7 @@ export default function DatingRegulations() {
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <MapPin className="w-5 h-5 text-blue-500" />
-                <h2 className="text-xl font-bold">🇨🇺 Cuban Dating Laws & Regulations</h2>
+                <h2 className="text-xl font-bold">🇨🇺 Cuban Laws & Regulations</h2>
               </div>
 
               <div className="space-y-4">
@@ -137,7 +157,7 @@ export default function DatingRegulations() {
                     <li><strong>Sexual Assault:</strong> Sexual offenses are prosecuted under the Cuban Penal Code with significant penalties.</li>
                     <li><strong>Harassment:</strong> Stalking and harassment behaviors are criminally punishable.</li>
                     <li><strong>Human Trafficking:</strong> Cuba has strong laws against human trafficking with severe penalties.</li>
-                    <li><strong>Fraud:</strong> Scams and fraud, including romance scams, are criminal offenses.</li>
+                    <li><strong>Fraud:</strong> Scams and fraud, including online scams, are criminal offenses.</li>
                   </ul>
                 </div>
 
@@ -178,7 +198,7 @@ export default function DatingRegulations() {
             <section>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <Scale className="w-5 h-5 text-primary" />
-                Cross-Border Relationship Considerations
+                Cross-Border Considerations
               </h2>
 
               <div className="space-y-4">
@@ -207,7 +227,7 @@ export default function DatingRegulations() {
                     Important Warning
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Be cautious of romance scams. Never send money to someone you haven't met in person. 
+                    Be cautious of online scams. Never send money to someone you haven't met in person. 
                     ISEXY actively monitors for fraudulent activity, but users should remain vigilant. 
                     Report suspicious behavior immediately through our reporting system.
                   </p>
@@ -242,7 +262,7 @@ export default function DatingRegulations() {
               <h2 className="text-xl font-bold mb-4">Legal Questions?</h2>
               <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
                 <p className="text-muted-foreground text-sm mb-3">
-                  For legal questions regarding ISEXY's policies or cross-border dating considerations:
+                  For legal questions regarding ISEXY's policies or cross-border considerations:
                 </p>
                 <p className="text-foreground font-medium">Email: legal@isexy.ca</p>
                 <p className="text-muted-foreground text-sm">Canada: +1 450 999 4999</p>

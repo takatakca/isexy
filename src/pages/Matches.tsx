@@ -154,7 +154,7 @@ export default function Matches() {
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "isexy",
           table: "matches",
         },
         () => {

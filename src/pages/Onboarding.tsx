@@ -16,14 +16,14 @@ interface OnboardingSlide {
 const slides: OnboardingSlide[] = [
   {
     icon: <Heart className="w-12 h-12" />,
-    title: "Find Your Perfect Match",
-    description: "Connect with amazing people from Cuba and around the world. Our smart matching algorithm helps you find compatible connections.",
+    title: "Find People to Talk To",
+    description: "Meet adults across Canada, Cuba and around the world. Swipe to find people you'd like to talk to, chat with live translation, and make new friends.",
     color: "from-pink-500 to-rose-500",
   },
   {
     icon: <Users className="w-12 h-12" />,
     title: "Verified Profiles",
-    description: "All profiles are verified for authenticity. Feel confident knowing you're connecting with real people.",
+    description: "Look for the verified badge: members can verify their photos so you know you're talking with real people.",
     color: "from-blue-500 to-cyan-500",
   },
   {
@@ -35,7 +35,7 @@ const slides: OnboardingSlide[] = [
   {
     icon: <Sparkles className="w-12 h-12" />,
     title: "Premium Features",
-    description: "Video calls, unlimited likes, see who likes you, and more. Experience dating without limits.",
+    description: "Video calls, unlimited likes, see who likes you, and more. Make new friends without limits.",
     color: "from-purple-500 to-violet-500",
   },
 ];

@@ -70,7 +70,7 @@ export default function BuyMinutes() {
     setIsLoading(true);
     try {
       track("checkout_started", { product: "BuyMinutes" });
-      const { data, error } = await supabase.functions.invoke("create-minute-purchase", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-minute-purchase", {
         body: { packageId: selectedPackage },
       });
       if (error) throw error;

@@ -42,7 +42,7 @@ const TicketTracking = () => {
         'postgres_changes',
         {
           event: 'UPDATE',
-          schema: 'public',
+          schema: 'isexy',
           table: 'support_tickets'
         },
         (payload) => {

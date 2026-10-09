@@ -12,7 +12,7 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  public: {
+  isexy: {
     Tables: {
       takatak_identity_links: {
         Row: {
@@ -2977,19 +2977,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["isexy"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["isexy"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["isexy"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -3316,13 +3316,13 @@ export type Database = {
         Returns: {
           first_name: string
           profile_id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["isexy"]["Enums"]["app_role"]
           user_id: string
         }[]
       }
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: Database["isexy"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
@@ -3375,7 +3375,7 @@ export type Database = {
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "isexy">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
@@ -3491,7 +3491,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  isexy: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
     },

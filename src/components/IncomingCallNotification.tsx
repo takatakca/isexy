@@ -84,7 +84,7 @@ export function IncomingCallNotification() {
       .channel(`incoming-calls-${profile.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "video_call_sessions", filter: `receiver_id=eq.${profile.id}` },
+        { event: "INSERT", schema: "isexy", table: "video_call_sessions", filter: `receiver_id=eq.${profile.id}` },
         async (payload) => {
           const call = payload.new as { id: string; match_id: string; caller_id: string; status: string; call_type?: string };
           if (call.status !== "connecting" && call.status !== "ringing") return;
@@ -111,7 +111,7 @@ export function IncomingCallNotification() {
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "video_call_sessions", filter: `receiver_id=eq.${profile.id}` },
+        { event: "UPDATE", schema: "isexy", table: "video_call_sessions", filter: `receiver_id=eq.${profile.id}` },
         (payload) => {
           const call = payload.new as { id: string; status: string };
           // Caller hung up or the ring timed out.

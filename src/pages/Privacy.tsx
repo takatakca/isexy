@@ -16,7 +16,8 @@ export default function Privacy() {
             <section className="mb-8">
               <h2 className="text-xl font-bold mb-4">1. Introduction</h2>
               <p className="text-muted-foreground mb-4">
-                Welcome to ISEXY. We respect your privacy and are committed to protecting your personal data. 
+                Welcome to ISEXY, a social network for adults (18+) where members create profiles, find people to 
+                talk with through swipes and mutual matches, chat (with live translation) and make phone and video calls. We respect your privacy and are committed to protecting your personal data. 
                 This privacy policy will inform you how we look after your personal data when you visit our website 
                 or use our mobile application and tell you about your privacy rights and how the law protects you.
               </p>
@@ -34,7 +35,8 @@ export default function Privacy() {
               <p className="text-muted-foreground mb-4">
                 ISEXY is operated by ISEXY Inc., a company registered in Canada. We are the data controller 
                 responsible for your personal data in accordance with the Personal Information Protection and 
-                Electronic Documents Act (PIPEDA) and applicable Cuban privacy laws. If you have any questions 
+                Electronic Documents Act (PIPEDA), Québec's Act respecting the protection of personal information in 
+                the private sector (Law 25) and applicable Cuban privacy laws. If you have any questions 
                 about this privacy policy, please contact our Data Protection Officer at:
               </p>
               <div className="bg-muted p-4 rounded-xl mb-4">
@@ -60,7 +62,7 @@ export default function Privacy() {
               <ul className="list-disc pl-5 text-muted-foreground space-y-2 mb-4">
                 <li><strong>Identity Data:</strong> First name, last name, username, date of birth, gender</li>
                 <li><strong>Contact Data:</strong> Email address, telephone number</li>
-                <li><strong>Profile Data:</strong> Photos, bio, interests, preferences, relationship goals</li>
+                <li><strong>Profile Data:</strong> Photos, bio, interests, preferences, what you are looking for on ISEXY (for example, friends or people to talk with)</li>
                 <li><strong>Communication Data:</strong> Messages sent through the platform</li>
                 <li><strong>Financial Data:</strong> Payment card details, billing address (processed by Stripe)</li>
                 <li><strong>Survey Data:</strong> Feedback, survey responses, reviews</li>
@@ -114,7 +116,7 @@ export default function Privacy() {
                 <div className="bg-muted p-4 rounded-xl">
                   <h4 className="font-semibold text-foreground mb-2">Contractual Necessity</h4>
                   <p className="text-muted-foreground text-sm">
-                    Processing necessary to perform our contract with you (e.g., providing the dating service, processing payments).
+                    Processing necessary to perform our contract with you (e.g., providing the social networking service, processing payments).
                   </p>
                 </div>
                 

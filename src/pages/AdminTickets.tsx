@@ -173,7 +173,7 @@ const AdminTickets = () => {
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
+          schema: 'isexy',
           table: 'support_tickets'
         },
         (payload) => {
@@ -289,7 +289,7 @@ const AdminTickets = () => {
 
       if (newStatus && newStatus !== oldStatus) {
         try {
-          await supabase.functions.invoke("send-ticket-status-update", {
+          await supabase.functions.invoke("isexy-send-ticket-status-update", {
             body: {
               email: selectedTicket.email,
               name: selectedTicket.name,
@@ -374,7 +374,7 @@ const AdminTickets = () => {
         const ticketsToNotify = tickets.filter(t => selectedTickets.has(t.id) && t.status !== bulkStatus);
         for (const ticket of ticketsToNotify) {
           try {
-            await supabase.functions.invoke("send-ticket-status-update", {
+            await supabase.functions.invoke("isexy-send-ticket-status-update", {
               body: {
                 email: ticket.email,
                 name: ticket.name,

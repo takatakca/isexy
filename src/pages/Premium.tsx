@@ -45,7 +45,7 @@ export default function Premium() {
     setLoading(true);
     try {
       track("checkout_started", { product: "Premium" });
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-checkout", {
         body: { tier: activeTier, duration: selectedDuration },
       });
       if (error) throw error;

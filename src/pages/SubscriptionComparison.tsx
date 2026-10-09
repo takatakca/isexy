@@ -66,7 +66,7 @@ export default function SubscriptionComparison() {
     setLoading(tier);
     try {
       track("checkout_started", { product: "SubscriptionComparison" });
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      const { data, error } = await supabase.functions.invoke("isexy-create-checkout", {
         body: { tier, duration: "month" },
       });
 

@@ -28,9 +28,9 @@ export default function CommunityGuidelines() {
               <div>
                 <h4 className="font-semibold text-foreground">1. Consider boundaries</h4>
                 <p className="text-muted-foreground text-sm">
-                  Comfort levels vary from person to person. That's why we don't allow nudity, sexual content, 
-                  sexual desires, or looking for sex on your public profile. If you are in a private conversation, 
-                  these are okay if everyone is okay with it. Consent matters.
+                  Comfort levels vary from person to person. That's why we don't allow nudity, sexual content 
+                  or sexual solicitation on your public profile. In a private conversation, never send sexual 
+                  messages or images unless the other person has clearly agreed. Consent matters.
                 </p>
               </div>
 
@@ -56,7 +56,7 @@ export default function CommunityGuidelines() {
                 <p className="text-muted-foreground text-sm">
                   Don't advertise, promote, share your social handles to gain followers, sell stuff, fundraise, 
                   or campaign. This also means ISEXY isn't the place for any sort of sex work, escort services, 
-                  or compensated relationships.
+                  or any paid or compensated arrangements.
                 </p>
               </div>
 

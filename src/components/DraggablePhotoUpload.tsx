@@ -52,13 +52,13 @@ export function DraggablePhotoUpload({
       const fileName = `${userId}/${Date.now()}-${index}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("profile-photos")
+        .from("isexy-profile-photos")
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from("profile-photos")
+        .from("isexy-profile-photos")
         .getPublicUrl(fileName);
 
       // Save to profile_photos table

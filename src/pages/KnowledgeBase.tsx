@@ -275,7 +275,7 @@ export default function KnowledgeBase() {
       <main className="max-w-3xl mx-auto px-4 pb-28">
         <section className="pt-6 pb-6">
           <h1 className="text-3xl font-extrabold text-foreground mb-1">How can we help?</h1>
-          <p className="text-muted-foreground mb-5">Guides for dating safely between Canada and Cuba, your account, payments and more.</p>
+          <p className="text-muted-foreground mb-5">Guides for meeting people safely in Canada — and Cuba — your account, payments and more.</p>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input

@@ -31,15 +31,15 @@ const PhoneIcon = () => (
 
 const features = [
   { icon: Shield, title: "Verified Profiles", desc: "ID-verified members for your safety" },
-  { icon: Globe, title: "Cuba & Canada", desc: "Bridge cultures, find real connection" },
-  { icon: Heart, title: "Smart Matching", desc: "AI-powered compatibility scoring" },
-  { icon: Star, title: "Video Dates", desc: "See who you're talking to, live" },
+  { icon: Globe, title: "Canada & Cuba", desc: "Chat with live translation in English, French and Spanish" },
+  { icon: Heart, title: "Swipe & Match", desc: "When you both swipe right, start chatting" },
+  { icon: Star, title: "Calls & Video", desc: "Phone and webcam video calls, right in the app" },
 ];
 
 const loveStories = [
-  { names: "Maria & James", location: "Havana → Toronto", quote: "We matched on ISEXY and now we're planning our wedding!" },
-  { names: "Elena & Carlos", location: "Varadero → Montreal", quote: "Distance was nothing compared to what we found together." },
-  { names: "Sophie & Daniel", location: "Santiago → Vancouver", quote: "ISEXY gave us something real in a world of filters." },
+  { names: "1. Create your profile", location: "Adults 18+ only", quote: "Add a photo, a short bio and your interests, then verify your profile." },
+  { names: "2. Swipe to find people", location: "Mutual matches", quote: "Swipe right on people you'd like to talk to. When it's mutual, you can chat." },
+  { names: "3. Talk and make friends", location: "Chat, calls & video", quote: "Chat with live translation, then call or video call when you're both ready." },
 ];
 
 interface MenuSection {
@@ -69,7 +69,7 @@ const menuSections: MenuSection[] = [
       { label: "Community Guidelines", path: "/community-guidelines" },
       { label: "Safety Tips", path: "/safety-tips" },
       { label: "Safety Center", path: "/safety" },
-      { label: "Dating Regulations", path: "/dating-regulations" },
+      { label: "Online Safety & Regulations", path: "/regulations" },
     ],
   },
   { title: "Support", expandable: false, path: "/help-support" },
@@ -322,16 +322,16 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* Love Stories Section */}
+      {/* How it works Section */}
       <section className="px-6 py-16">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Love Stories</h2>
+            <h2 className="text-2xl font-bold">How ISEXY works</h2>
             <button
-              onClick={() => navigate("/love-stories")}
+              onClick={() => navigate("/community-stories")}
               className="text-primary text-sm font-semibold flex items-center gap-1 hover:underline"
             >
-              See all <ChevronRight className="w-4 h-4" />
+              Community Stories <ChevronRight className="w-4 h-4" />
             </button>
           </div>
           <div className="space-y-4">
@@ -350,7 +350,7 @@ export default function Welcome() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm">{story.names}</p>
                   <p className="text-foreground/40 text-xs mb-1">{story.location}</p>
-                  <p className="text-foreground/70 text-sm italic">"{story.quote}"</p>
+                  <p className="text-foreground/70 text-sm">{story.quote}</p>
                 </div>
               </motion.div>
             ))}
@@ -362,16 +362,16 @@ export default function Welcome() {
       <section className="px-6 py-12 bg-primary/10">
         <div className="max-w-lg mx-auto flex justify-around text-center">
           <div>
-            <p className="text-3xl font-extrabold text-primary">50K+</p>
-            <p className="text-foreground/50 text-xs mt-1">Active Members</p>
+            <p className="text-3xl font-extrabold text-primary">18+</p>
+            <p className="text-foreground/50 text-xs mt-1">Adults only</p>
           </div>
           <div>
-            <p className="text-3xl font-extrabold text-primary">12K+</p>
-            <p className="text-foreground/50 text-xs mt-1">Matches Made</p>
+            <p className="text-3xl font-extrabold text-primary">EN · FR</p>
+            <p className="text-foreground/50 text-xs mt-1">Live translation</p>
           </div>
           <div>
-            <p className="text-3xl font-extrabold text-primary">3K+</p>
-            <p className="text-foreground/50 text-xs mt-1">Love Stories</p>
+            <p className="text-3xl font-extrabold text-primary">Free</p>
+            <p className="text-foreground/50 text-xs mt-1">To join</p>
           </div>
         </div>
       </section>
@@ -380,8 +380,8 @@ export default function Welcome() {
       <section className="px-6 py-12">
         <div className="max-w-lg mx-auto">
           <p className="text-foreground/50 text-sm leading-relaxed mb-4">
-            Looking for love, new friends, or just want to have fun? ISEXY.CA is where it happens. 
-            With thousands of matches made, it's the best way to meet your next date.
+            ISEXY.CA is a social network for adults (18+) in Canada. Create a verified profile, swipe to find
+            people to talk with, chat with live translation, and make new friends through phone and video calls.
           </p>
         </div>
       </section>

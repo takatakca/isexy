@@ -65,7 +65,7 @@ export function CallScheduleModal({
       if (error) throw error;
 
       // Send notification to recipient
-      await supabase.functions.invoke("send-push-notification", {
+      await supabase.functions.invoke("isexy-send-push-notification", {
         body: {
           userId: recipientId,
           title: "📅 Call Scheduled",

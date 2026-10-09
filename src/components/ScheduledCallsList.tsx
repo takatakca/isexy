@@ -56,7 +56,7 @@ export function ScheduledCallsList() {
       .channel("scheduled-calls-changes")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "scheduled_calls" },
+        { event: "*", schema: "isexy", table: "scheduled_calls" },
         () => fetchScheduledCalls()
       )
       .subscribe();

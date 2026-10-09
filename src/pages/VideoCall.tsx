@@ -222,11 +222,11 @@ export default function VideoCall() {
           setStatus("ringing");
           // Reach them outside the app too (WhatsApp / push). The server checks the match.
           supabase.functions
-            .invoke("send-whatsapp-call-notification", { body: { matchId, callSessionId: session.id, callType } })
+            .invoke("isexy-send-whatsapp-call-notification", { body: { matchId, callSessionId: session.id, callType } })
             .catch(() => undefined);
           ringTimerRef.current = setTimeout(() => {
             if (statusRef.current === "ringing" || statusRef.current === "connecting") {
-              supabase.functions.invoke("send-missed-call-notification", { body: { matchId, callType } }).catch(() => undefined);
+              supabase.functions.invoke("isexy-send-missed-call-notification", { body: { matchId, callType } }).catch(() => undefined);
               call.hangUp();
               finish("missed");
             }
@@ -253,7 +253,7 @@ export default function VideoCall() {
     if (role !== "caller" || !matchId || !profile?.id) return;
     const channel = supabase
       .channel(`call-session-${matchId}-${profile.id}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "video_call_sessions", filter: `match_id=eq.${matchId}` },
+      .on("postgres_changes", { event: "UPDATE", schema: "isexy", table: "video_call_sessions", filter: `match_id=eq.${matchId}` },
         (payload) => {
           const row = payload.new as { id: string; status: string };
           if (row.id !== sessionIdRef.current || finishedRef.current) return;
