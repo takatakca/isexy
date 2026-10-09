@@ -203,7 +203,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <center>
                     <a href="https://isexy.ca/likes" class="button">See Who →</a>
                   </center>
-                  <p style="color: #666; font-size: 14px; margin-top: 30px;">Super Likes are 3x more likely to start a conversation!</p>
+                  <p style="color: #666; font-size: 14px; margin-top: 30px;">A Super Like means they really want to talk. Say hi!</p>
                 </div>
               </div>
             </body>

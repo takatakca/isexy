@@ -23,7 +23,7 @@ const slides: OnboardingSlide[] = [
   {
     icon: <Users className="w-12 h-12" />,
     title: "Verified Profiles",
-    description: "All profiles are verified for authenticity. Feel confident knowing you're connecting with real people.",
+    description: "Look for the verified badge: members can verify their photos so you know you're talking with real people.",
     color: "from-blue-500 to-cyan-500",
   },
   {

@@ -85,7 +85,7 @@ export default function GetSuperLikes() {
           <div className="px-6 pb-6">
             <h1 className="text-2xl font-extrabold text-foreground leading-tight">
               Stand out with Super Like.<br />
-              <span className="text-primary">3× more likely</span> to match.
+              <span className="text-primary">Show you really want to talk.</span>
             </h1>
             {balance !== null && (
               <p className="text-xs text-muted-foreground mt-2">
