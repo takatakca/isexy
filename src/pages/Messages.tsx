@@ -21,7 +21,7 @@ const safetySlides = [
     title: "Be respectful",
     content: "Don't bully, harass, or threaten others. We don't support discrimination of any kind. ISEXY is no place for hate.",
     subtitle: "Respect boundaries",
-    subcontent: "Always get consent from people before talking about sex or expressing sexual desires.",
+    subcontent: "Keep it respectful: no sexual messages or images without clear consent, and stop when someone says no.",
   },
   {
     id: 2,

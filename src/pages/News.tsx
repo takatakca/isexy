@@ -9,7 +9,7 @@ const newsArticles = [
     subtitle: "ISEXY is a place for adults (18+) to meet new people and make friends: profiles, swipes, chat with live translation, phone calls and video calls — in English and Canadian French.",
     date: "03 December 2025",
     category: "Trends",
-    image: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=600&h=400&fit=crop",
   },
   {
     id: 2,

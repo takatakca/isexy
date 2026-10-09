@@ -59,7 +59,7 @@ const categories: { section: string; description: string; items: ExploreCategory
 
 // Placeholder images for categories (using gradients as fallback)
 const categoryImages: Record<string, string> = {
-  "long-term": "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=400&h=500&fit=crop",
+  "long-term": "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&h=500&fit=crop",
   "serious": "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&h=500&fit=crop",
   "tonight": "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&h=500&fit=crop",
   "wants-kids": "https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=400&h=500&fit=crop",
@@ -69,7 +69,7 @@ const categoryImages: Record<string, string> = {
   "foodies": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=500&fit=crop",
   "nature": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=500&fit=crop",
   "music": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=500&fit=crop",
-  "self-care": "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=500&fit=crop",
+  "self-care": "https://images.unsplash.com/photo-1545389336-cf090694435e?w=400&h=500&fit=crop",
   "gamers": "https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=400&h=500&fit=crop",
   "pets": "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=500&fit=crop",
   "binge": "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=400&h=500&fit=crop",

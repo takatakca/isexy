@@ -72,3 +72,40 @@ Inventory for the owner's decision:
 
 When the owner confirms, a follow-up can remove or reword these surgically.
 Rows would be unpublished or reworded with `UPDATE`, never deleted.
+
+## Also done
+
+- Invented or unverifiable claims are removed:
+  - "3× more likely to match" (4 places)
+  - "All profiles are verified" (verification is optional; the badge exists)
+  - fake user counts, couple testimonials, an invented press timeline and
+    leadership names
+  - "a new relationship every 3 seconds"
+  - Swipe Surge "15× / 250%"
+  - the "Face Check™" name, which nothing implements
+- Romantic stock photos (wedding rings, wedding chairs, heart hands, a couple
+  at sunset, heart bokeh, an oil massage) are replaced with friendship photos
+  in Community Stories, Explore and News.
+- SEO and app-store wording:
+  - Site title "ISEXY — Meet new people & make friends in Canada (18+)".
+  - Schema.org category `SocialNetworkingApplication`.
+  - `llms.txt`, the sitemap and the pre-rendered pages contain no dating wording.
+- Safety:
+  - Canada is listed first in the emergency resources, with the Canadian
+    Anti-Fraud Centre added.
+  - The "Sexual Health" tips are now "Boundaries & Consent".
+  - Community Guidelines: no sexual messages or images without clear consent.
+  - The Online Safety & Regulations page covers the Criminal Code (fraud,
+    extortion/sextortion, non-consensual images), PIPEDA, Law 25 and 18+.
+
+## Waiting on the owner
+
+| Item | Why it waits |
+| --- | --- |
+| **Hero image** `public/images/hero-bg.png` (Welcome and Sign-in pages) | It shows romantic couples (one kissing) with "Experience Cuba & Canada, Together" baked into the image. It is both dating and Cuba imagery, so it stays until the Cuba decision; replacing it needs a new image (e.g. friends talking, Canadian setting). |
+| Cuba legal text in Online Safety & Regulations | Spousal sponsorship and the 2022 Cuban Family Code text use legal terms (spouse, marriage, couples). It is Cuba-specific, so it is on hold. |
+| Cuba seeded forum posts | Listed above; would be reworded or unpublished with `UPDATE`. |
+| WhatsApp message templates | `missed_call_notification` and `video_call_notification` are approved in Meta, not in this repo. If their text mentions dating, they need re-approval in Meta. |
+| "Reports are reviewed within 24 hours" (FAQ, report flow) | A staffing promise. Keep it only if the moderation team can meet it. |
+| Terms §14 says ISEXY "does not conduct identity verification" | Photo verification exists. Legal should align the wording. |
+| Support address `cubaresort.ca@gmail.com`, footer "© 2025" | Not dating wording; update when an isexy.ca support address exists. |
