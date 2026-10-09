@@ -19,8 +19,8 @@ import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 const deleteReasons = [
-  { id: "found_someone", label: "I found someone" },
-  { id: "taking_break", label: "I need a break from dating" },
+  { id: "found_someone", label: "I found the friends I was looking for" },
+  { id: "taking_break", label: "I need a break from social apps" },
   { id: "not_useful", label: "The app isn't useful" },
   { id: "too_many_ads", label: "Too many ads" },
   { id: "privacy", label: "Privacy concerns" },
@@ -67,7 +67,7 @@ const DeleteAccount = () => {
         <div className="bg-card rounded-xl p-4 space-y-4">
           <h3 className="font-semibold text-foreground">Why are you leaving?</h3>
           <p className="text-sm text-muted-foreground">
-            We'd love to know why you're leaving so we can improve.
+            We'd like to know why you're leaving so we can improve.
           </p>
 
           <RadioGroup value={selectedReason} onValueChange={setSelectedReason}>

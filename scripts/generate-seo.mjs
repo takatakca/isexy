@@ -119,7 +119,7 @@ await writeFile(
   [
     "# ISEXY",
     "",
-    "> ISEXY is a premium dating platform connecting Canadians with Cuban singles: verified profiles, live chat translation (English/Spanish/French), HD video calls, a private phone line, gifts and ETECSA recharges, and an AI dating concierge. Based in Montréal, Canada.",
+    "> ISEXY is a social network for adults (18+) in Canada, available in English and Canadian French: member profiles (with verification), swipes to find people to talk with and make friends, mutual matches, chat with live translation (English/French/Spanish), phone calls, webcam video calls, PhoneLine voice messages, block and report tools with moderation, and an AI help concierge. Members in Cuba can also join, with gifts and ETECSA recharges. Based in Montréal, Canada.",
     "",
     "Support: cubaresort.ca@gmail.com · Canada +1 450 999 4999 · Cuba +53 5307 1185",
     "",

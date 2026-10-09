@@ -89,7 +89,7 @@ export default function PhoneLine() {
     },
     { icon: Headphones, title: "Browse voices", desc: "Listen to real greetings", to: "/phone-line/browse" },
     { icon: Inbox, title: "Voice inbox", desc: "Your received & sent replies", to: "/phone-line/inbox" },
-    { icon: Radio, title: "Live singles line", desc: "Coming soon", to: "#", disabled: true },
+    { icon: Radio, title: "Live chat line", desc: "Coming soon", to: "#", disabled: true },
     { icon: Coins, title: "Buy minutes", desc: "Top up phone & video minutes", to: "/buy-minutes" },
     { icon: Shield, title: "Safety & 18+", desc: "How we keep your number private", to: "/safety" },
   ];
@@ -114,7 +114,7 @@ export default function PhoneLine() {
           <div className="pointer-events-none absolute -bottom-16 -left-10 h-48 w-48 rounded-full bg-primary-light/20 blur-3xl" />
           <div className="relative">
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
-              <Sparkles className="h-3 w-3" /> Voice-first dating
+              <Sparkles className="h-3 w-3" /> Voice-first conversations
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight">
               Meet by <span className="text-gradient">voice</span> first.

@@ -48,7 +48,7 @@ export default function Auth() {
             {mode === "login" ? "Welcome back" : "Create your account"}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {mode === "login" ? "Sign in to keep the conversation going." : "Join the #1 Canadian–Cuban dating community."}
+            {mode === "login" ? "Sign in to keep the conversation going." : "Join a social community for adults (18+) across Canada and Cuba."}
           </p>
 
           <div role="tablist" className="grid grid-cols-2 p-1 rounded-full bg-muted mb-6">

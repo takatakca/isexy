@@ -176,7 +176,7 @@ export default function Messages() {
 
             <div className="flex items-center gap-2 mb-6">
               <Shield className="w-5 h-5 text-cyan-500" />
-              <span className="font-semibold text-foreground">Date Safely</span>
+              <span className="font-semibold text-foreground">Stay Safe</span>
             </div>
 
             {renderSafetyIcon(safetySlides[safetySlide].icon)}

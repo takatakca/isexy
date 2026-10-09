@@ -20,8 +20,8 @@ export default function SafetyTips() {
                 <h4 className="font-semibold text-foreground">Never send money or share financial information</h4>
                 <p className="text-muted-foreground text-sm">
                   Never send money, whether it's through wire transfer, banking service, or an app on your phone, 
-                  even if the person claims to be in an emergency. Don't make investments or open accounts with 
-                  someone you matched with.
+                  even if the person claims to be in an emergency. Don't make investments, buy gift cards or crypto, 
+                  or open accounts because someone you met online asked you to.
                 </p>
               </div>
 
@@ -43,7 +43,7 @@ export default function SafetyTips() {
               </div>
 
               <div>
-                <h4 className="font-semibold text-foreground">Be wary of long distance relationships</h4>
+                <h4 className="font-semibold text-foreground">Be wary of people who need urgent help</h4>
                 <p className="text-muted-foreground text-sm">
                   Watch out for scammers who claim to be from your country but stuck somewhere else, especially 
                   if they ask for financial help to return home.
@@ -75,8 +75,8 @@ export default function SafetyTips() {
               <div>
                 <h4 className="font-semibold text-foreground">Meet in public and stay in public</h4>
                 <p className="text-muted-foreground text-sm">
-                  Meet in a populated, public place — never at your home, your date's home, or any other private 
-                  location. If your date pressures you to go to a private location, end the date.
+                  If you decide to meet someone from ISEXY, meet in a populated, public place — never at your home, 
+                  their home, or any other private location. If they pressure you to go somewhere private, leave.
                 </p>
               </div>
 
@@ -91,7 +91,7 @@ export default function SafetyTips() {
               <div>
                 <h4 className="font-semibold text-foreground">Be in control of your transportation</h4>
                 <p className="text-muted-foreground text-sm">
-                  We want you to be in control of how you get to and from your date so that you can leave 
+                  We want you to be in control of how you get to and from a meetup so that you can leave 
                   whenever you want.
                 </p>
               </div>
@@ -115,7 +115,7 @@ export default function SafetyTips() {
               <div>
                 <h4 className="font-semibold text-foreground">If you feel uncomfortable, leave</h4>
                 <p className="text-muted-foreground text-sm">
-                  It's okay to end the date early if you're feeling uncomfortable. In fact, it's encouraged. 
+                  It's okay to end a meetup early if you're feeling uncomfortable. In fact, it's encouraged. 
                   And if your instincts are telling you something is off or you feel unsafe, ask for help.
                 </p>
               </div>
@@ -123,30 +123,31 @@ export default function SafetyTips() {
           </div>
 
           <div className="pb-8">
-            <h3 className="text-lg font-bold text-foreground mb-3">Sexual Health & Consent</h3>
+            <h3 className="text-lg font-bold text-foreground mb-3">Boundaries & Consent</h3>
             
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold text-foreground">Protect yourself</h4>
+                <h4 className="font-semibold text-foreground">Respect boundaries</h4>
                 <p className="text-muted-foreground text-sm">
-                  When used correctly and consistently, condoms can significantly reduce the risk of 
-                  contracting and passing on STIs.
+                  ISEXY is for meeting new people and making friends. If someone says no, changes the subject 
+                  or stops replying, respect it and move on.
                 </p>
               </div>
 
               <div>
-                <h4 className="font-semibold text-foreground">Know your status</h4>
+                <h4 className="font-semibold text-foreground">Protect private images</h4>
                 <p className="text-muted-foreground text-sm">
-                  Not all STIs show symptoms, and you don't want to be in the dark about your status. 
-                  Stay on top of your health and prevent the spread of STIs by getting tested regularly.
+                  Never share intimate images of someone without their consent — in Canada it is a crime. 
+                  If someone threatens to share your images or asks for money, stop replying, keep the 
+                  evidence, report them on ISEXY and contact the police.
                 </p>
               </div>
 
               <div>
                 <h4 className="font-semibold text-foreground">Consent</h4>
                 <p className="text-muted-foreground text-sm">
-                  All sexual activity must start with consent and should include ongoing check-ins with 
-                  your partner. Consent can be withdrawn at any time, and sex is never owed to anyone.
+                  Any physical contact must start with clear consent, and consent can be withdrawn at any time. 
+                  Nobody owes anyone anything because of a chat, a call or a meetup.
                 </p>
               </div>
             </div>

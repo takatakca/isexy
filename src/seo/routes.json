@@ -2,15 +2,15 @@
   "routes": [
     {
       "path": "/",
-      "title": "ISEXY — Premium Dating for Canada & Cuba",
-      "description": "Meet verified Canadian and Cuban singles. Live chat translation (EN/ES/FR), video calls, a private phone line and an AI dating concierge. Join ISEXY free.",
+      "title": "ISEXY — Meet new people & make friends in Canada (18+)",
+      "description": "A social network for adults (18+) in Canada — and Cuba. Verified profiles, swipe to find people to talk with, chat with live translation (EN/FR/ES), phone and video calls. Join ISEXY free.",
       "changefreq": "weekly",
       "priority": 1.0
     },
     {
       "path": "/about",
       "title": "About ISEXY — Our Story & Mission",
-      "description": "Learn how ISEXY connects Canadians with Cuban singles through verified profiles and voice-first dating.",
+      "description": "Learn how ISEXY helps adults in Canada meet new people and make friends through verified profiles, chat, phone and video calls.",
       "changefreq": "monthly",
       "priority": 0.7
     },
@@ -22,23 +22,23 @@
       "priority": 0.6
     },
     {
-      "path": "/love-stories",
-      "title": "Love Stories — Real Couples on ISEXY",
-      "description": "Real stories from Canadian and Cuban couples who met on ISEXY.",
+      "path": "/community-stories",
+      "title": "Community Stories — Friendships Made on ISEXY",
+      "description": "Stories from members about the friendships and conversations that started on ISEXY.",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "path": "/faq",
       "title": "FAQ — ISEXY Help & Common Questions",
-      "description": "Answers to common questions about accounts, matching, subscriptions, safety, and verification on ISEXY.",
+      "description": "Answers to common questions about accounts, swipes and matches, subscriptions, safety, and verification on ISEXY.",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "path": "/help-support",
       "title": "Help & Support — ISEXY",
-      "description": "Get help with your ISEXY account, billing, matching, and safety.",
+      "description": "Get help with your ISEXY account, billing, matches, chat, calls, and safety.",
       "changefreq": "monthly",
       "priority": 0.5
     },
@@ -52,21 +52,21 @@
     {
       "path": "/knowledge-base",
       "title": "Help Center — ISEXY",
-      "description": "Guides for safe dating between Canada and Cuba: your account, verification, payments, gifts and recharges, video calls and more.",
+      "description": "Guides for meeting people safely in Canada — and Cuba: your account, verification, payments, gifts and recharges, video calls and more.",
       "changefreq": "monthly",
       "priority": 0.5
     },
     {
       "path": "/safety",
       "title": "Safety at ISEXY — Verified Profiles & Reporting",
-      "description": "How ISEXY keeps Canadian and Cuban daters safe with verification, reporting, and moderation.",
+      "description": "How ISEXY keeps members in Canada and Cuba safe with verification, block and report tools, and moderation.",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "path": "/safety-tips",
-      "title": "Dating Safety Tips — ISEXY",
-      "description": "Practical safety tips for online dating, meeting in person, and protecting your privacy.",
+      "title": "Safety Tips — ISEXY",
+      "description": "Practical safety tips for meeting new people online and in person, avoiding scams, and protecting your money and privacy.",
       "changefreq": "monthly",
       "priority": 0.5
     },
@@ -85,9 +85,9 @@
       "priority": 0.4
     },
     {
-      "path": "/dating-regulations",
-      "title": "Dating Regulations — ISEXY",
-      "description": "Legal context and regulatory information for cross-border dating between Canada and Cuba.",
+      "path": "/regulations",
+      "title": "Online Safety & Regulations — ISEXY",
+      "description": "Canadian online safety rules, privacy law (PIPEDA, Québec Law 25), the 18+ requirement and how to report harmful behaviour on ISEXY.",
       "changefreq": "monthly",
       "priority": 0.4
     },
@@ -137,21 +137,21 @@
     {
       "path": "/tourist-signup",
       "title": "Tourist Signup — Join ISEXY",
-      "description": "Sign up as a Canadian or international member and start matching with Cuban singles on ISEXY.",
+      "description": "Sign up as a Canadian or international member and start meeting new people on ISEXY, including members in Cuba.",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "path": "/cuban-signup",
       "title": "Cuban Signup — Join ISEXY",
-      "description": "Sign up as a Cuban member on ISEXY and connect with Canadian singles looking for meaningful relationships.",
+      "description": "Sign up as a Cuban member on ISEXY and connect with people in Canada to talk with and make friends.",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "path": "/signup",
       "title": "Sign Up — ISEXY",
-      "description": "Create your free ISEXY account and start matching today.",
+      "description": "Create your free ISEXY account and start meeting new people today (18+).",
       "changefreq": "monthly",
       "priority": 0.6
     },

@@ -345,11 +345,11 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Interested In */}
+            {/* Show me */}
             <SettingRow
               icon={Users}
-              label="Interested In"
-              value={interestedIn.length > 0 ? interestedIn.join(", ") : "Women"}
+              label="Show me"
+              value={interestedIn.length > 0 ? interestedIn.join(", ") : "Everyone"}
               onClick={() => {}}
             />
 
@@ -428,7 +428,7 @@ export default function Settings() {
             <SettingRow icon={GraduationCap} label="Education" value={education || "Select"} onClick={() => setActiveDrawer("education")} iconColor="text-muted-foreground" />
             <SettingRow icon={Baby} label="Family Plans" value={familyPlans || "Select"} onClick={() => setActiveDrawer("familyPlans")} iconColor="text-muted-foreground" />
             <SettingRow icon={MessageSquare} label="Communication Style" value={communicationStyle || "Select"} onClick={() => setActiveDrawer("communicationStyle")} iconColor="text-muted-foreground" />
-            <SettingRow icon={Heart} label="Love Style" value={loveLanguage || "Select"} onClick={() => setActiveDrawer("loveLanguage")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Heart} label="Friendship style" value={loveLanguage || "Select"} onClick={() => setActiveDrawer("loveLanguage")} iconColor="text-muted-foreground" />
             <SettingRow icon={PawPrint} label="Pets" value={pets.length ? `${pets.length} selected` : "Select"} onClick={() => setActiveDrawer("pets")} iconColor="text-muted-foreground" />
             <SettingRow icon={Wine} label="Drinking" value={drinking || "Select"} onClick={() => setActiveDrawer("drinking")} iconColor="text-muted-foreground" />
             <SettingRow icon={Cigarette} label="Smoking" value={smoking || "Select"} onClick={() => setActiveDrawer("smoking")} iconColor="text-muted-foreground" />
@@ -600,13 +600,13 @@ export default function Settings() {
         {/* Feature Settings */}
         <section className="mb-6 space-y-3">
           <SettingCard>
-            <SettingRow label="Manage Double Date" onClick={() => navigate("/double-date")} />
+            <SettingRow label="Manage Double Hangout" onClick={() => navigate("/double-hangout")} />
           </SettingCard>
           <SettingCard>
             <SettingRow label="Manage Q&A Events" onClick={() => navigate("/qa-events")} />
           </SettingCard>
           <SettingCard>
-            <SettingRow label="Manage Matchmaker" onClick={() => navigate("/matchmaker")} />
+            <SettingRow label="Manage Introductions" onClick={() => navigate("/introductions")} />
           </SettingCard>
           <SettingCard>
             <SettingRow label="Manage Top Picks" onClick={() => navigate("/top-picks")} />
@@ -764,7 +764,7 @@ export default function Settings() {
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Licenses" onClick={() => navigate("/licenses")} />
             <SettingRow label="Terms of Service" onClick={() => navigate("/terms")} />
-            <SettingRow label="Dating Regulations (Canada & Cuba)" onClick={() => navigate("/dating-regulations")} />
+            <SettingRow label="Online Safety & Regulations (Canada & Cuba)" onClick={() => navigate("/regulations")} />
           </SettingCard>
         </section>
 
@@ -825,7 +825,7 @@ export default function Settings() {
       <PreferenceDrawer
         isOpen={activeDrawer === "relationshipType"}
         onClose={() => setActiveDrawer(null)}
-        title="Relationship Type"
+        title="Open to…"
         options={RELATIONSHIP_TYPE_OPTIONS}
         selected={relationshipType}
         onSelect={(val) => setRelationshipType(val as string)}
@@ -880,7 +880,7 @@ export default function Settings() {
       <PreferenceDrawer
         isOpen={activeDrawer === "loveLanguage"}
         onClose={() => setActiveDrawer(null)}
-        title="Love Style"
+        title="Friendship style"
         options={LOVE_LANGUAGE_OPTIONS}
         selected={loveLanguage}
         onSelect={(val) => setLoveLanguage(val as string)}

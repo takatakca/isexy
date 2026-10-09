@@ -23,7 +23,7 @@ const smokingOptions = ["Social smoker", "Smoker when drinking", "Non-smoker", "
 const workoutOptions = ["Everyday", "Often", "Sometimes", "Never"];
 const petOptions = ["Dog", "Cat", "Bird", "Fish", "Reptile", "Other", "No pets"];
 const communicationOptions = ["Big time texter", "Phone caller", "Video chatter", "Bad texter", "Better in person"];
-const loveLanguageOptions = ["Thoughtful gestures", "Presents", "Touch", "Compliments", "Time together"];
+const loveLanguageOptions = ["Deep conversations", "Quality time", "Shared activities", "Helping each other out", "Humour and banter"];
 const educationOptions = ["High School", "In College", "Bachelors", "In Grad School", "Masters", "PhD"];
 const interestCategories = {
   "🎨 Creativity": ["Photography", "Art", "Writing", "Music", "Dancing", "Painting"],
@@ -273,7 +273,7 @@ export default function TouristSignup() {
             <div className="space-y-6 pb-4">
               <ChipSelector icon={<MessageSquare className="w-5 h-5" />} title="Communication style?" options={communicationOptions} selected={communication} onChange={(v) => setCommunication(v as string)} />
               <div className="border-t border-border" />
-              <ChipSelector icon={<Heart className="w-5 h-5" />} title="Love language?" options={loveLanguageOptions} selected={loveLanguage} onChange={(v) => setLoveLanguage(v as string)} />
+              <ChipSelector icon={<Heart className="w-5 h-5" />} title="Friendship style?" options={loveLanguageOptions} selected={loveLanguage} onChange={(v) => setLoveLanguage(v as string)} />
               <div className="border-t border-border" />
               <ChipSelector icon={<GraduationCap className="w-5 h-5" />} title="Education?" options={educationOptions} selected={education} onChange={(v) => setEducation(v as string)} />
             </div>

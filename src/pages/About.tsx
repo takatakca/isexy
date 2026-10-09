@@ -3,119 +3,100 @@ import { ArrowLeft, Heart, Shield, Globe, Users, Sparkles, BadgeCheck, MapPin, A
 import { Logo } from "@/components/Logo";
 
 const stats = [
-  { value: "190+", label: "Countries" },
-  { value: "75M+", label: "Active Users" },
-  { value: "100B+", label: "Matches Made" },
-  { value: "3 sec", label: "New Match Every" },
+  { value: "18+", label: "Adults Only" },
+  { value: "EN · FR", label: "Built for Canada" },
+  { value: "Live", label: "Chat Translation" },
+  { value: "Free", label: "To Join" },
 ];
 
 const values = [
   {
     icon: Heart,
-    title: "Real Connections",
-    description: "We believe in fostering genuine relationships, not just swipes. Our platform is designed to help you find meaningful connections that last.",
+    title: "Real Conversations",
+    description: "We want people to actually talk. Swipes help you find people with shared interests; chat, phone and video calls help you get to know them and make new friends.",
   },
   {
     icon: Shield,
     title: "Safety First",
-    description: "Your safety is our priority. From photo verification to in-app safety features, we're committed to creating a secure environment for all users.",
+    description: "Your safety is our priority. Profile verification, block and report on every profile, moderation and safety tips help keep the community respectful.",
   },
   {
     icon: Users,
     title: "Inclusive Community",
-    description: "ISEXY welcomes everyone. We celebrate diversity and are committed to making our platform accessible and welcoming to all.",
+    description: "ISEXY welcomes every adult (18+) who follows our Community Guidelines. We celebrate diversity and want everyone to feel welcome.",
   },
   {
     icon: Sparkles,
     title: "Innovation",
-    description: "We're constantly evolving with new features like AI-powered matching, video profiles, and more to help you connect in meaningful ways.",
+    description: "Live chat translation, webcam video calls, PhoneLine voice messages and an AI help concierge make it easier to talk with people across languages.",
   },
   {
     icon: Lock,
     title: "Privacy & Trust",
-    description: "Your data belongs to you. We implement industry-leading security measures and transparent privacy practices to protect your information.",
+    description: "Your data belongs to you. We protect your information and follow Canadian privacy law, including PIPEDA and Québec's Law 25.",
   },
   {
     icon: Target,
     title: "Quality Over Quantity",
-    description: "We focus on helping you find the right match, not just any match. Our algorithms prioritize compatibility and genuine interest.",
+    description: "A match only happens when two people both swipe right, so every conversation starts with mutual interest.",
   },
 ];
 
 const features = [
   {
     icon: BadgeCheck,
-    title: "Photo Verification",
-    description: "Face Check™ technology helps confirm users are real and match their profile photos, reducing catfishing and fake profiles.",
+    title: "Profile Verification",
+    description: "Verification helps confirm members are real and look like their profile photos, reducing fake profiles and impersonation.",
   },
   {
     icon: Globe,
     title: "Passport Mode",
-    description: "Connect with people anywhere in the world before you even arrive at your destination. Perfect for travelers and those relocating.",
+    description: "Discover and talk with people in another city before you travel or move there.",
   },
   {
     icon: Zap,
     title: "Smart Boost",
-    description: "Get more visibility when you need it most. Our boost feature puts your profile in front of more potential matches.",
+    description: "Get more visibility when you need it. A Boost shows your profile to more people for a limited time.",
   },
   {
     icon: Star,
     title: "Super Likes",
-    description: "Stand out from the crowd and let someone know they're special. Super Likes are 3x more likely to get a match.",
+    description: "Stand out and let someone know you'd really like to talk with them.",
   },
   {
     icon: MessageCircle,
     title: "Icebreakers",
-    description: "Don't know what to say? Our AI-powered conversation starters help you make a great first impression.",
+    description: "Not sure what to say? Profile prompts give you easy ways to start a conversation.",
   },
   {
     icon: Eye,
     title: "See Who Likes You",
-    description: "No more guessing games. Premium members can see everyone who has already liked their profile.",
+    description: "Premium members can see who has already swiped right on their profile.",
   },
 ];
 
 const team = [
   {
-    name: "Maria Rodriguez",
-    role: "CEO & Co-Founder",
-    bio: "Former product lead at a major tech company, Maria founded ISEXY with a vision to create meaningful connections.",
+    name: "Member Support",
+    role: "Help Center & Contact",
+    bio: "Answers questions about accounts, billing, verification and the app in English and French.",
   },
   {
-    name: "Carlos Mendez",
-    role: "CTO & Co-Founder",
-    bio: "With 15+ years in engineering, Carlos leads our technical innovation and ensures platform reliability.",
+    name: "Trust Safety",
+    role: "Moderation & Reports",
+    bio: "Reviews reports, enforces our Community Guidelines and removes accounts that put members at risk.",
   },
   {
-    name: "Elena Santos",
-    role: "Chief Product Officer",
-    bio: "Elena brings a decade of UX expertise to create intuitive experiences that make finding love easier.",
-  },
-  {
-    name: "David Chen",
-    role: "Head of Safety",
-    bio: "Former security specialist, David leads our trust and safety initiatives to protect our community.",
-  },
-  {
-    name: "Sofia Alvarez",
-    role: "VP of Marketing",
-    bio: "Sofia's creative campaigns have helped millions discover the ISEXY platform worldwide.",
-  },
-  {
-    name: "Miguel Torres",
-    role: "Head of AI & Data",
-    bio: "Miguel leads our machine learning team, developing algorithms that power our matching technology.",
+    name: "Product Engineering",
+    role: "App & Infrastructure",
+    bio: "Builds profiles, swipes, chat with live translation, phone calls and video calls.",
   },
 ];
 
 const milestones = [
-  { year: "2019", event: "ISEXY founded in Miami with a mission to connect hearts" },
-  { year: "2020", event: "Reached 1 million active users worldwide" },
-  { year: "2021", event: "Launched Photo Verification and Video Profiles" },
-  { year: "2022", event: "Expanded to 50+ countries with localized experiences" },
-  { year: "2023", event: "Introduced AI-powered matching algorithms" },
-  { year: "2024", event: "Reached 75 million active users globally" },
-  { year: "2025", event: "Launched advanced safety features and verification" },
+  { year: "Now", event: "Launching in Canada, in English and Canadian French" },
+  { year: "Next", event: "Expanding to the rest of North America" },
+  { year: "Later", event: "Opening to more countries" },
 ];
 
 export default function About() {
@@ -139,19 +120,19 @@ export default function About() {
           <Logo size="xl" variant="dark" />
         </div>
         <h2 className="text-3xl font-bold text-foreground mb-4">
-          Where Sparks Fly
+          Meet New People, Make Friends
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto mb-6">
-          Launched to revolutionize how people meet, ISEXY has become the world's most popular app for meeting new people. We're on a mission to bring people together and create meaningful connections that last a lifetime.
+          ISEXY is a social network for adults (18+) in Canada. Create a profile, swipe to find people to talk with, and get to know them through chat, phone calls and video calls.
         </p>
         <div className="flex justify-center gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 text-primary" />
-            <span>Miami, FL</span>
+            <span>Montréal, QC</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Award className="w-4 h-4 text-primary" />
-            <span>Est. 2019</span>
+            <span>18+ only</span>
           </div>
         </div>
       </div>
@@ -161,14 +142,14 @@ export default function About() {
         <div className="bg-gradient-to-br from-primary/20 to-rose-500/20 rounded-3xl p-6 text-center">
           <h3 className="text-xl font-bold text-foreground mb-4">Our Mission</h3>
           <p className="text-foreground/90 leading-relaxed">
-            "To create a world where everyone can find love, meaningful connections, and lasting relationships. We believe that technology, when built with empathy and intention, can help people discover their perfect match regardless of geography, background, or circumstance."
+            "To make it easy and safe for adults to meet new people, start real conversations and make friends — whatever language they speak."
           </p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="px-4 py-8">
-        <h3 className="text-xl font-bold text-foreground mb-6 text-center">By the Numbers</h3>
+        <h3 className="text-xl font-bold text-foreground mb-6 text-center">At a Glance</h3>
         <div className="grid grid-cols-2 gap-4">
           {stats.map((stat) => (
             <div
@@ -187,13 +168,13 @@ export default function About() {
         <h3 className="text-xl font-bold text-foreground mb-6">Our Story</h3>
         <div className="space-y-4 text-muted-foreground">
           <p>
-            ISEXY was born from a simple observation: despite living in an increasingly connected world, many people struggle to find genuine, meaningful relationships. Our founders experienced this firsthand and set out to create a platform that prioritizes quality connections over superficial interactions.
+            ISEXY was born from a simple observation: even in a connected world, many adults find it hard to meet new people and make friends. We set out to build a social network that makes starting a real conversation simple and safe.
           </p>
           <p>
-            Starting from a small team in Miami, we've grown into a global platform serving millions of users across 190+ countries. But our core mission remains unchanged: to help people find love and build lasting relationships.
+            We are starting in Canada, in English and Canadian French, and plan to grow to the rest of North America and other countries later. Our mission stays the same: help people meet, talk and become friends.
           </p>
           <p>
-            We combine cutting-edge technology with a human-centered approach to dating. Our algorithms don't just look at surface-level compatibility—they analyze shared values, communication styles, and long-term relationship goals to help you find someone truly compatible.
+            Members swipe to find people they would like to talk with. When two people both swipe right, it's a match and they can chat — with live translation — then move to a phone or video call when they're both ready.
           </p>
         </div>
       </div>
@@ -258,9 +239,9 @@ export default function About() {
         </div>
       </div>
 
-      {/* Leadership Team */}
+      {/* Our Teams */}
       <div className="px-4 py-8 bg-muted/30">
-        <h3 className="text-xl font-bold text-foreground mb-6">Leadership Team</h3>
+        <h3 className="text-xl font-bold text-foreground mb-6">Our Teams</h3>
         <div className="grid grid-cols-1 gap-4">
           {team.map((member) => (
             <div
@@ -291,36 +272,36 @@ export default function About() {
             <span className="text-foreground font-medium">ISEXY Inc.</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Founded</span>
-            <span className="text-foreground font-medium">2019</span>
+            <span className="text-muted-foreground">Launch Market</span>
+            <span className="text-foreground font-medium">Canada</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Headquarters</span>
-            <span className="text-foreground font-medium">Miami, Florida, USA</span>
+            <span className="text-foreground font-medium">Montréal, Québec, Canada</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Employees</span>
-            <span className="text-foreground font-medium">500+</span>
+            <span className="text-muted-foreground">Languages</span>
+            <span className="text-foreground font-medium">English, French</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Global Offices</span>
-            <span className="text-foreground font-medium">12 Countries</span>
+            <span className="text-muted-foreground">Minimum Age</span>
+            <span className="text-foreground font-medium">18+</span>
           </div>
         </div>
       </div>
 
-      {/* Success Stories CTA */}
+      {/* Community Stories CTA */}
       <div className="px-4 py-8">
         <div className="bg-gradient-to-r from-primary to-rose-500 rounded-2xl p-6 text-center">
           <Heart className="w-12 h-12 text-primary-foreground mx-auto mb-4" />
           <h3 className="text-xl font-bold text-primary-foreground mb-2">
-            Love Stories
+            Community Stories
           </h3>
           <p className="text-primary-foreground/80 mb-4">
-            Explore real stories from couples who found love on ISEXY.
+            Read stories from members about friendships that started on ISEXY.
           </p>
           <button
-            onClick={() => navigate("/love-stories")}
+            onClick={() => navigate("/community-stories")}
             className="px-6 py-3 bg-white text-primary rounded-full font-bold"
           >
             Read Stories

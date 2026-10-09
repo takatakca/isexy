@@ -29,7 +29,7 @@ const faqCategories: FAQCategory[] = [
     faqs: [
       {
         question: "How do I create a ISEXY account?",
-        answer: "Download the ISEXY app from the App Store or Google Play, then sign up using your phone number or email address. You'll need to verify your identity, add photos, and complete your profile to start matching with other users.",
+        answer: "Download the ISEXY app from the App Store or Google Play, then sign up using your phone number or email address. You'll need to verify your identity, add photos, and complete your profile to start meeting new people.",
       },
       {
         question: "What are the age requirements?",
@@ -37,7 +37,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "How does matching work on ISEXY?",
-        answer: "When you and another user both swipe right (like) on each other's profiles, it's a match! You can then start a conversation in your Messages. Our algorithm also suggests potential matches based on your preferences and behavior.",
+        answer: "When you and another user both swipe right (like) on each other's profiles, it's a match! You can then start a conversation in your Messages, and later move to a phone or video call. Our algorithm also suggests people to talk with based on your preferences and activity.",
       },
       {
         question: "What makes a good profile?",
@@ -81,7 +81,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "What are Boosts and Super Likes?",
-        answer: "Boosts put your profile at the top of the stack for 30 minutes, increasing visibility. Super Likes (the blue star) let someone know you're especially interested—profiles with Super Likes are 3x more likely to match.",
+        answer: "Boosts put your profile at the top of the stack for 30 minutes, increasing visibility. Super Likes (the blue star) let someone know you'd especially like to talk with them.",
       },
       {
         question: "Do unused Boosts and Super Likes carry over?",
@@ -113,7 +113,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "How do I verify if someone is real?",
-        answer: "Look for the blue verified badge on profiles—it indicates the user has completed Face Check™ verification. You can also request a video chat before meeting in person.",
+        answer: "Look for the blue verified badge on profiles—it indicates the user has completed photo verification. You can also suggest a video call before ever meeting in person.",
       },
       {
         question: "Can I control who sees my profile?",
@@ -157,7 +157,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "How do I pause my account instead of deleting it?",
-        answer: "Go to Settings > Discovery Settings and turn off 'Show Me on ISEXY.' This hides your profile while preserving your matches and messages. Turn it back on when you're ready to date again.",
+        answer: "Go to Settings > Discovery Settings and turn off 'Show Me on ISEXY.' This hides your profile while preserving your matches and messages. Turn it back on when you're ready to meet new people again.",
       },
     ],
   },
@@ -173,7 +173,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "What are Top Picks?",
-        answer: "Top Picks are curated daily recommendations of highly compatible profiles based on your preferences and behavior. Gold and Platinum subscribers get access to expanded Top Picks.",
+        answer: "Top Picks are daily recommendations of people you may enjoy talking with, based on your interests and preferences. Gold and Platinum subscribers get access to expanded Top Picks.",
       },
       {
         question: "How do I undo a swipe?",
@@ -181,7 +181,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "What is Swipe Surge?",
-        answer: "Swipe Surge activates when activity in your area spikes (up to 15x normal). During a Surge, you'll appear higher in the stack and have up to 250% more matches.",
+        answer: "Swipe Surge activates when activity in your area is unusually high. During a Surge, being active can put your profile higher in the stack, so more people may see it.",
       },
       {
         question: "How does the algorithm decide who I see?",
@@ -209,7 +209,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "What photos should I avoid?",
-        answer: "Avoid group photos as your main picture, blurry or heavily filtered images, photos without your face visible, explicit content, and photos with ex-partners or children.",
+        answer: "Avoid group photos as your main picture, blurry or heavily filtered images, photos without your face visible, explicit content, and photos of other people or children.",
       },
       {
         question: "Why was my photo rejected?",
@@ -224,7 +224,7 @@ const faqCategories: FAQCategory[] = [
         answer: "Yes! You can add short video loops (up to 15 seconds) to your profile. Videos are a great way to show your personality and stand out.",
       },
       {
-        question: "How does Face Check™ verification work?",
+        question: "How does photo verification work?",
         answer: "When you verify, you'll take a series of selfies mimicking different poses. Our AI compares these to your profile photos to confirm you're real. Verified profiles get a blue badge.",
       },
     ],

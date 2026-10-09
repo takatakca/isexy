@@ -1,7 +1,7 @@
 {
-  "name": "ISEXY — Premium Dating for Canada & Cuba",
+  "name": "ISEXY — Meet new people & make friends in Canada (18+)",
   "short_name": "ISEXY",
-  "description": "Meet verified Canadian and Cuban singles with live translation, video calls and an AI dating concierge.",
+  "description": "A social network for adults (18+) in Canada: verified profiles, chat with live translation, phone and video calls.",
   "id": "/",
   "start_url": "/?source=pwa",
   "scope": "/",

@@ -98,7 +98,7 @@ const LIFESTYLE_ROWS: DrawerConfig[] = [
   { key: "education", label: "Education level", title: "Education", icon: GraduationCap, options: EDUCATION_OPTIONS },
   { key: "familyPlans", label: "Family plans", title: "Family plans", icon: Baby, options: FAMILY_PLANS_OPTIONS },
   { key: "communicationStyle", label: "Communication style", title: "Communication style", icon: MessageSquare, options: COMMUNICATION_STYLE_OPTIONS },
-  { key: "loveLanguage", label: "Love style", title: "Love style", icon: Heart, options: LOVE_LANGUAGE_OPTIONS },
+  { key: "loveLanguage", label: "Friendship style", title: "Friendship style", icon: Heart, options: LOVE_LANGUAGE_OPTIONS },
   { key: "pets", label: "Pets", title: "Pets", icon: PawPrint, options: PETS_OPTIONS, multi: true },
   { key: "drinking", label: "Drinking", title: "Drinking", icon: Wine, options: DRINKING_OPTIONS },
   { key: "smoking", label: "Smoking", title: "Smoking", icon: Cigarette, options: SMOKING_OPTIONS },

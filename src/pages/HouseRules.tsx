@@ -15,7 +15,7 @@ const rules = [
       <>
         Don't be too quick to give out personal information.{" "}
         <Link to="/safety" className="text-primary underline font-semibold">
-          Date Safely
+          Stay Safe
         </Link>
       </>
     ),

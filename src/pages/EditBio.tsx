@@ -78,7 +78,7 @@ export default function EditBio() {
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Enjoy movies, travel, and good food. Hoping to share experiences together."
+              placeholder="Into movies, travel and good food. Always up for a good conversation."
               className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[100px] text-base"
               maxLength={MAX_CHARS + 50}
             />

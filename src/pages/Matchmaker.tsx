@@ -9,14 +9,14 @@ export default function Matchmaker() {
   const [showInMatchmaker, setShowInMatchmaker] = useState(true);
 
   const handleTerminateSessions = () => {
-    toast.success("All active Matchmaker sessions have been terminated");
+    toast.success("All active Introductions sessions have been ended");
   };
 
   const handleInviteFriends = () => {
     if (navigator.share) {
       navigator.share({
-        title: "Join ISEXY Matchmaker",
-        text: "Help me find my match on ISEXY!",
+        title: "Join ISEXY Introductions",
+        text: "Introduce me to your friends on ISEXY!",
         url: window.location.origin,
       });
     } else {
@@ -27,12 +27,12 @@ export default function Matchmaker() {
 
   return (
     <AuthLayout showBack variant="white">
-      <h1 className="text-2xl font-bold text-foreground mb-6">Manage Matchmaker</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Manage Introductions</h1>
 
       <div className="space-y-4">
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-foreground">Show me in Matchmaker</span>
+            <span className="font-medium text-foreground">Show me in Introductions</span>
             <Switch
               checked={showInMatchmaker}
               onCheckedChange={setShowInMatchmaker}
@@ -41,7 +41,7 @@ export default function Matchmaker() {
         </div>
 
         <p className="text-sm text-muted-foreground px-1">
-          While turned off, you will not be shown in the Matchmaker experience.
+          While turned off, friends cannot introduce you to other people through Introductions.
         </p>
 
         <Button
@@ -53,7 +53,7 @@ export default function Matchmaker() {
         </Button>
 
         <p className="text-sm text-muted-foreground px-1">
-          This will end all current sessions of Matchmaker.
+          This will end all current Introductions sessions.
         </p>
 
         <Button
@@ -62,11 +62,11 @@ export default function Matchmaker() {
           className="w-full py-6"
         >
           <Share2 className="w-5 h-5 mr-2" />
-          Invite friends to Matchmaker
+          Invite friends to Introductions
         </Button>
 
         <p className="text-sm text-muted-foreground px-1">
-          Invite a friend to recommend potential matches, without them needing to download the ISEXY app.
+          Introduce two of your friends to each other, or let a friend introduce you to people they think you'd get along with, without them needing to download the ISEXY app.
         </p>
       </div>
     </AuthLayout>
