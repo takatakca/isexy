@@ -1,17 +1,23 @@
 # ISEXY deployment
 
-Every push to `main` runs `.github/workflows/ci-cd.yml`:
+ISEXY runs on **TAKATAK V1** (Supabase `pcjfahhlozsseqqevimi`, `isexy` schema,
+`isexy-*` edge functions) and is hosted on **Render** (`https://isexy.onrender.com`).
+First-time setup and every human step: [`V1-MIGRATION.md`](V1-MIGRATION.md).
+
+`.github/workflows/ci-cd.yml` runs on every push and pull request:
 
 | Stage | What happens | Turns on when |
 | --- | --- | --- |
-| **Verify** | `npm ci` → typecheck → `npm run build` (incl. SEO generation) → Deno check of edge functions → lint report | always (also on branches and PRs) |
-| **Deploy database + edge functions** | `supabase db push` (all migrations) → sync function secrets → `supabase functions deploy` | `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` secrets exist |
-| **Publish website** | rsync `dist/` to a new release folder over SSH, atomic symlink swap, keeps the last 5 releases | all `ISEXY_DEPLOY_*` secrets exist |
-| **Smoke test** | `/`, `/auth`, `/knowledge-base`, `/faq` must return 200; warns if edge functions are missing | always on `main` |
+| **Verify** | `npm ci` → typecheck → `npm run build` (incl. SEO generation) → `deno check` of every `isexy-*` function → lint report | always |
+| **ISEXY migrations on a V1 stand-in** | Postgres 16 + `scripts/isexy/test/v1-mock.sql` (Supabase roles, auth, storage, realtime, plus V1 lookalike objects in `public`) → `migrate.sh` dry run → `--apply` → re-run is a no-op; the guard fails the job if any V1 object changes | always |
+| **V1 safety rules** | fails on `supabase/migrations/`, `supabase db push`, a bare `supabase functions deploy`, a function not named `isexy-*`, `public.*` in ISEXY migrations, or any Lovable dependency | always |
+| **Deploy ISEXY to TAKATAK V1** | `migrate.sh` dry run on V1 → `migrate.sh --apply` (isexy schema only) → deploy each `isexy-*` function by name | push to `main`; migrations when `ISEXY_DB_URL` exists, functions when `SUPABASE_ACCESS_TOKEN` exists; waits for the `production` environment's reviewers |
+| **Publish website** | Render deploys `main` on its own. Optional: rsync `dist/` to an SSH host with an atomic swap | SSH part only when all `ISEXY_DEPLOY_*` secrets exist |
+| **Smoke test** | `/`, `/auth`, `/discover`, `/knowledge-base`, `/faq` must return 200; warns if `isexy-*` functions are missing | push to `main` |
 
-Stages without their secrets are skipped with a notice, so the pipeline stays green
-and "lights up" as soon as you add them. Lovable keeps publishing from `main`
-independently.
+Stages without their secrets are skipped with a notice, so the pipeline stays
+green and switches on as soon as you add them. **Never** run `supabase db push`
+for ISEXY: V1's migration history belongs to `takatak-v1`.
 
 ## GitHub → Settings → Secrets and variables → Actions
 
@@ -19,44 +25,36 @@ independently.
 
 | Name | Value |
 | --- | --- |
-| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (supabase.com → Account → Access tokens) |
-| `SUPABASE_DB_PASSWORD` | Database password of project `khvsudrwnqznuxnjurxp` |
-| `LOVABLE_API_KEY` | *(optional)* AI gateway key used by `ai-chat`; synced into Supabase function secrets |
-| `TAKATAK_API_URL` | *(optional)* e.g. `https://takatak.ca` |
-| `TAKATAK_ISEXY_API_KEY` | *(optional)* dedicated ≥ 32-char key issued by TAKATAK v1 for ISEXY |
-| `RESEND_FROM` | *(recommended)* verified sender for OTP / call / ticket emails, e.g. `ISEXY <no-reply@isexy.ca>` (domain must be verified in Resend) |
-| `CRON_SECRET` | *(recommended)* ≥ 16 random chars; lets `pg_cron` call `subscription-resets` with header `x-cron-secret` |
+| `ISEXY_DB_URL` | V1 session-pooler connection string (Connect → Session pooler, port 5432) with the database password |
+| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token of an account in the V1 organization |
 | `VITE_TURN_CREDENTIAL` | *(recommended)* TURN password baked into the web build (use short-lived/limited credentials) |
-| `ISEXY_DEPLOY_HOST` | SSH host (e.g. MochaHost server) |
-| `ISEXY_DEPLOY_PORT` | SSH port (default 22) |
-| `ISEXY_DEPLOY_USER` | SSH user |
-| `ISEXY_DEPLOY_PATH` | Web root to publish to, e.g. `/home/isexy/public_html` (becomes a symlink to the active release) |
-| `ISEXY_DEPLOY_SSH_KEY` | Private key of a deploy-only SSH key pair |
-| `ISEXY_DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan -p <port> <host>` (host key pinning) |
+| `ISEXY_DEPLOY_HOST` / `_PORT` / `_USER` / `_PATH` / `_SSH_KEY` / `_KNOWN_HOSTS` | *(optional)* extra SSH host to publish `dist/` to |
+
+Function secrets (Stripe, Claude, Resend, Twilio, WhatsApp, VAPID, cron) are set
+on V1 itself as `ISEXY_*` names, not in GitHub: see `V1-MIGRATION.md` › 3.6.
 
 ### Variables
 
 | Name | Value |
 | --- | --- |
-| `ISEXY_SITE_URL` | Public URL, e.g. `https://isexy.ca` (default `https://isexy.lovable.app`) |
-| `SUPABASE_PROJECT_REF` | default `khvsudrwnqznuxnjurxp` |
+| `ISEXY_SITE_URL` | Public URL (default `https://isexy.onrender.com`; later `https://isexy.ca`) |
+| `SUPABASE_PROJECT_REF` | default `pcjfahhlozsseqqevimi` |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` | defaults: V1 URL and anon key |
 | `VITE_GA4_ID` | *(optional)* Google Analytics 4 measurement ID |
 | `VITE_META_PIXEL_ID` | *(optional)* Meta Pixel ID |
 | `VITE_TURN_URLS` | *(recommended)* comma-separated TURN URLs, e.g. `turn:turn.isexy.ca:3478,turns:turn.isexy.ca:5349` — needed for calls on strict mobile NAT (Cuba) |
 | `VITE_TURN_USERNAME` | *(recommended)* TURN username |
 
-## Scheduled jobs
+## Database migrations by hand
 
-`subscription-resets` only accepts the service-role key or the `CRON_SECRET`. Schedule it with `pg_cron` + `pg_net`:
-
-```sql
-select cron.schedule('isexy-subscription-resets', '5 0 * * *', $$
-  select net.http_post(
-    url := 'https://khvsudrwnqznuxnjurxp.supabase.co/functions/v1/subscription-resets',
-    headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','<CRON_SECRET>'),
-    body := '{}'::jsonb);
-$$);
+```sh
+ISEXY_DB_URL='postgresql://…' scripts/isexy/migrate.sh           # dry run, rolled back
+ISEXY_DB_URL='postgresql://…' scripts/isexy/migrate.sh --apply   # apply
 ```
+
+New migration: add `supabase/isexy-migrations/0003_<name>.sql`, schema-qualify
+everything with `isexy.` and set `SET LOCAL search_path = isexy, extensions;` at
+the top. Never edit a file that was already applied (checksummed).
 
 ## Static hosting notes
 
@@ -88,4 +86,8 @@ Releases live in `<ISEXY_DEPLOY_PATH>.releases/<sha>`. Point the symlink back:
 ln -sfn <path>.releases/<previous-sha> <path>.next && mv -Tf <path>.next <path>
 ```
 
-Database migrations are forward-only; fix forward with a new migration.
+Website on Render: Render → isexy → Deploys → *Rollback* to a previous deploy.
+
+Database migrations are forward-only: fix forward with a new
+`supabase/isexy-migrations/000N_*.sql`. Removing ISEXY entirely is described in
+`docs/V1-MIGRATION.md` › Rollback.

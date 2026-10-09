@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { TakatakSignIn } from "@/components/TakatakSignIn";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
@@ -12,12 +14,9 @@ import {
   Wine, Cigarette, Dumbbell, PawPrint, MessageSquare, 
   Heart, GraduationCap, MapPin, Shield, Mail, CheckCircle
 } from "lucide-react";
-import { z } from "zod";
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 10;
 
-const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
 
 const drinkingOptions = ["Not for me", "Sober", "Sober curious", "On special occasions", "Socially on weekends", "Most Nights"];
 const smokingOptions = ["Social smoker", "Smoker when drinking", "Non-smoker", "Smoker", "Trying to quit"];
@@ -55,99 +54,21 @@ export default function TouristSignup() {
   const [interests, setInterests] = useState<string[]>([]);
   const [country, setCountry] = useState("");
 
-  // Auth state - at the end
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  
-  // OTP verification
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [verifying, setVerifying] = useState(false);
+  // Takatak Auth first: photo uploads (step 4) need a signed-in member.
+  const { user, loading: authLoading, refreshProfile } = useAuth();
+  const [completing, setCompleting] = useState(false);
 
   const genderOptions = ["Woman", "Man", "More"];
 
-  const validateAuth = () => {
-    let valid = true;
-    
-    const emailResult = emailSchema.safeParse(email);
-    if (!emailResult.success) {
-      setEmailError(emailResult.error.errors[0].message);
-      valid = false;
-    } else {
-      setEmailError("");
-    }
-
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      setPasswordError(passwordResult.error.errors[0].message);
-      valid = false;
-    } else {
-      setPasswordError("");
-    }
-
-    return valid;
-  };
-
-  const handleSendOTP = async () => {
-    if (!validateAuth()) return;
-
-    setLoading(true);
-    
-    // Create account with email verification
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/discover`,
-      },
-    });
-
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-      return;
-    }
-
-    toast.success("Verification code sent to your email!");
-    setOtpSent(true);
-    setLoading(false);
-  };
-
-  const handleVerifyAndComplete = async () => {
-    if (!otp || otp.length < 6) {
-      toast.error("Please enter the 6-digit code");
-      return;
-    }
-
-    setVerifying(true);
-
+  const handleComplete = async () => {
+    if (!user) return;
+    setCompleting(true);
     try {
-      // Verify OTP
-      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: "signup",
-      });
-
-      if (verifyError) {
-        toast.error(verifyError.message);
-        setVerifying(false);
-        return;
-      }
-
-      if (!verifyData.user) {
-        toast.error("Verification failed");
-        setVerifying(false);
-        return;
-      }
-
-      // Create profile
+      // profiles.id is set to the auth user id by the database (Takatak identity).
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .insert({
-          user_id: verifyData.user.id,
+          user_id: user.id,
           first_name: name,
           birth_date: birthdate,
           gender: gender.toLowerCase(),
@@ -169,24 +90,23 @@ export default function TouristSignup() {
 
       if (profileError) throw profileError;
 
-      // Save photos
       if (photos.length > 0) {
         const photoInserts = photos.map((url, index) => ({
           profile_id: profile.id,
           photo_url: url,
           position: index,
         }));
-
         await supabase.from("profile_photos").insert(photoInserts);
       }
 
+      await refreshProfile();
       toast.success("Welcome to ISEXY! 🎉");
       navigate("/discover");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Profile creation error:", error);
-      toast.error(error.message || "Failed to create profile");
+      toast.error(error instanceof Error ? error.message : "Failed to create profile");
     } finally {
-      setVerifying(false);
+      setCompleting(false);
     }
   };
 
@@ -201,8 +121,7 @@ export default function TouristSignup() {
       case 7: return true; // Personality optional
       case 8: return interests.length >= 3;
       case 9: return true; // Location
-      case 10: return email && password; // Auth credentials
-      case 11: return otp.length === 6; // OTP
+      case 10: return true; // Review & finish
       default: return false;
     }
   };
@@ -431,46 +350,6 @@ export default function TouristSignup() {
 
       case 10:
         return (
-          <div className="flex-1 flex flex-col">
-            <div className="flex justify-end mb-4">
-              <LanguageSelector variant="icon" />
-            </div>
-            <h1 className="text-3xl font-extrabold text-foreground mb-2">
-              Create your account
-            </h1>
-            <p className="text-muted-foreground mb-8">
-              Enter your email and password to secure your profile.
-            </p>
-            
-            <div className="space-y-4 mb-8">
-              <AuthInput
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                error={emailError}
-              />
-              <AuthInput
-                type="password"
-                placeholder="Password (min 6 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={passwordError}
-              />
-            </div>
-
-            <AuthButton
-              variant="primary"
-              onClick={handleSendOTP}
-              disabled={loading || !email || !password}
-            >
-              {loading ? "Sending..." : "Send Verification Code"}
-            </AuthButton>
-          </div>
-        );
-
-      case 11:
-        return (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <div className="flex justify-end w-full mb-4">
               <LanguageSelector variant="icon" />
@@ -478,55 +357,20 @@ export default function TouristSignup() {
             <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
               <Mail className="w-12 h-12 text-primary" />
             </div>
-            <h1 className="text-3xl font-extrabold text-foreground mb-2">
-              Verify your email
-            </h1>
+            <h1 className="text-3xl font-extrabold text-foreground mb-2">You're all set, {name}</h1>
             <p className="text-muted-foreground mb-8 max-w-sm">
-              We sent a 6-digit code to <strong>{email}</strong>
+              Your profile is ready. Tap below to start meeting people in Cuba.
             </p>
-            
-            <AuthInput
-              type="text"
-              placeholder="Enter 6-digit code"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="text-center text-2xl tracking-widest max-w-xs"
-            />
-
-            <AuthButton
-              variant="primary"
-              onClick={handleVerifyAndComplete}
-              disabled={verifying || otp.length < 6}
-              className="mt-8 w-full max-w-xs"
-            >
-              {verifying ? "Verifying..." : "Verify & Complete"}
+            <AuthButton variant="primary" onClick={handleComplete} disabled={completing} className="w-full max-w-xs">
+              {completing ? "Creating your profile..." : "Create my profile"}
             </AuthButton>
-
-            <button
-              onClick={handleSendOTP}
-              className="mt-4 text-primary text-sm hover:underline"
-            >
-              Resend code
-            </button>
           </div>
         );
     }
   };
 
   const handleNext = () => {
-    if (step === 10 && !otpSent) {
-      handleSendOTP();
-      return;
-    }
-    
-    if (step === 11) {
-      handleVerifyAndComplete();
-      return;
-    }
-    
-    if (step < TOTAL_STEPS) {
-      setStep(step + 1);
-    }
+    if (step < TOTAL_STEPS) setStep(step + 1);
   };
 
   const handleBack = () => {
@@ -536,6 +380,18 @@ export default function TouristSignup() {
       navigate(-1);
     }
   };
+
+  if (!authLoading && !user) {
+    return (
+      <AuthLayout showBack onBack={() => navigate(-1)} variant="white">
+        <h1 className="text-3xl font-extrabold text-foreground mb-2">Visiting Cuba?</h1>
+        <p className="text-muted-foreground mb-6">
+          Start with your TAKATAK account, then build your ISEXY profile in a few taps.
+        </p>
+        <TakatakSignIn intent="signup" redirectPath="/tourist-signup" />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { TakatakSignIn } from "@/components/TakatakSignIn";
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
@@ -10,8 +11,6 @@ import { z } from "zod";
 import { Check, Phone, CreditCard, Video, Mic, Shield, Upload, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
 const whatsappSchema = z.string().min(10, "Please enter a valid WhatsApp number");
 const carnetSchema = z.string().min(11, "Carnet ID must be 11 digits").max(11, "Carnet ID must be 11 digits");
 
@@ -19,13 +18,8 @@ type Step = "account" | "whatsapp" | "carnet" | "video" | "audio" | "complete";
 
 export default function CubanSignup() {
   const navigate = useNavigate();
-  const { signUp, user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const [step, setStep] = useState<Step>("account");
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [whatsappError, setWhatsappError] = useState("");
@@ -62,38 +56,6 @@ export default function CubanSignup() {
       setStep("whatsapp");
     }
   }, [user, loading]);
-
-  const validateAccount = () => {
-    let valid = true;
-    const emailResult = emailSchema.safeParse(email);
-    if (!emailResult.success) {
-      setEmailError(emailResult.error.errors[0].message);
-      valid = false;
-    } else setEmailError("");
-
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      setPasswordError(passwordResult.error.errors[0].message);
-      valid = false;
-    } else setPasswordError("");
-
-    return valid;
-  };
-
-  const handleCreateAccount = async () => {
-    if (!validateAccount()) return;
-    setIsSubmitting(true);
-    
-    const { error } = await signUp(email, password);
-    if (!error) {
-      // Auto-confirm is on, user is signed in immediately
-      // Wait a moment for the auth state to update
-      setTimeout(() => {
-        setStep("whatsapp");
-      }, 1000);
-    }
-    setIsSubmitting(false);
-  };
 
   const handleSendWhatsAppCode = async () => {
     const result = whatsappSchema.safeParse(whatsappNumber);
@@ -325,7 +287,8 @@ export default function CubanSignup() {
             .from("profiles")
             .insert({
               user_id: userId,
-              first_name: email.split("@")[0],
+              // Placeholder until /profile-setup; Google gives a name, email/phone do not.
+              first_name: (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] || user?.email?.split("@")[0] || "Member",
               birth_date: "2000-01-01",
               gender: "other",
               country: "CU",
@@ -423,30 +386,8 @@ export default function CubanSignup() {
               </p>
             </div>
 
-            <div className="space-y-4 mb-6">
-              <AuthInput
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                error={emailError}
-              />
-              <AuthInput
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={passwordError}
-              />
-            </div>
-
-            <AuthButton
-              variant="primary"
-              onClick={handleCreateAccount}
-              disabled={isSubmitting || !email || !password}
-            >
-              {isSubmitting ? "Creating Account..." : "Continue"}
-            </AuthButton>
+            {/* Takatak Auth: once signed in, the effect above moves on to WhatsApp. */}
+            <TakatakSignIn intent="signup" redirectPath="/cuban-signup" defaultMethod="phone" />
           </>
         );
 

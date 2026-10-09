@@ -18,5 +18,7 @@ const ISEXY_ONLY = new Set([
 export function isexyEnv(name: string): string | undefined {
   const own = Deno.env.get(`ISEXY_${name}`);
   if (own !== undefined && own !== "") return own;
-  return ISEXY_ONLY.has(name) ? undefined : Deno.env.get(name);
+  // Every Stripe value (keys, webhook secret, price ids) belongs to ISEXY's
+  // Stripe setup, never to V1's.
+  return ISEXY_ONLY.has(name) || name.startsWith("STRIPE_") ? undefined : Deno.env.get(name);
 }

@@ -15,9 +15,6 @@ verify_jwt = false
 [functions.isexy-send-ticket-status-update]
 verify_jwt = false
 
-[functions.isexy-send-email-otp]
-verify_jwt = false
-
 [functions.isexy-send-notification-email]
 verify_jwt = false
 
@@ -54,9 +51,6 @@ verify_jwt = false
 [functions.isexy-ai-chat]
 verify_jwt = false
 
-[functions.isexy-update-user-password]
-verify_jwt = false
-
 [functions.isexy-subscription-resets]
 verify_jwt = false
 
@@ -66,6 +60,14 @@ verify_jwt = false
 [functions.isexy-payments-gate-status]
 verify_jwt = false
 
-# TAKATAK v1 bridge: status/phone actions are public; sync checks the member JWT itself.
-[functions.isexy-takatak-bridge]
+
+# Twilio calls these webhooks without a Supabase JWT; each one verifies the
+# X-Twilio-Signature header itself (ISEXY_TWILIO_AUTH_TOKEN).
+[functions.isexy-twilio-inbound-phone-line]
+verify_jwt = false
+
+[functions.isexy-twilio-phone-line-menu]
+verify_jwt = false
+
+[functions.isexy-twilio-call-status]
 verify_jwt = false
