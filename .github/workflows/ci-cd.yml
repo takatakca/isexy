@@ -74,6 +74,10 @@ jobs:
           deno-version: v2.x
 
       - name: Type-check every edge function
+        # Functions are bundled without the web app's package.json (as on
+        # Supabase), so npm: specifiers resolve from the registry, not node_modules.
+        env:
+          DENO_NO_PACKAGE_JSON: "1"
         run: deno check supabase/functions/isexy-*/index.ts
 
   migrations:
