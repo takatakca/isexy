@@ -106,6 +106,13 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   new messages only when at the bottom; sent message shown from the insert
   result (no dependence on realtime echo); unique realtime topic.
 
+- Matches list (`/matches-list`, `src/pages/Matches.tsx`): 4 queries per
+  match → the inbox RPC + one profiles query; unlocked conversations open the
+  chat directly (it always showed the contact sheet, even for open chats);
+  error state with Retry; inactive/blocked handled by the inbox; "messages"
+  icon pointed at the /messages redirect; tick shown only on my own last
+  message; refreshes on new messages too; `any` removed.
+
 ## Left to do
 
 (filled in as work progresses)

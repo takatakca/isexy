@@ -1,19 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Flame, CheckCheck } from "lucide-react";
+import { Heart, MessageCircle, Flame, CheckCheck, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { ContactMethodModal } from "@/components/ContactMethodModal";
+import { fetchInbox, type Conversation } from "@/lib/inbox";
 
 interface Match {
   id: string;
   matched_at: string;
   last_message_at: string | null;
   last_message_preview: string | null;
+  last_message_mine: boolean | null;
   unread_count: number;
-  last_message_read: boolean;
+  is_unlocked: boolean;
   other_profile: {
     id: string;
     first_name: string;
@@ -39,134 +41,81 @@ export default function Matches() {
   const { profile } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [contactModal, setContactModal] = useState<{
     matchId: string;
     otherName: string;
     otherPhotoUrl?: string;
   } | null>(null);
+  const profileId = profile?.id;
+  const isPremium = profile?.is_premium;
 
-  useEffect(() => {
-    if (profile) {
-      fetchMatches();
-    }
-  }, [profile]);
-
-  const fetchMatches = async () => {
-    if (!profile) return;
-
-    const [matchesRes, blocksRes] = await Promise.all([
-      supabase
-        .from("matches")
-        .select(`
-          id,
-          matched_at,
-          last_message_at,
-          profile1:profiles!matches_profile1_id_fkey(id, first_name),
-          profile2:profiles!matches_profile2_id_fkey(id, first_name)
-        `)
-        .or(`profile1_id.eq.${profile.id},profile2_id.eq.${profile.id}`)
-        .eq("is_active", true)
-        .order("matched_at", { ascending: false }),
-      supabase
-        .from("blocks")
-        .select("blocker_id, blocked_id")
-        .or(`blocker_id.eq.${profile.id},blocked_id.eq.${profile.id}`),
-    ]);
-
-    if (matchesRes.error) {
-      console.error("Error fetching matches:", matchesRes.error);
-      setLoading(false);
-      return;
-    }
-
-    const blockedIds = new Set<string>(
-      (blocksRes.data || []).map((b: any) =>
-        b.blocker_id === profile.id ? b.blocked_id : b.blocker_id
-      )
-    );
-
-    const data = (matchesRes.data || []).filter((m: any) => {
-      const otherId = m.profile1.id === profile.id ? m.profile2.id : m.profile1.id;
-      return !blockedIds.has(otherId);
-    });
-
-    // Get photos, last_active, and unread messages for each match
-    const matchesWithPhotos = await Promise.all(
-      (data || []).map(async (match: any) => {
-        const otherProfile = match.profile1.id === profile.id ? match.profile2 : match.profile1;
-        
-        const [photosResult, profileResult, unreadResult, lastMsgResult] = await Promise.all([
-          supabase
-            .from("profile_photos")
-            .select("photo_url")
-            .eq("profile_id", otherProfile.id)
-            .order("position")
-            .limit(1),
-          supabase
-            .from("profiles")
-            .select("last_active_at, birth_date, city")
-            .eq("id", otherProfile.id)
-            .single(),
-          supabase
-            .from("messages")
-            .select("id, is_read")
-            .eq("match_id", match.id)
-            .neq("sender_id", profile.id)
-            .eq("is_read", false),
-          supabase
-            .from("messages")
-            .select("content, created_at")
-            .eq("match_id", match.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
-
-        return {
-          id: match.id,
-          matched_at: match.matched_at,
-          last_message_at: match.last_message_at || lastMsgResult.data?.created_at || null,
-          last_message_preview: lastMsgResult.data?.content || null,
-          unread_count: unreadResult.data?.length || 0,
-          last_message_read: (unreadResult.data?.length || 0) === 0,
-          other_profile: {
-            ...otherProfile,
-            age: calcAge(profileResult.data?.birth_date || null),
-            city: profileResult.data?.city || null,
-            last_active_at: profileResult.data?.last_active_at || null,
-            photos: photosResult.data || [],
-          },
-        };
-      })
-    );
-
-    setMatches(matchesWithPhotos);
-    setLoading(false);
-  };
-
-  // Subscribe to new matches
-  useEffect(() => {
-    if (!profile) return;
-
-    const channel = supabase
-      .channel("matches-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "isexy",
-          table: "matches",
+  // One inbox call (same data as the Chat tab) plus age/city for the cards:
+  // this page used to run 4 queries per match.
+  const fetchMatches = useCallback(async () => {
+    if (!profileId) return;
+    try {
+      const inbox: Conversation[] = await fetchInbox({ id: profileId, is_premium: isPremium });
+      const ids = inbox.map((c) => c.other_id);
+      const { data: details } = ids.length
+        ? await supabase.from("profiles").select("id, birth_date, city").in("id", ids)
+        : { data: [] as { id: string; birth_date: string; city: string | null }[] };
+      const detailBy = new Map((details ?? []).map((d) => [d.id, d]));
+      setMatches(inbox.map((c) => ({
+        id: c.match_id,
+        matched_at: c.matched_at,
+        last_message_at: c.last_message_at,
+        last_message_preview: c.last_message_preview,
+        last_message_mine: c.last_message_mine,
+        unread_count: c.unread_count,
+        is_unlocked: c.is_unlocked,
+        other_profile: {
+          id: c.other_id,
+          first_name: c.first_name,
+          age: calcAge(detailBy.get(c.other_id)?.birth_date ?? null),
+          city: detailBy.get(c.other_id)?.city ?? null,
+          last_active_at: c.last_active_at,
+          photos: c.photo_url ? [{ photo_url: c.photo_url }] : [],
         },
-        () => {
-          fetchMatches();
-        }
-      )
-      .subscribe();
+      })));
+      setLoadError(false);
+    } catch (error) {
+      console.error("Error fetching matches:", error);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [profileId, isPremium]);
 
+  useEffect(() => {
+    void fetchMatches();
+  }, [fetchMatches]);
+
+  // New matches and messages refresh the list.
+  useEffect(() => {
+    if (!profileId) return;
+    const channel = supabase
+      .channel(`matches-list-${profileId}-${Math.random().toString(36).slice(2, 8)}`)
+      .on("postgres_changes", { event: "*", schema: "isexy", table: "matches" }, () => void fetchMatches())
+      .on("postgres_changes", { event: "INSERT", schema: "isexy", table: "messages" }, () => void fetchMatches())
+      .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile]);
+  }, [profileId, fetchMatches]);
+
+  /** Unlocked conversations open straight away; others go through the contact sheet. */
+  const open = (match: Match) => {
+    if (match.is_unlocked) {
+      navigate(`/chat/${match.id}`);
+      return;
+    }
+    setContactModal({
+      matchId: match.id,
+      otherName: match.other_profile.first_name,
+      otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -183,7 +132,7 @@ export default function Matches() {
           Matches
         </h1>
         <button
-          onClick={() => navigate("/messages")}
+          onClick={() => navigate("/matches")}
           className="p-2 -mr-2 rounded-full hover:bg-muted/60 transition-colors"
           aria-label="Open messages"
         >
@@ -210,6 +159,17 @@ export default function Matches() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : loadError && matches.length === 0 ? (
+          <div className="text-center py-24 px-6">
+            <p className="font-semibold text-foreground mb-1">Couldn't load your matches</p>
+            <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
+            <button
+              onClick={() => { setLoading(true); void fetchMatches(); }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm"
+            >
+              <RefreshCw className="w-4 h-4" /> Retry
+            </button>
           </div>
         ) : matches.length === 0 ? (
           <div className="text-center py-24 px-6">
@@ -245,11 +205,7 @@ export default function Matches() {
                 {matches.slice(0, 6).map((match) => (
                   <button
                     key={match.id}
-                    onClick={() => setContactModal({
-                      matchId: match.id,
-                      otherName: match.other_profile.first_name,
-                      otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
-                    })}
+                    onClick={() => open(match)}
                     className="group relative aspect-square rounded-2xl overflow-hidden ring-1 ring-border/60 hover:ring-primary/60 transition-all"
                   >
                     {match.other_profile.photos[0] ? (
@@ -298,11 +254,7 @@ export default function Matches() {
                 {matches.map((match) => (
                   <button
                     key={match.id}
-                    onClick={() => setContactModal({
-                      matchId: match.id,
-                      otherName: match.other_profile.first_name,
-                      otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
-                    })}
+                    onClick={() => open(match)}
                     className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 transition-all active:scale-[0.99]"
                   >
                     <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-border/40">
@@ -340,7 +292,7 @@ export default function Matches() {
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 text-sm">
-                        {match.last_message_preview && match.last_message_read && (
+                        {match.last_message_preview && match.last_message_mine && (
                           <CheckCheck className="w-4 h-4 text-primary flex-shrink-0" />
                         )}
                         <span className={`truncate ${match.unread_count > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
@@ -372,7 +324,7 @@ export default function Matches() {
       {contactModal && (
         <ContactMethodModal
           isOpen={true}
-          onClose={() => setContactModal(null)}
+          onClose={() => { setContactModal(null); void fetchMatches(); }}
           matchId={contactModal.matchId}
           otherName={contactModal.otherName}
           otherPhotoUrl={contactModal.otherPhotoUrl}
