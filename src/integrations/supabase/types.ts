@@ -3232,6 +3232,17 @@ export type Database = {
           unread_count: number
         }[]
       }
+      mark_messages_read: {
+        Args: { p_match_id: string }
+        Returns: number
+      }
+      get_my_badge_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          new_likes: number
+          unread_messages: number
+        }[]
+      }
       get_discover_feed: {
         Args: {
           p_exclude?: string[]
