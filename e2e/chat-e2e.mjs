@@ -106,6 +106,9 @@ await ctx.route("**/*.supabase.co/**", async (route) => {
   if (url.includes("/rpc/mark_messages_read")) { calls.markRead.push(body()); return json(3); }
   if (url.includes("/rest/v1/user_preferences")) return json({ preferred_language: "en", auto_translate: true });
   if (url.includes("/rest/v1/matches") && url.includes(`id=eq.${M1}`)) return json([{ profile1_id: ME, profile2_id: BEA, is_active: true }]);
+  if (url.includes("/rest/v1/matches") && url.includes(`id=eq.${M2}`)) return json([{ profile1_id: ME, profile2_id: HANA, is_active: true }]);
+  if (url.includes("/rest/v1/profiles") && url.includes(`id=eq.${HANA}`)) return json([{ id: HANA, first_name: "Hana" }]);
+  if (url.includes("/rest/v1/conversation_unlocks")) return json(url.includes(M1) ? [{ id: "unlock-1" }] : []);
   if (url.includes("/rest/v1/message_translations") && m === "GET") {
     calls.cacheReads++;
     return json([...cachedIds].filter((id) => url.includes(id)).map((id) => ({ message_id: id, translated_content: `CACHED translation of ${id.slice(-3)}` })));
@@ -253,6 +256,16 @@ await page.keyboard.press("Enter");
 await page.waitForTimeout(1200);
 check("no push while the other member is in the chat", calls.push.length === pushBefore);
 await page.screenshot({ path: `${out}/07-final.png` });
+
+// 8. Direct link to a conversation that is not unlocked: same rule as the inbox
+await page.goto(base + `/chat/${M2}`, { waitUntil: "networkidle" });
+await page.getByRole("dialog", { name: "Contact Hana" }).waitFor({ timeout: 3000 }).catch(() => undefined);
+check("locked chat shows the contact sheet", await page.getByRole("dialog", { name: "Contact Hana" }).isVisible());
+check("composer disabled while locked", await page.getByLabel("Message", { exact: true }).isDisabled());
+await page.screenshot({ path: `${out}/08-locked-chat.png` });
+await page.keyboard.press("Escape");
+await page.waitForURL(/\/matches$/, { timeout: 3000 }).catch(() => undefined);
+check("closing the sheet goes back to the inbox", page.url().endsWith("/matches"), page.url());
 
 console.log(log.join("\n"));
 console.log("pageerrors:", JSON.stringify(errors.filter((e) => !/websocket|WebSocket/.test(e)), null, 1));

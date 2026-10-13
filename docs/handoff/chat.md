@@ -134,6 +134,13 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
 - Chat typing indicator re-announced every 2 s while typing (it vanished after
   3.5 s of continuous typing).
 
+- Chat page applies the inbox's unlock rule (premium or a `chat` unlock for
+  this match): direct links (push, match celebration "Chat now", missed-call
+  "Message", video call "Open chat") skipped the contact sheet. Locked → the
+  same contact sheet over the chat, composer disabled; closing it without
+  unlocking returns to /matches (not when the sheet itself navigated to a
+  call). Server-side enforcement is still missing (see below).
+
 ## Left to do
 
 (filled in as work progresses)

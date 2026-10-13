@@ -12,6 +12,7 @@ import { CallScheduleModal } from "@/components/CallScheduleModal";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { GiftModal } from "@/components/GiftModal";
+import { ContactMethodModal } from "@/components/ContactMethodModal";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 
@@ -107,6 +108,8 @@ export default function Chat() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
+  /** Same rule as the inbox: chat needs premium or an unlock for this match. */
+  const [locked, setLocked] = useState(false);
   const [banMessage, setBanMessage] = useState("");
   const scrollerRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -125,6 +128,7 @@ export default function Chat() {
   const { checkContent, reportViolation, checkUserBanStatus } = useContentModeration();
 
   const myId = profile?.id;
+  const isPremium = profile?.is_premium === true;
   // Wanted = show translations; down = the service failed, so ask it for no new ones.
   const translationOn = translationsEnabled && autoTranslate;
   const translateRef = useRef({ on: translationOn, lang: language.code, down: translationDown });
@@ -270,7 +274,7 @@ export default function Chat() {
     }
 
     const otherId = match.profile1_id === myId ? match.profile2_id : match.profile1_id;
-    const [blockRes, otherRes, photoRes] = await Promise.all([
+    const [blockRes, otherRes, photoRes, unlockRes] = await Promise.all([
       supabase
         .from("blocks")
         .select("id")
@@ -279,6 +283,9 @@ export default function Chat() {
         .maybeSingle(),
       supabase.from("profiles").select("id, first_name").eq("id", otherId).maybeSingle(),
       supabase.from("profile_photos").select("photo_url").eq("profile_id", otherId).order("position").limit(1),
+      isPremium
+        ? Promise.resolve({ data: [{ id: "premium" }] })
+        : supabase.from("conversation_unlocks").select("id").eq("match_id", matchId).eq("unlocked_by", myId).eq("unlock_type", "chat").limit(1),
     ]);
 
     if (blockRes.data) {
@@ -287,11 +294,30 @@ export default function Chat() {
       return;
     }
 
+    // Direct links (push, match celebration, missed-call banner) used to skip
+    // the inbox's unlock step; show the same contact sheet here.
+    setLocked(!(unlockRes.data && unlockRes.data.length > 0));
     setOtherProfile({
       id: otherId,
       first_name: otherRes.data?.first_name ?? "Member",
       photo_url: photoRes.data?.[0]?.photo_url,
     });
+  }, [matchId, myId, isPremium, navigate]);
+
+  /** Contact sheet closed: stay if the chat is now unlocked, otherwise back to the inbox. */
+  const handleLockClosed = useCallback(async () => {
+    if (!matchId || !myId) return;
+    const { data } = await supabase
+      .from("conversation_unlocks")
+      .select("id")
+      .eq("match_id", matchId)
+      .eq("unlocked_by", myId)
+      .eq("unlock_type", "chat")
+      .limit(1);
+    // The sheet may have navigated away (e.g. to a call): leave that alone.
+    if (window.location.pathname !== `/chat/${matchId}`) return;
+    if (data && data.length > 0) setLocked(false);
+    else navigate("/matches");
   }, [matchId, myId, navigate]);
 
   const fetchMessages = useCallback(async () => {
@@ -597,7 +623,7 @@ export default function Chat() {
 
   const handleSend = async () => {
     const content = newMessage.trim();
-    if (!content || !profile || !matchId || isBanned) return;
+    if (!content || !profile || !matchId || isBanned || locked) return;
 
     // Check content for personal information
     const modResult = checkContent(content);
@@ -931,12 +957,12 @@ export default function Chat() {
             maxLength={2000}
             aria-label="Message"
             placeholder={isBanned ? "Messaging restricted…" : `Message ${otherProfile?.first_name ?? ""}…`}
-            disabled={isBanned}
+            disabled={isBanned || locked}
             className="flex-1 resize-none max-h-32 px-5 py-3 bg-muted/60 border border-border/60 rounded-3xl outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground disabled:opacity-50 transition-all leading-6"
           />
           <button
             onClick={() => void handleSend()}
-            disabled={!newMessage.trim() || isBanned}
+            disabled={!newMessage.trim() || isBanned || locked}
             className="w-12 h-12 shrink-0 flex items-center justify-center bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-full shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none enabled:active:scale-95 transition-all"
             aria-label="Send message"
           >
@@ -947,6 +973,16 @@ export default function Chat() {
           Your phone number stays private. Be kind. Report anything off.
         </p>
       </footer>
+
+      {locked && otherProfile && matchId && (
+        <ContactMethodModal
+          isOpen={true}
+          onClose={() => void handleLockClosed()}
+          matchId={matchId}
+          otherName={otherProfile.first_name}
+          otherPhotoUrl={otherProfile.photo_url}
+        />
+      )}
 
       {/* Schedule Call Modal */}
       {otherProfile && profile && (
