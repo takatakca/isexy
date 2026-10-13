@@ -141,6 +141,71 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   unlocking returns to /matches (not when the sheet itself navigated to a
   call). Server-side enforcement is still missing (see below).
 
+## Verification
+
+- `npm run typecheck`, `npm run build`: pass. ESLint: every changed src file
+  clean (incl. the two ContactMethodModal `any` errors).
+- `docs/handoff/chat.sql` applied twice (idempotent) on a local Postgres 16 with
+  `scripts/isexy/test/v1-mock.sql` + 0001-0003; behaviour test: read RPC flips
+  only the other person's messages (2), outsider gets 42501, anon has no
+  EXECUTE, badge counts (2 unread → 0 after read, 1 pending like), group chat
+  member sees group/members/messages, outsider sees nothing, spoofed sender
+  rejected; the original recursion error reproduced on a DB without the fix.
+- Edge functions: no Deno here; type-checked with tsc + shims (Deno, std
+  server, npm modules as any): no errors in the five changed functions.
+- Playwright, 390x844, `vite preview` with REST/RPC/functions **and the
+  realtime websocket** mocked (no backend reached):
+  `e2e/chat-e2e.mjs` (38 checks: open at newest, paging + position kept,
+  read RPC, cached + live translation, optimistic send, failed send + Retry,
+  push/email payloads, realtime receive, typing, read receipt, new-message
+  pill, presence suppresses push, locked chat sheet) and
+  `e2e/chat-notifications-e2e.mjs` (21 checks: badges, missed call banner,
+  contact sheet above nav, push opt-in stores the subscription, push/email
+  settings saved + survive reload, group chat, matches list). Both pass.
+
 ## Left to do
 
-(filled in as work progresses)
+1. **Deploy** (integrator/owner): fold `docs/handoff/chat.sql` into the next
+   isexy migration; deploy `isexy-translate-message`,
+   `isexy-send-push-notification`, `isexy-send-notification-email`,
+   `isexy-send-missed-call-notification`,
+   `isexy-send-whatsapp-call-notification`. Until then the client degrades:
+   read RPC stops quietly (unread stays), badges fall back to the inbox,
+   translation says "unavailable".
+2. **VAPID keys** (owner): `npx web-push generate-vapid-keys`; set function
+   secrets `ISEXY_VAPID_PUBLIC_KEY`, `ISEXY_VAPID_PRIVATE_KEY` (optional
+   `ISEXY_VAPID_SUBJECT`, e.g. `mailto:` or the site URL) and build env
+   `VITE_VAPID_PUBLIC_KEY` (same public key). The hard-coded fallback public
+   key's private half is unknown, so pushes cannot be signed until this is done.
+   Then send a test push: `npm:web-push` on the Supabase edge runtime has not
+   been run here (if it fails on `crypto.createECDH`, switch to
+   `jsr:@negrel/webpush`).
+3. **Security pass**: once the read RPC is live, drop policy "Users can update
+   message read status" (no client code UPDATEs `isexy.messages` now);
+   restrict `missed_calls` INSERT to service_role (only the edge function
+   inserts); enforce the chat unlock server-side (messages INSERT policy or
+   trigger: premium, chat unlock or chat subscription) — today only the UI
+   gates it; `matches` UPDATE policy still lets a member change any column of
+   their match (e.g. `is_active`), the client no longer needs it.
+4. **Group chats are never created**: nothing inserts `group_chats` /
+   `group_chat_members` (no INSERT policies, no RPC); DoubleDate links to them.
+   Next step: SECURITY DEFINER RPC creating the group when a double-date match
+   forms (Double Date area).
+5. **Images / voice messages**: not supported by the schema (messages has only
+   `content`, no chat bucket). Needs a `isexy-chat-media` bucket with
+   match-member RLS + `messages.attachment_url/attachment_type`, then UI.
+6. **New-match notifications**: nothing sends push/email when a match forms
+   (`new_match` email type exists for service-role callers only). Next step:
+   DB webhook or `perform_like` caller (Discover area) invoking the functions.
+7. Push categories other than messages/matches (super likes, top picks, swipe
+   surge, boost expiring, likes frequency) are stored but nothing sends them.
+8. Stale push endpoints (404/410) are kept (no-delete rule); owner may allow
+   pruning them.
+9. Brand: the global theme primary is still coral pink (`index.css` tokens);
+   BRAND.md wants electric blue on navy. Global change, not done here.
+10. `/matches-list` is linked from nowhere; consider redirecting it to
+    `/matches` in App.tsx (shared file).
+11. Likes badge counts all pending likes; a "seen" marker would make it "new
+    since last visit".
+12. `isexy-send-notification-email` throttles in memory (per instance); a DB
+    timestamp per conversation would survive cold starts.
