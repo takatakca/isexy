@@ -54,6 +54,9 @@ Running notes so the work survives a stop. Newest state at the top of each list.
 - Email: isexy-send-notification-email skips "new message" emails when the
   recipient turned off Settings › Email › New Messages (needs the settings
   column; without it the email is sent as before). Edge function NOT deployed.
+- Returning members: "/" (and the installed app's start URL) sends a signed-in
+  member to Discover (setup if incomplete). Back buttons on pages opened
+  directly (AuthLayout, /auth, setup step 1) stay in ISEXY instead of leaving.
 
 ## Left / next steps
 

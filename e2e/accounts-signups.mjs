@@ -2,7 +2,7 @@
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? "/opt/node22/lib/node_modules/playwright/index.mjs");
-import { newState, installMock, seedBrowser, makeUser, PNG } from "./accounts-mockdb.mjs";
+import { newState, installMock, seedBrowser, makeUser, completeProfile, PNG } from "./accounts-mockdb.mjs";
 
 const base = process.env.E2E_BASE ?? "http://127.0.0.1:4301";
 const out = process.env.E2E_SHOTS ?? `${tmpdir()}/isexy-accounts-shots`;
@@ -80,6 +80,40 @@ const check = (name, ok, extra = "") => { results.push(`${ok ? "PASS" : "FAIL"} 
     check(`${path} requires sign-in`, new URL(page.url()).pathname === "/auth", new URL(page.url()).pathname);
   }
   check("entry pages: no page errors", errors.length === 0, errors.join(" | "));
+  await ctx.close();
+}
+
+// Home page: visitors see it; signed-in members go to Discover. Back on a page opened directly stays in ISEXY.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await seedBrowser(ctx, null);
+  await installMock(ctx, newState(), {});
+  const page = await ctx.newPage();
+  await page.goto(base + "/");
+  await page.waitForTimeout(1200);
+  check("visitor stays on the home page", new URL(page.url()).pathname === "/", new URL(page.url()).pathname);
+  await page.goto(base + "/auth");
+  await page.getByRole("button", { name: "Go back" }).click();
+  await page.waitForTimeout(600);
+  check("back on /auth opened directly goes home", new URL(page.url()).pathname === "/", page.url());
+  await ctx.close();
+}
+{
+  const id = "eeeeeeee-0000-4000-8000-000000000009";
+  const user = makeUser(id);
+  const state = newState();
+  completeProfile(state, id);
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await seedBrowser(ctx, user);
+  await installMock(ctx, state, { user });
+  const page = await ctx.newPage();
+  await page.goto(base + "/?source=pwa");
+  await page.waitForURL((u) => u.pathname === "/discover", { timeout: 8000 }).catch(() => {});
+  check("signed-in member opening the app goes to Discover", new URL(page.url()).pathname === "/discover", new URL(page.url()).pathname);
+  await page.goto(base + "/email-settings");
+  await page.getByRole("button", { name: "Go back" }).click();
+  await page.waitForURL((u) => u.pathname !== "/email-settings", { timeout: 5000 }).catch(() => {});
+  check("back on a settings page opened directly stays in ISEXY", new URL(page.url()).origin === base && new URL(page.url()).pathname === "/discover", page.url());
   await ctx.close();
 }
 

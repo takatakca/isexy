@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { openConsentSettings } from "@/lib/consent";
+import { goBack } from "@/lib/navigation";
 import {
   MIN_BIO_LENGTH, PLACEHOLDER_BIRTH_DATE, SHOW_ME_LABELS, isAdult, isProfileComplete,
   showMeFrom, toggleShowMe, type ShowMe,
@@ -634,7 +635,7 @@ export default function ProfileSetup() {
     <AuthLayout
       showBack
       variant="white"
-      onBack={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
+      onBack={() => step > 1 ? setStep(s => s - 1) : goBack(navigate, "/")}
     >
       {/* Skip button for optional steps */}
       {[6, 7].includes(step) && (

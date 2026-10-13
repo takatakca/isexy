@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { ArrowLeft, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { goBack } from "@/lib/navigation";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -27,7 +28,8 @@ export function AuthLayout({
     if (onBack) {
       onBack();
     } else {
-      navigate(-1);
+      // Opened directly (link, reload, installed app): stay in ISEXY.
+      goBack(navigate, "/");
     }
   };
 
