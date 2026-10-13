@@ -1,101 +1,108 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Heart, Star, Loader2 } from "lucide-react";
-import { AuthButton } from "@/components/AuthButton";
+import { LikesReceivedGrid } from "@/components/LikesReceivedGrid";
+import { Heart, Star, Loader2, BadgeCheck, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { ageFrom } from "@/lib/discoverFeed";
 
 interface LikedProfile {
   id: string;
   first_name: string;
   birth_date: string;
-  city?: string;
-  is_verified?: boolean;
-  photos: string[];
+  city?: string | null;
+  is_verified?: boolean | null;
+  photo_url?: string;
+  action: string;
   liked_at: string;
 }
 
-function calculateAge(birthDate: string): number {
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
-}
+const PAGE = 30;
 
 export default function Likes() {
   const navigate = useNavigate();
   const { profile: userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<"likes" | "sent">("likes");
-  const [receivedLikes, setReceivedLikes] = useState<LikedProfile[]>([]);
   const [sentLikes, setSentLikes] = useState<LikedProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const loadedSwipes = useRef(0);
+  const sentinel = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (userProfile) {
-      fetchLikes();
-    }
-  }, [userProfile]);
+  const meId = userProfile?.id;
 
-  const fetchLikes = async () => {
-    if (!userProfile) return;
-    setLoading(true);
+  // Likes the member sent, newest first: 3 queries per page (swipes, profiles, photos).
+  const fetchSent = useCallback(async (mode: "first" | "more") => {
+    if (!meId) return;
+    const from = mode === "first" ? 0 : loadedSwipes.current;
+    if (mode === "first") setLoading(true);
+    else setLoadingMore(true);
     try {
-      // Sent likes (profiles the user liked)
-      const { data: sentSwipes } = await supabase
+      const { data: swipes, error } = await supabase
         .from("swipes")
-        .select("swiped_id, created_at")
-        .eq("swiper_id", userProfile.id)
+        .select("swiped_id, action, created_at")
+        .eq("swiper_id", meId)
         .in("action", ["like", "super_like"])
         .order("created_at", { ascending: false })
-        .limit(50);
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      const rows = swipes ?? [];
+      loadedSwipes.current = from + rows.length;
+      setHasMore(rows.length === PAGE);
 
-      if (sentSwipes && sentSwipes.length > 0) {
-        const ids = sentSwipes.map(s => s.swiped_id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, birth_date, city, is_verified")
-          .in("id", ids);
-
-        if (profiles) {
-          const withPhotos = await Promise.all(
-            profiles.map(async (p) => {
-              const { data: photos } = await supabase
-                .from("profile_photos")
-                .select("photo_url")
-                .eq("profile_id", p.id)
-                .order("position")
-                .limit(1);
-              const swipe = sentSwipes.find(s => s.swiped_id === p.id);
-              return {
-                ...p,
-                photos: photos?.map(ph => ph.photo_url) || [],
-                liked_at: swipe?.created_at || "",
-              };
-            })
-          );
-          // Sort by liked_at desc
-          withPhotos.sort((a, b) => new Date(b.liked_at).getTime() - new Date(a.liked_at).getTime());
-          setSentLikes(withPhotos);
-        }
+      const ids = rows.map((s) => s.swiped_id);
+      let page: LikedProfile[] = [];
+      if (ids.length > 0) {
+        const [{ data: profiles }, { data: photos }] = await Promise.all([
+          supabase.from("profiles").select("id, first_name, birth_date, city, is_verified").in("id", ids),
+          supabase.from("profile_photos").select("profile_id, photo_url, position").in("profile_id", ids).order("position"),
+        ]);
+        const photoBy = new Map<string, string>();
+        for (const ph of photos ?? []) if (!photoBy.has(ph.profile_id)) photoBy.set(ph.profile_id, ph.photo_url);
+        const profileBy = new Map((profiles ?? []).map((p) => [p.id, p]));
+        // Keep the swipe order; members who left (inactive) are not visible and are skipped.
+        page = rows.flatMap((s) => {
+          const p = profileBy.get(s.swiped_id);
+          return p ? [{ ...p, photo_url: photoBy.get(p.id), action: s.action, liked_at: s.created_at }] : [];
+        });
       }
+      setSentLikes((prev) => (mode === "first" ? page : [...prev, ...page.filter((p) => !prev.some((q) => q.id === p.id))]));
+      setLoadError(false);
     } catch (err) {
       console.error("Error fetching likes:", err);
+      if (mode === "first") setLoadError(true);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [meId]);
 
-  const isPremium = userProfile?.is_premium || userProfile?.subscription_tier === "gold" || userProfile?.subscription_tier === "platinum";
+  useEffect(() => {
+    if (meId) fetchSent("first");
+  }, [meId, fetchSent]);
+
+  // Infinite scroll on the Sent tab.
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !hasMore || activeTab !== "sent") return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting) && !loadingMore) fetchSent("more");
+    }, { rootMargin: "400px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, activeTab, loadingMore, fetchSent]);
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background px-4 pt-12 pb-2">
         <h1 className="text-3xl font-extrabold text-foreground mb-4">Likes</h1>
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-border" role="tablist">
           <button
+            role="tab"
+            aria-selected={activeTab === "likes"}
             onClick={() => setActiveTab("likes")}
             className={`flex-1 py-3 text-center font-semibold relative ${activeTab === "likes" ? "text-foreground" : "text-muted-foreground"}`}
           >
@@ -103,43 +110,33 @@ export default function Likes() {
             {activeTab === "likes" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === "sent"}
             onClick={() => setActiveTab("sent")}
             className={`flex-1 py-3 text-center font-semibold relative ${activeTab === "sent" ? "text-foreground" : "text-muted-foreground"}`}
           >
-            {sentLikes.length} Sent
+            Sent
             {activeTab === "sent" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
         </div>
       </div>
 
       {activeTab === "likes" ? (
-        !isPremium ? (
-          <div className="flex-1 flex flex-col items-center justify-center px-8 py-16">
-            <Heart className="w-16 h-16 text-primary fill-primary mb-6" />
-            <p className="text-center text-lg text-muted-foreground mb-4">
-              See people who liked you with ISEXY Gold™
-            </p>
-            <AuthButton
-              variant="primary"
-              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-foreground font-bold px-12"
-              onClick={() => navigate("/premium")}
-            >
-              See Who Likes You
-            </AuthButton>
-          </div>
-        ) : (
-          <div className="px-4 py-4">
-            <p className="text-center text-muted-foreground mb-4">People who liked your profile</p>
-            {receivedLikes.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No likes yet. Keep swiping!</p>
-            )}
-          </div>
-        )
+        <div className="px-4 py-4">
+          <LikesReceivedGrid />
+        </div>
       ) : (
         <div className="px-4 py-4">
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" aria-label="Loading" />
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center py-12" role="alert">
+              <p className="text-muted-foreground mb-4">We couldn't load the likes you sent.</p>
+              <button onClick={() => fetchSent("first")} className="flex items-center gap-2 text-primary font-semibold">
+                <RefreshCw className="w-4 h-4" /> Try again
+              </button>
             </div>
           ) : sentLikes.length === 0 ? (
             <div className="flex flex-col items-center py-12">
@@ -150,35 +147,51 @@ export default function Likes() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {sentLikes.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="relative rounded-xl overflow-hidden aspect-[3/4] cursor-pointer"
-                  onClick={() => navigate(`/discover`)}
-                >
-                  {profile.photos[0] ? (
-                    <img src={profile.photos[0]} alt={profile.first_name} className="w-full h-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <Heart className="w-8 h-8 text-muted-foreground" />
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                {sentLikes.map((profile) => (
+                  <button
+                    type="button"
+                    key={profile.id}
+                    className="relative rounded-xl overflow-hidden aspect-[3/4] text-left bg-muted"
+                    onClick={() => navigate(`/web-profile/${profile.id}`)}
+                    aria-label={`Open ${profile.first_name}'s profile`}
+                  >
+                    {profile.photo_url ? (
+                      <img src={profile.photo_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Heart className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <h3 className="font-bold text-white text-sm flex items-center gap-1">
+                        <span className="truncate">{profile.first_name}, {ageFrom(profile.birth_date)}</span>
+                        {profile.is_verified && <BadgeCheck className="w-4 h-4 text-cyan-300 shrink-0" aria-label="Verified" />}
+                      </h3>
+                      {profile.city && <p className="text-white/70 text-xs truncate">{profile.city}</p>}
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-3 left-3">
-                    <h3 className="font-bold text-white text-sm">
-                      {profile.first_name}, {calculateAge(profile.birth_date)}
-                    </h3>
-                    {profile.city && <p className="text-white/70 text-xs">{profile.city}</p>}
-                  </div>
-                  {profile.is_verified && (
-                    <div className="absolute top-2 right-2 bg-primary rounded-full p-1">
-                      <Star className="w-3 h-3 text-primary-foreground fill-current" />
-                    </div>
-                  )}
+                    {profile.action === "super_like" && (
+                      <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1" aria-label="Super Like">
+                        <Star className="w-3 h-3 text-white fill-current" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {hasMore && (
+                <div ref={sentinel} className="flex justify-center py-6">
+                  <button
+                    onClick={() => fetchSent("more")}
+                    disabled={loadingMore}
+                    className="px-5 py-2 rounded-full border border-border text-sm font-semibold text-foreground disabled:opacity-60"
+                  >
+                    {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load more"}
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       )}
