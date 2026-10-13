@@ -10,7 +10,8 @@ npx vite preview --port 4301 --strictPort --host 127.0.0.1 &
 node e2e/accounts-auth-setup.mjs   # sign-in routing, profile setup
 node e2e/accounts-profile.mjs      # profile, edit profile + photos, bio, interests
 node e2e/accounts-settings.mjs     # settings, email, push, active status, block contacts, passport, verification, delete
-node e2e/accounts-signups.mjs      # tourist signup, entry pages at 390 px, sign-in guards
+node e2e/accounts-signups.mjs      # tourist signup, entry pages at 390 px, sign-in guards, home redirect
+node e2e/accounts-layout.mjs       # 390x844 sweep: no horizontal scroll, no covered controls
 ```
 
 Env: `E2E_BASE`, `E2E_SHOTS` (screenshots, default a temp folder),

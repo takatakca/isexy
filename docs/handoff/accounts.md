@@ -60,6 +60,9 @@ Running notes so the work survives a stop. Newest state at the top of each list.
 - Delete account: the confirm dialog stays open ("Deleting...") until the
   request is sent; the alternatives are real (hide from Discover, fewer emails)
   instead of a "pause" that does not exist.
+- Phone layout: sweep of every area page at 390x844 (e2e/accounts-layout.mjs):
+  no horizontal scroll, every control reachable and uncovered. Fixed: the last
+  control on long AuthLayout pages sat under the assistant button (more bottom room).
 
 ## Left / next steps
 
