@@ -102,7 +102,6 @@ export default function Chat() {
   const [newBelow, setNewBelow] = useState(0);
   const [translationsEnabled, setTranslationsEnabled] = useState(true);
   const [translationDown, setTranslationDown] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
   const [otherHere, setOtherHere] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -113,7 +112,7 @@ export default function Chat() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef(0);
   const messagesRef = useRef<Message[]>([]);
   const prevCountRef = useRef(0);
   const prevLastIdRef = useRef<string | undefined>(undefined);
@@ -525,12 +524,13 @@ export default function Chat() {
     setNewMessage(e.target.value);
     resizeInput();
 
-    if (!isTyping) {
-      setIsTyping(true);
+    // Re-announce every 2 s while typing: the other side hides "typing…" after
+    // 3.5 s, and a single broadcast per burst made it vanish mid-sentence.
+    const now = Date.now();
+    if (e.target.value && now - lastTypingSentRef.current > 2000) {
+      lastTypingSentRef.current = now;
       sendTypingIndicator();
     }
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
   };
 
   // ---- Sending ---------------------------------------------------------------------
@@ -609,7 +609,7 @@ export default function Chat() {
     }
 
     setNewMessage("");
-    setIsTyping(false);
+    lastTypingSentRef.current = 0;
     requestAnimationFrame(resizeInput);
 
     // Optimistic: show the message instantly, confirm (or mark failed) after.
