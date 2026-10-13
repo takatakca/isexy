@@ -79,6 +79,25 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   when the browser blocks it). `any` icon type fixed.
 - `public/sw.js`: notification icon uses the app icon.
 
+- Incoming-call push (`isexy-send-whatsapp-call-notification`, which
+  VideoCall calls for every call): the push went out only to members with a
+  verified WhatsApp number (Cuba flow); it now goes to everyone first, says
+  "call" or "video call", and opens the chat (the old `/video-call/:id` link
+  would have started a new outgoing call instead of answering). WhatsApp part
+  unchanged (Cuba on hold).
+- Missed calls (`isexy-send-missed-call-notification`, `MissedCallBanner`):
+  the function links the rung-out call session (`call_session_id`) and uses
+  the call type (phone vs video) in email/push; phone-only accounts get no
+  email to their placeholder address; sender defaults to
+  notifications@isexy.ca (the resend.dev sandbox sender only reaches the
+  Resend account owner); push opens the chat; email in brand colours. The
+  banner: call back with the right type (it always started a video call),
+  Message button, live updates (realtime on `missed_calls`), dismissals
+  remembered on the device, destructive/primary tokens instead of red/green.
+- Notification emails (`isexy-send-notification-email`): brand colours (navy
+  header, #1565D8 buttons), links follow `ISEXY_APP_URL` (default isexy.ca),
+  "Reply" opens the conversation, `RESEND_FROM` respected.
+
 ## Left to do
 
 (filled in as work progresses)
