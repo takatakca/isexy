@@ -196,6 +196,22 @@ const rowSwitch = (page, label) => page.locator("div.p-4").filter({ has: page.ge
   check("current location restores the home city", prof().city === "Montréal" && prof().latitude === 45.5, `${prof().city} ${prof().latitude}`);
   check("passport memory cleared", !prefs(state).passport);
   check("passport: no page errors", errors.length === 0, errors.join(" | "));
+  await page.goto(base + "/passport-mode");
+  await page.getByPlaceholder("Search for a city...").fill("quebec");
+  check("passport search ignores accents", await page.getByText("Québec City").isVisible());
+  await page.screenshot({ path: `${out}/passport-390.png` });
+  await ctx.close();
+}
+// Free member: cities are not dead buttons, they lead to the plans.
+{
+  const state = newState();
+  completeProfile(state, id, { city: "Montréal" });
+  const { ctx, page } = await setup({ state });
+  await page.goto(base + "/passport-mode");
+  await page.getByText("Vancouver").first().click();
+  await page.waitForURL((u) => u.pathname === "/premium", { timeout: 5000 }).catch(() => {});
+  check("free member tapping a city goes to /premium", new URL(page.url()).pathname === "/premium", new URL(page.url()).pathname);
+  check("free member's location unchanged", state.profiles.find((p) => p.id === id).city === "Montréal");
   await ctx.close();
 }
 

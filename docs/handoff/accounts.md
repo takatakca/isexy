@@ -33,6 +33,10 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   /profile-setup (retry screen in ProtectedRoute); profile, photo count and the
   error flag update together (no flash redirect after refreshProfile).
 - Sign-in: "Send a new code" comes back by itself after 60 s (countdown).
+- Passport: cities were disabled for free members (dead buttons); they now lead
+  to /premium. Canada section first (Montréal, Toronto, Vancouver, Québec City,
+  + Ottawa, Calgary, Edmonton, Winnipeg, Halifax in search); accent-insensitive
+  search; back button falls back to /settings. Cuba section unchanged (on hold).
 
 ## Left / next steps
 
