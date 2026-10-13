@@ -70,4 +70,32 @@ Running notes so the work survives a stop. Newest state at the top of each list.
 
 ## Left / next steps
 
-(filled in as work progresses)
+1. Integrator: apply `docs/handoff/accounts.sql` as the next isexy migration
+   (after wf/chat's chat.sql, which adds `user_preferences.notification_settings`;
+   no clash, different column). Until then Settings say "Saved on this device
+   only" and a photo verification request fails with an error toast.
+2. Staff review screen for photo verifications (admin/trust area): list
+   `photo_verifications` with `status = 'pending'`, show the selfie with
+   `supabase.storage.from("isexy-photo-verifications").createSignedUrl(selfie_path, 600)`
+   next to the member's `profile_photos`, approve/reject with
+   `supabase.rpc("review_photo_verification", { p_request_id, p_approve, p_reason })`.
+   Nothing lists pending requests yet, so members wait on "being reviewed".
+3. Active Status (settings.activeStatus) is saved but not honoured: Matches and
+   Messages read `profiles.last_active_at` directly (src/lib/inbox.ts, wf/chat).
+   Next: a SECURITY DEFINER RPC that returns NULL for members with
+   showActive = false (and for showRecentlyActive = false when older than 2 h),
+   used by the inbox instead of the raw column.
+4. Saved but not used anywhere yet: Global, Maximum distance and the two
+   "if I run out of profiles" switches (the deck has no distance filter; owner
+   decision on wf/discover), Photo Verified Chat (chat send path), Send Read
+   Receipts (wf/chat `mark_messages_read` could skip when the reader turned it
+   off), distance unit (cards show km), the "who I'd like to see" filters
+   (looking for, languages, zodiac...).
+5. Discovery off / Incognito / Block Contacts apply to the Discover deck
+   (`get_discover_feed`, also used by Explore). Top Picks, Likes and direct
+   /web-profile links read profiles directly and do not apply them.
+6. Security pass: photo verification approval only means something once members
+   can no longer UPDATE `profiles.is_verified` themselves (known hole).
+7. Account deletion is a support ticket; staff still delete by hand.
+8. Brand: the theme's primary colour tokens are still pink (#ff5864); BRAND.md
+   says electric blue. Global token change, not done per page.

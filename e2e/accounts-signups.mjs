@@ -117,6 +117,28 @@ const check = (name, ok, extra = "") => { results.push(`${ok ? "PASS" : "FAIL"} 
   await ctx.close();
 }
 
+// Staff portal: members without a staff role are refused; moderators reach the support desk.
+for (const [role, expectDenied] of [[null, true], ["moderator", false]]) {
+  const sid = role ? "eeeeeeee-0000-4000-8000-00000000000b" : "eeeeeeee-0000-4000-8000-00000000000a";
+  const suser = makeUser(sid);
+  const state = newState({ user_roles: role ? [{ id: "r1", user_id: sid, role }] : [] });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await seedBrowser(ctx, suser);
+  await installMock(ctx, state, { user: suser });
+  const page = await ctx.newPage();
+  await page.goto(base + "/staff-login");
+  await page.waitForTimeout(1500);
+  if (expectDenied) {
+    check("staff portal refuses a member without a role", await page.getByText("Access denied").isVisible());
+    await page.getByRole("button", { name: "Use another account" }).click();
+    await page.waitForTimeout(500);
+    check("staff portal: switch account signs out", state.log.includes("auth logout"));
+  } else {
+    check("staff portal lets a moderator in", new URL(page.url()).pathname === "/support", new URL(page.url()).pathname);
+  }
+  await ctx.close();
+}
+
 await browser.close();
 console.log(results.join("\n"));
 if (results.some((r) => r.startsWith("FAIL"))) process.exitCode = 1;
