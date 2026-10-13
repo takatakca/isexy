@@ -21,7 +21,27 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
 
 ## Fixed
 
-(see git log on wf/chat; each entry below lists files and how it was verified)
+(see git log on wf/chat; each entry lists files and how it was verified)
+
+- Chat page (`src/pages/Chat.tsx`): read state via `mark_messages_read` RPC
+  (on open, on incoming messages while visible, when the tab becomes visible;
+  stops quietly if the RPC is not deployed yet); failed sends stay in the
+  thread with "Not sent · Retry · Delete" (auto-retry when back online);
+  history pages of 50 with "load earlier" on scroll-up keeping the reader's
+  place; own scroll container (100dvh) so the composer and header stay put and
+  the newest message stays in view when the keyboard opens; "N new messages"
+  pill when reading older messages; day separators; multi-line composer
+  (Enter sends, Shift+Enter new line); read receipts visible on the blue bubble
+  (they were blue on blue); no more client UPDATE of `matches.last_message_at`
+  (trigger does it); translation reads cached rows first and re-translates
+  when the language changes (before, a language switch kept the old language);
+  translation failures (404/503 or 3 errors) stop calls and say so in the
+  banner instead of failing silently per message; presence: "In this chat now"
+  and no push/email when the other person is looking at the chat; push
+  notification on new message (no message text on the lock screen).
+- `isexy-translate-message`: optional `messageId` → checks the caller is in
+  that conversation, serves/stores `message_translations` (one Claude call per
+  message and language).
 
 ## Left to do
 
