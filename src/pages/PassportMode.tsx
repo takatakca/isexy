@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useMemberSettings } from "@/hooks/useMemberSettings";
 
 interface Location {
   id: string;
@@ -41,7 +42,9 @@ const internationalCities: Location[] = [
 
 export default function PassportMode() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
+  // Remembers the member's own city so "Use Current Location" can put it back.
+  const { settings, save } = useMemberSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,10 +68,16 @@ export default function PassportMode() {
       return;
     }
 
+    if (!profile?.id) return;
+
     setLoading(true);
     setSelectedLocation(location);
 
     try {
+      // First trip away from home: keep the member's own city to restore later.
+      const homeCity = settings.passport ? settings.passport.homeCity : profile.city ?? null;
+      if (!settings.passport) await save({ passport: { homeCity } });
+
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -76,10 +85,11 @@ export default function PassportMode() {
           longitude: location.longitude,
           city: location.name,
         })
-        .eq("id", profile?.id);
+        .eq("id", profile.id);
 
       if (error) throw error;
 
+      await refreshProfile();
       toast.success(`Location changed to ${location.name}, ${location.country}`);
       navigate("/discover");
     } catch (error) {
@@ -90,38 +100,48 @@ export default function PassportMode() {
     }
   };
 
-  const handleResetLocation = async () => {
+  const handleResetLocation = () => {
     if (!profile?.id) return;
+    if (!("geolocation" in navigator)) {
+      toast.error("Location isn't available on this device");
+      return;
+    }
 
     setLoading(true);
-    try {
-      // Use browser geolocation
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { error } = await supabase
-            .from("profiles")
-            .update({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              city: null, // Will be auto-detected
-            })
-            .eq("id", profile.id);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        // Back home: the member's own city again (Passport replaced it with the destination).
+        const city = settings.passport ? settings.passport.homeCity ?? null : profile.city ?? null;
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            // About 1 km precision, as at signup.
+            latitude: Math.round(position.coords.latitude * 100) / 100,
+            longitude: Math.round(position.coords.longitude * 100) / 100,
+            city,
+          })
+          .eq("id", profile.id);
 
-          if (error) throw error;
-
-          toast.success("Location reset to current position");
-          navigate("/discover");
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          toast.error("Could not get your current location");
+        if (error) {
+          console.error("Error resetting location:", error);
+          toast.error("Failed to update location");
           setLoading(false);
+          return;
         }
-      );
-    } catch (error) {
-      console.error("Error resetting location:", error);
-      setLoading(false);
-    }
+
+        if (settings.passport) await save({ passport: undefined });
+        await refreshProfile();
+        setLoading(false);
+        toast.success("Location reset to current position");
+        navigate("/discover");
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        toast.error("Could not get your current location");
+        setLoading(false);
+      },
+      { timeout: 15000 }
+    );
   };
 
   return (

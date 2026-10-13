@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -18,19 +19,21 @@ interface PushNotificationPromptProps {
 export function PushNotificationPrompt({ onComplete }: PushNotificationPromptProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { isSupported, permission, subscribe, loading } = usePushNotifications();
+  // Only members with a profile: subscriptions are stored per member, and signup is not interrupted.
+  const { profile } = useAuth();
 
   useEffect(() => {
     // Check if we should show the prompt
     const hasSeenPrompt = localStorage.getItem("push_notification_prompt_shown");
-    
-    if (!hasSeenPrompt && isSupported && permission === "default" && !loading) {
+
+    if (profile && !hasSeenPrompt && isSupported && permission === "default" && !loading) {
       // Show prompt after a short delay
       const timer = setTimeout(() => {
         setIsOpen(true);
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [isSupported, permission, loading]);
+  }, [profile, isSupported, permission, loading]);
 
   const handleEnable = async () => {
     const success = await subscribe();
@@ -47,7 +50,7 @@ export function PushNotificationPrompt({ onComplete }: PushNotificationPromptPro
     onComplete?.();
   };
 
-  if (!isSupported || permission !== "default") {
+  if (!profile || !isSupported || permission !== "default") {
     return null;
   }
 

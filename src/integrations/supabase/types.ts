@@ -2072,6 +2072,47 @@ export type Database = {
           },
         ]
       }
+      photo_verifications: {
+        Row: {
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_path: string
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path: string
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path?: string
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_verifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_photos: {
         Row: {
           created_at: string
@@ -2952,6 +2993,7 @@ export type Database = {
           created_at: string
           id: string
           preferred_language: string
+          settings: Json
           updated_at: string
           user_id: string
         }
@@ -2960,6 +3002,7 @@ export type Database = {
           created_at?: string
           id?: string
           preferred_language?: string
+          settings?: Json
           updated_at?: string
           user_id: string
         }
@@ -2968,6 +3011,7 @@ export type Database = {
           created_at?: string
           id?: string
           preferred_language?: string
+          settings?: Json
           updated_at?: string
           user_id?: string
         }
@@ -3252,6 +3296,18 @@ export type Database = {
           job_title: string | null
           photos: string[]
           school: string | null
+        }[]
+      }
+      get_web_profile: {
+        Args: { p_profile_id: string }
+        Returns: {
+          age: number
+          bio: string | null
+          first_name: string
+          id: string
+          interests: string[] | null
+          is_verified: boolean
+          photos: string[]
         }[]
       }
       analytics_overview: {

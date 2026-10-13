@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -70,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [photoCount, setPhotoCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  // Whose profile is loaded (or loading). A different user signing in keeps
+  // `loading` on until their profile arrives, so routes never see a signed-in
+  // member with profile = null and send a returning member to /profile-setup.
+  const profileOwner = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -122,12 +126,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Defer profile fetch to avoid deadlock
         if (session?.user) {
+          const switchedUser = profileOwner.current !== session.user.id;
+          profileOwner.current = session.user.id;
+          if (switchedUser) setLoading(true);
           setTimeout(async () => {
             const p = await fetchProfile(session.user.id);
             setProfile(p);
             setPhotoCount(p ? await fetchPhotoCount(p.id) : 0);
+            if (switchedUser) setLoading(false);
           }, 0);
         } else {
+          profileOwner.current = null;
           setProfile(null);
           setPhotoCount(0);
         }
