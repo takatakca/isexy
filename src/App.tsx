@@ -215,7 +215,7 @@ const App = () => (
               <Route path="/restore-purchase" element={<RestorePurchase />} />
               <Route path="/help-support" element={<HelpSupport />} />
               <Route path="/web-profile/:userId" element={<WebProfile />} />
-              <Route path="/web-profile" element={<ProtectedRoute><WebProfile /></ProtectedRoute>} />
+              <Route path="/web-profile" element={<WebProfile />} />
               <Route path="/delete-account" element={<ProtectedRoute requireCompleteProfile={false}><DeleteAccount /></ProtectedRoute>} />
               <Route path="/licenses" element={<Licenses />} />
               <Route path="/faq" element={<FAQ />} />
@@ -239,7 +239,7 @@ const App = () => (
               <Route path="/consumer-health-privacy" element={<ConsumerHealthPrivacy />} />
               <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
               <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
-              <Route path="/photo-verification" element={<ProtectedRoute><PhotoVerification /></ProtectedRoute>} />
+              <Route path="/photo-verification" element={<PhotoVerification />} />
               <Route path="/double-hangout" element={<DoubleDate />} />
               <Route path="/double-date" element={<Navigate to="/double-hangout" replace />} />
               <Route path="/qa-events" element={<QAEvents />} />

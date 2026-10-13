@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { goBack } from "@/lib/navigation";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 type Step = "loading" | "intro" | "camera" | "review" | "submitting" | "pending" | "verified" | "rejected";
 
@@ -17,7 +18,17 @@ const BUCKET = "isexy-photo-verifications";
  * isexy.photo_verifications, and a moderator compares it with the profile
  * photos. The badge (profiles.is_verified) only appears once approved.
  */
-export default function PhotoVerification() {
+// Members only, with a complete profile (the selfie is compared with profile photos).
+// Guarded here rather than in App.tsx so the route table stays untouched.
+export default function PhotoVerificationPage() {
+  return (
+    <ProtectedRoute>
+      <PhotoVerification />
+    </ProtectedRoute>
+  );
+}
+
+function PhotoVerification() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>("loading");

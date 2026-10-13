@@ -31,7 +31,6 @@ export interface MemberSettings {
   email?: { newMatches?: boolean; newMessages?: boolean; promotions?: boolean };
   push?: Record<string, boolean | string>;
   activeStatus?: { showActive?: boolean; showRecentlyActive?: boolean };
-  webProfile?: { enabled?: boolean; searchEngines?: boolean };
   blockedContacts?: { id: string; name: string; phone?: string; email?: string }[];
   /** City shown before Passport mode moved the member, restored by "Use current location". */
   passport?: { homeCity?: string | null };

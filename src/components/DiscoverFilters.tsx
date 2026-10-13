@@ -18,7 +18,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { showMeFrom } from "@/lib/profileStatus";
 
 interface DiscoverFiltersProps {
   onFiltersChange?: () => void;
@@ -32,7 +31,7 @@ export function DiscoverFilters({
   setShowVerifiedOnly 
 }: DiscoverFiltersProps) {
   const navigate = useNavigate();
-  const { profile, refreshProfile } = useAuth();
+  const { profile } = useAuth();
   
   const [isOpen, setIsOpen] = useState(false);
   const [distance, setDistance] = useState(profile?.distance_preference || 50);
@@ -40,24 +39,21 @@ export function DiscoverFilters({
     profile?.age_min || 18,
     profile?.age_max || 45,
   ]);
-  // interested_in is written as "women"/"men"/"everyone" by signup and Settings;
-  // reading only "male"/"female" here used to save [] and lock members out (profile incomplete).
-  const showMe = showMeFrom(profile?.interested_in);
-  const [showMen, setShowMen] = useState(showMe.length === 0 || showMe.includes('everyone') || showMe.includes('men'));
-  const [showWomen, setShowWomen] = useState(showMe.length === 0 || showMe.includes('everyone') || showMe.includes('women'));
+  const [showMen, setShowMen] = useState(
+    profile?.interested_in?.includes('male') ?? true
+  );
+  const [showWomen, setShowWomen] = useState(
+    profile?.interested_in?.includes('female') ?? true
+  );
   const [globalMode, setGlobalMode] = useState(false);
-
+  
   const handleApply = async () => {
     if (!profile) return;
-    if (!showMen && !showWomen) {
-      toast.error("Choose who you'd like to see");
-      return;
-    }
-
-    const interestedIn = showMen && showWomen
-      ? (showMe.includes('everyone') ? ['everyone'] : ['women', 'men'])
-      : showMen ? ['men'] : ['women'];
-
+    
+    const interestedIn: string[] = [];
+    if (showMen) interestedIn.push('male');
+    if (showWomen) interestedIn.push('female');
+    
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -74,8 +70,6 @@ export function DiscoverFilters({
     }
     
     toast.success("Preferences updated!");
-    // Settings and the profile check read these values from the auth context.
-    await refreshProfile();
     setIsOpen(false);
     onFiltersChange?.();
   };

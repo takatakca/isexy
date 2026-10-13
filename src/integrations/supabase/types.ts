@@ -3298,18 +3298,6 @@ export type Database = {
           school: string | null
         }[]
       }
-      get_web_profile: {
-        Args: { p_profile_id: string }
-        Returns: {
-          age: number
-          bio: string | null
-          first_name: string
-          id: string
-          interests: string[] | null
-          is_verified: boolean
-          photos: string[]
-        }[]
-      }
       analytics_overview: {
         Args: { p_days?: number }
         Returns: Json
