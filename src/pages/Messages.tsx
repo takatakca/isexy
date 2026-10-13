@@ -162,14 +162,15 @@ export default function Messages() {
     <div className="min-h-screen bg-background pb-24">
       {/* Safety Modal */}
       {showSafetyModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-3xl max-w-sm w-full p-6 relative">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-background rounded-3xl max-w-sm w-full p-6 relative" role="dialog" aria-modal="true" aria-label="Stay safe">
             <button
               onClick={() => {
                 try { localStorage.setItem(SAFETY_SEEN_KEY, "true"); } catch { /* ignore */ }
                 setShowSafetyModal(false);
               }}
               className="absolute top-4 right-4 p-2"
+              aria-label="Close"
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>

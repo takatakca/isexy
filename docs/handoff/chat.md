@@ -43,6 +43,11 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   that conversation, serves/stores `message_translations` (one Claude call per
   message and language).
 
+- `ContactMethodModal`: the two eslint `any` errors (typed `UnlockResult`,
+  plain `catch`), sheet raised to `z-[60]` (the bottom nav at z-50 covered its
+  bottom on /matches), Escape closes, dialog role/labels, safe-area padding,
+  icons in brand blue instead of green/blue. Messages safety dialog also z-[60].
+
 ## Left to do
 
 (filled in as work progresses)
