@@ -400,6 +400,9 @@ export default function Chat() {
       } else {
         setNewBelow((n) => n + 1);
       }
+    } else if (atBottomRef.current) {
+      // A translation or receipt made the thread taller: stay pinned to the newest message.
+      el.scrollTop = el.scrollHeight;
     }
     prevCountRef.current = messages.length;
     prevLastIdRef.current = last?.id;
