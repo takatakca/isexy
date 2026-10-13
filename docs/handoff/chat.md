@@ -48,6 +48,18 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   bottom on /matches), Escape closes, dialog role/labels, safe-area padding,
   icons in brand blue instead of green/blue. Messages safety dialog also z-[60].
 
+- Bottom-nav badges (`useNotificationCounts`, `BottomNav`): the Likes badge
+  counted new matches of the last 24 h; it now shows likes received and not
+  answered yet (`get_my_badge_counts`). Unread uses the same rules as the inbox
+  (inactive/blocked matches no longer inflate it); fallback to the inbox RPC
+  until the new RPC is deployed. Refetch is debounced and also runs when the
+  tab becomes visible. aria-labels with counts.
+- Realtime topics: BottomNav used the fixed topic `notification-counts`; it
+  remounts on every page, and `supabase.channel()` returns a still-closing
+  channel with the same topic, so the new listeners died silently. Badge and
+  inbox channels now use a per-mount topic; the chat (shared topic for typing
+  and presence) waits for a stale channel to close before re-joining.
+
 ## Left to do
 
 (filled in as work progresses)

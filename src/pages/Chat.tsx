@@ -441,55 +441,72 @@ export default function Chat() {
   // ---- Live conversation: new messages, read receipts, typing and presence ----------
   useEffect(() => {
     if (!matchId || !myId) return;
-
-    const channel = supabase
-      .channel(`chat-${matchId}`, { config: { broadcast: { self: false }, presence: { key: myId } } })
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "isexy", table: "messages", filter: `match_id=eq.${matchId}` },
-        (payload) => {
-          const incoming = payload.new as Message;
-          // Show immediately; translate afterwards.
-          setMessages((prev) => upsertMessage(prev, incoming));
-          if (incoming.sender_id !== myId) {
-            setOtherIsTyping(false);
-            if (translateRef.current.on) void translateBatch([incoming], translateRef.current.lang);
-          }
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "isexy", table: "messages", filter: `match_id=eq.${matchId}` },
-        (payload) => setMessages((prev) => upsertMessage(prev, payload.new as Message)),
-      )
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
-        if (payload?.profileId === myId) return;
-        setOtherIsTyping(true);
-        if (typingHideRef.current) clearTimeout(typingHideRef.current);
-        typingHideRef.current = setTimeout(() => setOtherIsTyping(false), 3500);
-      })
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState<{ visible?: boolean }>();
-        const others = Object.entries(state).filter(([key]) => key !== myId).flatMap(([, metas]) => metas);
-        setOtherHere(others.length > 0);
-        otherVisibleHereRef.current = others.some((meta) => meta.visible !== false);
-      });
+    const topic = `chat-${matchId}`;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
     const trackPresence = () => {
-      void channel.track({ visible: document.visibilityState === "visible" }).catch(() => undefined);
+      void channel?.track({ visible: document.visibilityState === "visible" }).catch(() => undefined);
     };
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") trackPresence();
-    });
+
+    const open = async () => {
+      // Both members must share this topic (typing, presence). If a previous
+      // visit's channel is still closing, supabase.channel() would hand it
+      // back and the new listeners would die with it: wait for it to go.
+      const stale = supabase.getChannels().find((c) => c.topic === `realtime:${topic}`);
+      if (stale) await supabase.removeChannel(stale);
+      if (cancelled) return;
+
+      const ch = supabase
+        .channel(topic, { config: { broadcast: { self: false }, presence: { key: myId } } })
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "isexy", table: "messages", filter: `match_id=eq.${matchId}` },
+          (payload) => {
+            const incoming = payload.new as Message;
+            // Show immediately; translate afterwards.
+            setMessages((prev) => upsertMessage(prev, incoming));
+            if (incoming.sender_id !== myId) {
+              setOtherIsTyping(false);
+              if (translateRef.current.on) void translateBatch([incoming], translateRef.current.lang);
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "isexy", table: "messages", filter: `match_id=eq.${matchId}` },
+          (payload) => setMessages((prev) => upsertMessage(prev, payload.new as Message)),
+        )
+        .on("broadcast", { event: "typing" }, ({ payload }) => {
+          if (payload?.profileId === myId) return;
+          setOtherIsTyping(true);
+          if (typingHideRef.current) clearTimeout(typingHideRef.current);
+          typingHideRef.current = setTimeout(() => setOtherIsTyping(false), 3500);
+        })
+        .on("presence", { event: "sync" }, () => {
+          const state = ch.presenceState<{ visible?: boolean }>();
+          const others = Object.entries(state).filter(([key]) => key !== myId).flatMap(([, metas]) => metas);
+          setOtherHere(others.length > 0);
+          otherVisibleHereRef.current = others.some((meta) => meta.visible !== false);
+        });
+      channel = ch;
+      channelRef.current = ch;
+      ch.subscribe((status) => {
+        if (status === "SUBSCRIBED") trackPresence();
+      });
+    };
+
+    void open();
     document.addEventListener("visibilitychange", trackPresence);
-    channelRef.current = channel;
 
     return () => {
+      cancelled = true;
       document.removeEventListener("visibilitychange", trackPresence);
       channelRef.current = null;
       otherVisibleHereRef.current = false;
+      setOtherHere(false);
       if (typingHideRef.current) clearTimeout(typingHideRef.current);
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [matchId, myId, translateBatch]);
 

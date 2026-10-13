@@ -85,7 +85,7 @@ export default function Messages() {
       refreshTimer.current = window.setTimeout(load, 400);
     };
     const channel = supabase
-      .channel(`inbox-${profile.id}`)
+      .channel(`inbox-${profile.id}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes", { event: "*", schema: "isexy", table: "messages" }, schedule)
       .on("postgres_changes", { event: "*", schema: "isexy", table: "matches" }, schedule)
       .subscribe();
