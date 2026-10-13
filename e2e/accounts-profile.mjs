@@ -111,6 +111,18 @@ await page.goto(base + "/interests");
 await page.waitForTimeout(800);
 check("interests after reload", await page.getByText("4 of 10").isVisible());
 
+// A refresh that fails after a save keeps the member on their profile (no retry screen, no setup).
+await page.goto(base + "/edit-bio");
+await page.getByLabel("About me").waitFor();
+await page.waitForTimeout(400);
+state.failures["GET profiles"] = { status: 503, body: { message: "upstream unavailable" } };
+await page.getByLabel("About me").fill("Toujours partante pour un café et une bonne discussion.");
+await page.getByRole("button", { name: "Save bio" }).click();
+await page.waitForTimeout(1500);
+delete state.failures["GET profiles"];
+check("save then failed refresh: bio saved", prof().bio.startsWith("Toujours partante"), prof().bio);
+check("save then failed refresh: still on the profile", new URL(page.url()).pathname === "/profile" && await page.getByRole("button", { name: "Edit profile" }).isVisible(), new URL(page.url()).pathname);
+
 check("no page errors", errors.length === 0, errors.join(" | "));
 await browser.close();
 console.log(results.join("\n"));

@@ -96,12 +96,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Profile, photo count and error flag change together: a render with only
   // some of them updated would look like an incomplete profile and redirect
   // a returning member to /profile-setup.
+  const loadedProfile = useRef<Profile | null>(null);
   const loadProfile = async (userId: string) => {
-    const { profile: p, failed } = await fetchProfile(userId);
-    const count = p ? await fetchPhotoCount(p.id) : 0;
-    setProfile(p);
+    let result: { profile: Profile | null; failed: boolean };
+    let count = 0;
+    try {
+      result = await fetchProfile(userId);
+      if (result.profile) count = await fetchPhotoCount(result.profile.id);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      result = { profile: null, failed: true };
+    }
+    // A failed refresh keeps the profile already loaded for this member.
+    if (result.failed && loadedProfile.current?.user_id === userId) return;
+    loadedProfile.current = result.profile;
+    setProfile(result.profile);
     setPhotoCount(count);
-    setProfileError(failed);
+    setProfileError(result.failed);
   };
 
   const fetchPhotoCount = async (profileId: string) => {
@@ -128,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Token refresh failed, clear local storage
           await supabase.auth.signOut();
           setProfile(null);
+          loadedProfile.current = null;
           return;
         }
 
@@ -143,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           profileOwner.current = null;
           setProfile(null);
+          loadedProfile.current = null;
           setPhotoCount(0);
           setProfileError(false);
         }
@@ -158,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
         setUser(null);
         setProfile(null);
+        loadedProfile.current = null;
         setLoading(false);
         return;
       }
@@ -179,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    loadedProfile.current = null;
     setPhotoCount(0);
     toast.success("Signed out successfully");
   };

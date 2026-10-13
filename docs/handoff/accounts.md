@@ -47,6 +47,9 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   /profile-setup (retry screen in ProtectedRoute); profile, photo count and the
   error flag update together (no flash redirect after refreshProfile).
 - Sign-in: "Send a new code" comes back by itself after 60 s (countdown).
+- A failed profile refresh after a save keeps the loaded profile (no retry
+  screen, no setup); a thrown error never leaves the app on a spinner.
+- Onboarding dots have labels.
 - Passport: cities were disabled for free members (dead buttons); they now lead
   to /premium. Canada section first (Montréal, Toronto, Vancouver, Québec City,
   + Ottawa, Calgary, Edmonton, Winnipeg, Halifax in search); accent-insensitive
