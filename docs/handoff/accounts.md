@@ -34,6 +34,12 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   `DiscoverFilters.tsx`, the `get_web_profile` RPC and the web-profile toggle.
   `/web-profile` and `/photo-verification` routes left as on main to avoid a
   conflict with wf/discover's App.tsx line; PhotoVerification guards itself.
+- Also handed back to wf/chat (commit b6203e4 rewrote them and really sends
+  push): `usePushNotifications.ts`, `PushNotificationPrompt.tsx`. Kept here:
+  `PushNotifications.tsx` (choices saved per member in settings.push; it uses
+  the same hook API as wf/chat: isSupported/isSubscribed/permission/loading/
+  subscribe/unsubscribe). On merge: take wf/accounts' PushNotifications.tsx,
+  wf/chat's hook and prompt.
 
 - Auth: a failed profile read no longer sends a returning member to
   /profile-setup (retry screen in ProtectedRoute); profile, photo count and the

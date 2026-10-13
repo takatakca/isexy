@@ -1,18 +1,5 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-
-/** Store this device's push subscription for the signed-in member (no-op when signed out). */
-async function saveSubscription(subscription: PushSubscription) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const json = subscription.toJSON();
-  if (!session?.user || !json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    { user_id: session.user.id, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth },
-    { onConflict: "user_id,endpoint" },
-  );
-  if (error) console.warn("Push subscription not saved:", error.message);
-}
 
 const VAPID_PUBLIC_KEY = "BEL2aJLdQU6HLMU5kzF8b_3Ih8v9jYJ4G-w_sWIlY9GSmFc0YH4-3cJzqGqOHGKJflbMFnNCCFgPBYF6UuPgqZc";
 
@@ -45,13 +32,11 @@ export function usePushNotifications() {
 
     const permission = Notification.permission;
     
-    // Check if already subscribed. getRegistration, not `ready`: `ready` never
-    // resolves until a service worker is registered, which left this loading forever.
+    // Check if already subscribed
     try {
-      const registration = await navigator.serviceWorker.getRegistration();
-      const subscription = registration ? await registration.pushManager.getSubscription() : null;
-      if (subscription) await saveSubscription(subscription);
-
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      
       setState({
         isSupported: true,
         isSubscribed: !!subscription,
@@ -113,9 +98,9 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      // isexy-send-push-notification reads the member's devices from isexy.push_subscriptions.
-      await saveSubscription(subscription);
-
+      // In production, send subscription to server
+      console.log("Push subscription:", JSON.stringify(subscription));
+      
       setState(prev => ({ ...prev, isSubscribed: true }));
       toast.success("Push notifications enabled!");
       return true;
@@ -128,16 +113,10 @@ export function usePushNotifications() {
 
   const unsubscribe = async (): Promise<boolean> => {
     try {
-      const registration = await navigator.serviceWorker.getRegistration();
-      const subscription = registration ? await registration.pushManager.getSubscription() : null;
-
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      
       if (subscription) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          // This device's own row only (RLS: auth.uid() = user_id).
-          await supabase.from("push_subscriptions").delete()
-            .eq("user_id", session.user.id).eq("endpoint", subscription.endpoint);
-        }
         await subscription.unsubscribe();
         setState(prev => ({ ...prev, isSubscribed: false }));
         toast.success("Push notifications disabled");
