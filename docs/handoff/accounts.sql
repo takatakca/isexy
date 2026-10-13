@@ -176,7 +176,10 @@ END $$;
 -- signature, columns and ranking; it only adds: a member with Settings ›
 -- Enable Discovery off, or Incognito, is left out of other decks except for
 -- people they already liked; the caller's "Minimum number of photos" and
--- "Has a bio" preferences filter their own deck, "Recently Active" sorts it. If another branch also
+-- "Has a bio" preferences filter their own deck, "Recently Active" sorts it;
+-- Block Contacts keeps two people out of each other's deck when either one
+-- listed the other's sign-in email or phone (auth.users, read by this
+-- SECURITY DEFINER function only; nothing is revealed to either member). If another branch also
 -- replaces this function, merge both sets of conditions.
 /**
  * The caller's Discover deck, ranked, with photos, in one call.
@@ -230,6 +233,27 @@ AS $$
       coalesce(up.settings #>> '{discovery,sortBy}', '') = 'recent' AS recent_first
     FROM me LEFT JOIN user_preferences up ON up.user_id = me.user_id
   ),
+  -- Settings › Block Contacts: the caller's private list (emails, phone digits)…
+  my_contacts AS (
+    SELECT
+      nullif(lower(btrim(coalesce(x->>'email', ''))), '') AS email,
+      nullif(regexp_replace(coalesce(x->>'phone', ''), '[^0-9]', '', 'g'), '') AS phone
+    FROM me
+    JOIN user_preferences up ON up.user_id = me.user_id
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(up.settings -> 'blockedContacts') = 'array'
+           THEN up.settings -> 'blockedContacts' ELSE '[]'::jsonb END
+    ) x
+    WHERE jsonb_typeof(x) = 'object'
+  ),
+  -- …and the caller's own sign-in email and phone, to honour other members' lists.
+  my_identity AS (
+    SELECT
+      nullif(lower(btrim(coalesce(au.email, ''))), '') AS email,
+      nullif(regexp_replace(coalesce(au.phone, ''), '[^0-9]', '', 'g'), '') AS phone
+    FROM auth.users au
+    WHERE au.id = auth.uid()
+  ),
   window_ AS (
     SELECT
       (current_date - make_interval(years => greatest(18, coalesce(me.age_min, 18))))::date AS max_birth,
@@ -264,6 +288,31 @@ AS $$
         )
       )
       AND NOT EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id = me.id AND s.swiped_id = c.id)
+      -- Block Contacts, both ways: nobody on my list, nobody who listed me.
+      -- (Never shown to either side; it only keeps them out of each other's deck.)
+      AND NOT EXISTS (
+        SELECT 1 FROM auth.users au, my_contacts mc
+        WHERE au.id = c.user_id
+          AND (
+            (mc.email IS NOT NULL AND lower(au.email) = mc.email)
+            OR (mc.phone IS NOT NULL AND regexp_replace(coalesce(au.phone, ''), '[^0-9]', '', 'g') = mc.phone)
+          )
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM user_preferences up2
+        CROSS JOIN my_identity mi
+        CROSS JOIN LATERAL jsonb_array_elements(
+          CASE WHEN jsonb_typeof(up2.settings -> 'blockedContacts') = 'array'
+               THEN up2.settings -> 'blockedContacts' ELSE '[]'::jsonb END
+        ) x
+        WHERE up2.user_id = c.user_id
+          AND jsonb_typeof(x) = 'object'
+          AND (
+            (mi.email IS NOT NULL AND lower(btrim(coalesce(x->>'email', ''))) = mi.email)
+            OR (mi.phone IS NOT NULL AND regexp_replace(coalesce(x->>'phone', ''), '[^0-9]', '', 'g') = mi.phone)
+          )
+      )
       -- Their choice: Discovery off or Incognito hides them from the deck,
       -- except from people they already liked.
       AND NOT EXISTS (

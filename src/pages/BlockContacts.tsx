@@ -16,7 +16,8 @@ interface BlockedMember {
 }
 
 const emailSchema = z.string().trim().email("Enter a valid email address");
-const phoneSchema = z.string().regex(/^\+?\d{7,15}$/, "Enter a phone number with its country code");
+// Same format as sign-in (E.164): matched against members' sign-in numbers, so the country code is needed.
+const phoneSchema = z.string().regex(/^\+\d{8,15}$/, "Enter the number with its country code, e.g. +1 514 555 0123");
 
 /**
  * Two lists: phone/email contacts the member keeps private (member settings),
@@ -97,7 +98,8 @@ export default function BlockContacts() {
 
   const handleAddContact = async () => {
     const name = newName.trim();
-    const phone = newPhone.replace(/[\s().-]/g, "");
+    const compact = newPhone.replace(/[\s().-]/g, "");
+    const phone = compact.startsWith("00") ? `+${compact.slice(2)}` : compact;
     const email = newEmail.trim().toLowerCase();
     if (!name) return setFormError("Enter a name");
     if (!phone && !email) return setFormError("Add a phone number or an email");
@@ -188,7 +190,7 @@ export default function BlockContacts() {
           </p>
         )}
         <p className="mt-4 text-sm text-muted-foreground">
-          Only you can see this list. It is saved to your account.
+          Only you can see this list. You and these people won't appear in each other's Discover, and nobody is told.
         </p>
       </AuthLayout>
     );
@@ -276,7 +278,7 @@ export default function BlockContacts() {
                 {query ? "No contacts found" : "No blocked contacts"}
               </h2>
               <p className="text-muted-foreground max-w-xs mb-6">
-                Add the phone number or email of people you know and would rather not meet on ISEXY. Only you can see this list.
+                Add the phone number or email of people you know and would rather not meet on ISEXY. You won't see each other in Discover. Only you can see this list.
               </p>
               <button
                 onClick={() => setShowAddContact(true)}

@@ -18,8 +18,10 @@ Running notes so the work survives a stop. Newest state at the top of each list.
 3. `isexy.get_discover_feed` replaced (same signature/columns/ranking) so the
    Settings choices take effect: Enable Discovery off / Incognito hide a member
    from other decks except people they already liked; the caller's Minimum
-   photos, Has a bio and Recently Active apply to their own deck. Tested
-   locally (F1-F7 in the session notes). If another branch replaces this
+   photos, Has a bio and Recently Active apply to their own deck; Block
+   Contacts keeps two people out of each other's deck when either listed the
+   other's sign-in email/phone (auth.users read inside the function only).
+   Tested locally (feed F1-F7, contacts B0-B5). If another branch replaces this
    function too, merge both sets of conditions.
 
 ## Done
@@ -60,6 +62,8 @@ Running notes so the work survives a stop. Newest state at the top of each list.
 - Phone layout: sweep of every area page at 390x844 (e2e/accounts-layout.mjs):
   no horizontal scroll, every control reachable and uncovered (all pass; the
   only hit was the Push page's last switch under the assistant button, now wf/chat's page).
+- Block Contacts: phone numbers need the country code (matched against sign-in
+  numbers); copy says what it does (not in each other's Discover, nobody told).
 
 ## Left / next steps
 

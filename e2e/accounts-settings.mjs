@@ -169,6 +169,9 @@ const rowSwitch = (page, label) => page.locator("div.p-4").filter({ has: page.ge
   await page.getByLabel("Phone number").fill("514 555");
   await page.getByRole("button", { name: "Done" }).click();
   check("bad phone refused", await page.getByText("country code").isVisible());
+  await page.getByLabel("Phone number").fill("514 555 0199");
+  await page.getByRole("button", { name: "Done" }).click();
+  check("number without country code refused", await page.getByText("country code").isVisible() && !prefs(state).blockedContacts);
   await page.getByLabel("Phone number").fill("+1 514 555 0199");
   await page.getByRole("button", { name: "Done" }).click();
   await page.waitForTimeout(500);
