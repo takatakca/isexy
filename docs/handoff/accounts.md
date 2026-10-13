@@ -51,6 +51,9 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   search; back button falls back to /settings. Cuba section unchanged (on hold).
 - Settings: Recently Active and Incognito (Plus™) lead free members to /premium;
   honest Enable Discovery copy; Web Profile card says "Share a link" (no username exists).
+- Email: isexy-send-notification-email skips "new message" emails when the
+  recipient turned off Settings › Email › New Messages (needs the settings
+  column; without it the email is sent as before). Edge function NOT deployed.
 
 ## Left / next steps
 
