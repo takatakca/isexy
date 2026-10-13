@@ -60,6 +60,25 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   inbox channels now use a per-mount topic; the chat (shared topic for typing
   and presence) waits for a stale channel to close before re-joining.
 
+- Push notifications were never delivered: the browser subscription was only
+  `console.log`ged (never stored in `push_subscriptions`) and the edge function
+  only logged "would send". Now `usePushNotifications` upserts the
+  subscription (and re-syncs an existing one on load), and
+  `isexy-send-push-notification` sends with `npm:web-push@3.6.7` (TTL 1 h,
+  same-site `data.url` only, 404/410 counted as expired, rows kept: no deletes).
+  The hook also waited on `navigator.serviceWorker.ready`, which never resolves
+  without a registered worker, so `loading` stayed true and the opt-in prompt
+  never appeared.
+- Opt-in prompt (`PushNotificationPrompt`): only for signed-in members with a
+  profile on in-app pages (/discover, /explore, /likes, /matches, /profile),
+  never on public pages, setup or mid-chat; asked once (closes after the
+  browser answer); brand colours and social-network wording.
+- Push settings page: the save effect ran before the load effect and wrote the
+  defaults over the member's choices on every visit; settings now load first.
+  New "Notifications on this device" switch (subscribe / unsubscribe, explains
+  when the browser blocks it). `any` icon type fixed.
+- `public/sw.js`: notification icon uses the app icon.
+
 ## Left to do
 
 (filled in as work progresses)
