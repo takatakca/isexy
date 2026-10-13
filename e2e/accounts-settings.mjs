@@ -72,6 +72,37 @@ const rowSwitch = (page, label) => page.locator("div.p-4").filter({ has: page.ge
   await ctx.close();
 }
 
+// Plus™ choices: free members see the plans; subscribers save them (the feed applies them).
+{
+  const state = newState();
+  completeProfile(state, id);
+  const { ctx, page } = await setup({ state });
+  await page.goto(base + "/settings");
+  await page.getByText("Discovery Settings").waitFor();
+  await page.getByText("Incognito", { exact: true }).click();
+  await page.waitForURL((u) => u.pathname === "/premium", { timeout: 5000 }).catch(() => {});
+  check("free member: Incognito leads to the plans", new URL(page.url()).pathname === "/premium", new URL(page.url()).pathname);
+  check("free member: nothing saved", !prefs(state).discovery);
+  await ctx.close();
+}
+{
+  const state = newState();
+  completeProfile(state, id, { subscription_tier: "plus" });
+  const { ctx, page } = await setup({ state });
+  await page.goto(base + "/settings");
+  await page.getByText("Discovery Settings").waitFor();
+  await page.waitForTimeout(500);
+  await page.getByText("Incognito", { exact: true }).click();
+  await page.getByText("Recently Active", { exact: true }).click();
+  await rowSwitch(page, "Enable Discovery").click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.waitForTimeout(800);
+  const d = prefs(state).discovery ?? {};
+  check("plus member: incognito + recent + discovery off saved", d.visibility === "incognito" && d.sortBy === "recent" && d.enabled === false, JSON.stringify(d).slice(0, 120));
+  check("honest Enable Discovery copy", await page.getByText("hidden from other members' card stack").isVisible());
+  await ctx.close();
+}
+
 // Settings before the settings column exists: saved on the device, still there after reload.
 {
   const state = newState({ missingColumns: { user_preferences: ["settings"] } });

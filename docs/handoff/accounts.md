@@ -15,6 +15,12 @@ Running notes so the work survives a stop. Newest state at the top of each list.
    `profiles.is_verified` on approval). RLS tested: members file one pending
    request for themselves only, cannot approve, cannot read others; storage
    folder = auth uid; staff (admin/moderator) read everything.
+3. `isexy.get_discover_feed` replaced (same signature/columns/ranking) so the
+   Settings choices take effect: Enable Discovery off / Incognito hide a member
+   from other decks except people they already liked; the caller's Minimum
+   photos, Has a bio and Recently Active apply to their own deck. Tested
+   locally (F1-F7 in the session notes). If another branch replaces this
+   function too, merge both sets of conditions.
 
 ## Done
 
@@ -37,6 +43,8 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   to /premium. Canada section first (Montréal, Toronto, Vancouver, Québec City,
   + Ottawa, Calgary, Edmonton, Winnipeg, Halifax in search); accent-insensitive
   search; back button falls back to /settings. Cuba section unchanged (on hold).
+- Settings: Recently Active and Incognito (Plus™) lead free members to /premium;
+  honest Enable Discovery copy; Web Profile card says "Share a link" (no username exists).
 
 ## Left / next steps
 

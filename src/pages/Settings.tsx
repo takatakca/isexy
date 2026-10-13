@@ -189,6 +189,14 @@ export default function Settings() {
 
   const showMe = showMeFrom(interestedIn);
 
+  // "Recently Active" and "Incognito" are Plus™ features: free members are shown the plans.
+  const isPremium = ["plus", "gold", "platinum"].includes(profile?.subscription_tier ?? "");
+  const choosePlus = (apply: () => void) => {
+    if (isPremium) return apply();
+    toast("This is part of ISEXY Plus™", { description: "See the plans to unlock it." });
+    navigate("/premium");
+  };
+
   const handleSave = async () => {
     if (!profile) return;
     if (showMe.length === 0) {
@@ -562,7 +570,7 @@ export default function Settings() {
               {controlWhoYouSee === "balanced" && <div className="text-primary">✓</div>}
             </button>
             <button
-              onClick={() => setControlWhoYouSee("recent")}
+              onClick={() => choosePlus(() => setControlWhoYouSee("recent"))}
               className="w-full p-4 text-left flex items-center justify-between"
             >
               <div>
@@ -589,7 +597,7 @@ export default function Settings() {
               {visibility === "standard" && <div className="text-primary">✓</div>}
             </button>
             <button
-              onClick={() => setVisibility("incognito")}
+              onClick={() => choosePlus(() => setVisibility("incognito"))}
               className="w-full p-4 text-left flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
@@ -616,7 +624,7 @@ export default function Settings() {
             </div>
           </SettingCard>
           <p className="text-sm text-muted-foreground mt-2 px-1">
-            When turned off, your profile will be hidden from the card stack and Discovery will be disabled. People you have already Liked may still see and match with you.
+            When turned off, your profile is hidden from other members' card stack. People you have already liked may still see you and match with you.
           </p>
         </section>
 
@@ -681,15 +689,15 @@ export default function Settings() {
           <SettingCard className="p-4">
             <p className="font-semibold text-foreground mb-1">Web Profile</p>
             <p className="text-sm text-muted-foreground mb-3">
-              Create a username. Share your username. Have people all over the world match with you right on ISEXY.
+              Share a link to your ISEXY profile with friends.
             </p>
             <button 
               onClick={() => navigate("/web-profile")}
               className="flex items-center justify-between w-full"
             >
-              <span className="text-foreground">Username</span>
+              <span className="text-foreground">Your profile link</span>
               <span className="flex items-center gap-1 text-muted-foreground">
-                Claim Yours <ChevronRight className="w-4 h-4" />
+                Share <ChevronRight className="w-4 h-4" />
               </span>
             </button>
           </SettingCard>
