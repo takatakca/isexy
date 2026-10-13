@@ -11,6 +11,7 @@ import { Users, UserPlus, Search, Heart, X, Check, Sparkles, Share2, MessageCirc
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { shareLink } from "@/lib/share";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +45,7 @@ export default function DoubleDate() {
   const [pairs, setPairs] = useState<DoubleDatePair[]>([]);
   const [pendingInvites, setPendingInvites] = useState<DoubleDatePair[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<{ id: string; first_name: string; city: string | null; photo_url?: string }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -148,17 +149,17 @@ export default function DoubleDate() {
   };
 
   const updateSetting = async (key: keyof typeof settings, value: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    const previous = settings;
+    const next = { ...settings, [key]: value };
+    setSettings(next);
 
+    // One settings row per member: update it in place after the first save.
     const { error } = await supabase
       .from("double_date_settings")
-      .upsert({
-        profile_id: profile!.id,
-        ...settings,
-        [key]: value,
-      });
+      .upsert({ profile_id: profile!.id, ...next }, { onConflict: "profile_id" });
 
     if (error) {
+      setSettings(previous);
       toast.error("Failed to update settings");
     }
   };
@@ -174,20 +175,16 @@ export default function DoubleDate() {
       .neq("id", profile!.id)
       .limit(10);
 
+    if (error) toast.error("Search failed. Please try again.");
     if (data) {
-      const resultsWithPhotos = await Promise.all(
-        data.map(async (p) => {
-          const { data: photoData } = await supabase
-            .from("profile_photos")
-            .select("photo_url")
-            .eq("profile_id", p.id)
-            .eq("position", 0)
-            .maybeSingle();
-
-          return { ...p, photo_url: photoData?.photo_url };
-        })
-      );
-      setSearchResults(resultsWithPhotos);
+      // First photo of every result in one query.
+      const { data: photos } = data.length
+        ? await supabase.from("profile_photos").select("profile_id, photo_url, position").in("profile_id", data.map((p) => p.id)).order("position")
+        : { data: [] as { profile_id: string; photo_url: string }[] };
+      const photoBy = new Map<string, string>();
+      for (const ph of photos ?? []) if (!photoBy.has(ph.profile_id)) photoBy.set(ph.profile_id, ph.photo_url);
+      setSearchResults(data.map((p) => ({ ...p, photo_url: photoBy.get(p.id) })));
+      if (data.length === 0) toast("No members found with that name.");
     }
     setIsSearching(false);
   };
@@ -222,10 +219,12 @@ export default function DoubleDate() {
       })
       .eq("id", pairId);
 
-    if (!error) {
-      toast.success(accept ? "You're now paired up for Double Hangout!" : "Invitation declined");
-      fetchPairs();
+    if (error) {
+      toast.error("Couldn't answer the invitation. Please try again.");
+      return;
     }
+    toast.success(accept ? "You're now paired up for Double Hangout!" : "Invitation declined");
+    fetchPairs();
   };
 
   const endPair = async (pairId: string) => {
@@ -234,10 +233,12 @@ export default function DoubleDate() {
       .update({ status: "ended" })
       .eq("id", pairId);
 
-    if (!error) {
-      toast.success("Double Hangout pair ended");
-      fetchPairs();
+    if (error) {
+      toast.error("Couldn't end the pair. Please try again.");
+      return;
     }
+    toast.success("Double Hangout pair ended");
+    fetchPairs();
   };
 
   return (
@@ -411,7 +412,15 @@ export default function DoubleDate() {
         </Dialog>
 
         {/* Share Button */}
-        <Button variant="outline" className="w-full py-6 text-lg rounded-full">
+        <Button
+          variant="outline"
+          className="w-full py-6 text-lg rounded-full"
+          onClick={() => shareLink({
+            title: "Double Hangout on ISEXY",
+            text: "Pair up with me on ISEXY Double Hangout and let's meet new people together.",
+            url: "/double-hangout",
+          })}
+        >
           <Share2 className="w-5 h-5 mr-2" />
           Share Double Hangout with Friends
         </Button>
