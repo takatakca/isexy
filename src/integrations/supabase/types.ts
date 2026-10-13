@@ -2951,6 +2951,7 @@ export type Database = {
           auto_translate: boolean
           created_at: string
           id: string
+          notification_settings: Json
           preferred_language: string
           updated_at: string
           user_id: string
@@ -2959,6 +2960,7 @@ export type Database = {
           auto_translate?: boolean
           created_at?: string
           id?: string
+          notification_settings?: Json
           preferred_language?: string
           updated_at?: string
           user_id: string
@@ -2967,6 +2969,7 @@ export type Database = {
           auto_translate?: boolean
           created_at?: string
           id?: string
+          notification_settings?: Json
           preferred_language?: string
           updated_at?: string
           user_id?: string

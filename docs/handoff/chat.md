@@ -18,6 +18,7 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   chat query failed. Replaced with `isexy.is_group_chat_member()`; sending now
   also checks `sender_id` is the caller.
 - Index for the translation cache lookup.
+- `user_preferences.notification_settings jsonb` (email + push choices).
 
 ## Fixed
 
@@ -112,6 +113,20 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   error state with Retry; inactive/blocked handled by the inbox; "messages"
   icon pointed at the /messages redirect; tick shown only on my own last
   message; refreshes on new messages too; `any` removed.
+
+- Email settings page saved nothing (switches were local state), showed
+  "user@example.com" / "Verified" for everyone and had a dead "send
+  verification email" button. Now loads/saves
+  `user_preferences.notification_settings.email` (rollback + toast on
+  failure), shows the real address and verification state, explains
+  phone-only accounts. Push settings are also saved to the account
+  (`notification_settings.push`, debounced) and loaded from it.
+  `isexy-send-notification-email` skips new-message emails when
+  `email.new_messages` is off; `isexy-send-push-notification` skips message /
+  match pushes when `push.messages` / `push.newMatches` is off (calls always
+  go through). Helper: `src/lib/notificationSettings.ts`.
+- Scheduled-call push showed the recipient's own name ("Bea wants to video
+  call you" sent to Bea); now the scheduler's name, and it opens the chat.
 
 ## Left to do
 

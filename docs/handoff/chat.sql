@@ -171,3 +171,14 @@ CREATE POLICY "Members can send group messages" ON isexy.group_messages
 -- ---------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS message_translations_lookup_idx
   ON isexy.message_translations (message_id, target_language);
+
+-- ---------------------------------------------------------------------------
+-- 6. Notification preferences live with the member's other preferences, so
+--    the push and email functions can honour them (the settings pages only
+--    kept them in the browser, or nowhere). Shape:
+--    {"email": {"new_matches": bool, "new_messages": bool, "promotions": bool},
+--     "push":  {"messages": bool, "newMatches": bool, ...}}
+--    user_preferences already has own-row RLS (user_id = auth.uid()).
+-- ---------------------------------------------------------------------------
+ALTER TABLE isexy.user_preferences
+  ADD COLUMN IF NOT EXISTS notification_settings jsonb NOT NULL DEFAULT '{}'::jsonb;

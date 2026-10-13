@@ -73,6 +73,23 @@ serve(async (req) => {
       }
     }
 
+    // Push settings page (user_preferences.notification_settings.push): honour
+    // the member's "Messages" / "New Matches" switches. Calls always ring through.
+    const kind = typeof data?.type === "string" ? data.type : "";
+    const prefKey = kind === "message" ? "messages" : kind === "new_match" || kind === "match" ? "newMatches" : null;
+    if (prefKey) {
+      const { data: prefs } = await supabaseClient
+        .from("user_preferences")
+        .select("notification_settings")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (prefs?.notification_settings?.push?.[prefKey] === false) {
+        return new Response(JSON.stringify({ success: false, skipped: "opted_out" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     console.log(`[PUSH] Sending notification to user: ${userId}`);
 
     // Get user's push subscriptions

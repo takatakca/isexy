@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Switch } from "@/components/ui/switch";
 import { Check, Bell, MessageCircle, Heart, Star, Gift, Users, type LucideIcon } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { loadNotificationSettings, saveNotificationSettings } from "@/lib/notificationSettings";
 
 const SETTINGS_KEY = "push_notification_settings";
 
@@ -63,13 +66,39 @@ const PushNotifications = () => {
   const setSwipeSurge = set("swipeSurge");
   const setBoostExpiring = set("boostExpiring");
 
+  // The account's saved choices (used by the push function) win over this browser's copy.
+  const { user } = useAuth();
+  const { language, autoTranslate } = useLanguage();
+  const userId = user?.id;
+  const serverLoaded = useRef(false);
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    loadNotificationSettings(userId).then((stored) => {
+      if (cancelled) return;
+      if (stored?.push) setSettings((prev) => ({ ...prev, ...(stored.push as Partial<PushSettings>) }));
+      serverLoaded.current = true;
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
+
   useEffect(() => {
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch {
       /* private mode: choices last for this visit only */
     }
-  }, [settings]);
+    if (!userId || !serverLoaded.current) return;
+    const timer = window.setTimeout(() => {
+      void saveNotificationSettings(userId, "push", { ...settings }, {
+        preferred_language: language.code,
+        auto_translate: autoTranslate,
+      });
+    }, 600);
+    return () => window.clearTimeout(timer);
+    // Save when the choices change, not when the language does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings, userId]);
 
   const deviceHint = !push.isSupported
     ? "This browser can't receive push notifications."
