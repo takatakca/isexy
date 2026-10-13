@@ -292,6 +292,23 @@ const rowSwitch = (page, label) => page.locator("div.p-4").filter({ has: page.ge
   check("delete: no page errors", errors.length === 0, errors.join(" | "));
   await ctx.close();
 }
+// Deletion request fails: the member stays signed in and is told.
+{
+  const state = newState({ delays: { "POST support_tickets": 600 }, failures: { "POST support_tickets": { status: 500, body: { message: "boom" } } } });
+  completeProfile(state, id);
+  const { ctx, page } = await setup({ state });
+  await page.goto(base + "/delete-account");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  check("delete page has no horizontal overflow", !overflow);
+  await page.getByText("Privacy concerns").click();
+  await page.getByRole("button", { name: "Delete My Account" }).click();
+  await page.getByRole("button", { name: "Yes, delete my account" }).click();
+  check("dialog stays open while sending", await page.getByRole("button", { name: "Deleting..." }).isVisible().catch(() => false));
+  await page.getByText("We couldn't send your request").waitFor({ timeout: 5000 }).catch(() => {});
+  check("failed request is reported", await page.getByText("We couldn't send your request").isVisible());
+  check("failed request keeps the member signed in", !state.log.includes("auth logout") && new URL(page.url()).pathname === "/delete-account");
+  await ctx.close();
+}
 
 await browser.close();
 console.log(results.join("\n"));

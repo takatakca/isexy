@@ -189,14 +189,14 @@ const DeleteAccount = () => {
               className="w-full justify-start"
               onClick={() => navigate("/settings")}
             >
-              Pause your account temporarily
+              Hide your profile from Discover
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/email-settings")}
             >
-              Hide your profile from discovery
+              Get fewer emails
             </Button>
           </div>
         </div>
@@ -229,7 +229,11 @@ const DeleteAccount = () => {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteAccount}
+              onClick={(e) => {
+                // Keep the dialog open (with "Deleting...") until the request is sent.
+                e.preventDefault();
+                handleDeleteAccount();
+              }}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

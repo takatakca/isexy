@@ -57,6 +57,9 @@ Running notes so the work survives a stop. Newest state at the top of each list.
 - Returning members: "/" (and the installed app's start URL) sends a signed-in
   member to Discover (setup if incomplete). Back buttons on pages opened
   directly (AuthLayout, /auth, setup step 1) stay in ISEXY instead of leaving.
+- Delete account: the confirm dialog stays open ("Deleting...") until the
+  request is sent; the alternatives are real (hide from Discover, fewer emails)
+  instead of a "pause" that does not exist.
 
 ## Left / next steps
 
