@@ -122,43 +122,13 @@ const rowSwitch = (page, label) => page.locator("div.p-4").filter({ has: page.ge
   await ctx.close();
 }
 
-// ------------------------------------------------- Email, push, active status, dark mode
+// ------------------------------------------------- Active status, dark mode
 {
   const state = newState();
   completeProfile(state, id);
   state.user_preferences.push({ id: "up1", user_id: id, preferred_language: "fr", auto_translate: true, settings: {} });
   const { ctx, page, errors } = await setup({ state });
-  await page.goto(base + "/email-settings");
-  await page.getByText("New Matches", { exact: true }).waitFor();
-  await page.waitForTimeout(400);
-  await page.getByRole("switch", { name: "Promotions" }).click();
-  await page.waitForTimeout(500);
-  check("email: promotions off saved", prefs(state).email?.promotions === false);
-  check("email: language row untouched", state.user_preferences.find((u) => u.user_id === id).preferred_language === "fr");
-  await page.screenshot({ path: `${out}/email-settings-390.png` });
-  await page.reload();
-  await page.getByText("New Matches", { exact: true }).waitFor();
-  await page.waitForTimeout(600);
-  check("email: promotions off after reload", (await page.getByRole("switch", { name: "Promotions" }).getAttribute("aria-checked")) === "false");
-  await page.getByRole("button", { name: "UNSUBSCRIBE FROM ALL" }).click();
-  await page.waitForTimeout(500);
-  const e = prefs(state).email;
-  check("email: unsubscribe all", e?.newMatches === false && e?.newMessages === false && e?.promotions === false);
-
-  await page.goto(base + "/push-notifications");
-  await page.getByText("Top Picks", { exact: true }).waitFor();
-  await page.waitForTimeout(600);
-  await page.getByRole("switch", { name: "Top Picks" }).click();
-  await page.waitForTimeout(500);
-  check("push: top picks off saved", prefs(state).push?.topPicks === false);
-  await page.reload();
-  await page.getByText("Top Picks", { exact: true }).waitFor();
-  await page.waitForTimeout(600);
-  check("push: top picks off after reload", (await page.getByRole("switch", { name: "Top Picks" }).getAttribute("aria-checked")) === "false");
-  const deviceStatus = await page.getByText(/this device|browser/i).first().innerText();
-  // The device switch itself (usePushNotifications) belongs to wf/chat, which fixes its loading state.
-  check("push: device row shown", deviceStatus.length > 0, deviceStatus);
-  await page.screenshot({ path: `${out}/push-390.png`, fullPage: true });
+  // Email and Push notification pages belong to wf/chat (user_preferences.notification_settings).
 
   await page.goto(base + "/active-status");
   await page.getByText("Show Active Status", { exact: true }).waitFor();

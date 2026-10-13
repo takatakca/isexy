@@ -80,8 +80,7 @@ export function AuthLayout({
       </header>
 
       {/* Main content */}
-      {/* Bottom room so the last control can scroll above the assistant button. */}
-      <main className="flex-1 flex flex-col px-6 pb-28 animate-fade-in">
+      <main className="flex-1 flex flex-col px-6 pb-8 animate-fade-in">
         {children}
       </main>
     </div>

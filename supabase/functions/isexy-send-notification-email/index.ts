@@ -74,10 +74,6 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: other } = await admin.from("profiles").select("user_id, first_name").eq("id", otherId).maybeSingle();
       if (!other?.user_id) return json({ success: true, skipped: "no_recipient" });
 
-      // The recipient's choice in Settings › Email › New Messages (isexy.user_preferences.settings).
-      const { data: prefs } = await admin.from("user_preferences").select("settings").eq("user_id", other.user_id).maybeSingle();
-      if (prefs?.settings?.email?.newMessages === false) return json({ success: true, skipped: "opted_out" });
-
       // At most one "new message" email per conversation every 10 minutes.
       const key = `${body.matchId}:${otherId}`;
       const last = recentlyNotified.get(key) ?? 0;

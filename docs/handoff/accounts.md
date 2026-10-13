@@ -34,12 +34,12 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   `DiscoverFilters.tsx`, the `get_web_profile` RPC and the web-profile toggle.
   `/web-profile` and `/photo-verification` routes left as on main to avoid a
   conflict with wf/discover's App.tsx line; PhotoVerification guards itself.
-- Also handed back to wf/chat (commit b6203e4 rewrote them and really sends
-  push): `usePushNotifications.ts`, `PushNotificationPrompt.tsx`. Kept here:
-  `PushNotifications.tsx` (choices saved per member in settings.push; it uses
-  the same hook API as wf/chat: isSupported/isSubscribed/permission/loading/
-  subscribe/unsubscribe). On merge: take wf/accounts' PushNotifications.tsx,
-  wf/chat's hook and prompt.
+- Also handed back to wf/chat, which built email + push notification settings
+  end to end (user_preferences.notification_settings, honoured by
+  isexy-send-notification-email and isexy-send-push-notification, commits
+  b6203e4 and d85c047): `usePushNotifications.ts`, `PushNotificationPrompt.tsx`,
+  `EmailSettings.tsx`, `PushNotifications.tsx` and the email function are as on
+  main here, so wf/chat's versions merge without conflict.
 
 - Auth: a failed profile read no longer sends a returning member to
   /profile-setup (retry screen in ProtectedRoute); profile, photo count and the
@@ -51,9 +51,6 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   search; back button falls back to /settings. Cuba section unchanged (on hold).
 - Settings: Recently Active and Incognito (Plus™) lead free members to /premium;
   honest Enable Discovery copy; Web Profile card says "Share a link" (no username exists).
-- Email: isexy-send-notification-email skips "new message" emails when the
-  recipient turned off Settings › Email › New Messages (needs the settings
-  column; without it the email is sent as before). Edge function NOT deployed.
 - Returning members: "/" (and the installed app's start URL) sends a signed-in
   member to Discover (setup if incomplete). Back buttons on pages opened
   directly (AuthLayout, /auth, setup step 1) stay in ISEXY instead of leaving.
@@ -61,8 +58,8 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   request is sent; the alternatives are real (hide from Discover, fewer emails)
   instead of a "pause" that does not exist.
 - Phone layout: sweep of every area page at 390x844 (e2e/accounts-layout.mjs):
-  no horizontal scroll, every control reachable and uncovered. Fixed: the last
-  control on long AuthLayout pages sat under the assistant button (more bottom room).
+  no horizontal scroll, every control reachable and uncovered (all pass; the
+  only hit was the Push page's last switch under the assistant button, now wf/chat's page).
 
 ## Left / next steps
 

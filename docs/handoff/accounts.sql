@@ -8,8 +8,9 @@ SET LOCAL search_path = isexy, extensions;
 -- 1. Private member settings --------------------------------------------------
 -- useMemberSettings (src/hooks/useMemberSettings.ts) keeps the choices that have
 -- no profile column here: Settings discovery toggles and "who I'd like to see"
--- filters, Email and Push notification choices, Active Status, the private
--- Block Contacts list, Passport home city, the account deletion request date.
+-- filters, Active Status, the private Block Contacts list, Passport home city,
+-- the account deletion request date. Email and push choices are NOT here: they
+-- are wf/chat's user_preferences.notification_settings column.
 -- Existing RLS on user_preferences already limits rows to their owner.
 ALTER TABLE isexy.user_preferences
   ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}'::jsonb;
@@ -28,7 +29,7 @@ BEGIN
 END $$;
 
 COMMENT ON COLUMN isexy.user_preferences.settings IS
-  'Private member settings (discovery, email, push, activeStatus, blockedContacts, passport, deletionRequestedAt). Owner-only via RLS.';
+  'Private member settings (discovery, activeStatus, blockedContacts, passport, deletionRequestedAt). Owner-only via RLS.';
 
 -- 2. Photo verification ------------------------------------------------------
 -- /photo-verification: the member takes a selfie, it is stored privately in

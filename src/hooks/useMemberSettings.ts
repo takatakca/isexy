@@ -5,8 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 
 /**
- * Private app settings that have no profile column (notification choices,
- * discovery toggles, active status...). Stored in
+ * Private app settings that have no profile column (discovery toggles and
+ * filters, active status, blocked contacts, Passport home city...). Email and
+ * push choices live in user_preferences.notification_settings (wf/chat). Stored in
  * isexy.user_preferences.settings (jsonb), which only the member can read,
  * one section per page. A copy is cached on the device, so a choice still
  * sticks here if the server save fails (for example before the settings
@@ -28,8 +29,6 @@ export interface MemberSettings {
     /** Who the member would like to see (filters, not their own profile details). */
     filters?: Record<string, string | string[]>;
   };
-  email?: { newMatches?: boolean; newMessages?: boolean; promotions?: boolean };
-  push?: Record<string, boolean | string>;
   activeStatus?: { showActive?: boolean; showRecentlyActive?: boolean };
   blockedContacts?: { id: string; name: string; phone?: string; email?: string }[];
   /** City shown before Passport mode moved the member, restored by "Use current location". */

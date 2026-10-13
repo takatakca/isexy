@@ -56,7 +56,7 @@ const user = makeUser(id);
   await installMock(ctx, state, { user });
   const page = await ctx.newPage();
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
-  for (const [path, name] of [["/profile", "profile"], ["/edit-profile", "edit-profile"], ["/edit-bio", "edit-bio"], ["/interests", "interests"], ["/settings", "settings"], ["/email-settings", "email"], ["/push-notifications", "push"], ["/dark-mode", "dark"], ["/active-status", "active"], ["/delete-account", "delete"], ["/block-contacts", "block"], ["/passport-mode", "passport"], ["/photo-verification", "verify"]]) {
+  for (const [path, name] of [["/profile", "profile"], ["/edit-profile", "edit-profile"], ["/edit-bio", "edit-bio"], ["/interests", "interests"], ["/settings", "settings"], ["/dark-mode", "dark"], ["/active-status", "active"], ["/delete-account", "delete"], ["/block-contacts", "block"], ["/passport-mode", "passport"], ["/photo-verification", "verify"]]) {
     await sweep(page, path, name);
   }
   check("member pages: no page errors", errors.length === 0, errors.join(" | "));
