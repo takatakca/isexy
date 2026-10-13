@@ -98,6 +98,14 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
   header, #1565D8 buttons), links follow `ISEXY_APP_URL` (default isexy.ca),
   "Reply" opens the conversation, `RESEND_FROM` respected.
 
+- Group chat page (`src/pages/GroupChat.tsx`): 2 queries per member/message
+  (N+1) → 3 queries + 2 for people; loading, error ("couldn't load" with
+  Retry) and "not available / not a member" states (with the old RLS every
+  query failed and the page sat empty); the Info button was dead → members
+  sheet; brand colours (was pink/orange); own scroll container that follows
+  new messages only when at the bottom; sent message shown from the insert
+  result (no dependence on realtime echo); unique realtime topic.
+
 ## Left to do
 
 (filled in as work progresses)
