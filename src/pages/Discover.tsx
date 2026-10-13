@@ -41,7 +41,7 @@ export default function Discover() {
   const [impressionsLeft, setImpressionsLeft] = useState(3);
   const [boosting, setBoosting] = useState(false);
   const pendingImpression = useRef<{ profileId: string; message: string } | null>(null);
-  // Top Picks liked / passed from their detail view this session.
+  // People swiped this session (deck or Top Picks): hidden from Top Picks.
   const [pickedIds, setPickedIds] = useState<ReadonlySet<string>>(new Set());
 
   // ---- Bio translation (cards on top of the stack only, each bio once) -----
@@ -68,7 +68,11 @@ export default function Discover() {
 
   // ---- Server verdicts ----------------------------------------------------------
   const onSwiped = useCallback((action: SwipeAction, profile: FeedProfile, settled: Promise<SwipeOutcome>) => {
+    setPickedIds((prev) => new Set(prev).add(profile.id));
     settled.then(async (outcome) => {
+      if (outcome.status !== "ok") {
+        setPickedIds((prev) => { const next = new Set(prev); next.delete(profile.id); return next; });
+      }
       if (outcome.status === "ok") {
         const pending = pendingImpression.current;
         if (action === "super_like" && pending?.profileId === profile.id) {
@@ -131,13 +135,9 @@ export default function Discover() {
       return;
     }
     const action: SwipeAction = direction === "left" ? "pass" : direction === "right" ? "like" : "super_like";
-    setPickedIds((prev) => new Set(prev).add(profile.id));
     const settled = deck.swipe(action, profile);
     if (action !== "pass") toast.success(action === "super_like" ? `Super Liked ${profile.first_name} ⭐` : `Liked ${profile.first_name}`, { duration: 1200 });
     onSwiped(action, profile, settled);
-    settled.then((o) => {
-      if (o.status !== "ok") setPickedIds((prev) => { const next = new Set(prev); next.delete(profile.id); return next; });
-    });
   }, [deck, onSwiped]);
 
   /** Like / pass / super like from the profile details. */
