@@ -3254,6 +3254,25 @@ export type Database = {
           school: string | null
         }[]
       }
+      get_likes_received: {
+        Args: { p_before?: string; p_limit?: number }
+        Returns: {
+          action: string
+          birth_date: string | null
+          city: string | null
+          first_name: string | null
+          is_verified: boolean | null
+          liked_at: string
+          liker_id: string | null
+          locked: boolean
+          message: string | null
+          photo_url: string | null
+        }[]
+      }
+      set_first_impression: {
+        Args: { p_message: string; p_swiped_id: string }
+        Returns: Json
+      }
       analytics_overview: {
         Args: { p_days?: number }
         Returns: Json

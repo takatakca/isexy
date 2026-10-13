@@ -26,8 +26,8 @@ const campaigns: Campaign[] = [
   },
   {
     id: "boost",
-    title: "Get 10x More Views",
-    subtitle: "Boost your profile now",
+    title: "Get More Profile Views",
+    subtitle: "Boost your profile to the top for 30 minutes",
     icon: <Zap className="w-6 h-6" />,
     gradient: "from-purple-500 to-pink-500",
     cta: "Boost Now",
@@ -73,6 +73,7 @@ export function DiscoverCampaigns({ className }: DiscoverCampaignsProps) {
             }
           }}
           className="absolute top-2 right-2 p-1 text-white/70 hover:text-white"
+          aria-label="Dismiss"
         >
           <X className="w-4 h-4" />
         </button>

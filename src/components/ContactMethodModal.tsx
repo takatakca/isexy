@@ -143,7 +143,7 @@ export function ContactMethodModal({ isOpen, onClose, matchId, otherName, otherP
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
         className="bg-card w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 pb-8 shadow-xl animate-in slide-in-from-bottom"
         onClick={(e) => e.stopPropagation()}

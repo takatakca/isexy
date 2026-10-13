@@ -86,7 +86,7 @@ export async function fetchDiscoverFeed(opts: FeedOptions): Promise<FeedProfile[
 // Legacy path — same rules as the RPC, done client-side, but batched:
 // 3 parallel exclusion queries + 1 profile query + 1 photo query.
 // ---------------------------------------------------------------------------
-function normalizeGender(value?: string | null): string {
+export function normalizeGender(value?: string | null): string {
   const v = (value || "").toLowerCase().trim();
   if (["man", "male", "men", "m"].includes(v)) return "men";
   if (["woman", "female", "women", "w", "f"].includes(v)) return "women";
