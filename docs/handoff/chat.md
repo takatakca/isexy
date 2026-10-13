@@ -128,6 +128,12 @@ Postgres 16 with `scripts/isexy/test/v1-mock.sql` + migrations 0001-0003).
 - Scheduled-call push showed the recipient's own name ("Bea wants to video
   call you" sent to Bea); now the scheduler's name, and it opens the chat.
 
+- `ScheduledCallsList` (shown on the Chat tab): its realtime cleanup was never
+  returned from the effect, so each visit leaked a channel on the fixed topic
+  and later visits got no live updates; now cleaned up, per-mount topic.
+- Chat typing indicator re-announced every 2 s while typing (it vanished after
+  3.5 s of continuous typing).
+
 ## Left to do
 
 (filled in as work progresses)
