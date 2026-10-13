@@ -29,6 +29,11 @@ Running notes so the work survives a stop. Newest state at the top of each list.
   `/web-profile` and `/photo-verification` routes left as on main to avoid a
   conflict with wf/discover's App.tsx line; PhotoVerification guards itself.
 
+- Auth: a failed profile read no longer sends a returning member to
+  /profile-setup (retry screen in ProtectedRoute); profile, photo count and the
+  error flag update together (no flash redirect after refreshProfile).
+- Sign-in: "Send a new code" comes back by itself after 60 s (countdown).
+
 ## Left / next steps
 
 (filled in as work progresses)

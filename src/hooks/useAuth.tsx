@@ -58,6 +58,8 @@ interface AuthContextType {
   profile: Profile | null;
   photoCount: number;
   loading: boolean;
+  /** The profile could not be loaded (network or server error), as opposed to "no profile yet". */
+  profileError: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -70,12 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [photoCount, setPhotoCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   // Whose profile is loaded (or loading). A different user signing in keeps
   // `loading` on until their profile arrives, so routes never see a signed-in
   // member with profile = null and send a returning member to /profile-setup.
   const profileOwner = useRef<string | null>(null);
 
-  const fetchProfile = async (userId: string) => {
+  /** The member's profile, or null; `failed` when it could not be read (not "no profile yet"). */
+  const fetchProfile = async (userId: string): Promise<{ profile: Profile | null; failed: boolean }> => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
@@ -84,9 +88,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error("Error fetching profile:", error);
-      return null;
+      return { profile: null, failed: true };
     }
-    return data as Profile | null;
+    return { profile: data as Profile | null, failed: false };
+  };
+
+  // Profile, photo count and error flag change together: a render with only
+  // some of them updated would look like an incomplete profile and redirect
+  // a returning member to /profile-setup.
+  const loadProfile = async (userId: string) => {
+    const { profile: p, failed } = await fetchProfile(userId);
+    const count = p ? await fetchPhotoCount(p.id) : 0;
+    setProfile(p);
+    setPhotoCount(count);
+    setProfileError(failed);
   };
 
   const fetchPhotoCount = async (profileId: string) => {
@@ -98,15 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      const profileData = await fetchProfile(user.id);
-      setProfile(profileData);
-      if (profileData) {
-        setPhotoCount(await fetchPhotoCount(profileData.id));
-      } else {
-        setPhotoCount(0);
-      }
-    }
+    if (user) await loadProfile(user.id);
   };
 
   useEffect(() => {
@@ -130,15 +137,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           profileOwner.current = session.user.id;
           if (switchedUser) setLoading(true);
           setTimeout(async () => {
-            const p = await fetchProfile(session.user.id);
-            setProfile(p);
-            setPhotoCount(p ? await fetchPhotoCount(p.id) : 0);
+            await loadProfile(session.user.id);
             if (switchedUser) setLoading(false);
           }, 0);
         } else {
           profileOwner.current = null;
           setProfile(null);
           setPhotoCount(0);
+          setProfileError(false);
         }
       }
     );
@@ -160,9 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
-        setPhotoCount(profileData ? await fetchPhotoCount(profileData.id) : 0);
+        await loadProfile(session.user.id);
         setLoading(false);
       } else {
         setLoading(false);
@@ -187,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         photoCount,
         loading,
+        profileError,
         signOut,
         refreshProfile,
       }}

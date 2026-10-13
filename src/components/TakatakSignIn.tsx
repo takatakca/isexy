@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, Mail, Phone, ShieldCheck, ArrowLeft } from "lucide-react";
 import { z } from "zod";
@@ -46,6 +46,17 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resendAt, setResendAt] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Re-render once the resend delay is over, so "Send a new code" comes back on its own.
+  useEffect(() => {
+    if (step !== "code" || resendAt <= Date.now()) return;
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+      if (Date.now() >= resendAt) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [step, resendAt]);
 
   const redirectTo = `${window.location.origin}${redirectPath}`;
   const target = method === "email" ? email.trim().toLowerCase() : normalizePhone(phone);
@@ -71,6 +82,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
     if (err) return setError(friendlyAuthError(err.message));
     setStep("code");
     setCode("");
+    setNow(Date.now());
     setResendAt(Date.now() + 60_000);
     track("otp_sent", { method });
   };
@@ -105,7 +117,8 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
   };
 
   if (step === "code") {
-    const canResend = Date.now() >= resendAt;
+    const canResend = now >= resendAt;
+    const waitSeconds = Math.max(0, Math.ceil((resendAt - now) / 1000));
     return (
       <form onSubmit={verifyCode} noValidate className="space-y-4">
         <button type="button" onClick={() => { setStep("enter"); setError(null); }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -134,7 +147,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
           {busy && <Loader2 className="w-5 h-5 animate-spin" />} Continue
         </button>
         <button type="button" disabled={!canResend || busy} onClick={() => sendCode()} className="w-full text-sm font-semibold text-primary disabled:text-muted-foreground">
-          {canResend ? "Send a new code" : "You can ask for a new code in a minute"}
+          {canResend ? "Send a new code" : `You can ask for a new code in ${waitSeconds}s`}
         </button>
       </form>
     );

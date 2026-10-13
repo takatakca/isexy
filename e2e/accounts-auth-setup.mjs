@@ -77,7 +77,7 @@ async function otpSignIn(page, from = "/auth") {
   const addBtn = page.getByRole("button", { name: "Add a photo" }).first();
   const addColors = await addBtn.evaluate((el) => { const s = getComputedStyle(el); return [s.backgroundColor, s.color]; });
   check("add-photo button is visible", addColors[0] !== addColors[1], addColors.join(" / "));
-  await page.locator('input[type="file"]').first().setInputFiles({ name: "me.png", mimeType: "image/png", buffer: (await import("./mockdb.mjs")).PNG });
+  await page.locator('input[type="file"]').first().setInputFiles({ name: "me.png", mimeType: "image/png", buffer: (await import("./accounts-mockdb.mjs")).PNG });
   await page.getByAltText("Photo 1").waitFor();
   await page.screenshot({ path: `${out}/setup-4-photos.png` });
   await next();
@@ -156,6 +156,55 @@ async function otpSignIn(page, from = "/auth") {
   await page.goto(base + "/profile-setup");
   await page.waitForTimeout(1200);
   check("complete member on /profile-setup goes to /discover", new URL(page.url()).pathname === "/discover", new URL(page.url()).pathname);
+  await ctx.close();
+}
+
+// 5. Profile read fails (network/server error): a retry screen, never /profile-setup; retry recovers.
+{
+  const id = "aaaaaaaa-0000-4000-8000-000000000005";
+  const user = makeUser(id);
+  const state = newState({ failures: { "GET profiles": { status: 503, body: { message: "upstream unavailable" } } } });
+  completeProfile(state, id);
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await seedBrowser(ctx, user);
+  await installMock(ctx, state, { user });
+  const page = await ctx.newPage();
+  const visited = [];
+  page.on("framenavigated", (f) => { if (f === page.mainFrame()) visited.push(new URL(f.url()).pathname); });
+  await page.goto(base + "/profile");
+  await page.getByText("We couldn't load your profile").waitFor({ timeout: 8000 }).catch(() => {});
+  check("profile read error shows a retry screen", await page.getByText("We couldn't load your profile").isVisible());
+  check("profile read error never sends to /profile-setup", !visited.includes("/profile-setup"), visited.join(">"));
+  await page.screenshot({ path: `${out}/profile-load-error-390.png` });
+  delete state.failures["GET profiles"];
+  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: /Edit profile/ }).waitFor({ timeout: 8000 }).catch(() => {});
+  check("retry loads the profile", await page.getByRole("button", { name: /Edit profile/ }).isVisible(), new URL(page.url()).pathname);
+  await ctx.close();
+}
+
+// 6. "Send a new code" comes back by itself after the 60 s wait.
+{
+  const id = "aaaaaaaa-0000-4000-8000-000000000006";
+  const user = makeUser(id);
+  const state = newState();
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await seedBrowser(ctx, null);
+  await installMock(ctx, state, { user });
+  const page = await ctx.newPage();
+  await page.clock.install();
+  await page.goto(base + "/auth");
+  await page.fill("#takatak-email", "ana@example.com");
+  await page.getByRole("button", { name: "Send my code" }).click();
+  await page.locator("#takatak-code").waitFor();
+  const waiting = page.getByRole("button", { name: /You can ask for a new code in \d+s/ });
+  check("resend waits with a countdown", await waiting.isDisabled().catch(() => false), await waiting.innerText().catch(() => "missing"));
+  await page.clock.runFor(61_000);
+  const resend = page.getByRole("button", { name: "Send a new code" });
+  check("resend comes back after 60 s", await resend.isEnabled().catch(() => false));
+  await resend.click();
+  await page.waitForTimeout(300);
+  check("resend sends another code", state.log.filter((l) => l.startsWith("auth otp")).length === 2, String(state.log.filter((l) => l.startsWith("auth otp")).length));
   await ctx.close();
 }
 
