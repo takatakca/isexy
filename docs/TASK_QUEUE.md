@@ -10,9 +10,10 @@ sans refaire les migrations déjà appliquées.
 | P0 | Rétablir GitHub → Supabase | Secrets `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` disponibles dans l'environnement du job; aucune étape prod sautée, résultat observable |
 | P0 | Vérifier Data API et Takatak Auth | `isexy` exposé via API avec RLS; redirections ISEXY, Google, email-code, SMS-code valides |
 | P0 | Audit paiement et fournisseurs | `ISEXY_*` présents côté serveur, clés non visibles dans le frontend; webhooks Stripe de test, mode réel non activé sans validation |
-| P0 | Recette 18+ / modération / confidentialité | Inscription mineure refusée et outils signalement/blocage/désactivation vérifiés |
+| P0 | Recette 18+ / modération / confidentialité | Déclencheur SQL 18+ installé via 0006; confirmer âge déclaré dans l'inscription réelle, modération et blocage |
 | P1 | Publication de `isexy-subscription-resets` | Après inspection de la source et autorisations, tâche cron authentifiée, démontrer l'idempotence |
 | P1 | `isexy-seed-profiles` | Ne pas déployer en production par défaut : profils d'essai ne doivent pas apparaître comme réels |
+| P1 | Validation Apple/Google d'achats mobiles | Fonction IAP en HTTP 501 par défaut; implémenter validation côté fournisseur avant activation commerciale |
 | P1 | Réduire les avis de performance | 71 contraintes FK restantes sans index couvrant; sélectionner par charge métier, éviter index inutiles |
 | P1 | Recette de bout en bout | Profil, découverte, match, chat/realtime, traduction, appel, PhoneLine, support, abonnement |
 | P1 | Documenter les secrets et dépendances | Inventaire des noms sans valeurs, responsable de rotation, repli/rollback |

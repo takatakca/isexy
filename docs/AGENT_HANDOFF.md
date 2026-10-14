@@ -1,3 +1,26 @@
+## Mise à jour de relève — 2026-10-14 18:18 UTC
+
+- Dernier SHA applicatif poussé avant cette mise à jour documentaire :
+  `b668f2cdd3678af80950465027c3a918d5f38932` (`main`).
+  **Lire `main` pour le dernier SHA documentaire**, car cette page est
+  mise à jour dans un nouveau commit.
+- `0006_require_adult_profiles.sql` enregistrée/appliquée dans V1 avec
+  empreinte `80725d01a8d7c4537f4501e0149326ee74f3b9e2fbdc4fba667a5004fe772b62`.
+  Le déclencheur refuse les dates de naissance correspondant à moins de
+  18 ans. Test du schéma ajouté au job migrations GitHub.
+- `src/pages/MySubscription.tsx` ne présente plus le forfait gratuit comme
+  un résultat fiable lorsqu'une vérification Stripe échoue.
+- `isexy-verify-iap-receipt` v2 déployée sur V1 : retourne HTTP 501 en
+  absence de vraie vérification d'achats mobiles; ne crédite pas de droit.
+- Render `isexy` : SHA `b668f2cd` confirmé **live** à 18:18 UTC.
+- GitHub Actions : dernière CI pleinement verte vérifiée `75139c2`
+  (run `38612705942`); `e0f9a445` a été annulée avant ses tests,
+  `b668f2cd` était encore en attente. Revenir lire les nouveaux runs.
+- Prochaine action : contrôler le run le plus récent, puis confirmer
+  Coolify/ISEXY.CA, les secrets de publication et les parcours utilisateurs.
+
+---
+
 # ISEXY — Relève de l'agent
 
 Date : 2026-10-14 (heure Montréal). Repository : `takatakca/isexy`,

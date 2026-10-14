@@ -1,3 +1,16 @@
+## Actualisation — 2026-10-14 18:18 UTC
+
+La migration `0006_require_adult_profiles.sql` impose une date de naissance
+correspondant à au moins 18 ans aux modifications et insertions de profils
+ISEXY; elle est déjà appliquée à TAKATAK V1. Le test
+`scripts/isexy/test/adult-profiles.sql` a été ajouté à GitHub Actions,
+mais son exécution finale reste à revérifier. Le dernier commit Render
+confirmé `live` est `b668f2cd`. La fonction d'achats mobiles
+`isexy-verify-iap-receipt` v2 renvoie un code 501 tant qu'aucun système
+Apple/Google de vérification des reçus n'est installé.
+
+---
+
 ## État vérifié le 14 octobre 2026
 
 - **Dépôt / branche** : `takatakca/isexy`, `main`. Dernier changement

@@ -20,7 +20,7 @@ propriétaire : **aucune suppression Cuba autorisée**.
 | Render | Service statique `isexy`, `main`, déploiement automatique, un SHA observé `live` | Confirmé pour `eabe0204` |
 | Coolify / `isexy.ca` | Hôte cible décrit par `docs/V1-MIGRATION.md`, pas de preuve de SHA ni DNS/TLS | Non vérifié |
 | TAKATAK V1 | `pcjfahhlozsseqqevimi`, 69 tables ISEXY, 68 sous RLS | Confirmé |
-| Migrations | 0001–0005 enregistrées; empreintes 0004 et 0005 contrôlées | Appliquées |
+| Migrations | 0001–0006 enregistrées; empreintes 0004 et 0005 contrôlées | Appliquées |
 | Edge Functions | 25 noms `isexy-*` ACTIVE sur 27 | Partiel |
 | Fournisseurs | Stripe, Anthropic, Twilio/WhatsApp, mail, TURN : secrets et scénarios non vérifiés | Non certifié |
 | Comptes | 0 lignes dans `isexy.profiles` au contrôle | Pas de recette réelle |
@@ -43,3 +43,19 @@ le domaine de production et SSL, l'accès API au schéma, les secrets
 fournisseurs, une recette 18+/sécurité et les paiements testés puis validés.
 
 Voir `TASK_QUEUE.md` pour les prochaines actions classées.
+
+## Nouveaux correctifs de sécurité et d'expérience (14 octobre)
+
+- Commit `6c90acc9` : `MySubscription` indique une erreur récupérable lorsque
+  Stripe est indisponible, au lieu d'afficher faussement un forfait gratuit.
+- Commit `e0f9a445` : migration `0006_require_adult_profiles.sql`
+  enregistrée et appliquée, contrôle côté PostgreSQL de 18 ans minimum pour
+  insertion et modification de `birth_date`, test ajouté dans CI.
+  Cette mesure contrôle l'âge **déclaré**, pas l'identité réelle.
+- Commit `b668f2cd` : vérification Apple/Google inachevée maintenant en
+  échec explicite HTTP 501, fonction IAP version 2 active; aucun abonnement
+  n'est accordé sur des justificatifs non vérifiés.
+- Render : commit `b668f2cdd3678af80950465027c3a918d5f38932`
+  confirmé `live` le 14 octobre à 18:18 UTC.
+- **CI récente** : `75139c2` vert, les runs plus récents peuvent être
+  annulés ou en attente dans la file GitHub. Revérifier la CI du SHA final.

@@ -29,3 +29,10 @@ Dernière revue : 2026-10-14.
    environnement contrôlé, jamais présentés comme de vrais membres.
 10. **Marque** : suivre `BRAND.md` pour les éléments GROUPE TAKATAK;
     respecter l'identité propre de l'interface ISEXY.
+
+11. **Âge minimum déclaré** : le schéma ISEXY rejette au niveau du serveur
+    toute création/modification de profil avec date de naissance de moins de
+    18 ans (migration 0006). Cela ne remplace pas une vérification d'identité.
+12. **Achats mobiles** : aucune activation fondée sur un reçu non vérifié.
+    `isexy-verify-iap-receipt` retourne 501 tant que l'intégration officielle
+    Apple/Google n'est pas complète; tester les achats réels avant activation.
