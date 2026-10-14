@@ -7,10 +7,9 @@ const corsHeaders = {
 };
 
 /**
- * Mobile IAP Receipt Verification Stub
- * 
- * Supports Google Play and Apple App Store receipt validation.
- * Replace the TODO sections with actual store API calls when ready.
+ * Mobile IAP verification is intentionally unavailable until a real
+ * Apple/Google store receipt validator is integrated. Never grant entitlements
+ * from an unverified receipt or report an HTTP 200 for unfinished validation.
  * 
  * Expected body:
  * {
@@ -44,7 +43,7 @@ serve(async (req) => {
       throw new Error("Missing required fields: platform, receipt, productId");
     }
 
-    console.log(`[VERIFY-IAP] Platform: ${platform}, Product: ${productId}, User: ${userData.user.id}`);
+    console.log(`[VERIFY-IAP] Receipt verification request for ${platform}`);
 
     let verified = false;
     let subscriptionData: any = null;
@@ -95,7 +94,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       verified,
       subscription: subscriptionData,
+      ...(!verified ? { error: "Mobile purchase verification is not available yet; no entitlement was granted." } : {}),
     }), {
+      status: verified ? 200 : 501,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
