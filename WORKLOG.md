@@ -3,7 +3,7 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
-- 2026-10-14 | ChatGPT | main | active | Audit deploy, reconcile V1 and code; establish handoff documents and fix independently verifiable issues | next: verify migrations, production functions and CI; push guarded fixes
+- 2026-10-14 | ChatGPT | main | done (partial rollout) | Verified Render auto-deploy and V1 state; committed and applied migration 0005 (12 relationship indexes); created durable project status, task queue, decisions and handoff | next: verify newest Render SHA, Coolify/isexy.ca, missing deploy secrets and end-to-end flows
 
 - 2026-10-14 | ChatGPT | main + Supabase V1 | done (partial launch) | 25 of 27 ISEXY functions ACTIVE; applied and checksummed migration 0004 (fixed search_path security warning); CI build success, GitHub production publish still skipped | next: configure deploy secrets and host, review two remaining functions, verify ISEXY live services
 

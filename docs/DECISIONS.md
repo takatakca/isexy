@@ -1,0 +1,31 @@
+# ISEXY — Décisions permanentes
+
+Dernière revue : 2026-10-14.
+
+1. **Produit** : ISEXY est un réseau social canadien **18+** (amis,
+   conversations et communautés), pas une application de rencontres amoureuses.
+   Définitions détaillées : `docs/REPOSITIONING.md`.
+2. **Données centrales** : l'identité vient de TAKATAK Auth (V1);
+   `isexy.profiles.id = user_id = auth.users.id`. Pas de CRM maître
+   parallèle, pas de menus ISEXY dans le tableau de bord général.
+3. **Séparation technique** : schéma `isexy`, RLS, fonctions `isexy-*`,
+   buckets et variables `ISEXY_*`; ne jamais modifier les tables
+   `public` de V1 ni exécuter `supabase db push`.
+4. **Migrations** : uniquement `supabase/isexy-migrations/000N_*.sql`,
+   runner `scripts/isexy/migrate.sh` et table d'empreintes
+   `isexy.schema_migrations`. Ne jamais éditer une migration appliquée.
+5. **Cuba** : suppression / requalification des contenus Cuba **en attente**,
+   aucune donnée Cuba à effacer; conserver les parcours Cuba existants.
+6. **Hébergement** : cible souhaitée Coolify (`coolify.takatak.ca`),
+   `isexy.ca` domaine final; Render `isexy.onrender.com` reste repli actif
+   tant que la nouvelle production n'a pas été démontrée.
+7. **Paiements** : Stripe côté serveur, abonnements CAD, désactivés en réel
+   tant que les critères de recette ne sont pas remplis; `ISEXY_*`
+   requis pour isoler les secrets des autres applications.
+8. **Automatisation** : publier `main` lorsque les protections et
+   secrets le permettent, vérifier les jobs non exécutés et la version
+   effectivement servie. Pas de force-push, pas de certificats inventés.
+9. **Données de démonstration** : profils de semence uniquement en
+   environnement contrôlé, jamais présentés comme de vrais membres.
+10. **Marque** : suivre `BRAND.md` pour les éléments GROUPE TAKATAK;
+    respecter l'identité propre de l'interface ISEXY.

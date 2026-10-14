@@ -1,3 +1,42 @@
+## État vérifié le 14 octobre 2026
+
+- **Dépôt / branche** : `takatakca/isexy`, `main`. Dernier changement
+  applicatif avant cette mise à jour documentaire : `75139c2018a2f02271303a6dca5663b99aa7f912`.
+- **Render** : site statique `srv-db37s2s9v7es73b8g60g`, source `main`,
+  déploiement automatique activé (`new_commit`), build `npm ci && npm run build`,
+  publication `dist`, URL `https://isexy.onrender.com`. Le déploiement du
+  commit `eabe0204ae385de7672e00d0b3af93893d523b74` a été observé
+  `live`; **revérifier le dernier SHA après les nouveaux commits**.
+- **Coolify / isexy.ca** : cibles documentées, mais état effectif **non
+  vérifié**. Ne pas les annoncer en production sans comparaison du SHA,
+  preuve de DNS/TLS et contrôle des routes profondes.
+- **Supabase partagé** `pcjfahhlozsseqqevimi` : schéma `isexy` présent,
+  69 tables, 68 tables applicatives sous RLS, les migrations 0001 à 0005
+  enregistrées. La migration 0005 ajoute 12 index de relations; l'avis
+  de clés étrangères sans index couvre encore 71 contraintes.
+- **Edge Functions** : 25/27 `isexy-*` en état ACTIVE. Non déployées :
+  `isexy-seed-profiles` (outil de données de démonstration, à laisser désactivé
+  en production) et `isexy-subscription-resets` (maintenance programmée,
+  publication bloquée en attente de vérification). `ACTIVE` ne garantit pas
+  que les secrets fournisseurs sont configurés.
+- **CI GitHub** : compilation, contrôle TypeScript, Deno, migrations sur banc
+  PostgreSQL et règles de sécurité OK au dernier run complet consulté.
+  **L'étape GitHub de publication Supabase est sautée** lorsque
+  `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` sont absents.
+  L'étape SSH est optionnelle et également sautée si non configurée.
+  La publication manuelle des 25 fonctions ne remplace pas ce paramétrage.
+- **Vérification métier manquante** : OTP Google/SMS/email, inscription 18+,
+  photo, découverte, match, messages temps réel, appels, concierge avec
+  fournisseur, essais Stripe, webhooks, modération, désinscription et
+  parcours de paiement. La base compte 0 profil au dernier contrôle.
+- La description historique ci-dessous explique la configuration souhaitée,
+  et peut contenir des instructions de première mise en service déjà effectuées.
+
+Voir aussi : [PROJECT_STATUS](PROJECT_STATUS.md), [TASK_QUEUE](TASK_QUEUE.md)
+et [AGENT_HANDOFF](AGENT_HANDOFF.md).
+
+---
+
 # ISEXY deployment
 
 ISEXY runs on **TAKATAK V1** (Supabase `pcjfahhlozsseqqevimi`, `isexy` schema,
