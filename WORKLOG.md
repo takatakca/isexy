@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-14 | ChatGPT | main | active | Audit deploy, reconcile V1 and code; establish handoff documents and fix independently verifiable issues | next: verify migrations, production functions and CI; push guarded fixes
+
 - 2026-10-14 | ChatGPT | main + Supabase V1 | done (partial launch) | 25 of 27 ISEXY functions ACTIVE; applied and checksummed migration 0004 (fixed search_path security warning); CI build success, GitHub production publish still skipped | next: configure deploy secrets and host, review two remaining functions, verify ISEXY live services
 
 - 2026-10-14 | ChatGPT | main → direct commit | done | Allow SMS-only Takatak users to access Stripe subscription and portal; use trusted billing return URL; avoid logging customer email/session URL | next: deploy remaining isexy-* functions, check per-app secrets and live host
