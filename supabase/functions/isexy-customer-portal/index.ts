@@ -47,8 +47,8 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    if (!user?.id) throw new Error("User not authenticated");
+    logStep("User authenticated", { userId: user.id });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const stripeCustomerId = await findStripeCustomerId(stripe, user);
@@ -56,14 +56,21 @@ serve(async (req) => {
       throw new Error("No Stripe customer found for this user");
     }
     const customerId = stripeCustomerId;
-    logStep("Found Stripe customer", { customerId });
+    logStep("Found Stripe customer");
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    // Never trust the request Origin header for a Stripe billing return URL.
+    // ISEXY_APP_URL is server-controlled; default to the documented fallback host.
+    const appUrl = isexyEnv("APP_URL") || "https://isexy.onrender.com";
+    const returnUrl = new URL("/settings", appUrl);
+    if (returnUrl.protocol !== "https:" &&
+        !(returnUrl.protocol === "http:" && ["localhost", "127.0.0.1"].includes(returnUrl.hostname))) {
+      throw new Error("ISEXY_APP_URL must be a secure website URL");
+    }
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/settings`,
+      return_url: returnUrl.toString(),
     });
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+    logStep("Customer portal session created");
 
     return new Response(JSON.stringify({ url: portalSession.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
