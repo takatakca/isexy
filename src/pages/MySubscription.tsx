@@ -91,22 +91,40 @@ export default function MySubscription() {
   const [endDate, setEndDate] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [subscriptionError, setSubscriptionError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
+    let mounted = true;
     const check = async () => {
+      setLoading(true);
+      setSubscriptionError(false);
       try {
-        const { data } = await supabase.functions.invoke("isexy-check-subscription");
-        if (data?.subscribed && data?.tier && ["plus","gold","platinum"].includes(data.tier)) {
+        const { data, error } = await supabase.functions.invoke("isexy-check-subscription");
+        if (error || data?.error) throw error ?? new Error("Subscription check failed");
+
+        if (data?.subscribed) {
+          if (!["plus", "gold", "platinum"].includes(data.tier)) {
+            throw new Error("Subscription plan could not be identified");
+          }
+          if (!mounted) return;
           setCurrentTier(data.tier as SubscriptionTier);
           setActiveTier(data.tier as SubscriptionTier);
-          if (data.subscription_end) setEndDate(data.subscription_end);
+          setEndDate(data.subscription_end ?? null);
+        } else {
+          if (!mounted) return;
+          setCurrentTier(null);
+          setEndDate(null);
         }
-      } catch {/* no-op */} finally {
-        setLoading(false);
+      } catch {
+        if (mounted) setSubscriptionError(true);
+      } finally {
+        if (mounted) setLoading(false);
       }
     };
-    check();
-  }, []);
+    void check();
+    return () => { mounted = false; };
+  }, [retryKey]);
 
   const sections = tierSections[activeTier];
   const tiers: SubscriptionTier[] = ["plus", "gold", "platinum"];
@@ -144,6 +162,20 @@ export default function MySubscription() {
           <div className="px-4 pb-4">
             {loading ? (
               <div className="glass-card rounded-2xl p-5 animate-pulse h-24" />
+            ) : subscriptionError ? (
+              <div className="glass-card rounded-2xl p-5" role="alert">
+                <p className="font-bold text-foreground">Subscription status unavailable</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  We could not verify your current plan. This does not mean your subscription has expired.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setRetryKey((value) => value + 1)}
+                  className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                >
+                  Try again
+                </button>
+              </div>
             ) : currentTier ? (
               <div className="glass-card rounded-2xl p-5 ring-coral">
                 <div className="flex items-center justify-between mb-2">
