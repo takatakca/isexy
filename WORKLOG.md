@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-14 | ChatGPT | main + Supabase V1 | done (partial launch) | 25 of 27 ISEXY functions ACTIVE; applied and checksummed migration 0004 (fixed search_path security warning); CI build success, GitHub production publish still skipped | next: configure deploy secrets and host, review two remaining functions, verify ISEXY live services
+
 - 2026-10-14 | ChatGPT | main → direct commit | done | Allow SMS-only Takatak users to access Stripe subscription and portal; use trusted billing return URL; avoid logging customer email/session URL | next: deploy remaining isexy-* functions, check per-app secrets and live host
 
 - 2026-10-09 | claude | claude/zealous-brown-kv2hmx → PR #1 | PR #1 (not merged) | Coolify hosting: no bun (bun.lockb only on main), nixpacks.toml pins Node 22 + npm, CI lockfile rule, docs (Render = fallback) | owner: merge PR #1 (or point Coolify at the branch once), then V1-MIGRATION.md 3.9 checks
