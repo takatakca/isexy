@@ -115,6 +115,9 @@ jobs:
       - name: Privileged RPC permissions
         run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/privileged-rpc-permissions.sql
 
+      - name: Support ticket administrative fields guard
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/support-ticket-staff-fields.sql
+
       - name: Re-run is a no-op
         run: scripts/isexy/migrate.sh | tee /tmp/rerun.txt && grep -q "up to date" /tmp/rerun.txt
 
