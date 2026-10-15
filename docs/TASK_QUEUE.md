@@ -11,7 +11,7 @@ sans refaire les migrations déjà appliquées.
 | P0 | Vérifier Data API et Takatak Auth | `isexy` exposé via API avec RLS; redirections ISEXY, Google, email-code, SMS-code valides |
 | P0 | Audit paiement et fournisseurs | `ISEXY_*` présents côté serveur, clés non visibles dans le frontend; webhooks Stripe de test, mode réel non activé sans validation |
 | P0 | Recette 18+ / modération / confidentialité | Déclencheur SQL 0006 + parcours Cuba sans fausse date; confirmer inscription réelle, modération et blocage |
-| P0 | Cron des allocations | Fonction `isexy-reset-allowances` a `verify_jwt=true` malgré le secret Cron; authentification et HTTP 500 sur erreurs à corriger et vérifier. La tentative de patch a été bloquée, aucun changement appliqué. |
+| P0 | Cron des allocations | Fonction `isexy-reset-allowances` v2 déployée, erreurs remontées en HTTP 500; JWT Gateway reste requis en plus du secret Cron. Configurer et vérifier un appel scheduler autorisé. |
 | P1 | Publication de `isexy-subscription-resets` | Quarantaine maintenue, ne pas publier ni utiliser tant que son comportement global n'est pas corrigé |
 | P1 | `isexy-seed-profiles` | Ne pas déployer en production par défaut : profils d'essai ne doivent pas apparaître comme réels |
 | P1 | Validation Apple/Google d'achats mobiles | Fonction IAP en HTTP 501 par défaut; implémenter validation côté fournisseur avant activation commerciale |

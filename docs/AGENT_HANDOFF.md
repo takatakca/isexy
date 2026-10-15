@@ -1,3 +1,29 @@
+## Relève supplémentaire — 15 octobre 2026, dernier correctif d'allocations
+
+- Dernier commit applicatif avant cette mise à jour : `59496103ecc185d3da49cf5302c3667ed902865c` sur `main`.
+- `supabase/functions/isexy-reset-allowances/index.ts` :
+  la fonction répond désormais HTTP 500 si un RPC de remise à niveau
+  hebdomadaire, mensuelle ou d'expiration de promotions échoue.
+- Publication directe confirmée dans Supabase : `isexy-reset-allowances`
+  version **2**, état ACTIVE, **verify_jwt=true** conservé.
+- `731a6e2e` : CI GitHub SUCCESS et release Render LIVE.
+  `59496103` : dernier job CI en cours et Render en cours
+  à la lecture avant le commit documentaire; reconsulter ensuite.
+- Les fonctions privilégiées `*_unchecked`, l'accès par adresse e-mail et
+  les cinq RPC contrôlés restent non exécutables par les rôles publics.
+- **Blocage non résolu** : le scheduler doit posséder un JWT valide
+  pour passer la Gateway ainsi que `ISEXY_CRON_SECRET` pour passer
+  le handler. L'accès à la configuration effective et une vérification
+  programmée manquent. Ne pas supprimer la vérification JWT par défaut.
+- Les autres P0 restent ouverts : GitHub → Supabase, Coolify,
+  isexy.ca/DNS/TLS, secrets et tests fournisseurs.
+- Prochaine action : relever la conclusion CI du dernier `main`, vérifier
+  le SHA Render publié, résoudre le Cron de façon autorisée puis
+  reprendre `docs/TASK_QUEUE.md`. Aucune exécution en arrière-plan
+  n'a été configurée.
+
+---
+
 # Relève prioritaire — 15 octobre 2026
 
 ## Dernière tâche terminée

@@ -1,3 +1,17 @@
+## État du Cron — 15 octobre 2026
+
+`isexy-reset-allowances` v2 renvoie HTTP 500 si une opération SQL
+de maintenance échoue et demeure `verify_jwt=true`.
+Son handler exige `x-cron-secret` (secret Edge `ISEXY_CRON_SECRET`).
+La passerelle exige en plus un JWT utilisateur valide. Un simple secret
+Cron ne suffit pas. **Aucun Cron opérationnel n'est confirmé**;
+ne pas activer les tâches planifiées avant une configuration autorisée
+et une vérification des deux couches d'authentification.
+L'ancienne fonction `isexy-subscription-resets` reste non déployée
+et exclue de GitHub Actions.
+
+---
+
 ## Vérification du 15 octobre 2026
 
 - Dernier commit Render confirmé live avant la présente mise à jour :

@@ -1,5 +1,7 @@
 # ISEXY — État réel du projet
 
+**Mise à jour 2026-10-15 :** correctif `59496103` sur les erreurs de maintenance des allocations, Edge Function `isexy-reset-allowances` v2 ACTIVE et `verify_jwt=true`. Le planificateur Cron reste non vérifié. La dernière CI validée avant ce correctif était `731a6e2e` (SUCCESS), Render `731a6e2e` LIVE.
+
 ## Revue du 15 octobre 2026 (état plus récent que les notes historiques ci-dessous)
 
 - `main` : `f889e93111a5821dacd5c9a75b59cbad324d5127` avant cette mise à jour documentaire.
