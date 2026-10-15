@@ -294,6 +294,28 @@ jobs:
             [ "$code" = "200" ] || { echo "::error::$SITE_URL$path returned $code"; exit 1; }
           done
 
+      - name: Verify published commit on the live website
+        env:
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current=""
+          for attempt in $(seq 1 12); do
+            current=$(curl -fsS --max-time 10 --retry 1 "$SITE_URL/release.json?version=$EXPECTED_COMMIT" |
+              node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{process.stdout.write(JSON.parse(s).commit||"")}catch{process.stdout.write("")}})' || true)
+            if [ "$current" = "$EXPECTED_COMMIT" ]; then
+              echo "Published commit matches GitHub: ${EXPECTED_COMMIT:0:12}"
+              exit 0
+            fi
+            echo "Deployment not yet at current commit (attempt $attempt/12, active=${current:-unknown})"
+            sleep 10
+          done
+          if [ "$SITE_URL" = "https://isexy.onrender.com" ]; then
+            echo "::error::Render did not publish commit $EXPECTED_COMMIT within the smoke test window (active=${current:-unknown})."
+            exit 1
+          fi
+          echo "::warning::Custom hosting SHA unverified: configure build-time RENDER_GIT_COMMIT, GITHUB_SHA or SOURCE_COMMIT."
+
       - name: ISEXY edge functions reachable
         run: |
           for fn in isexy-ai-chat isexy-payments-gate-status; do
