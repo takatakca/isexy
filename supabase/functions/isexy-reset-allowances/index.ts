@@ -28,13 +28,21 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    const failedTasks: string[] = [];
+
     // Reset weekly allowances (super likes + first impressions)
     const { data: weeklyResult, error: weeklyError } = await supabase.rpc("reset_weekly_allowances");
-    if (weeklyError) console.error("Weekly reset error:", weeklyError);
+    if (weeklyError) {
+      console.error("Weekly reset error:", weeklyError);
+      failedTasks.push("weekly_allowances");
+    }
 
     // Reset monthly allowances (monthly boosts)
     const { data: monthlyResult, error: monthlyError } = await supabase.rpc("reset_monthly_allowances");
-    if (monthlyError) console.error("Monthly reset error:", monthlyError);
+    if (monthlyError) {
+      console.error("Monthly reset error:", monthlyError);
+      failedTasks.push("monthly_allowances");
+    }
 
     // Expire promotions that have passed their deadline
     const { error: promoError } = await supabase
@@ -43,7 +51,19 @@ serve(async (req) => {
       .lt("offer_expires_at", new Date().toISOString())
       .is("redeemed_at", null)
       .eq("eligible", true);
-    if (promoError) console.error("Promo expiry error:", promoError);
+    if (promoError) {
+      console.error("Promo expiry error:", promoError);
+      failedTasks.push("expired_promotions");
+    }
+
+    if (failedTasks.length > 0) {
+      return new Response(JSON.stringify({
+        error: "Scheduled maintenance incomplete",
+        failed_tasks: failedTasks,
+      }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     console.log(`[RESET-ALLOWANCES] Weekly: ${weeklyResult ?? 0}, Monthly: ${monthlyResult ?? 0}`);
 
