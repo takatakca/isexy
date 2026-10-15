@@ -1,3 +1,22 @@
+## Contrôle des releases — 15 octobre 2026
+
+Le build génère `dist/release.json` via `scripts/generate-seo.mjs` :
+`commit` (SHA public) et `built_at` (ISO 8601). Les variables build
+acceptées sont `RENDER_GIT_COMMIT`, `GITHUB_SHA` et `SOURCE_COMMIT`.
+Le smoke test GitHub du site Render exige une correspondance de SHA;
+un run dépassé par un commit plus récent est noté comme tel.
+
+À la dernière vérification : `0978d574` était Render LIVE, tandis que
+`470f9ee2` venait de partir vers Render/CI. Les six fonctions Stripe v2
+ont été publiées **directement** sur Supabase. Cela ne corrige pas les
+secrets GitHub indisponibles, et les étapes de publication automatique
+Supabase restent `skipped`.
+
+Migrations 0009–0010 de tickets appliquées directement à TAKATAK V1,
+empreintes vérifiées. Aucun changement au schéma `public` V1.
+
+---
+
 ## État du Cron — 15 octobre 2026
 
 `isexy-reset-allowances` v2 renvoie HTTP 500 si une opération SQL

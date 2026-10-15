@@ -1,3 +1,56 @@
+# Relève prioritaire du 15 octobre 2026 — tickets, Stripe et preuve de version
+
+**Repository :** `takatakca/isexy`, branche `main`. Dernier commit applicatif poussé **avant** cette mise à jour documentaire : `470f9ee2a23a9fcee5378f501e5c412d064c7415`. Relire `main` pour retrouver le SHA du commit documentaire ajouté ensuite.
+
+## Dernières tâches terminées
+
+1. Migrations `0009_protect_support_ticket_staff_fields.sql` et `0010_support_ticket_rls_uses_verified_claims.sql`, appliquées uniquement au schéma `isexy` de TAKATAK V1. Empreintes enregistrées dans `isexy.schema_migrations` :
+   - 0009 : `98c44df82118a09921c02acb7e65a7d923973a221a2bb68505a6d046ee5953fa`
+   - 0010 : `98c6f7a1d6693e604a2c3f31d04565ba06f086c85f29d2e16ac2b6cc8a6589ee`
+2. Le trigger `isexy_support_ticket_staff_fields_guard` est activé. Un membre authentifié peut enrichir son ticket, pas inventer une réponse ou changer son statut. Les politiques RLS ne demandent plus de SELECT direct sur `auth.users`.
+3. `RestorePurchase.tsx` crée un ticket réellement stocké avec confirmation visible et référence de suivi, plutôt qu'un toast fictif.
+4. Fonction partagée `_shared/stripe-customer.ts` : aucune réattribution d'un client Stripe déjà lié à un autre UID ISEXY. Six Edge Functions publiées **v2 ACTIVE**. `_shared/app-url.ts` forme les redirections depuis `ISEXY_APP_URL`, à défaut le domaine Render.
+5. Suppression du faux compte à rebours 50 %; CTA Premium désactivé lorsque la passerelle paiement signale un blocage.
+6. `release.json` public contient le SHA du build; CI vérifie le SHA servi et distingue les runs dépassés.
+
+## Fichiers modifiés
+
+- `supabase/isexy-migrations/0009_*.sql`, `0010_*.sql`
+- `scripts/isexy/test/support-ticket-staff-fields.sql`
+- `scripts/isexy/test/stripe-customer.test.ts`
+- `src/pages/RestorePurchase.tsx`, `src/pages/Premium.tsx`
+- `supabase/functions/_shared/stripe-customer.ts`, `app-url.ts`
+- `supabase/functions/isexy-create-{checkout,credit-purchase,minute-purchase,one-time-payment}/index.ts`
+- `scripts/generate-seo.mjs`, `.github/workflows/ci-cd.yml`
+- `WORKLOG.md`, et les cinq fichiers de suivi `docs/`
+
+## Vérifications exécutées
+
+- GitHub : lecture des branches, commits, PR/issues, jobs et journaux d'erreur. Une première tentative CI a échoué parce qu'une politique ticket référençait `auth.users`. Correction dans migration 0010. Runs `38791730778`, `38791823170` et `38792318115` ensuite **SUCCESS**.
+- PostgreSQL TAKATAK V1 : vérification du trigger activé, policies `pg_policies`, versions et checksums de migrations 0009–0010.
+- Supabase Functions : après déploiement direct des six fonctions Stripe, toutes confirmées `ACTIVE` en version 2.
+- Render : la release `0978d574` observée `live`, SHA ultérieur `470f9ee2` encore en cours de build à la dernière lecture.
+- Attention : aucune réservation, paiement réel, appel ni profil client final n'a été exécuté.
+
+## Tâche en cours et blocages
+
+1. Confirmer que la plus récente CI `main` est verte ET que `release.json` annonce le SHA actif de Render.
+2. **GitHub → Supabase toujours désactivé** : les secrets `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` ne sont pas disponibles dans les jobs de déploiement, les étapes sont `skipped`. Ne pas prétendre que l'autodéploiement du backend est opérationnel.
+3. Coolify, DNS/TLS et `https://isexy.ca` ne sont pas vérifiés. La cible ISEXY réelle n'est pas certifiée.
+4. `isexy-reset-allowances` requiert un JWT d'accès à la Gateway **et** le secret Cron; aucun déclenchement planifié validé.
+5. Intégrations d'identité TAKATAK Auth Google/SMS/email, Stripe test/live, téléphonie, IA, transfert d'achat réel et email support : recette à effectuer.
+6. Fonctions `isexy-seed-profiles` et `isexy-subscription-resets` intentionnellement exclues des déploiements (risques documentés); 25 fonctions `isexy-*` actives.
+7. Les données Cuba historiques restent intactes conformément aux décisions du propriétaire.
+
+## Prochaine action exacte
+
+1. Lire `main`, le dernier run `CI/CD` GitHub et la liste des déploiements Render. Vérifier `/release.json` du SHA le plus récent, y compris les éventuels échecs du smoke-test.
+2. Faire la recette réelle des tickets (création et accès membre), des fonctions Stripe v2 avec compte TAKATAK uniquement SMS, sans enregistrer de paiement réel avant validation.
+3. Fournir les accès/secrets manquants par canaux sécurisés et activer GitHub → Supabase puis Coolify/ISEXY.CA, et vérifier DNS/TLS et la version servie.
+4. Continuer les P0 de `TASK_QUEUE.md`, puis consigner les commits, tests et déploiements dans cette relève.
+
+---
+
 ## Relève supplémentaire — 15 octobre 2026, dernier correctif d'allocations
 
 - Dernier commit applicatif avant cette mise à jour : `59496103ecc185d3da49cf5302c3667ed902865c` sur `main`.

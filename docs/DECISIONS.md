@@ -47,3 +47,20 @@ Dernière revue : 2026-10-14.
 15. **Cron** : aucune fonction autorisée par secret Cron seul ne peut être
     déclarée disponible si la Gateway requiert également un JWT; régler
     et éprouver les deux couches avant de programmer un job.
+
+16. **Tickets d'assistance** : tout champ administratif d'un ticket
+    doit être contrôlé par déclencheur PostgreSQL côté serveur. Les
+    politiques membres lisent les claims Auth ou l'UID, jamais
+    directement les lignes `auth.users` (migrations 0009–0010).
+17. **Isolation Stripe** : un e-mail partagé ne suffit jamais à
+    attribuer un client Stripe à un membre ISEXY; seul
+    `metadata.isexy_user_id` correspondant permet la réutilisation.
+    Les connexions uniquement par téléphone sont valides.
+18. **Navigation après paiement** : redirection uniquement vers
+    l'URL du site configurée côté serveur, jamais une origine fournie
+    par le navigateur.
+19. **Promotions** : les comptes à rebours et remises non matérialisées
+    dans le serveur de paiement ne sont pas affichés.
+20. **Preuves de publication** : `release.json` fait correspondre
+    le SHA Git au build servi; aucun seul statut de CI ne suffit à
+    confirmer l'hébergement cible, DNS ou le fonctionnement métier.

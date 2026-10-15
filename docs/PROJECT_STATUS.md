@@ -1,5 +1,21 @@
 # ISEXY — État réel du projet
 
+## Sécurité, paiements et publication — 15 octobre 2026
+
+- **Dernier commit applicatif avant cette documentation** : `470f9ee2a23a9fcee5378f501e5c412d064c7415` sur `main`.
+- **Tests CI confirmés** : `99c1ea05` (run `38791823170`) et `0978d574` (run `38792318115`) SUCCESS, incluant les tests de tickets et d'appartenance Stripe. Les commits postérieurs étaient en file à la dernière vérification; reconsulter GitHub pour la conclusion définitive.
+- **Render confirmé live** : `0978d574` au dernier relevé; le nouveau SHA `470f9ee2` était encore en construction. AutoDeploy depuis `main` est actif.
+- **Supabase TAKATAK V1** `pcjfahhlozsseqqevimi` : migrations ISEXY **0001–0010** enregistrées avec checksum; déclencheur de protection des champs de tickets activé; politiques SELECT/UPDATE basées sur claims Auth plutôt que la lecture interdite d'`auth.users`. Les tests SQL CI passent.
+- **Stripe** : six Edge Functions (`isexy-create-checkout`, `isexy-create-credit-purchase`, `isexy-create-minute-purchase`, `isexy-create-one-time-payment`, `isexy-check-subscription`, `isexy-customer-portal`) sont en **version 2 ACTIVE**, déployées directement. Elles partagent le correctif de propriété des clients Stripe; les créations acceptent un membre identifié par son UID même si son email est absent; les URL de retour sont construites depuis l'URL serveur, non `Origin`.
+- **Restauration d'achat** : `src/pages/RestorePurchase.tsx` enregistre réellement un ticket relié à un utilisateur authentifié, avec numéro et suivi; aucune restauration ni attribution d'abonnement n'est prétendue sans vérification.
+- **Tarifs promotionnels** : bannière 50 % / compte à rebours retirée de `Premium.tsx` : aucune réduction serveur correspondante n'était appliquée. Le bouton respecte le verrouillage `usePaymentsGate`.
+- **Preuve de release** : `scripts/generate-seo.mjs` écrit `dist/release.json` avec SHA issu du build (Render, GitHub ou source); le smoke test GitHub compare le SHA, et ignore explicitement les anciennes exécutions supplantées par un commit plus récent.
+- **Non vérifié / humain** : Coolify/ISEXY.CA (version et TLS), secrets `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` GitHub, planificateur Cron à JWT + secret, authentification réelle Google/SMS, Stripe en test de bout en bout, Twilio et IA, RLS via client public sur site. La CI verte n'implique toujours pas la publication automatique Supabase, car ce job saute ses étapes lorsqu'aucun secret n'est disponible.
+- **État** : produit **non certifié 100 %**, malgré corrections publiées.
+
+---
+
+
 **Mise à jour 2026-10-15 :** correctif `59496103` sur les erreurs de maintenance des allocations, Edge Function `isexy-reset-allowances` v2 ACTIVE et `verify_jwt=true`. Le planificateur Cron reste non vérifié. La dernière CI validée avant ce correctif était `731a6e2e` (SUCCESS), Render `731a6e2e` LIVE.
 
 ## Revue du 15 octobre 2026 (état plus récent que les notes historiques ci-dessous)
