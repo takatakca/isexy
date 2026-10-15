@@ -1,3 +1,90 @@
+# Relève prioritaire — 15 octobre 2026
+
+## Dernière tâche terminée
+
+- Audit des privilèges côté SQL, migrations `0007_secure_allowance_resets.sql`
+  et `0008_restrict_privileged_maintenance_rpcs.sql` enregistrées et
+  appliquées dans `pcjfahhlozsseqqevimi`. 0007 empêche des réinitialisations
+  anonymes et bloque les grants de boost répétés; 0008 réserve nettoyage OTP
+  et télémétrie au service, et restreint l'annuaire administratif au personnel.
+- Le 15 octobre, les permissions des cinq RPC sensibles ont été contrôlées
+  via `has_function_privilege` pour anon, authenticated et service_role.
+- `src/pages/CubanSignup.tsx` ne crée plus un profil avec la fausse
+  date `2000-01-01` et n'enregistre plus une vérification si un transfert
+  de justificatif échoue.
+- `.github/workflows/ci-cd.yml` exclut toujours le semeur de faux profils
+  et l'ancien global reset du déploiement automatique.
+
+## Tâche actuellement en cours / blocage identifié
+
+- Le Cron d'allocations `isexy-reset-allowances` reste avec
+  `verify_jwt=true`, alors que le handler exige `x-cron-secret`.
+  La tentative de sécuriser la configuration et le retour d'erreur n'a
+  pas pu être poussée : **action refusée par un contrôle de sécurité**
+  de l'outil, aucun code ni service modifié dans cette tentative.
+  Examiner une solution approuvée et maintenir les RPC protégés.
+- Contrôler ensuite Coolify, `isexy.ca`, Auth TAKATAK, secrets de production,
+  événements Stripe et les scénarios utilisateurs.
+
+## Dernier SHA, versions, résultats
+
+- **Dernier SHA applicatif avant ce document** :
+  `f889e93111a5821dacd5c9a75b59cbad324d5127` sur `main`.
+  Comparer avec la branche car la présente relève constitue un commit
+  documentaire ultérieur.
+- Render statique `srv-db37s2s9v7es73b8g60g` :
+  commit `f889e931` observé **live**.
+- CI : `e353ede9` et `e12c3ade` réussis;
+  `f889e931` en cours à la dernière vérification;
+  les jobs de publication Supabase/SSH restent sautés faute de secrets.
+- Supabase : 69 tables ISEXY; 25 fonctions `isexy-*` ACTIVE (manquent
+  `isexy-seed-profiles` volontairement et `isexy-subscription-resets`
+  mis en quarantaine).
+- Migrations 0007 et 0008 présentes dans `isexy.schema_migrations` avec :
+  0007 `d6e961cd67886798e84638a9e42752851ad9a6ac798cc25182c9d7e690b20cbc`;
+  0008 `36ff15f2626dd6e837138d776720a768aa16ae8bee6c6f0f2b34333951af01a2`.
+- Fichiers changés depuis la relève précédente :
+  `src/pages/CubanSignup.tsx`, `.github/workflows/ci-cd.yml`,
+  `supabase/isexy-migrations/0007_*.sql`,
+  `supabase/isexy-migrations/0008_*.sql`,
+  `scripts/isexy/test/allowance-rpc-permissions.sql`,
+  `scripts/isexy/test/privileged-rpc-permissions.sql`,
+  `WORKLOG.md` et les cinq documents de suivi.
+
+## Vérifications effectuées
+
+- GitHub : lecture de `main`, WORKLOG, issues/PR ouvertes, CI et jobs
+  (dernier run vert prouvé : `e353ede9`).
+- Render : liste des déploiements de service, SHA `f889e931` live.
+- Supabase : `execute_sql` (permissions, migrations et définitions),
+  `list_edge_functions`, `get_advisors(type=security)`.
+- Aucun test utilisateur OTP, appel, paiement réel ou diagnostic Coolify
+  n'a été certifié. Les lectures publiques directes du domaine ISEXY
+  n'ont pas fourni de preuve indépendante de santé.
+
+## Accès manquants, sans secrets
+
+- `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` dans GitHub Actions
+  pour les migrations/functions automatiques.
+- Console Coolify, preuve DNS/TLS pour `isexy.ca`, contrôle du SHA servi.
+- Confirmation des secrets `ISEXY_*` (Stripe, Anthropic, cron, Twilio,
+  courrier), des webhooks fournisseurs et Auth redirect URLs.
+
+## Prochaine action exacte
+
+1. Lire le dernier SHA `main` et les conclusions des jobs CI post-0008,
+   puis comparer à la dernière release Render live.
+2. Résoudre le décalage Cron/JWT sans exposer l'endpoint ; tester un appel
+   sans secret (401) et un appel du scheduler autorisé (200 ou erreur
+   explicite). Ne pas exécuter une réinitialisation sur des utilisateurs
+   réels pour un test.
+3. Configurer les secrets GitHub de production avec accès autorisé,
+   puis confirmer que migrations et fonctions ne sont plus `skipped`.
+4. Vérifier Coolify, domaine, Auth, Stripe et les autres P0 de
+   `docs/TASK_QUEUE.md`. Mettre à jour WORKLOG et ce document.
+
+---
+
 ## Mise à jour de relève — 2026-10-14 18:18 UTC
 
 - Dernier SHA applicatif poussé avant cette mise à jour documentaire :

@@ -1,5 +1,39 @@
 # ISEXY — État réel du projet
 
+## Revue du 15 octobre 2026 (état plus récent que les notes historiques ci-dessous)
+
+- `main` : `f889e93111a5821dacd5c9a75b59cbad324d5127` avant cette mise à jour documentaire.
+- Render `srv-db37s2s9v7es73b8g60g` : SHA `f889e931` confirmé **live**.
+  GitHub Actions sur ce SHA était **en cours**; `e353ede9` et
+  `e12c3ade` avaient leurs runs CI **success**.
+- Supabase TAKATAK V1 `pcjfahhlozsseqqevimi` : huit migrations ISEXY
+  0001–0008 appliquées, 69 tables, 25/27 Edge Functions `isexy-*` actives.
+- Correctifs : `6140d541` bloque les profils Cuba à date de naissance
+  inventée et exclut deux fonctions à risque du déploiement automatique;
+  `e12c3ade` empêche la soumission de pièces justificatives non chargées;
+  `e353ede9` restreint les RPC de réinitialisation et rend l'octroi mensuel
+  conditionnel à la date prévue; `f889e931` ferme les RPC de maintenance et
+  contrôle le rôle dans le listing administratif.
+- Permissions vérifiées dans PostgreSQL : anon et authenticated ne peuvent
+  pas appeler les RPC de maintenance ni réinitialiser globalement les quotas;
+  seuls les membres autorisés de l'équipe obtiennent des résultats de
+  `get_admin_users`. Aucun nouvel avertissement ciblant le schéma ISEXY
+  dans l'analyse de sécurité Supabase consultée.
+- Bloquant : `isexy-reset-allowances` reste déployée avec
+  `verify_jwt=true` et attend `x-cron-secret`. Un Cron utilisant uniquement
+  ce secret peut donc échouer avant l'exécution. Le correctif de configuration
+  tenté n'a **pas été appliqué** : opération bloquée par les vérifications de
+  sécurité du connecteur. Ne pas dire que la maintenance Cron est active.
+- GitHub → Supabase : secrets de déploiement absents/non disponibles dans
+  le job; publication SQL/fonctions depuis GitHub reste **skipped**.
+  Coolify, `isexy.ca` (DNS et TLS), clés Stripe/Twilio/Claude et achats réels
+  ne sont pas validés.
+- Aucune suppression des parcours Cuba ni activation de profils de
+  démonstration.
+
+---
+
+
 Dernière revue : 2026-10-14, dépôt `takatakca/isexy`, branche `main`.
 
 ## Objectif produit
@@ -20,7 +54,7 @@ propriétaire : **aucune suppression Cuba autorisée**.
 | Render | Service statique `isexy`, `main`, déploiement automatique, un SHA observé `live` | Confirmé pour `eabe0204` |
 | Coolify / `isexy.ca` | Hôte cible décrit par `docs/V1-MIGRATION.md`, pas de preuve de SHA ni DNS/TLS | Non vérifié |
 | TAKATAK V1 | `pcjfahhlozsseqqevimi`, 69 tables ISEXY, 68 sous RLS | Confirmé |
-| Migrations | 0001–0006 enregistrées; empreintes 0004 et 0005 contrôlées | Appliquées |
+| Migrations | 0001–0008 enregistrées; empreintes 0004 et 0005 contrôlées | Appliquées |
 | Edge Functions | 25 noms `isexy-*` ACTIVE sur 27 | Partiel |
 | Fournisseurs | Stripe, Anthropic, Twilio/WhatsApp, mail, TURN : secrets et scénarios non vérifiés | Non certifié |
 | Comptes | 0 lignes dans `isexy.profiles` au contrôle | Pas de recette réelle |

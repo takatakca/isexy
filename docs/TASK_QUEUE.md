@@ -1,17 +1,18 @@
 # ISEXY — File des tâches
 
-Dernière mise à jour : 2026-10-14. Reprendre la première ligne exécutable,
+Dernière mise à jour : 2026-10-15. Reprendre la première ligne exécutable,
 sans refaire les migrations déjà appliquées.
 
 | Priorité | Tâche | État / critère d'acceptation |
 | --- | --- | --- |
-| P0 | Réconcilier les SHA après `75139c2` | CI verte + déploiement Render `live` du même SHA |
+| P0 | Réconcilier les SHA | Render `f889e931` live; la CI de ce SHA est à revérifier après son exécution |
 | P0 | Examiner Coolify puis `isexy.ca` | GitHub `main` → image publiée; SSL, DNS, `/auth`, `/discover` et URL canonique vérifiés |
 | P0 | Rétablir GitHub → Supabase | Secrets `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` disponibles dans l'environnement du job; aucune étape prod sautée, résultat observable |
 | P0 | Vérifier Data API et Takatak Auth | `isexy` exposé via API avec RLS; redirections ISEXY, Google, email-code, SMS-code valides |
 | P0 | Audit paiement et fournisseurs | `ISEXY_*` présents côté serveur, clés non visibles dans le frontend; webhooks Stripe de test, mode réel non activé sans validation |
-| P0 | Recette 18+ / modération / confidentialité | Déclencheur SQL 18+ installé via 0006; confirmer âge déclaré dans l'inscription réelle, modération et blocage |
-| P1 | Publication de `isexy-subscription-resets` | Après inspection de la source et autorisations, tâche cron authentifiée, démontrer l'idempotence |
+| P0 | Recette 18+ / modération / confidentialité | Déclencheur SQL 0006 + parcours Cuba sans fausse date; confirmer inscription réelle, modération et blocage |
+| P0 | Cron des allocations | Fonction `isexy-reset-allowances` a `verify_jwt=true` malgré le secret Cron; authentification et HTTP 500 sur erreurs à corriger et vérifier. La tentative de patch a été bloquée, aucun changement appliqué. |
+| P1 | Publication de `isexy-subscription-resets` | Quarantaine maintenue, ne pas publier ni utiliser tant que son comportement global n'est pas corrigé |
 | P1 | `isexy-seed-profiles` | Ne pas déployer en production par défaut : profils d'essai ne doivent pas apparaître comme réels |
 | P1 | Validation Apple/Google d'achats mobiles | Fonction IAP en HTTP 501 par défaut; implémenter validation côté fournisseur avant activation commerciale |
 | P1 | Réduire les avis de performance | 71 contraintes FK restantes sans index couvrant; sélectionner par charge métier, éviter index inutiles |

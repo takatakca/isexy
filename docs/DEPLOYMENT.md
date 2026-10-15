@@ -1,3 +1,19 @@
+## Vérification du 15 octobre 2026
+
+- Dernier commit Render confirmé live avant la présente mise à jour :
+  `f889e931`. Les compilations GitHub `e353ede9` et `e12c3ade`
+  ont réussi; la plus récente était encore en cours.
+- Migrations `0007` et `0008` déjà appliquées à TAKATAK V1. Les RPC
+  de réinitialisation et de nettoyage ne sont plus exposées aux comptes
+  anonymes ou membres standard.
+- Le job `isexy-reset-allowances` reste inaccessible au seul Cron secret
+  lorsque l'Edge Gateway exige un JWT. Aucun Cron n'est déclaré opérationnel.
+  `isexy-subscription-resets` demeure exclu des déploiements.
+- Secrets et déploiement GitHub → Supabase non configurés ou indisponibles;
+  Coolify/ISEXY.CA non vérifiés.
+
+---
+
 ## Actualisation — 2026-10-14 18:18 UTC
 
 La migration `0006_require_adult_profiles.sql` impose une date de naissance

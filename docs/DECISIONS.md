@@ -36,3 +36,14 @@ Dernière revue : 2026-10-14.
 12. **Achats mobiles** : aucune activation fondée sur un reçu non vérifié.
     `isexy-verify-iap-receipt` retourne 501 tant que l'intégration officielle
     Apple/Google n'est pas complète; tester les achats réels avant activation.
+
+13. **RPC privilégiés** : les tâches d'allocations et de nettoyage ne
+    sont exécutables que par le rôle de service. `get_admin_users` doit
+    filtrer côté serveur les utilisateurs n'appartenant pas à l'équipe.
+    Migrations `0007` et `0008`.
+14. **Quarantaine d'Edge Functions** : `isexy-seed-profiles` et
+    `isexy-subscription-resets` sont exclus du pipeline tant que leur
+    utilisation en production n'est pas explicitement sécurisée.
+15. **Cron** : aucune fonction autorisée par secret Cron seul ne peut être
+    déclarée disponible si la Gateway requiert également un JWT; régler
+    et éprouver les deux couches avant de programmer un job.
