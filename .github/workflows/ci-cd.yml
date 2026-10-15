@@ -297,8 +297,14 @@ jobs:
       - name: Verify published commit on the live website
         env:
           EXPECTED_COMMIT: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          current_main=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')
+          if [ "$current_main" != "$EXPECTED_COMMIT" ]; then
+            echo "::notice::This smoke test was superseded by $current_main. The newer main run will verify its release."
+            exit 0
+          fi
           current=""
           for attempt in $(seq 1 12); do
             current=$(curl -fsS --max-time 10 --retry 1 "$SITE_URL/release.json?version=$EXPECTED_COMMIT" |
@@ -310,6 +316,11 @@ jobs:
             echo "Deployment not yet at current commit (attempt $attempt/12, active=${current:-unknown})"
             sleep 10
           done
+          current_main=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')
+          if [ "$current_main" != "$EXPECTED_COMMIT" ]; then
+            echo "::notice::Release was superseded by $current_main during this test; checking belongs to the new run."
+            exit 0
+          fi
           if [ "$SITE_URL" = "https://isexy.onrender.com" ]; then
             echo "::error::Render did not publish commit $EXPECTED_COMMIT within the smoke test window (active=${current:-unknown})."
             exit 1
