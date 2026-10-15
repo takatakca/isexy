@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-15 | ChatGPT | main | active | Verify live CI/Render, audit age-validation bypass and migration integrity, harden deployment safety | next: fix discovered issues, validate, commit and document
+
 - 2026-10-14 | ChatGPT | main | done (partial release) | Added 18+ database enforcement (migration 0006) and CI assertions; subscription status retry UI; fail-closed IAP 501 deployed v2; Render latest SHA live | next: check queued CI, Coolify/isexy.ca, GitHub production secrets and real provider tests
 
 - 2026-10-14 | ChatGPT | main | done (partial rollout) | Verified Render auto-deploy and V1 state; committed and applied migration 0005 (12 relationship indexes); created durable project status, task queue, decisions and handoff | next: verify newest Render SHA, Coolify/isexy.ca, missing deploy secrets and end-to-end flows
