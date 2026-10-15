@@ -109,6 +109,9 @@ jobs:
       - name: Adult-only profile database assertions
         run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/adult-profiles.sql
 
+      - name: Service-only allowance reset RPC assertions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/allowance-rpc-permissions.sql
+
       - name: Re-run is a no-op
         run: scripts/isexy/migrate.sh | tee /tmp/rerun.txt && grep -q "up to date" /tmp/rerun.txt
 
