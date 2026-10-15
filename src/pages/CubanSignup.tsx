@@ -319,6 +319,15 @@ export default function CubanSignup() {
         audioUrl = await uploadFile(audioFile, `${userId}/verification-audio.webm`);
       }
 
+      // A failed upload must never produce a seemingly complete verification.
+      // Keep the case unsubmitted until every selected piece of evidence is stored.
+      if ((carnetFront && !carnetFrontUrl) ||
+          (carnetBack && !carnetBackUrl) ||
+          (videoFile && !videoUrl) ||
+          (audioFile && !audioUrl)) {
+        throw new Error("One or more verification files could not be uploaded. Please retry.");
+      }
+
       setUploadProgress(85);
 
       // Update profile as Cuban
