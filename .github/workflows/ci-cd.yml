@@ -193,6 +193,14 @@ jobs:
           for dir in supabase/functions/isexy-*/; do
             name="$(basename "$dir")"
             case "$name" in isexy-*) ;; *) echo "refusing to deploy $name"; exit 1 ;; esac
+            # Explicit quarantine: never create fictitious members in V1,
+            # and do not enable the unreviewed global subscription reset job.
+            case "$name" in
+              isexy-seed-profiles|isexy-subscription-resets)
+                echo "::notice::Skipping quarantined function $name"
+                continue
+                ;;
+            esac
             echo "::group::$name"
             supabase functions deploy "$name" --project-ref "$SUPABASE_PROJECT_REF"
             echo "::endgroup::"

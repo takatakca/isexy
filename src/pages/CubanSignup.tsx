@@ -281,28 +281,17 @@ export default function CubanSignup() {
 
         if (profileError) throw profileError;
 
-        if (!profileData) {
-          // Create a minimal profile
-          const { data: newProfile, error: createError } = await supabase
-            .from("profiles")
-            .insert({
-              user_id: userId,
-              // Placeholder until /profile-setup; Google gives a name, email/phone do not.
-              first_name: (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] || user?.email?.split("@")[0] || "Member",
-              birth_date: "2000-01-01",
-              gender: "other",
-              country: "CU",
-              is_cuban: true as any,
-            } as any)
-            .select()
-            .single();
-          
-          if (createError) throw createError;
-          currentProfile = newProfile as any;
-          await refreshProfile();
-        } else {
-          currentProfile = profileData as any;
-        }
+        // Verification must never manufacture an adult profile with a fake
+        // birth date. The normal setup collects the member's actual declared
+        // birth date, and the database enforces the 18+ requirement.
+        currentProfile = profileData;
+      }
+
+      if (!currentProfile) {
+        toast.error("Complete your profile, including your birth date, before submitting verification.");
+        setIsSubmitting(false);
+        navigate("/profile-setup");
+        return;
       }
 
       if (!currentProfile) throw new Error("Could not create profile");
@@ -333,10 +322,11 @@ export default function CubanSignup() {
       setUploadProgress(85);
 
       // Update profile as Cuban
-      await supabase
+      const { error: countryUpdateError } = await supabase
         .from("profiles")
         .update({ is_cuban: true } as any)
         .eq("id", profileId);
+      if (countryUpdateError) throw countryUpdateError;
 
       // Submit verification
       const { error } = await supabase.from("cuban_verifications" as any).insert({
