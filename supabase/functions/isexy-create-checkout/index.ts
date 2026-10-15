@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,11 +68,6 @@ serve(async (req) => {
       return jsonError(`Missing Stripe price configuration: ${envKey}`, 500);
     }
 
-    const appUrl = isexyEnv("APP_URL");
-    if (!appUrl) {
-      return jsonError("Missing configuration: APP_URL", 500);
-    }
-
     const stripeKey = isexyEnv("STRIPE_SECRET_KEY");
     if (!stripeKey) return jsonError("STRIPE_SECRET_KEY not configured", 500);
 
@@ -86,7 +82,7 @@ serve(async (req) => {
     if (!authHeader) return jsonError("No authorization header", 401);
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user?.email) return jsonError("Not authenticated", 401);
+    if (userError || !userData.user?.id) return jsonError("Not authenticated", 401);
     const user = userData.user;
 
     // Look up profile.id
@@ -115,8 +111,8 @@ serve(async (req) => {
       mode: "subscription",
       metadata,
       subscription_data: { metadata },
-      success_url: `${appUrl}/discover?success=true`,
-      cancel_url: `${appUrl}/premium?cancelled=true`,
+      success_url: isexyAppUrl("/discover?success=true"),
+      cancel_url: isexyAppUrl("/premium?cancelled=true"),
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,7 +36,7 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    if (!user?.id) throw new Error("User not authenticated");
 
     const { packageId } = await req.json();
     const pkg = PACKAGES[packageId];
@@ -53,15 +54,13 @@ serve(async (req) => {
     const stripeCustomerId = await ensureStripeCustomerId(stripe, user);
     const customerId = stripeCustomerId;
 
-    const origin = req.headers.get("origin") || isexyEnv("APP_URL") || "https://isexy.onrender.com";
-
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email ?? undefined,
       line_items: [{ price: pkg.price_id, quantity: 1 }],
       mode: pkg.mode,
-      success_url: `${origin}/buy-minutes?success=true&package=${packageId}`,
-      cancel_url: `${origin}/buy-minutes?canceled=true`,
+      success_url: isexyAppUrl(`/buy-minutes?success=true&package=${encodeURIComponent(packageId)}`),
+      cancel_url: isexyAppUrl("/buy-minutes?canceled=true"),
       metadata: {
         user_id: user.id,
         package_id: packageId,

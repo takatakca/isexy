@@ -73,6 +73,9 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Isolated Stripe customer ownership tests
+        run: deno test scripts/isexy/test/stripe-customer.test.ts
+
       - name: Type-check every edge function
         # Functions are bundled without the web app's package.json (as on
         # Supabase), so npm: specifiers resolve from the registry, not node_modules.

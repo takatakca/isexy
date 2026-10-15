@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +32,7 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    if (!user?.id) throw new Error("User not authenticated");
 
     const body = await req.json().catch(() => ({}));
     const packageId: string | undefined = body?.packageId;
@@ -69,8 +70,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/buy-credits?success=true`,
-      cancel_url: `${req.headers.get("origin")}/buy-credits?canceled=true`,
+      success_url: isexyAppUrl("/buy-credits?success=true"),
+      cancel_url: isexyAppUrl("/buy-credits?canceled=true"),
       metadata: {
         user_id: user.id,
         package_id: packageId,
