@@ -4,8 +4,6 @@ import { X, Check, Loader2, Crown, Sparkles, ShieldCheck, Lock } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { subscriptionTiers, SubscriptionTier, Duration } from "@/lib/subscriptionTiers";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
-import { PromoCountdownBanner } from "@/components/PromoCountdownBanner";
 import { usePaymentsGate } from "@/hooks/usePaymentsGate";
 import { track } from "@/lib/analytics";
 
@@ -29,12 +27,10 @@ const tierMeta: Record<SubscriptionTier, { label: string; headline: string; icon
 
 export default function Premium() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
   const gate = usePaymentsGate();
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
   const [selectedDuration, setSelectedDuration] = useState<Duration>("week");
   const [loading, setLoading] = useState(false);
-  const showPromo = !profile?.first_purchase_promo_used && !profile?.is_premium;
 
   const tierData = subscriptionTiers[activeTier];
   const plans = tierData.plans;
@@ -42,6 +38,10 @@ export default function Premium() {
   const selectedPlan = plans.find((p) => p.duration === selectedDuration)!;
 
   const handleSubscribe = async () => {
+    if (gate?.blocked) {
+      toast.error("Subscriptions are not available for purchase yet.");
+      return;
+    }
     setLoading(true);
     try {
       track("checkout_started", { product: "Premium" });
@@ -96,17 +96,6 @@ export default function Premium() {
           </div>
         </div>
       </div>
-
-      {showPromo && (
-        <PromoCountdownBanner
-          onCtaClick={() => {
-            setSelectedDuration("week");
-            handleSubscribe();
-          }}
-          discountPercent={50}
-          durationMinutes={30}
-        />
-      )}
 
       {/* Duration selector */}
       <div className="px-4 -mt-2">
@@ -188,7 +177,7 @@ export default function Premium() {
         </button>
         <button
           onClick={handleSubscribe}
-          disabled={loading}
+          disabled={loading || gate?.blocked}
           className="cta-primary w-full text-base"
         >
           {loading ? (
