@@ -1,3 +1,25 @@
+## Suivi de déploiement — 15 octobre 2026, dernière mise à jour
+
+Le build génère `release.json`. GitHub compare ce SHA avec le commit
+attendu. Une exécution dépassée par un commit ultérieur est explicitement
+notée et n'est plus un échec artificiel de déploiement.
+`0978d574` a passé la CI; `62ca7c10` a échoué au seul test de SHA
+parce qu'un nouveau commit avait déjà pris sa place sur Render.
+Le correctif est dans `470f9ee2`.
+
+À la dernière lecture, Render servait `c0891259`, `e05bcba8`
+était encore en construction et sa CI en cours.
+Ne jamais déclarer un SHA déployé avant statut `live`.
+
+La publication des fonctions Stripe v2 sur TAKATAK V1 est confirmée
+par connexion Supabase directe. Le job Github de déploiement
+`ISEXY_DB_URL` / `SUPABASE_ACCESS_TOKEN` reste désactivé/faute de
+secrets disponibles. Aucun déploiement Coolify ni domaine ISEXY.CA
+n'est confirmé. Les contrôles OTP, paiement et mail doivent être
+éprouvés avec les vrais fournisseurs.
+
+---
+
 ## Contrôle des releases — 15 octobre 2026
 
 Le build génère `dist/release.json` via `scripts/generate-seo.mjs` :

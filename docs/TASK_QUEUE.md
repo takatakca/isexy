@@ -5,7 +5,7 @@ sans refaire les migrations déjà appliquées.
 
 | Priorité | Tâche | État / critère d'acceptation |
 | --- | --- | --- |
-| P0 | Réconcilier les SHA | `0978d574` CI SUCCESS et Render live; contrôler le nouveau SHA `470f9ee2` et `/release.json` dans le smoke test |
+| P0 | Réconcilier les SHA | `0978d574` CI SUCCESS; commit `470f9ee2` traite les runs supplantés, vérifier la CI et la release Render du dernier SHA `e05bcba8` puis `/release.json` |
 | P0 | Examiner Coolify puis `isexy.ca` | GitHub `main` → image publiée; SSL, DNS, `/auth`, `/discover` et URL canonique vérifiés |
 | P0 | Rétablir GitHub → Supabase | Secrets `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` disponibles dans l'environnement du job; aucune étape prod sautée, résultat observable |
 | P0 | Vérifier Data API et Takatak Auth | `isexy` exposé via API avec RLS; redirections ISEXY, Google, email-code, SMS-code valides |
@@ -21,7 +21,7 @@ sans refaire les migrations déjà appliquées.
 | P2 | UX/a11y, performance mobile et nettoyage de lint | Tests automatisés additionnels; pas de régression de marque |
 | P2 | Contenu Cuba en attente | Aucune suppression sans décision explicite; voir `REPOSITIONING.md` |
 
-| P1 | Promotions et prix | Retrait de la bannière 50 % non honorée; ne la restaurer qu'avec une vraie réduction côté Stripe, et vérifier les prix affichés avant la mise en vente |
+| P1 | Promotions et prix | Bannière 50 % désactivée, CTA sous verrou de paiement; ne réactiver une promotion qu'après validation de la remise Stripe et concordance des tarifs |
 
 ## Règles de traitement
 

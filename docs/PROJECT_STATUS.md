@@ -1,5 +1,7 @@
 # ISEXY — État réel du projet
 
+**Complément du 15 octobre 2026 :** la bannière artificielle de réduction 50 % a été retirée; le bouton Premium suit le verrou de paiement. La confirmation courriel des tickets n'est annoncée que sur réponse fournisseur positive. Les runs CI intermédiaires peuvent échouer au contrôle de SHA lorsqu'un autre commit les a déjà remplacés; `470f9ee2` distingue ces cas. Le dernier SHA applicatif avant cette note est `e05bcba8`, CI et Render encore à vérifier. Voir `AGENT_HANDOFF.md`.
+
 ## Sécurité, paiements et publication — 15 octobre 2026
 
 - **Dernier commit applicatif avant cette documentation** : `470f9ee2a23a9fcee5378f501e5c412d064c7415` sur `main`.

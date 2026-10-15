@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-15 | ChatGPT | main | done (incremental release) | Added release.json+smoke checks and superseded-run detection; removed unfulfilled 50% promo and blocked premium checkout; support confirmation shows email success only when actually sent | next: verify final CI/Render SHA, backend auto-deploy secrets, Coolify/domain and provider/OTP/payment tests
+
 - 2026-10-15 | ChatGPT | main | done (partial release) | Applied 0009/0010 support ticket permissions and test, persisted restoration reviews, fixed 6 Stripe Edge Functions for SMS and customer isolation, removed unsupported promo, added live SHA release probe and CI supersession check | next: confirm latest CI/Render SHA, Coolify/domain, Cron scheduler, provider secrets and end-to-end tests
 
 - 2026-10-15 | ChatGPT | main + Supabase V1 | done (partial release) | Fixed false-success allowance cron responses; deployed isexy-reset-allowances v2 preserving verify_jwt=true; audited privileged RPC access and updated handoff | next: resolve authenticated Cron scheduling, GitHub deployment secrets, Coolify and real provider tests

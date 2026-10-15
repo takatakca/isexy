@@ -1,3 +1,42 @@
+## Relève additionnelle — 15 octobre 2026, corrections après le commit de statut
+
+Dernier commit de code **avant le présent commit documentaire** :
+`e05bcba8eb07177dcb8d930ca8f816e31ef2f4e6` sur `main`.
+Relire toujours le SHA réel de `main`.
+
+- `0978d574` a introduit `dist/release.json` et son contrôle SHA
+  côté GitHub Actions; son run `38792318115` s'est terminé **SUCCESS**.
+- `62ca7c10` : la bannière marketing 50 % non matérialisée dans Stripe
+  a été retirée de `src/pages/Premium.tsx`; le bouton d'achat est
+  désactivé lorsque le contrôle de paiements le bloque.
+  CI `38792435198` : les validations build/DB ont réussi, mais
+  le **smoke test a échoué** parce qu'un autre commit était déjà
+  déployé. Ne pas présenter ce run comme entièrement vert.
+- `470f9ee2` : le contrôle SHA sait maintenant reconnaître et ignorer
+  explicitement un run remplacé par un nouveau commit sur `main`.
+- `e05bcba8` : `src/pages/ContactUs.tsx` n'annonce plus
+  faussement une confirmation email; seul `data.success=true`
+  venant du service d'email prouve son envoi.
+- Dernier statut des plateformes observé lors de cette mise à jour :
+  Render `c0891259` **live**, `e05bcba8` encore en construction;
+  GitHub Actions pour `e05bcba8` **en cours**. Ce ne sont pas
+  des échecs certifiés ni des succès de la dernière version.
+- Le backend Supabase V1 conserve les migrations `0001` à `0010`,
+  les politiques tickets corrigées et les six fonctions Stripe en v2
+  ACTIVE. Aucun nouveau projet Supabase payant créé.
+- Blocages identiques : GitHub Actions saute la publication backend
+  faute de secrets, Coolify/ISEXY.CA non prouvés, Cron/JWT non validé,
+  Stripe live, Auth SMS et emails en recette réelle non testés.
+
+**Prochaine action exacte** : vérifier les jobs CI du dernier `main`,
+puis comparer Render `live` avec ce SHA et `/release.json`. En cas
+d'échec de smoke test, lire le journal et distinguer un commit supplanté
+d'un vrai retard de Render. Continuer ensuite la file P0
+(`docs/TASK_QUEUE.md`) et ne déclarer la production prête
+qu'après vérification réelle des fournisseurs et du domaine.
+
+---
+
 # Relève prioritaire du 15 octobre 2026 — tickets, Stripe et preuve de version
 
 **Repository :** `takatakca/isexy`, branche `main`. Dernier commit applicatif poussé **avant** cette mise à jour documentaire : `470f9ee2a23a9fcee5378f501e5c412d064c7415`. Relire `main` pour retrouver le SHA du commit documentaire ajouté ensuite.
