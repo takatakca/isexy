@@ -3,14 +3,14 @@
 // function URL, so Twilio's signature on the next request matches.
 import { createClient } from "../_shared/supabase.ts";
 import { functionsBase, identifyCaller, mainMenu, normalizeE164, readTwilioRequest, say, twiml, xmlEscape } from "../_shared/twilio.ts";
+import type { TwilioAdmin } from "../_shared/twilio.ts";
 
 const FN = "isexy-twilio-phone-line-menu";
 const MAX_IDLE_ROUNDS = 3;
 /** Twilio <Play> plays MP3 and WAV (not WebM/Opus or MP4/AAC from browsers). */
 const PLAYABLE = /\.(wav|mp3)$/i;
 
-// deno-lint-ignore no-explicit-any
-type Admin = any;
+type Admin = TwilioAdmin;
 
 const menuBase = () => `${functionsBase()}/${FN}`;
 const url = (params: Record<string, string>) => `${menuBase()}?${new URLSearchParams(params).toString()}`;

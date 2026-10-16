@@ -2,6 +2,10 @@
 // isexy-twilio-phone-line-menu, isexy-twilio-call-status).
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { isexyEnv } from "./env.ts";
+import type { createClient } from "./supabase.ts";
+
+/** The service-role client the webhooks create with _shared/supabase.ts. */
+export type TwilioAdmin = ReturnType<typeof createClient>;
 
 /**
  * The URL Twilio signed: the public function URL configured in Twilio (plus
@@ -89,8 +93,7 @@ export function isAdult(birthDate: string | null | undefined): boolean {
  * ones. (A shadow ban is not revealed here; banned voices are left out of
  * browsing instead.)
  */
-// deno-lint-ignore no-explicit-any
-export async function identifyCaller(admin: any, from: string | null): Promise<{ profileId: string; firstName: string } | { reason: string }> {
+export async function identifyCaller(admin: TwilioAdmin, from: string | null): Promise<{ profileId: string; firstName: string } | { reason: string }> {
   if (!from) return { reason: "no_caller_id" };
   const { data: numbers } = await admin
     .from("phone_line_numbers")
