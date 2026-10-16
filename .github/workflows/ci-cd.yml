@@ -124,6 +124,9 @@ jobs:
       - name: Support ticket administrative fields guard
         run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/support-ticket-staff-fields.sql
 
+      - name: Atomic Stripe credits and minutes assertions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/atomic-credit-checkout.sql
+
       - name: Re-run is a no-op
         run: scripts/isexy/migrate.sh | tee /tmp/rerun.txt && grep -q "up to date" /tmp/rerun.txt
 

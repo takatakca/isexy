@@ -313,64 +313,22 @@ serve(async (req) => {
             break;
           }
 
-          // ---- Credits (legacy: package_id) ----
-          if (packageId && CREDIT_PACKAGES[packageId]) {
-            const credits = CREDIT_PACKAGES[packageId].credits;
-            // Idempotency: check existing transaction
-            const { data: existingTx } = await supabaseClient
-              .from("credit_transactions").select("id")
-              .eq("stripe_session_id", session.id).maybeSingle();
-            if (existingTx) { logStep("Credit purchase already fulfilled", { sessionId: session.id }); break; }
-
-            const { data: existing } = await supabaseClient
-              .from("user_credits").select("credits").eq("profile_id", profileId).maybeSingle();
-            const newBalance = (existing?.credits ?? 0) + credits;
-            await supabaseClient.from("user_credits").upsert(
-              { profile_id: profileId, credits: newBalance, last_purchase_at: new Date().toISOString() },
-              { onConflict: "profile_id" }
-            );
-            await supabaseClient.from("credit_transactions").insert({
-              profile_id: profileId, amount: credits, type: "purchase",
-              description: `Purchased ${credits} credits (${packageId})`,
-              stripe_session_id: session.id,
-            });
-            logStep("Credits added", { profileId, credits, packageId });
-            break;
-          }
-
-          // ---- Phone/Video Minute purchases ----
-          if (packageId && MINUTE_PACKAGES[packageId]) {
-            const { minutes, type } = MINUTE_PACKAGES[packageId];
-            const { data: existingTx } = await supabaseClient
-              .from("credit_transactions").select("id")
-              .eq("stripe_session_id", session.id).maybeSingle();
-            if (existingTx) {
-              logStep("Minute purchase already fulfilled", { sessionId: session.id });
-              break;
-            }
-            const column = type === "phone" ? "phone_minutes" : "video_minutes";
-            const { data: existing } = await supabaseClient
-              .from("user_credits").select("phone_minutes, video_minutes")
-              .eq("profile_id", profileId).maybeSingle();
-            const currentVal = (existing as any)?.[column] ?? 0;
-            const newVal = currentVal + minutes;
-            await supabaseClient.from("user_credits").upsert(
+          // ---- Credits and phone/video minutes ----
+          // All wallet and ledger writes happen in a single SQL transaction,
+          // serialized by Stripe session ID. A retry cannot double-credit.
+          if (packageId && (CREDIT_PACKAGES[packageId] || MINUTE_PACKAGES[packageId])) {
+            const { data: credited, error: grantError } = await supabaseClient.rpc(
+              "fulfill_stripe_credit_purchase",
               {
-                profile_id: profileId,
-                [column]: newVal,
-                last_purchase_at: new Date().toISOString(),
+                p_profile_id: profileId,
+                p_stripe_session_id: session.id,
+                p_package_id: packageId,
               },
-              { onConflict: "profile_id" }
             );
-            await supabaseClient.from("credit_transactions").insert({
-              profile_id: profileId,
-              amount: minutes,
-              type: "purchase",
-              category: type,
-              description: `Purchased ${minutes} ${type} minutes (${packageId})`,
-              stripe_session_id: session.id,
+            if (grantError) throw new Error("Unable to atomically fulfill Stripe credit purchase");
+            logStep(credited ? "Paid package granted" : "Paid package already fulfilled", {
+              sessionId: session.id, packageId,
             });
-            logStep("Minutes added", { profileId, minutes, type, packageId });
             break;
           }
 
