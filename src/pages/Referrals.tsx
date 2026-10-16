@@ -8,6 +8,7 @@ import { Gift, Users, Copy, Share2, Check, Coins, ArrowRight } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { forgetReferralCode, inviteLink, pendingReferralCode } from "@/lib/referral";
 
 interface Referral {
   id: string;
@@ -26,6 +27,14 @@ export default function Referrals() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [codeFailed, setCodeFailed] = useState(false);
+  const [creditsEarned, setCreditsEarned] = useState(0);
+
+  // Code from an invite link (?ref=CODE) opened on this device.
+  useEffect(() => {
+    const pending = pendingReferralCode();
+    if (pending) setFriendCode(pending);
+  }, []);
 
   useEffect(() => {
     if (profile?.id) {
@@ -34,47 +43,32 @@ export default function Referrals() {
   }, [profile?.id]);
 
   const fetchReferralData = async () => {
-    // Get profile's referral code
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("referral_code")
-      .eq("id", profile!.id)
-      .single();
-    
-    let code = profileData?.referral_code;
-    
-    if (!code) {
-      // Generate new referral code
-      code = generateCode();
-      await supabase
-        .from("profiles")
-        .update({ referral_code: code })
-        .eq("id", profile!.id);
-    }
-    
-    setReferralCode(code);
+    // The code is created server-side on first use (profiles.referral_code is
+    // not writable by members).
+    const [{ data: code, error: codeError }, { data: rows }, { data: bonuses }] = await Promise.all([
+      supabase.rpc("get_my_referral_code"),
+      supabase
+        .from("referrals")
+        .select("id, referral_code, status, bonus_credits, created_at, completed_at")
+        .eq("referrer_id", profile!.id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("credit_transactions")
+        .select("amount")
+        .eq("profile_id", profile!.id)
+        .eq("type", "referral_bonus"),
+    ]);
 
-    // Fetch referrals
-    const { data } = await supabase
-      .from("referrals")
-      .select("*")
-      .eq("referrer_id", profile!.id)
-      .order("created_at", { ascending: false });
-
-    if (data) {
-      setReferrals(data);
+    if (codeError) {
+      setCodeFailed(true);
+    } else if (typeof code === "string") {
+      setReferralCode(code);
+      setCodeFailed(false);
     }
-    
+    if (rows) setReferrals(rows as Referral[]);
+    if (bonuses) setCreditsEarned(bonuses.reduce((sum, b) => sum + (b.amount ?? 0), 0));
     setLoading(false);
-  };
-
-  const generateCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
   };
 
   const copyToClipboard = async () => {
@@ -93,8 +87,8 @@ export default function Referrals() {
       try {
         await navigator.share({
           title: "Join ISEXY!",
-          text: `Use my referral code ${referralCode} to get 10 free credits when you sign up for ISEXY!`,
-          url: `https://isexy.ca/?ref=${referralCode}`,
+          text: `Join me on ISEXY: use my code ${referralCode} in Invite Friends within 30 days and we both get 10 credits.`,
+          url: inviteLink(referralCode),
         });
       } catch (err) {
         copyToClipboard();
@@ -116,29 +110,30 @@ export default function Referrals() {
     setApplying(false);
     const result = data as { success?: boolean; error?: string; credits?: number } | null;
     if (error || !result?.success) {
-      toast.error(result?.error || error?.message || "Failed to apply code");
+      toast.error(result?.error || "Couldn't apply the code. Please try again.");
       return;
     }
     toast.success(`You received ${result.credits ?? 10} credits!`);
+    forgetReferralCode();
     setFriendCode("");
     fetchReferralData();
   };
 
   const completedReferrals = referrals.filter(r => r.status === "completed");
-  const totalEarned = completedReferrals.reduce((sum, r) => sum + (r.bonus_credits || 10), 0);
 
   return (
     <AuthLayout showBack variant="white">
       <div className="space-y-6 pb-20">
         {/* Header */}
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary to-pink-500 flex items-center justify-center mb-4">
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mb-4">
             <Gift className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Invite Friends</h1>
           <p className="text-muted-foreground mt-1">
             Give 10 credits, get 10 credits for each friend who joins!
           </p>
+          <p className="text-xs text-muted-foreground mt-1">1 credit = 1 minute of video or phone calls.</p>
         </div>
 
         {/* Your referral code */}
@@ -151,7 +146,7 @@ export default function Referrals() {
             <div className="flex items-center gap-2 mb-4">
               <div className="flex-1 bg-muted rounded-xl p-4 text-center">
                 <span className="text-2xl font-bold tracking-widest text-foreground">
-                  {referralCode}
+                  {referralCode || (loading ? "…" : codeFailed ? "Unavailable" : "")}
                 </span>
               </div>
               <Button
@@ -159,6 +154,8 @@ export default function Referrals() {
                 size="icon"
                 className="h-14 w-14"
                 onClick={copyToClipboard}
+                disabled={!referralCode}
+                aria-label="Copy your code"
               >
                 {copied ? (
                   <Check className="w-5 h-5 text-green-500" />
@@ -167,7 +164,12 @@ export default function Referrals() {
                 )}
               </Button>
             </div>
-            <Button onClick={shareCode} className="w-full" size="lg">
+            {codeFailed && (
+              <p role="alert" className="text-xs text-muted-foreground mb-3">
+                Your code could not be loaded. Check your connection and open this page again.
+              </p>
+            )}
+            <Button onClick={shareCode} className="w-full" size="lg" disabled={!referralCode}>
               <Share2 className="w-5 h-5 mr-2" />
               Share Your Code
             </Button>
@@ -178,7 +180,7 @@ export default function Referrals() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Have a Friend's Code?</CardTitle>
-            <CardDescription>Enter it to get 10 free credits</CardDescription>
+            <CardDescription>New members (first 30 days): enter it to get 10 free credits</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
@@ -187,9 +189,10 @@ export default function Referrals() {
                 value={friendCode}
                 onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
                 className="uppercase"
-                maxLength={8}
+                maxLength={16}
+                aria-label="Friend's referral code"
               />
-              <Button onClick={applyFriendCode} disabled={applying}>
+              <Button onClick={applyFriendCode} disabled={applying || !friendCode.trim()}>
                 {applying ? "Applying..." : "Apply"}
               </Button>
             </div>
@@ -208,7 +211,7 @@ export default function Referrals() {
           <Card>
             <CardContent className="pt-6 text-center">
               <Coins className="w-8 h-8 mx-auto text-amber-500 mb-2" />
-              <p className="text-3xl font-bold text-foreground">{totalEarned}</p>
+              <p className="text-3xl font-bold text-foreground">{creditsEarned}</p>
               <p className="text-sm text-muted-foreground">Credits Earned</p>
             </CardContent>
           </Card>
@@ -249,7 +252,7 @@ export default function Referrals() {
         )}
 
         {/* How it works */}
-        <Card className="bg-gradient-to-br from-primary/10 to-pink-500/10 border-primary/30">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">How It Works</CardTitle>
           </CardHeader>
@@ -272,7 +275,7 @@ export default function Referrals() {
               <div>
                 <p className="font-medium text-foreground">Friend signs up</p>
                 <p className="text-sm text-muted-foreground">
-                  They enter your code during sign up
+                  They enter your code in Invite Friends within 30 days
                 </p>
               </div>
             </div>

@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Badge } from "@/components/ui/badge";
-import { Coins, Check, Sparkles, Video, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { Coins, Check, Sparkles, Video, Phone, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { usePaymentsGate, blockedLabel } from "@/hooks/usePaymentsGate";
+import { useWallet } from "@/hooks/useWallet";
+import { useCheckoutReturn } from "@/hooks/useCheckoutReturn";
+import { PaymentsNotice } from "@/components/PaymentsNotice";
+import { cad, isMissingRpc, startCheckout } from "@/lib/payments";
 import { track } from "@/lib/analytics";
 
 interface CreditPackage {
@@ -25,52 +27,45 @@ const creditPackages: CreditPackage[] = [
 ];
 
 export default function BuyCredits() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { profile } = useAuth();
   const gate = usePaymentsGate();
+  const { wallet, refresh, setWallet } = useWallet();
   const [selectedPackage, setSelectedPackage] = useState<string>("credits_25");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentCredits, setCurrentCredits] = useState(0);
+  const [converting, setConverting] = useState<"video" | "phone" | null>(null);
+  const [convertAmount, setConvertAmount] = useState(10);
 
-  useEffect(() => {
-    if (searchParams.get("success") === "true") toast.success("Purchase successful! Credits will appear shortly.");
-    if (searchParams.get("canceled") === "true") toast.error("Purchase was canceled.");
-  }, [searchParams]);
+  useCheckoutReturn(refresh, "Payment received. Your credits will appear in a few seconds.");
 
-  useEffect(() => {
-    const fetchCredits = async () => {
-      if (!profile?.id) return;
-      const { data } = await supabase
-        .from("user_credits")
-        .select("credits")
-        .eq("profile_id", profile.id)
-        .maybeSingle();
-      if (data) setCurrentCredits(data.credits);
-    };
-    fetchCredits();
-  }, [profile?.id]);
+  const currentCredits = wallet?.credits ?? 0;
+  const blocked = blockedLabel(gate);
 
   const handlePurchase = async () => {
-    if (!profile) {
-      navigate("/auth");
-      return;
-    }
+    const pkg = creditPackages.find((p) => p.id === selectedPackage);
+    if (!pkg) return;
     setIsLoading(true);
-    try {
-      const pkg = creditPackages.find((p) => p.id === selectedPackage);
-      if (!pkg) return;
-      track("checkout_started", { product: "BuyCredits" });
-      const { data, error } = await supabase.functions.invoke("isexy-create-credit-purchase", {
-        body: { packageId: pkg.id },
-      });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to initiate purchase");
-    } finally {
+    track("checkout_started", { product: "BuyCredits" });
+    const result = await startCheckout("isexy-create-credit-purchase", { packageId: pkg.id });
+    if (!result.ok) {
+      toast.error(result.message);
       setIsLoading(false);
     }
+  };
+
+  /** 1 credit = 1 minute of video or phone calls (isexy.convert_credits_to_minutes). */
+  const convert = async (type: "video" | "phone") => {
+    const amount = Math.min(Math.max(1, Math.floor(convertAmount)), currentCredits);
+    if (!amount) return;
+    setConverting(type);
+    const { data, error } = await supabase.rpc("convert_credits_to_minutes", { p_credits: amount, p_type: type });
+    setConverting(null);
+    const r = data as { success?: boolean; error?: string; credits?: number; video_minutes?: number; phone_minutes?: number } | null;
+    if (error || !r?.success) {
+      toast.error(isMissingRpc(error) ? "Using credits for calls is not available yet." : r?.error === "not_enough_credits" ? "You don't have that many credits." : "Couldn't use your credits. Please try again.");
+      return;
+    }
+    toast.success(`${amount} credits added as ${amount} ${type} minutes.`);
+    if (wallet) setWallet({ ...wallet, credits: r.credits ?? 0, video_minutes: r.video_minutes ?? wallet.video_minutes, phone_minutes: r.phone_minutes ?? wallet.phone_minutes });
+    else refresh();
   };
 
   const selected = creditPackages.find((p) => p.id === selectedPackage)!;
@@ -85,7 +80,7 @@ export default function BuyCredits() {
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-foreground">Buy Credits</h1>
-              <p className="text-sm text-muted-foreground">1 credit = 1 minute of video chat</p>
+              <p className="text-sm text-muted-foreground">1 credit = 1 minute of video or phone calls</p>
             </div>
           </div>
         </div>
@@ -101,16 +96,43 @@ export default function BuyCredits() {
           </div>
         </div>
 
-        {/* How it works */}
+        {/* Use credits */}
         <div className="glass-card rounded-2xl p-4">
-          <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 text-sm">
-            <Video className="w-4 h-4 text-primary" /> How video credits work
+          <h3 className="font-bold text-foreground mb-1 flex items-center gap-2 text-sm">
+            <Video className="w-4 h-4 text-primary" /> Use your credits for calls
           </h3>
-          <ul className="text-sm text-muted-foreground space-y-2">
-            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />1 credit = 1 minute of video chat</li>
-            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />Credits never expire</li>
-            <li className="flex items-start gap-2"><Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />Bonus credits with larger packages</li>
-          </ul>
+          <p className="text-xs text-muted-foreground mb-3">
+            Turn credits into call minutes, 1 credit for 1 minute. Minutes never expire.
+            {wallet && <> You have {wallet.video_minutes} video and {wallet.phone_minutes} phone minutes.</>}
+          </p>
+          <div className="flex items-center gap-2">
+            <label htmlFor="convert-amount" className="sr-only">Credits to use</label>
+            <input
+              id="convert-amount"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={Math.max(currentCredits, 1)}
+              value={convertAmount}
+              onChange={(e) => setConvertAmount(Number(e.target.value) || 0)}
+              className="w-20 h-10 rounded-xl border border-border bg-background px-3 text-sm text-foreground"
+            />
+            <button
+              onClick={() => convert("video")}
+              disabled={!currentCredits || !!converting}
+              className="flex-1 h-10 rounded-full text-xs font-semibold gradient-primary text-primary-foreground disabled:opacity-40 flex items-center justify-center gap-1"
+            >
+              {converting === "video" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Video className="w-4 h-4" /> Video min</>}
+            </button>
+            <button
+              onClick={() => convert("phone")}
+              disabled={!currentCredits || !!converting}
+              className="flex-1 h-10 rounded-full text-xs font-semibold border border-primary text-primary disabled:opacity-40 flex items-center justify-center gap-1"
+            >
+              {converting === "phone" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Phone className="w-4 h-4" /> Phone min</>}
+            </button>
+          </div>
+          {!currentCredits && <p className="text-[11px] text-muted-foreground mt-2">No credits yet: buy a pack below or invite friends (10 credits each).</p>}
         </div>
 
         {/* Packages */}
@@ -139,7 +161,7 @@ export default function BuyCredits() {
                       {pkg.popular && <Badge className="text-[10px] gradient-primary text-primary-foreground border-0"><Sparkles className="w-3 h-3 mr-1" />Popular</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      ${pkg.price.toFixed(2)} · ${(pkg.price / (pkg.credits + (pkg.bonus || 0))).toFixed(2)}/credit
+                      {cad(pkg.price)} · {cad(pkg.price / (pkg.credits + (pkg.bonus || 0)))}/credit
                     </p>
                   </div>
                 </div>
@@ -152,21 +174,17 @@ export default function BuyCredits() {
         </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
-          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout powered by Stripe
+          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout by Stripe · prices in CAD
         </div>
       </div>
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
-        {gate?.blocked && (
-          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
-            <Lock className="w-3.5 h-3.5" /> Live payments disabled during testing
-          </div>
-        )}
-        <button onClick={handlePurchase} disabled={isLoading} className="cta-primary w-full">
-          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : `Buy ${selected.credits} Credits — $${selected.price.toFixed(2)}`}
+        <PaymentsNotice gate={gate} />
+        <button onClick={handlePurchase} disabled={isLoading || !!blocked} className="cta-primary w-full disabled:opacity-60">
+          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : blocked ?? `Buy ${selected.credits + (selected.bonus ?? 0)} credits — ${cad(selected.price)} CAD`}
         </button>
-        <p className="text-[10px] text-muted-foreground text-center">Credits applied after successful payment. Non-refundable.</p>
+        <p className="text-[10px] text-muted-foreground text-center">Credits are added once Stripe confirms the payment. Non-refundable.</p>
       </div>
     </AuthLayout>
   );

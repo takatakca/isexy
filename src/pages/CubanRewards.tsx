@@ -62,6 +62,7 @@ export default function CubanRewards() {
   const [pointsData, setPointsData] = useState<CubanPointsData | null>(null);
   const [transactions, setTransactions] = useState<PointsTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState(false);
   const [selectedTab, setSelectedTab] = useState<"earn" | "history" | "redeem">("earn");
 
   useEffect(() => {
@@ -81,25 +82,16 @@ export default function CubanRewards() {
       .maybeSingle();
 
     if (error) {
+      // cuban_points is not in the isexy schema yet (Cuba on hold): show the
+      // page with an honest notice instead of spinning forever.
       console.error("Error fetching points:", error);
+      setUnavailable(true);
+      setLoading(false);
       return;
     }
 
-    if (data) {
-      setPointsData(data);
-    } else {
-      // Create initial points record
-      const { data: newData, error: insertError } = await supabase
-        .from("cuban_points")
-        .insert({ profile_id: profile.id, points: 0, lifetime_points: 0 })
-        .select()
-        .single();
-      
-      if (!insertError && newData) {
-        setPointsData(newData);
-      }
-    }
-    
+    // No row yet = 0 points (balances are created server-side, not from the browser).
+    if (data) setPointsData(data);
     setLoading(false);
   };
 
@@ -152,6 +144,11 @@ export default function CubanRewards() {
 
       {/* Points Banner */}
       <div className="px-4 py-6">
+        {unavailable && (
+          <p role="status" className="mb-4 rounded-xl border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+            Cuban Rewards points are not available yet. Nothing you do is lost: this page will show your points once they are switched on.
+          </p>
+        )}
         <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 overflow-hidden relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12" />

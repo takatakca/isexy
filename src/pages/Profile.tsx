@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { Shield, Settings, Pencil, Star, Zap, Flame, Check, Lock, Image, FileText, BadgeCheck, Plus, ChevronRight, Briefcase, GraduationCap, MapPin, Quote, Heart, Sparkles, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useWallet, superLikesAvailable } from "@/hooks/useWallet";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
@@ -41,6 +42,7 @@ export default function Profile() {
   const { profile, user } = useAuth();
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const { score, items, loading: completionLoading } = useProfileCompletion(profile?.id, profile);
+  const { wallet } = useWallet();
 
   useEffect(() => {
     if (profile?.id) {
@@ -59,10 +61,14 @@ export default function Profile() {
   const incompleteItems = items.filter(i => !i.completed);
   const completedItems = items.filter(i => i.completed);
 
+  // Balances from the wallet (Boosts live in boost_wallets, Super Likes are the
+  // weekly allowance plus the bought/earned balance).
+  const superLikes = wallet ? superLikesAvailable(wallet) : null;
+  const tier = wallet?.tier ?? (profile?.is_premium ? profile.subscription_tier : "free");
   const quickActions = [
-    { id: "superlikes", icon: Star, iconColor: "text-cyan-500", title: `${profile?.super_likes_remaining ?? 0} Super Likes`, action: "GET MORE", path: "/get-super-likes" },
-    { id: "boosts", icon: Zap, iconColor: "text-purple-500", title: `${profile?.boosts_remaining ?? 0} Boosts`, action: "GET MORE", path: "/get-boosts" },
-    { id: "subscription", icon: Flame, iconColor: "text-primary", title: profile?.subscription_tier && profile.subscription_tier !== 'free' ? profile.subscription_tier.charAt(0).toUpperCase() + profile.subscription_tier.slice(1) : "Subscribe", action: null, path: "/premium" },
+    { id: "superlikes", icon: Star, iconColor: "text-cyan-500", title: wallet ? (superLikes === null ? "Unlimited Super Likes" : `${superLikes} Super Likes`) : "Super Likes", action: "GET MORE", path: "/get-super-likes" },
+    { id: "boosts", icon: Zap, iconColor: "text-purple-500", title: wallet ? `${wallet.boosts + wallet.primetime_boosts} Boosts` : "Boosts", action: "GET MORE", path: "/get-boosts" },
+    { id: "subscription", icon: Flame, iconColor: "text-primary", title: tier && tier !== "free" ? tier.charAt(0).toUpperCase() + tier.slice(1) : "Subscribe", action: null, path: tier && tier !== "free" ? "/my-subscription" : "/premium" },
   ];
 
   return (

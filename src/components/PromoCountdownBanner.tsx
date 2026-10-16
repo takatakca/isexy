@@ -34,7 +34,7 @@ export function PromoCountdownBanner({
         particleCount: 80,
         spread: 70,
         origin: { y: 0.3 },
-        colors: ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff"],
+        colors: ["#1F8BFF", "#29C3FF", "#F5F8FC", "#1565D8"],
       });
     }
   }, [hasConfetti]);
@@ -63,7 +63,7 @@ export function PromoCountdownBanner({
       transition={{ type: "spring", damping: 20 }}
       className="mx-4 mb-4 rounded-2xl overflow-hidden"
     >
-      <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 p-4 relative">
+      <div className="gradient-primary p-4 relative">
         {/* Sparkle decorations */}
         <Sparkles className="absolute top-2 right-3 w-5 h-5 text-white/40 animate-pulse" />
         <Sparkles className="absolute bottom-2 left-3 w-4 h-4 text-white/30 animate-pulse" />
@@ -100,7 +100,7 @@ export function PromoCountdownBanner({
 
         <button
           onClick={onCtaClick}
-          className="w-full mt-3 py-2.5 rounded-full bg-white text-rose-600 font-bold text-sm hover:bg-white/90 transition-colors"
+          className="w-full mt-3 py-2.5 rounded-full bg-white text-primary font-bold text-sm hover:bg-white/90 transition-colors"
         >
           Claim Your {discountPercent}% Discount →
         </button>

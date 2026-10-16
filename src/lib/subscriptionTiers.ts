@@ -40,16 +40,15 @@ export const subscriptionTiers = {
     ],
     features: [
       "Everything in Gold",
+      "Unlimited Super Likes",
+      "Message before matching: 3 First Impressions a week",
       "Priority Likes",
-      // TODO: verify fulfillment of "Message before matching" feature
-      "Message before matching",
-      "More profile visibility",
       "Premium discovery priority",
     ],
   },
 } as const;
 
-// Boost packages with pricing from screenshots
+// Prices in CAD. Boost packages
 export const boostPackages = [
   { id: "1", quantity: 1, pricePerItem: 6.49 },
   { id: "10", quantity: 10, pricePerItem: 3.29, popular: true, savings: 49 },

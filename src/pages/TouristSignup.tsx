@@ -82,7 +82,6 @@ export default function TouristSignup() {
         love_language: loveLanguage,
         education,
         interests,
-        is_cuban: false,
         privacy_accepted: true,
       };
       // profiles.id is set to the auth user id by the database (Takatak identity).
@@ -92,6 +91,10 @@ export default function TouristSignup() {
         : await supabase.from("profiles").insert({ user_id: user.id, ...fields }).select().single();
 
       if (profileError) throw profileError;
+      // is_cuban (default false) is not member-writable: a profile started in the Cuban signup is switched server-side.
+      if (existingProfile && (existingProfile as { is_cuban?: boolean | null }).is_cuban) {
+        await supabase.rpc("set_my_cuban_flag", { p_is_cuban: false });
+      }
 
       if (photos.length > 0) {
         const photoInserts = photos.map((url, index) => ({

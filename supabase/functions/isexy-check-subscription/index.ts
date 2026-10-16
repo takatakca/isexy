@@ -3,107 +3,128 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { findStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { corsHeaders, json, signedInMember, subscriptionPeriod } from "../_shared/payments.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// "Restore purchases" and My Subscription: reads the member's Stripe
+// subscriptions and applies them to the database the same way the webhook
+// does (a missed or failed webhook is caught up here), then answers with the
+// member's plan from the database (Stripe, a redeemed code or a reward).
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+const logStep = (step: string, details?: unknown) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
+
+const VALID_TIERS = ["plus", "gold", "platinum"];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
+  const db = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 
   try {
-    logStep("Function started");
+    const member = await signedInMember(req);
+    if (!member) return json({ error: "Not authenticated" }, 401);
 
+    // { restore: true } (Restore Purchase page): also replay the member's paid
+    // one-time checkouts of the last 90 days. fulfill_stripe_payment is
+    // idempotent per Stripe session, so only purchases a missed webhook never
+    // credited are added.
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const restoreOneTime = body?.restore === true;
+
+    let restored = 0;
+    let purchasesRestored = 0;
     const stripeKey = isexyEnv("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    if (stripeKey) {
+      const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+      const customerId = await findStripeCustomerId(stripe, member);
+      if (customerId) {
+        const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 });
+        for (const sub of subs.data) {
+          const meta = (sub.metadata ?? {}) as Record<string, string>;
+          if (!["active", "trialing"].includes(sub.status)) continue;
+          const period = subscriptionPeriod(sub);
+          if (meta.type === "chat_sub" || meta.package_id === "chat_1mo") {
+            const { error } = await db.rpc("apply_chat_subscription", {
+              p_profile_id: member.id, p_subscription_id: sub.id, p_session_id: null,
+              p_status: sub.status, p_expires_at: period.end, p_plan_months: 1,
+            });
+            if (error) throw new Error(error.message);
+            restored++;
+            continue;
+          }
+          const tier = VALID_TIERS.includes(meta.tier) ? meta.tier : null;
+          if (!tier) continue;
+          const { error } = await db.rpc("apply_stripe_subscription", {
+            p_profile_id: member.id, p_customer_id: customerId, p_subscription_id: sub.id, p_tier: tier,
+            p_status: sub.status, p_period_start: period.start, p_period_end: period.end,
+          });
+          if (error) throw new Error(error.message);
+          restored++;
+        }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
-
-    const token = authHeader.replace("Bearer ", "");
-    logStep("Authenticating user with token");
-    
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const stripeCustomerId = await findStripeCustomerId(stripe, user);
-    
-    if (!stripeCustomerId) {
-      logStep("No customer found, updating unsubscribed state");
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    const customerId = stripeCustomerId;
-    logStep("Found Stripe customer", { customerId });
-
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-    const hasActiveSub = subscriptions.data.length > 0;
-    let productId = null;
-    let tier: string | null = null;
-    let subscriptionEnd = null;
-
-    const PRODUCT_TO_TIER: Record<string, string> = {
-      prod_Tf4swUnx8LI3BR: "plus",
-      prod_Tf4sVyy62yF0cy: "gold",
-      prod_Tf4sF4GddOh8RM: "platinum",
-    };
-
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
-      productId = subscription.items.data[0].price.product;
-      const metaTier = (subscription.metadata as Record<string, string> | undefined)?.tier;
-      tier = (metaTier && ["plus", "gold", "platinum"].includes(metaTier))
-        ? metaTier
-        : (PRODUCT_TO_TIER[productId as string] ?? null);
-      logStep("Determined subscription tier", { productId, tier });
+        if (restoreOneTime) {
+          const since = Math.floor(Date.now() / 1000) - 90 * 24 * 3600;
+          const sessions = await stripe.checkout.sessions.list({
+            customer: customerId,
+            status: "complete",
+            created: { gte: since },
+            limit: 100,
+          });
+          for (const session of sessions.data) {
+            if (session.mode !== "payment" || session.payment_status !== "paid") continue;
+            const meta = (session.metadata ?? {}) as Record<string, string>;
+            const owner = meta.profile_id || meta.user_id || member.id;
+            const product = meta.product_id || meta.package_id || "";
+            if (owner !== member.id || !product) continue;
+            const { data, error } = await db.rpc("fulfill_stripe_payment", {
+              p_session_id: session.id,
+              p_profile_id: member.id,
+              p_product: product,
+              p_amount_cents: session.amount_total ?? null,
+              p_currency: session.currency ?? null,
+              p_meta: meta,
+            });
+            if (error) throw new Error(error.message);
+            const result = data as { success?: boolean; already_fulfilled?: boolean } | null;
+            if (result?.success && !result.already_fulfilled) {
+              restored++;
+              purchasesRestored++;
+              logStep("One-time purchase restored", { sessionId: session.id, product });
+            }
+          }
+        }
+      }
     } else {
-      logStep("No active subscription found");
+      logStep("STRIPE_SECRET_KEY not set: database plan only");
     }
 
-    return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      product_id: productId,
-      tier,
-      subscription_end: subscriptionEnd
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+    const [{ data: profile }, { data: sub }] = await Promise.all([
+      db.from("profiles").select("is_premium, subscription_tier, subscription_expires_at").eq("id", member.id).maybeSingle(),
+      db.from("subscriptions").select("tier, status, current_period_end, stripe_subscription_id").eq("profile_id", member.id).maybeSingle(),
+    ]);
+    const paid = !!profile?.is_premium && VALID_TIERS.includes(profile?.subscription_tier ?? "");
+    const fromStripe = !!sub && ["active", "trialing"].includes(sub.status) && sub.tier === profile?.subscription_tier;
+
+    return json({
+      subscribed: paid,
+      tier: paid ? profile!.subscription_tier : null,
+      subscription_end: paid ? profile!.subscription_expires_at : null,
+      source: paid ? (fromStripe ? "stripe" : "other") : null,
+      manageable: fromStripe,
+      restored,
+      purchases_restored: purchasesRestored,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in check-subscription", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    logStep("ERROR", { message: errorMessage });
+    return json({ error: errorMessage }, 500);
   }
 });

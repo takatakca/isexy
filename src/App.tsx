@@ -212,7 +212,7 @@ const App = () => (
               <Route path="/push-notifications" element={<ProtectedRoute><PushNotifications /></ProtectedRoute>} />
               <Route path="/team-cubadate" element={<TeamCubaDate />} />
               <Route path="/manage-payment-account" element={<ManagePaymentAccount />} />
-              <Route path="/restore-purchase" element={<RestorePurchase />} />
+              <Route path="/restore-purchase" element={<ProtectedRoute><RestorePurchase /></ProtectedRoute>} />
               <Route path="/help-support" element={<HelpSupport />} />
               <Route path="/web-profile/:userId" element={<WebProfile />} />
               <Route path="/web-profile" element={<WebProfile />} />
@@ -245,10 +245,10 @@ const App = () => (
               <Route path="/qa-events" element={<QAEvents />} />
               <Route path="/introductions" element={<Matchmaker />} />
               <Route path="/matchmaker" element={<Navigate to="/introductions" replace />} />
-              <Route path="/loyalty-rewards" element={<LoyaltyRewards />} />
+              <Route path="/loyalty-rewards" element={<ProtectedRoute><LoyaltyRewards /></ProtectedRoute>} />
               <Route path="/cuban-rewards" element={<CubanRewards />} />
               <Route path="/cuban-cashout" element={<CubanCashout />} />
-              <Route path="/my-stars" element={<MyStars />} />
+              <Route path="/my-stars" element={<ProtectedRoute><MyStars /></ProtectedRoute>} />
               <Route path="/block-report/:userId" element={<BlockReportFlow />} />
               <Route path="/reset-password" element={<Navigate to="/auth" replace />} />
               <Route path="/update-password" element={<Navigate to="/auth" replace />} />
@@ -259,13 +259,13 @@ const App = () => (
               <Route path="/buy-minutes" element={<ProtectedRoute><BuyMinutes /></ProtectedRoute>} />
               <Route path="/group-chat/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
               <Route path="/explore/:category" element={<ProtectedRoute><CategorySwipe /></ProtectedRoute>} />
-              <Route path="/referrals" element={<Referrals />} />
+              <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
               <Route path="/staff-login" element={<ModeratorLogin />} />
               <Route path="/support" element={<SupportPortal />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/agent-dashboard" element={<AdminRoute allowModerator><AgentDashboard /></AdminRoute>} />
               <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
-              <Route path="/redeem-code" element={<RedeemCode />} />
+              <Route path="/redeem-code" element={<ProtectedRoute><RedeemCode /></ProtectedRoute>} />
               <Route path="/admin/users" element={<AdminRoute><AdminUserManagement /></AdminRoute>} />
               <Route path="/admin/payment-tests" element={<AdminRoute><AdminPaymentTests /></AdminRoute>} />
               <Route path="/phone-line" element={<ProtectedRoute><PhoneLine /></ProtectedRoute>} />
