@@ -131,13 +131,17 @@ BEGIN
   IF v_me IS NULL OR v_s.id IS NULL OR v_s.receiver_id <> v_me THEN
     RETURN jsonb_build_object('success', false, 'error', 'not_found');
   END IF;
-  IF v_s.status NOT IN ('ringing', 'connecting') OR v_s.created_at < now() - interval '3 minutes'
+  -- A ringing call (or a connected one the receiver rejoins after a reload).
+  IF NOT ((v_s.status IN ('ringing', 'connecting') AND v_s.created_at > now() - interval '3 minutes')
+          OR v_s.status = 'connected')
      OR NOT EXISTS (SELECT 1 FROM matches m WHERE m.id = v_s.match_id AND m.is_active = true) THEN
     RETURN jsonb_build_object('success', false, 'error', 'call_not_active', 'status', v_s.status);
   END IF;
-  UPDATE video_call_sessions SET status = 'connecting' WHERE id = p_call_session_id;
-  RETURN jsonb_build_object('success', true, 'match_id', v_s.match_id,
-                            'caller_id', v_s.caller_id, 'call_type', v_s.call_type);
+  IF v_s.status <> 'connected' THEN
+    UPDATE video_call_sessions SET status = 'connecting' WHERE id = p_call_session_id;
+  END IF;
+  RETURN jsonb_build_object('success', true, 'match_id', v_s.match_id, 'caller_id', v_s.caller_id,
+                            'call_type', v_s.call_type, 'status', v_s.status);
 END;
 $$;
 
