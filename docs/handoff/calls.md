@@ -16,6 +16,11 @@ Status: [ ] open, [x] fixed in this branch (see "Fixed" below for how it was ver
 
 ### In-app calls (VideoCall, useCallConnection, IncomingCallNotification)
 
+0. [ ] Every connected call is cut off at once with "Out of minutes":
+   `deduct_call_minute` inserts `credit_transactions.type = 'spend'`, which
+   the CHECK (purchase/video_call/bonus/refund) rejects, so the RPC errors and
+   VideoCall ends the call. Same bug in `charge_call_session_minute` (Phone
+   Line) and `unlock_conversation` (contact unlock with credits).
 1. [ ] TURN is read from `VITE_TURN_URLS` only; the documented name for this
    run is `VITE_TURN_URL` (accept both). No `.env.example` entry.
 2. [ ] ICE recovery: only the caller restarts, only on `failed`, only once;
@@ -107,7 +112,19 @@ Status: [ ] open, [x] fixed in this branch (see "Fixed" below for how it was ver
 
 ## Fixed
 
-(filled in as fixes land; each entry: files, how verified)
+(each entry: files, how verified)
+
+- SQL part 1 (`docs/handoff/calls.sql` §1-3): CHECK widened to accept
+  `spend` (fixes #0 server side), `start_call`, `answer_call`,
+  `decline_call`, `mark_call_connected`, `charge_call_minute` (server clock,
+  first minute at connect then one per 60 s), `end_call` (server duration,
+  settles unpaid minutes from the caller's balance), `record_missed_call`
+  (caller only, ringing >= 15 s, active match, once per session; partial
+  unique index on `missed_calls.call_session_id`). Verified: PGlite with the
+  V1 mock + 0001-0003, file applied twice, 39 checks
+  (`e2e/calls-sql-test.mjs`): lifecycle, time gate, settlement, outsiders,
+  receiver/caller role checks, decline, missed, duplicate insert rejected,
+  rate limit, blocked, anon has no EXECUTE.
 
 ## Verification
 
