@@ -62,7 +62,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
     its signaling never arrives, the caller sits on "Connecting…" forever.
 34. [x] WIP review: `e2e/calls-e2e.mjs` written but never run to the end;
     `e2e/smoke-call.mjs` still drives the removed direct-table flow.
-35. [ ] Docs/CI: DEPLOYMENT.md, V1-MIGRATION.md, HANDOFF.md and the CI build
+35. [x] Docs/CI: DEPLOYMENT.md, V1-MIGRATION.md, HANDOFF.md and the CI build
     only know `VITE_TURN_URLS`.
 
 ### Phone Line
@@ -202,6 +202,13 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
   (`apply_twilio_call_status`, 500 on a database error so Twilio retries).
   Verified: `e2e/calls-twilio-test.mjs` 43/43 PASS (Node, in-memory
   Supabase, Twilio's documented signature test vector).
+
+- Docs/CI (#35): `docs/DEPLOYMENT.md` › Variables (`VITE_TURN_URL`,
+  `VITE_TURN_USERNAME`, `VITE_STUN_URL`, `VITE_TURN_RELAY_ONLY`, why TURN
+  matters), CI build passes the new names, `V1-MIGRATION.md` 3.6 (Twilio
+  webhook URLs, `ISEXY_TWILIO_WEBHOOK_BASE`) and 3.9, `HANDOFF.md`.
+  `TWILIO_WEBHOOK_BASE` is ISEXY-only in `_shared/env.ts` (a V1 value of
+  that name would break every signature check).
 
 ## Verification
 

@@ -60,7 +60,10 @@ jobs:
           VITE_SITE_URL: ${{ env.SITE_URL }}
           VITE_GA4_ID: ${{ vars.VITE_GA4_ID }}
           VITE_META_PIXEL_ID: ${{ vars.VITE_META_PIXEL_ID }}
+          VITE_TURN_URL: ${{ vars.VITE_TURN_URL }}
           VITE_TURN_URLS: ${{ vars.VITE_TURN_URLS }}
+          VITE_STUN_URL: ${{ vars.VITE_STUN_URL }}
+          VITE_TURN_RELAY_ONLY: ${{ vars.VITE_TURN_RELAY_ONLY }}
           VITE_TURN_USERNAME: ${{ vars.VITE_TURN_USERNAME }}
           VITE_TURN_CREDENTIAL: ${{ secrets.VITE_TURN_CREDENTIAL }}
         run: npm run build
