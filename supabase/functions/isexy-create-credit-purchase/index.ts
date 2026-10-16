@@ -1,91 +1,53 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Authoritative server catalog. Client only sends packageId.
-const PACKAGES: Record<string, { credits: number; priceCents: number; label: string }> = {
-  credits_10: { credits: 10, priceCents: 999, label: "10 Video Chat Credits" },
-  credits_25: { credits: 30, priceCents: 1999, label: "25 Credits + 5 Bonus" },
-  credits_50: { credits: 65, priceCents: 3499, label: "50 Credits + 15 Bonus" },
-  credits_100: { credits: 140, priceCents: 5999, label: "100 Credits + 40 Bonus" },
+// Credit packs, charged in CAD. The client only sends packageId; what a pack
+// gives is decided again by isexy.fulfill_stripe_payment when Stripe confirms.
+const PACKAGES: Record<string, { priceCents: number; label: string }> = {
+  credits_10: { priceCents: 999, label: "10 ISEXY credits" },
+  credits_25: { priceCents: 1999, label: "25 ISEXY credits + 5 bonus" },
+  credits_50: { priceCents: 3499, label: "50 ISEXY credits + 15 bonus" },
+  credits_100: { priceCents: 5999, label: "100 ISEXY credits + 40 bonus" },
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing Authorization header");
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    const refused = gateRefusal();
+    if (refused) return refused;
+
+    const member = await signedInMember(req);
+    if (!member) return json({ error: "Not authenticated" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const packageId: string | undefined = body?.packageId;
-    if (!packageId || !PACKAGES[packageId]) {
-      return new Response(JSON.stringify({ error: "Invalid packageId" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const pkg = PACKAGES[packageId];
+    const pkg = packageId ? PACKAGES[packageId] : undefined;
+    if (!packageId || !pkg) return json({ error: "Invalid packageId" }, 400);
 
-    const stripeKey = isexyEnv("STRIPE_SECRET_KEY") || "";
-    const liveEnabled = (isexyEnv("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
-    if (!liveEnabled && !stripeKey.startsWith("sk_test_")) {
-      return new Response(JSON.stringify({ error: "Live payments are disabled until testing is complete." }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    const stripeCustomerId = await ensureStripeCustomerId(stripe, user);
-    const customerId = stripeCustomerId;
+    const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
+    const customerId = await ensureStripeCustomerId(stripe, member);
+    const base = appBaseUrl(req);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email ?? undefined,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: pkg.label },
-            unit_amount: pkg.priceCents,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: [{
+        price_data: { currency: "cad", product_data: { name: pkg.label }, unit_amount: pkg.priceCents },
+        quantity: 1,
+      }],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/buy-credits?success=true`,
-      cancel_url: `${req.headers.get("origin")}/buy-credits?canceled=true`,
-      metadata: {
-        user_id: user.id,
-        package_id: packageId,
-      },
+      success_url: `${base}/buy-credits?checkout=success`,
+      cancel_url: `${base}/buy-credits?checkout=cancelled`,
+      metadata: { user_id: member.id, profile_id: member.id, product_id: packageId, package_id: packageId },
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (error: any) {
-    console.error("Credit purchase error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return json({ url: session.url });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[CREATE-CREDIT-PURCHASE]", message);
+    return json({ error: message }, 500);
   }
 });

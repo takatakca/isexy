@@ -3,14 +3,12 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Server-side authoritative catalog. Client sends only `productId`.
-type CatalogItem = { name: string; description?: string; amountCents: number; currency: "usd" | "cad" };
+// Server-side authoritative catalog. Client sends only `productId` (+ gift or
+// donation details). What a product gives is decided by
+// isexy.fulfill_stripe_payment when Stripe confirms the payment.
+type CatalogItem = { name: string; amountCents: number; currency: "usd" | "cad" };
 const CATALOG: Record<string, CatalogItem> = {
   // Super Likes
   super_likes_3:  { name: "3 Super Likes",  amountCents: 1197, currency: "cad" },
@@ -45,117 +43,104 @@ const CATALOG: Record<string, CatalogItem> = {
   food_100: { name: "Food Package - Premium", amountCents: 10000, currency: "usd" },
 };
 
+// The only details a member may attach (gift recipient and note, donation
+// recipient). Anything else in the request body is ignored: the webhook
+// used to trust e.g. a client-sent package_id or profile_id.
+const ALLOWED_META: Record<string, number> = {
+  recipient_profile_id: 36,
+  message: 200,
+  phone_number: 40,
+  recipient_name: 120,
+};
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function defaultReturnPath(productId: string): string {
+  if (productId.startsWith("super_likes_")) return "/get-super-likes";
+  if (/^(boost|primetime|superboost)_/.test(productId)) return "/get-boosts";
+  if (/^(donation|topup|food)_/.test(productId)) return "/donate";
+  return "/discover";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabaseAuth = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing Authorization header");
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseAuth.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    const refused = gateRefusal();
+    if (refused) return refused;
+
+    const member = await signedInMember(req);
+    if (!member) return json({ error: "Not authenticated" }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const productId: string | undefined = body?.productId;
-    const metadata = (body?.metadata ?? {}) as Record<string, string>;
+    const productId: string = typeof body?.productId === "string" ? body.productId : "";
+    const clientMeta = (body?.metadata && typeof body.metadata === "object" ? body.metadata : {}) as Record<string, unknown>;
+
+    const meta: Record<string, string> = {};
+    for (const [key, max] of Object.entries(ALLOWED_META)) {
+      const v = clientMeta[key];
+      if (typeof v === "string" && v.trim() !== "") meta[key] = v.trim().slice(0, max);
+    }
+    if (meta.recipient_profile_id && !UUID.test(meta.recipient_profile_id)) delete meta.recipient_profile_id;
 
     let item: CatalogItem | null = null;
-    let resolvedName: string | undefined;
 
-    // Gifts: priced from gift_packages DB row (server-trusted)
-    if (productId?.startsWith("gift_")) {
+    // Gifts: priced from the gift_packages row (server-trusted).
+    if (productId.startsWith("gift_")) {
       const giftPackageId = productId.slice(5);
-      const { data: pkg, error: pkgErr } = await supabaseAdmin
-        .from("gift_packages")
-        .select("id,name,price_usd,is_active")
-        .eq("id", giftPackageId)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (pkgErr || !pkg) {
-        return new Response(JSON.stringify({ error: "Invalid gift package" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (!UUID.test(giftPackageId) || !meta.recipient_profile_id || meta.recipient_profile_id === member.id) {
+        return json({ error: "Invalid gift" }, 400);
       }
-      item = {
-        name: `Gift: ${pkg.name}`,
-        amountCents: Math.round(Number(pkg.price_usd) * 100),
-        currency: "usd",
-      };
-      resolvedName = item.name;
-      metadata.gift_package_id = pkg.id;
-      metadata.type = "gift";
-    } else if (productId && CATALOG[productId]) {
+      const [{ data: pkg }, { data: recipient }] = await Promise.all([
+        supabaseAdmin.from("gift_packages").select("id,name,price_usd,is_active").eq("id", giftPackageId).eq("is_active", true).maybeSingle(),
+        supabaseAdmin.from("profiles").select("id").eq("id", meta.recipient_profile_id).eq("is_active", true).maybeSingle(),
+      ]);
+      if (!pkg || !recipient) return json({ error: "Invalid gift package" }, 400);
+      item = { name: `Gift: ${pkg.name}`, amountCents: Math.round(Number(pkg.price_usd) * 100), currency: "usd" };
+      meta.type = "gift";
+      meta.gift_package_id = pkg.id;
+    } else if (CATALOG[productId]) {
       item = CATALOG[productId];
-      if (productId.startsWith("donation_") || productId.startsWith("topup_") || productId.startsWith("food_")) {
-        metadata.type = metadata.type || (productId.startsWith("topup_") ? "topup" : productId.startsWith("food_") ? "food" : "donation");
+      if (/^(donation|topup|food)_/.test(productId)) {
+        meta.type = productId.startsWith("topup_") ? "topup" : productId.startsWith("food_") ? "food" : "donation";
       }
     }
+    if (!item) return json({ error: "Invalid productId" }, 400);
 
-    if (!item || !productId) {
-      return new Response(JSON.stringify({ error: "Invalid productId" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Server-set keys last, so nothing above can override them.
+    meta.user_id = member.id;
+    meta.profile_id = member.id;
+    meta.product_id = productId;
 
-    const stripeKey = isexyEnv("STRIPE_SECRET_KEY") || "";
-    const liveEnabled = (isexyEnv("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
-    if (!liveEnabled && !stripeKey.startsWith("sk_test_")) {
-      return new Response(JSON.stringify({ error: "Live payments are disabled until testing is complete." }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
+    const customerId = await ensureStripeCustomerId(stripe, member);
 
-    const stripeCustomerId = await ensureStripeCustomerId(stripe, user);
-    const customerId = stripeCustomerId;
-
-    // Sanitize metadata: drop any monetary fields the client tried to inject.
-    const safeMeta: Record<string, string> = {};
-    for (const [k, v] of Object.entries(metadata)) {
-      if (typeof v === "string" && v.length <= 500 && !/(amount|price|cents|usd|cad)/i.test(k)) {
-        safeMeta[k] = v;
-      }
-    }
-    safeMeta.user_id = user.id;
-    safeMeta.product_id = productId;
+    const requested = typeof body?.returnPath === "string" ? body.returnPath : "";
+    const returnPath = /^\/[A-Za-z0-9/_-]{0,120}$/.test(requested) ? requested : defaultReturnPath(productId);
+    const base = appBaseUrl(req);
+    const sep = returnPath.includes("?") ? "&" : "?";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email ?? undefined,
       line_items: [{
-        price_data: {
-          currency: item.currency,
-          product_data: { name: resolvedName ?? item.name },
-          unit_amount: item.amountCents,
-        },
+        price_data: { currency: item.currency, product_data: { name: item.name }, unit_amount: item.amountCents },
         quantity: 1,
       }],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/discover?purchase=success`,
-      cancel_url: `${req.headers.get("origin")}/discover?purchase=cancelled`,
-      metadata: safeMeta,
+      success_url: `${base}${returnPath}${sep}checkout=success`,
+      cancel_url: `${base}${returnPath}${sep}checkout=cancelled`,
+      metadata: meta,
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json({ url: session.url });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("[CREATE-ONE-TIME-PAYMENT]", errorMessage);
+    return json({ error: errorMessage }, 500);
   }
 });

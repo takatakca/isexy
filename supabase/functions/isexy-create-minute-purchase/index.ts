@@ -1,23 +1,19 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-// Package definitions
-const PACKAGES: Record<string, { price_id: string; minutes: number; type: "phone" | "video" | "chat_sub"; mode: "payment" | "subscription" }> = {
-  phone_20: { price_id: isexyEnv("STRIPE_PRICE_PHONE_20") ?? "price_1T5gn6DTp0s6enQIcCJbsJpM", minutes: 20, type: "phone", mode: "payment" },
-  phone_150: { price_id: isexyEnv("STRIPE_PRICE_PHONE_150") ?? "price_1T5gn7DTp0s6enQIEXXR6BTU", minutes: 150, type: "phone", mode: "payment" },
-  phone_450: { price_id: isexyEnv("STRIPE_PRICE_PHONE_450") ?? "price_1T5gn8DTp0s6enQIELZPsXl3", minutes: 450, type: "phone", mode: "payment" },
-  video_20: { price_id: isexyEnv("STRIPE_PRICE_VIDEO_20") ?? "price_1T5gn9DTp0s6enQIT3feQyeR", minutes: 20, type: "video", mode: "payment" },
-  video_150: { price_id: isexyEnv("STRIPE_PRICE_VIDEO_150") ?? "price_1T5gnADTp0s6enQIh54j1Rs8", minutes: 150, type: "video", mode: "payment" },
-  video_450: { price_id: isexyEnv("STRIPE_PRICE_VIDEO_450") ?? "price_1T5gnADTp0s6enQIsG1Rm3IY", minutes: 450, type: "video", mode: "payment" },
-  chat_1mo: { price_id: isexyEnv("STRIPE_PRICE_CHAT_1MO") ?? "price_1T5gn5DTp0s6enQIUw91aDQV", minutes: 0, type: "chat_sub", mode: "subscription" },
+// Phone / video minute packs, charged in CAD at the prices Buy Minutes shows
+// (the hard-coded Lovable-era Stripe price ids are gone). Minutes are added
+// by isexy.fulfill_stripe_payment when Stripe confirms the payment.
+const MINUTE_PACKAGES: Record<string, { priceCents: number; label: string }> = {
+  phone_20: { priceCents: 999, label: "20 phone minutes" },
+  phone_150: { priceCents: 4500, label: "150 phone minutes" },
+  phone_450: { priceCents: 9000, label: "450 phone minutes" },
+  video_20: { priceCents: 1500, label: "20 video minutes" },
+  video_150: { priceCents: 10000, label: "150 video minutes" },
+  video_450: { priceCents: 25000, label: "450 video minutes" },
 };
 
 serve(async (req) => {
@@ -25,60 +21,56 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    const refused = gateRefusal();
+    if (refused) return refused;
 
-    const { packageId } = await req.json();
-    const pkg = PACKAGES[packageId];
-    if (!pkg) throw new Error("Invalid package");
+    const member = await signedInMember(req);
+    if (!member) return json({ error: "Not authenticated" }, 401);
 
-    const stripeKey = isexyEnv("STRIPE_SECRET_KEY") || "";
-    const liveEnabled = (isexyEnv("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
-    if (!liveEnabled && !stripeKey.startsWith("sk_test_")) {
-      return new Response(JSON.stringify({ error: "Live payments are disabled until testing is complete." }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const body = await req.json().catch(() => ({}));
+    const packageId: string = typeof body?.packageId === "string" ? body.packageId : "";
+    const base = appBaseUrl(req);
+    const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
+
+    // Monthly chat subscription: a recurring Stripe price set by the owner.
+    if (packageId === "chat_1mo") {
+      const priceId = isexyEnv("STRIPE_PRICE_CHAT_1MO");
+      if (!priceId) return json({ error: "The chat subscription is not available yet.", code: "price_missing" }, 503);
+      const customerId = await ensureStripeCustomerId(stripe, member);
+      const metadata = { user_id: member.id, profile_id: member.id, package_id: "chat_1mo", type: "chat_sub", plan_months: "1" };
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        metadata,
+        subscription_data: { metadata },
+        success_url: `${base}/messages?checkout=success`,
+        cancel_url: `${base}/messages?checkout=cancelled`,
       });
+      return json({ url: session.url });
     }
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const stripeCustomerId = await ensureStripeCustomerId(stripe, user);
-    const customerId = stripeCustomerId;
+    const pkg = MINUTE_PACKAGES[packageId];
+    if (!pkg) return json({ error: "Invalid package" }, 400);
 
-    const origin = req.headers.get("origin") || isexyEnv("APP_URL") || "https://isexy.onrender.com";
-
+    const customerId = await ensureStripeCustomerId(stripe, member);
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email ?? undefined,
-      line_items: [{ price: pkg.price_id, quantity: 1 }],
-      mode: pkg.mode,
-      success_url: `${origin}/buy-minutes?success=true&package=${packageId}`,
-      cancel_url: `${origin}/buy-minutes?canceled=true`,
-      metadata: {
-        user_id: user.id,
-        package_id: packageId,
-        minutes: pkg.minutes.toString(),
-        type: pkg.type,
-      },
+      line_items: [{
+        price_data: { currency: "cad", product_data: { name: pkg.label }, unit_amount: pkg.priceCents },
+        quantity: 1,
+      }],
+      mode: "payment",
+      success_url: `${base}/buy-minutes?checkout=success&package=${packageId}`,
+      cancel_url: `${base}/buy-minutes?checkout=cancelled`,
+      metadata: { user_id: member.id, profile_id: member.id, product_id: packageId, package_id: packageId },
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (error: any) {
-    console.error("Purchase error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return json({ url: session.url });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[CREATE-MINUTE-PURCHASE]", message);
+    return json({ error: message }, 500);
   }
 });
