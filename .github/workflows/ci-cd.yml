@@ -64,6 +64,7 @@ jobs:
           VITE_TURN_URLS: ${{ vars.VITE_TURN_URLS }}
           VITE_STUN_URL: ${{ vars.VITE_STUN_URL }}
           VITE_TURN_RELAY_ONLY: ${{ vars.VITE_TURN_RELAY_ONLY }}
+          VITE_PHONE_LINE_NUMBER: ${{ vars.VITE_PHONE_LINE_NUMBER }}
           VITE_TURN_USERNAME: ${{ vars.VITE_TURN_USERNAME }}
           VITE_TURN_CREDENTIAL: ${{ secrets.VITE_TURN_CREDENTIAL }}
         run: npm run build

@@ -47,6 +47,7 @@ on V1 itself as `ISEXY_*` names, not in GitHub: see `V1-MIGRATION.md` › 3.6.
 | `VITE_TURN_URL` | *(recommended)* comma-separated TURN URLs, e.g. `turn:turn.isexy.ca:3478?transport=udp,turns:turn.isexy.ca:5349?transport=tcp` — needed for calls on strict mobile NAT (Cuba); the older name `VITE_TURN_URLS` is still read |
 | `VITE_TURN_USERNAME` | *(recommended)* TURN username |
 | `VITE_STUN_URL` | *(optional)* comma-separated STUN URLs; default Google public STUN |
+| `VITE_PHONE_LINE_NUMBER` | *(optional)* the Twilio number members call for the phone line by phone, as shown, e.g. `+1 514 555 0100`; without it the app hides the "Use the phone line by phone" card |
 | `VITE_TURN_RELAY_ONLY` | *(optional, testing)* `true` sends every call through TURN (proves TURN works); leave unset in production |
 
 Calls without TURN still connect on most home Wi-Fi, but two phones on mobile

@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Mic,
   Headphones,
@@ -14,6 +16,9 @@ import {
   PhoneCall,
   Lock,
   Sparkles,
+  Smartphone,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 
 interface PhoneLineProfileRow {
@@ -23,10 +28,20 @@ interface PhoneLineProfileRow {
   display_name: string;
 }
 
+/** The ISEXY phone line number members call (build setting; the IVR card is hidden without it). */
+const PHONE_LINE_NUMBER = (import.meta.env.VITE_PHONE_LINE_NUMBER as string | undefined)?.trim() || "";
+
+const maskPhone = (e164: string) =>
+  e164.length > 6 ? `${e164.slice(0, 2)}${"•".repeat(e164.length - 6)}${e164.slice(-4)}` : e164;
+
 export default function PhoneLine() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [plProfile, setPlProfile] = useState<PhoneLineProfileRow | null>(null);
+  const [greetingReview, setGreetingReview] = useState<string | null>(null);
+  const [linkedPhone, setLinkedPhone] = useState<string | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [linkIssue, setLinkIssue] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,40 +50,86 @@ export default function PhoneLine() {
         setLoading(false);
         return;
       }
-      const { data } = await supabase
-        .from("phone_line_profiles")
-        .select("id, status, is_public, display_name")
-        .eq("profile_id", profile.id)
-        .maybeSingle();
+      const [{ data }, { data: numbers }] = await Promise.all([
+        supabase
+          .from("phone_line_profiles")
+          .select("id, status, is_public, display_name")
+          .eq("profile_id", profile.id)
+          .maybeSingle(),
+        supabase
+          .from("phone_line_numbers")
+          .select("phone_number_e164")
+          .eq("profile_id", profile.id)
+          .eq("phone_verified", true)
+          .order("updated_at", { ascending: false })
+          .limit(1),
+      ]);
       setPlProfile(data as PhoneLineProfileRow | null);
+      setLinkedPhone(numbers?.[0]?.phone_number_e164 ?? null);
+      if (data?.id) {
+        const { data: g } = await supabase
+          .from("voice_greetings")
+          .select("moderation_status")
+          .eq("phone_line_profile_id", data.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        setGreetingReview(g?.[0]?.moderation_status ?? null);
+      }
       setLoading(false);
     };
     load();
   }, [profile?.id]);
+
+  /** Links the number confirmed by SMS at sign-in, so calling the phone line from it reaches the menu. */
+  const linkPhone = async () => {
+    setLinking(true);
+    setLinkIssue(null);
+    const { data, error } = await supabase.rpc("link_my_verified_phone");
+    setLinking(false);
+    const res = data as { success?: boolean; error?: string; phone_masked?: string } | null;
+    if (error || !res?.success) {
+      setLinkIssue(
+        res?.error === "no_verified_phone"
+          ? "Your account has no phone number confirmed by SMS code. Sign in with your phone number once, then link it here."
+          : "Your number couldn't be linked. Try again in a moment.",
+      );
+      return;
+    }
+    setLinkedPhone(res.phone_masked ?? "linked");
+    toast.success("Your phone number is linked to the phone line.");
+  };
 
   if (!user) {
     navigate("/auth");
     return null;
   }
 
+  const live = !!plProfile && plProfile.status === "active" && plProfile.is_public;
+
   const statusLabel = (() => {
     if (!plProfile) return "Not set up yet";
     const s = plProfile.status;
-    if (s === "active" && plProfile.is_public) return "Live · receiving calls";
+    if (s === "banned") return "Removed by moderation";
+    if (live) {
+      if (greetingReview === "approved") return "Live · receiving calls";
+      if (greetingReview === "pending") return "Live · greeting waiting for review";
+      if (greetingReview === "rejected") return "Greeting not approved · re-record";
+      return "Live · record a greeting";
+    }
     if (s === "paused") return "Paused · not visible";
-    if (s === "pending") return "Pending review";
-    if (s === "rejected") return "Rejected · please re-record";
     return "Draft · not live";
   })();
 
   const statusTone = (() => {
     if (!plProfile) return "bg-muted text-muted-foreground";
     const s = plProfile.status;
-    if (s === "active" && plProfile.is_public)
+    if (s === "banned" || (live && greetingReview === "rejected"))
+      return "bg-destructive/15 text-destructive border border-destructive/30";
+    if (live && greetingReview === "approved")
       return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+    if (live) return "bg-primary/15 text-primary border border-primary/30";
     if (s === "paused") return "bg-amber-500/15 text-amber-300 border border-amber-500/30";
-    if (s === "rejected") return "bg-destructive/15 text-destructive border border-destructive/30";
-    if (s === "pending") return "bg-primary/15 text-primary border border-primary/30";
     return "bg-muted text-muted-foreground border border-border";
   })();
 
@@ -182,6 +243,44 @@ export default function PhoneLine() {
               );
             })}
           </div>
+        )}
+
+        {!loading && PHONE_LINE_NUMBER && (
+          <Card className="space-y-3 rounded-2xl border-border/60 bg-card p-4" data-testid="phone-line-ivr">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+                <Smartphone className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold">Use the phone line by phone</div>
+                <div className="text-sm text-muted-foreground">
+                  Call{" "}
+                  <a href={`tel:${PHONE_LINE_NUMBER.replace(/[^\d+]/g, "")}`} className="font-semibold text-primary underline-offset-2 hover:underline">
+                    {PHONE_LINE_NUMBER}
+                  </a>{" "}
+                  to listen to voices and hear how many voice replies and minutes you have. It answers only your linked number, and your number is never shown to anyone.
+                </div>
+              </div>
+            </div>
+            {linkedPhone ? (
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                <span>
+                  Linked: <span className="font-mono">{linkedPhone.startsWith("+") ? maskPhone(linkedPhone) : linkedPhone}</span>
+                </span>
+              </div>
+            ) : (
+              <Button onClick={linkPhone} disabled={linking} variant="outline" className="w-full gap-2 rounded-full">
+                {linking ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneCall className="h-4 w-4" />}
+                Link my phone number
+              </Button>
+            )}
+            {linkIssue && (
+              <p role="alert" className="text-sm text-destructive">
+                {linkIssue}
+              </p>
+            )}
+          </Card>
         )}
 
         {!loading && !plProfile && (
