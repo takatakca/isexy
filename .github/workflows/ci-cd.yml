@@ -82,6 +82,9 @@ jobs:
       - name: Stripe checkout identity isolation tests
         run: deno test scripts/isexy/test/stripe-identity.test.ts
 
+      - name: Ticket email permission assertions
+        run: deno test scripts/isexy/test/ticket-confirmation-auth.test.ts
+
       - name: Type-check every edge function
         # Functions are bundled without the web app's package.json (as on
         # Supabase), so npm: specifiers resolve from the registry, not node_modules.

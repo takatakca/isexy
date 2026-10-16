@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
+import { mayConfirmTicket } from "../_shared/ticket-confirmation-auth.ts";
 
 const RESEND_API_KEY = isexyEnv("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -145,6 +146,11 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json", "Allow": "POST, OPTIONS" },
+    });
+  }
 
   try {
     // Only the ticket number is trusted from the client. Everything else is
@@ -152,26 +158,46 @@ const handler = async (req: Request): Promise<Response> => {
     // arbitrary content to arbitrary addresses.
     const body = (await req.json()) as Partial<TicketEmailRequest>;
     const ticketNumber = String(body.ticketNumber ?? "").trim();
-    if (!ticketNumber) {
+    if (!ticketNumber || ticketNumber.length > 80) {
       return new Response(JSON.stringify({ error: "ticketNumber is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+    const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+    const serviceKey = SUPABASE_SERVICE_ROLE_KEY ?? "";
+    if (!bearer) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const db = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
-    const { data: ticket } = await db
+    const isService = !!serviceKey && bearer === serviceKey;
+    const { data: authData } = isService ? { data: { user: null } } : await db.auth.getUser(bearer);
+    if (!isService && !authData?.user?.id) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: ticket, error: ticketError } = await db
       .from("support_tickets")
-      .select("name, email, subject, category, priority, message, created_at")
+      .select("user_id, name, email, subject, category, priority, message, created_at")
       .eq("ticket_number", ticketNumber)
       .maybeSingle();
+    if (ticketError) throw new Error("Could not read ticket");
+    // Never use ticket number or email as proof of account ownership.
+    const trustedStaff = isService || await isStaff(req);
+    if (ticket && !mayConfirmTicket(ticket.user_id, authData?.user?.id ?? null, trustedStaff)) {
+      return new Response(JSON.stringify({ error: "Ticket not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (!ticket || Date.now() - new Date(ticket.created_at).getTime() > 10 * 60_000) {
       return new Response(JSON.stringify({ error: "Ticket not found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
     if (confirmed.has(ticketNumber)) {
       return new Response(JSON.stringify({ success: true, skipped: "already_sent" }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
-    confirmed.add(ticketNumber);
-    if (confirmed.size > 10_000) confirmed.clear();
     const email: string = ticket.email;
     const name = escapeHtml(ticket.name);
     const subject = escapeHtml(ticket.subject);
@@ -179,8 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
     const priority = escapeHtml(ticket.priority);
     const message = escapeHtml(ticket.message);
 
-    console.log("Sending ticket confirmation email to:", email);
-    console.log("Ticket number:", ticketNumber);
+    // Do not log recipient addresses, ticket details or user identifiers.
 
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
@@ -242,7 +267,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const data = await res.json();
-    console.log("Email sent successfully:", data);
+    confirmed.add(ticketNumber);
+    if (confirmed.size > 10_000) confirmed.clear();
 
     return new Response(JSON.stringify({ success: true, data }), {
       status: 200,
