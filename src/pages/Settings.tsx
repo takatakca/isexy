@@ -940,13 +940,9 @@ export default function Settings() {
         multiSelect
       />
 
-      <BoostsModal 
-        isOpen={boostsModalOpen} 
-        onClose={() => setBoostsModalOpen(false)} 
-        boostsRemaining={profile?.boosts_remaining || 0}
-        primetimeBoostsRemaining={0}
-        onGetMoreBoosts={() => navigate("/premium")}
-      />
+      {boostsModalOpen && (
+        <BoostsModal isOpen onClose={() => setBoostsModalOpen(false)} />
+      )}
 
       {/* Preference Drawers */}
       <PreferenceDrawer

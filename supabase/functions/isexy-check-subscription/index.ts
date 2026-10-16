@@ -32,7 +32,15 @@ serve(async (req) => {
     const member = await signedInMember(req);
     if (!member) return json({ error: "Not authenticated" }, 401);
 
+    // { restore: true } (Restore Purchase page): also replay the member's paid
+    // one-time checkouts of the last 90 days. fulfill_stripe_payment is
+    // idempotent per Stripe session, so only purchases a missed webhook never
+    // credited are added.
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const restoreOneTime = body?.restore === true;
+
     let restored = 0;
+    let purchasesRestored = 0;
     const stripeKey = isexyEnv("STRIPE_SECRET_KEY");
     if (stripeKey) {
       const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
@@ -61,6 +69,38 @@ serve(async (req) => {
           if (error) throw new Error(error.message);
           restored++;
         }
+
+        if (restoreOneTime) {
+          const since = Math.floor(Date.now() / 1000) - 90 * 24 * 3600;
+          const sessions = await stripe.checkout.sessions.list({
+            customer: customerId,
+            status: "complete",
+            created: { gte: since },
+            limit: 100,
+          });
+          for (const session of sessions.data) {
+            if (session.mode !== "payment" || session.payment_status !== "paid") continue;
+            const meta = (session.metadata ?? {}) as Record<string, string>;
+            const owner = meta.profile_id || meta.user_id || member.id;
+            const product = meta.product_id || meta.package_id || "";
+            if (owner !== member.id || !product) continue;
+            const { data, error } = await db.rpc("fulfill_stripe_payment", {
+              p_session_id: session.id,
+              p_profile_id: member.id,
+              p_product: product,
+              p_amount_cents: session.amount_total ?? null,
+              p_currency: session.currency ?? null,
+              p_meta: meta,
+            });
+            if (error) throw new Error(error.message);
+            const result = data as { success?: boolean; already_fulfilled?: boolean } | null;
+            if (result?.success && !result.already_fulfilled) {
+              restored++;
+              purchasesRestored++;
+              logStep("One-time purchase restored", { sessionId: session.id, product });
+            }
+          }
+        }
       }
     } else {
       logStep("STRIPE_SECRET_KEY not set: database plan only");
@@ -80,6 +120,7 @@ serve(async (req) => {
       source: paid ? (fromStripe ? "stripe" : "other") : null,
       manageable: fromStripe,
       restored,
+      purchases_restored: purchasesRestored,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
