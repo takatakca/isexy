@@ -3499,6 +3499,33 @@ export type Database = {
         Args: { p_approve: boolean; p_greeting_id: string; p_reason?: string | null }
         Returns: Json
       }
+      apply_chat_subscription: {
+        Args: {
+          p_expires_at: string
+          p_plan_months?: number
+          p_profile_id: string
+          p_session_id: string
+          p_status: string
+          p_subscription_id: string
+        }
+        Returns: Json
+      }
+      apply_stripe_subscription: {
+        Args: {
+          p_customer_id: string
+          p_period_end: string
+          p_period_start: string
+          p_profile_id: string
+          p_status: string
+          p_subscription_id: string
+          p_tier: string
+        }
+        Returns: Json
+      }
+      apply_twilio_call_status: {
+        Args: { p_call_sid: string; p_duration?: number; p_status: string }
+        Returns: Json
+      }
       check_promo_eligibility: {
         Args: { p_profile_id: string; p_tier: string }
         Returns: Json
@@ -3515,6 +3542,18 @@ export type Database = {
         Returns: Json
       }
       ensure_user_credits: { Args: never; Returns: Json }
+      expire_member_plans: { Args: never; Returns: number }
+      fulfill_stripe_payment: {
+        Args: {
+          p_amount_cents?: number
+          p_currency?: string
+          p_meta?: Json
+          p_product: string
+          p_profile_id: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       get_admin_users: {
         Args: never
@@ -3545,6 +3584,7 @@ export type Database = {
         Args: { p_code: string; p_profile_id: string }
         Returns: Json
       }
+      reset_daily_likes: { Args: never; Returns: number }
       reset_monthly_allowances: { Args: never; Returns: number }
       reset_weekly_allowances: { Args: never; Returns: number }
       start_phone_line_call_session: {
