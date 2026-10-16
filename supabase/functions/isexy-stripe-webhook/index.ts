@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { checkoutOwnerId } from "../_shared/stripe-identity.ts";
+import { activeSubscriptionTier } from "../_shared/subscription-entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -241,8 +242,10 @@ serve(async (req) => {
           const duration = normalizeDuration(subMeta.duration ?? meta.duration);
 
           if (!appTier || appTier === "free") {
-            logStep("No valid tier in metadata, skipping", { appTier });
-            break;
+            throw new Error("Paid subscription missing its authoritative tier metadata");
+          }
+          if (subscription.customer !== customerId) {
+            throw new Error("Subscription customer does not match checkout customer");
           }
 
           const subRow: Record<string, unknown> = {
@@ -254,9 +257,20 @@ serve(async (req) => {
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           };
-          await supabaseClient.from("subscriptions").upsert(subRow, { onConflict: "profile_id" });
+          const { error: subWriteError } = await supabaseClient
+            .from("subscriptions").upsert(subRow, { onConflict: "profile_id" });
+          if (subWriteError) throw new Error("Unable to record Stripe subscription");
 
-          await supabaseClient
+          // Stripe may complete checkout while the subscription remains unpaid.
+          // Save the Stripe status, but never grant premium entitlement yet.
+          if (!activeSubscriptionTier(subscription.status)) {
+            logStep("Subscription not yet eligible for premium", {
+              subscriptionId, status: subscription.status,
+            });
+            break;
+          }
+
+          const { error: profileWriteError } = await supabaseClient
             .from("profiles")
             .update({
               is_premium: true,
@@ -265,10 +279,13 @@ serve(async (req) => {
               first_purchase_promo_used: true,
             })
             .eq("id", profileId);
+          if (profileWriteError) throw new Error("Unable to activate premium profile");
 
-          await supabaseClient.rpc("sync_entitlements", { p_profile_id: profileId });
+          const { error: entitlementError } = await supabaseClient
+            .rpc("sync_entitlements", { p_profile_id: profileId });
+          if (entitlementError) throw new Error("Unable to synchronize premium entitlements");
 
-          logStep("Subscription created", { profileId, tier: appTier, duration });
+          logStep("Subscription activated", { profileId, tier: appTier, duration });
         } else if (session.mode === "payment") {
           const customerId = session.customer as string | null;
           const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
@@ -447,7 +464,7 @@ serve(async (req) => {
           })
           .eq("stripe_subscription_id", subscription.id);
 
-        if (error) logStep("Error updating subscription", { error: error.message });
+        if (error) throw new Error("Unable to update Stripe subscription state");
 
         const { data: sub } = await supabaseClient
           .from("subscriptions")
