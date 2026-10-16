@@ -109,6 +109,49 @@ await q(`UPDATE isexy.video_call_sessions SET created_at = created_at - interval
 // blocked
 await q(`INSERT INTO isexy.blocks(blocker_id, blocked_id) VALUES ($1,$2)`, [P.b, P.a]);
 check("blocked => unavailable", (await rpc("a", "start_call", [M, "video"])).error === "unavailable");
+// ---------------- Phone Line calls (call_sessions) ----------------
+// B blocked A above: a fresh caller "D" for the phone line.
+const UD = "dddddddd-0000-4000-8000-000000000004";
+await q(`INSERT INTO auth.users(id) VALUES ($1)`, [UD]);
+U.d = UD;
+P.d = (await q(`INSERT INTO isexy.profiles(user_id, first_name, birth_date, gender) VALUES ($1,'D','1990-01-01','man') RETURNING id`, [UD]))[0].id;
+await q(`INSERT INTO isexy.user_credits(profile_id, phone_minutes) VALUES ($1, 5)`, [P.d]);
+const PL = (await q(`INSERT INTO isexy.phone_line_profiles(profile_id, display_name, age, status, is_public) VALUES ($1,'Bee',30,'active',true) RETURNING id`, [P.b]))[0].id;
+const cs = async (id) => (await q(`SELECT * FROM isexy.call_sessions WHERE id=$1`, [id]))[0];
+const pbal = async () => (await q(`SELECT phone_minutes p FROM isexy.user_credits WHERE profile_id=$1`, [P.d]))[0].p;
+r = await rpc("d", "start_phone_line_call_session", [P.b, "phone_line_profile"]);
+check("phone line: start works (no profiles.age error) and rings", r.success && (await cs(r.call_session_id)).status === "ringing" && (await cs(r.call_session_id)).answered_at === null, JSON.stringify(r));
+const L1 = r.call_session_id;
+check("phone line: nothing charged while ringing", (await rpc("d", "charge_call_session_minute", [L1])).error === "not_connected" && (await pbal()) === 5);
+check("phone line: caller cannot answer", (await rpc("d", "answer_call_session", [L1])).error === "not_found");
+check("phone line: outsider cannot answer", (await rpc("c", "answer_call_session", [L1])).error === "not_found");
+r = await rpc("b", "answer_call_session", [L1]);
+check("phone line: receiver answers, gets caller name", r.success && r.caller_name === "D", JSON.stringify(r));
+check("phone line: outsider cannot mark connected", (await rpc("c", "mark_call_session_connected", [L1])).error === "not_found");
+check("phone line: receiver marks connected", (await rpc("b", "mark_call_session_connected", [L1])).success && (await cs(L1)).status === "connected");
+r = await rpc("d", "charge_call_session_minute", [L1]);
+check("phone line: first minute charged (credit_transactions 'spend' now accepted)", r.success && r.charged && r.remaining === 4, JSON.stringify(r));
+await q(`UPDATE isexy.call_sessions SET answered_at = now() - interval '150 seconds' WHERE id=$1`, [L1]);
+r = await rpc("b", "end_call_session", [L1, "hangup"]);
+check("phone line: end settles unpaid minutes (150 s => 3, paid 1, take 2)", r.status === "completed" && r.minutes_charged === 3 && (await pbal()) === 2, JSON.stringify(r));
+check("phone line: minute ledger has the settlement", (await q(`SELECT sum(minutes_charged)::int s FROM isexy.call_minute_transactions WHERE call_session_id=$1`, [L1]))[0].s === 3);
+r = await rpc("d", "start_phone_line_call_session", [P.b, "phone_line_profile"]); const L2 = r.call_session_id;
+r = await rpc("b", "decline_call_session", [L2]);
+check("phone line: receiver declines", r.status === "declined" && (await cs(L2)).status === "declined");
+r = await rpc("d", "start_phone_line_call_session", [P.b, "phone_line_profile"]); const L3 = r.call_session_id;
+r = await rpc("d", "end_call_session", [L3, "no_answer"]);
+check("phone line: caller ring timeout => missed, duration 0", r.status === "missed" && r.duration_seconds === 0);
+r = await rpc("d", "start_phone_line_call_session", [P.b, "phone_line_profile"]); const L4 = r.call_session_id;
+r = await rpc("d", "start_phone_line_call_session", [P.b, "phone_line_profile"]);
+check("phone line: new call cancels my older ringing call", (await cs(L4)).status === "canceled" && (await cs(L4)).end_reason === "superseded");
+await q(`UPDATE isexy.profiles SET birth_date = current_date - interval '17 years' WHERE id=$1`, [P.c]);
+await q(`INSERT INTO isexy.user_credits(profile_id, phone_minutes) VALUES ($1, 5)`, [P.c]);
+check("phone line: under 18 refused (from birth_date)", (await rpc("c", "start_phone_line_call_session", [P.b, "phone_line_profile"])).error === "age_restricted");
+await q(`UPDATE isexy.phone_line_profiles SET status='paused' WHERE id=$1`, [PL]);
+check("phone line: paused voice profile cannot be called", (await rpc("d", "start_phone_line_call_session", [P.b, "phone_line_profile"])).error === "voice_profile_unavailable");
+const pub = await q(`SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND schemaname='isexy' AND tablename='call_sessions'`);
+check("phone line: call_sessions in the realtime publication", pub.length === 1);
+
 // anon cannot execute
 let anon = "executed";
 await db.exec("SET ROLE anon");

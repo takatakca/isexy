@@ -100,7 +100,6 @@ function CallScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chargeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ringTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const outputIndex = useRef(0);
 
   const whoName = () => otherRef.current?.first_name ?? "They";
 
@@ -450,27 +449,8 @@ function CallScreen() {
     if (!ok) toast.error("Couldn't switch camera");
   };
 
-  /** Choose the next audio output where the browser allows it, otherwise sound on/off. */
-  const toggleSpeaker = async () => {
-    const el = document.querySelector<HTMLMediaElement & { setSinkId?: (id: string) => Promise<void> }>("[data-remote-media]");
-    if (el?.setSinkId && navigator.mediaDevices?.enumerateDevices) {
-      try {
-        const outs = (await navigator.mediaDevices.enumerateDevices())
-          .filter((d) => d.kind === "audiooutput" && d.deviceId && d.deviceId !== "communications");
-        if (outs.length > 1) {
-          outputIndex.current = (outputIndex.current + 1) % outs.length;
-          const out = outs[outputIndex.current];
-          await el.setSinkId(out.deviceId);
-          setSoundOn(true);
-          toast(`Sound: ${out.label || `output ${outputIndex.current + 1}`}`);
-          return;
-        }
-      } catch {
-        /* fall back to sound on/off */
-      }
-    }
-    setSoundOn((v) => !v);
-  };
+  /** Speaker on/off: the other person's sound (browsers can't pick earpiece vs loudspeaker). */
+  const toggleSpeaker = () => setSoundOn((v) => !v);
 
   const enableSound = () => {
     document.querySelectorAll<HTMLMediaElement>("[data-remote-media]").forEach((el) => playRemote(el));

@@ -419,3 +419,301 @@ GRANT EXECUTE ON FUNCTION isexy.mark_call_connected(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION isexy.charge_call_minute(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION isexy.end_call(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION isexy.record_missed_call(uuid) TO authenticated;
+
+-- ============================================================================
+-- 4. Phone Line calls (call_sessions, provider 'in_app')
+-- ----------------------------------------------------------------------------
+-- start_phone_line_call_session read profiles.age (no such column: every call
+-- failed) and created the session 'connected' at once, so the caller was
+-- charged per minute for a call nobody received. Now it rings; the receiver
+-- answers or declines; billing starts when media connects (either side
+-- reports it) and end_call_session settles unpaid minutes.
+-- ============================================================================
+CREATE OR REPLACE FUNCTION isexy.start_phone_line_call_session(
+  p_target_profile_id uuid,
+  p_call_type text DEFAULT 'phone_line_profile'
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_caller profiles%ROWTYPE;
+  v_pl phone_line_profiles%ROWTYPE;
+  v_balance int;
+  v_recent int;
+  v_session_id uuid;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authenticated');
+  END IF;
+  IF p_call_type IS DISTINCT FROM 'phone_line_profile' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'unsupported_call_type');
+  END IF;
+  SELECT * INTO v_caller FROM profiles WHERE user_id = auth.uid();
+  IF v_caller.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'no_profile');
+  END IF;
+  IF v_caller.id = p_target_profile_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'cannot_call_self');
+  END IF;
+  -- 18+ from the birth date (profiles has no age column).
+  IF v_caller.birth_date IS NULL OR v_caller.birth_date > (current_date - interval '18 years')::date THEN
+    RETURN jsonb_build_object('success', false, 'error', 'age_restricted');
+  END IF;
+  IF v_caller.first_name IS NULL OR length(trim(v_caller.first_name)) = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'incomplete_profile');
+  END IF;
+
+  SELECT * INTO v_pl FROM phone_line_profiles
+   WHERE profile_id = p_target_profile_id AND status = 'active' AND is_public = true
+   LIMIT 1;
+  IF v_pl.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'voice_profile_unavailable');
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM blocks
+              WHERE (blocker_id = v_caller.id AND blocked_id = p_target_profile_id)
+                 OR (blocker_id = p_target_profile_id AND blocked_id = v_caller.id)) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'blocked');
+  END IF;
+
+  SELECT count(*) INTO v_recent FROM call_sessions
+   WHERE caller_profile_id = v_caller.id AND created_at > now() - interval '2 minutes';
+  IF v_recent >= 6 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'too_many_calls');
+  END IF;
+
+  -- Phone minutes are pay-as-you-go (no premium bypass).
+  INSERT INTO user_credits (profile_id) VALUES (v_caller.id) ON CONFLICT (profile_id) DO NOTHING;
+  SELECT phone_minutes INTO v_balance FROM user_credits WHERE profile_id = v_caller.id;
+  IF COALESCE(v_balance, 0) <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'no_minutes', 'phone_minutes', 0);
+  END IF;
+
+  -- One ringing call at a time.
+  UPDATE call_sessions
+     SET status = 'canceled', ended_at = now(), end_reason = 'superseded'
+   WHERE caller_profile_id = v_caller.id AND call_type = 'phone_line_profile'
+     AND status IN ('initiating', 'ringing');
+
+  INSERT INTO call_sessions (
+    caller_profile_id, receiver_profile_id, phone_line_profile_id,
+    call_type, provider, status, started_at
+  ) VALUES (
+    v_caller.id, p_target_profile_id, v_pl.id,
+    'phone_line_profile', 'in_app', 'ringing', now()
+  )
+  RETURNING id INTO v_session_id;
+
+  RETURN jsonb_build_object('success', true, 'call_session_id', v_session_id,
+                            'phone_minutes', v_balance, 'display_name', v_pl.display_name);
+END;
+$$;
+
+-- answer_call_session: the receiver picks up (or rejoins a connected call).
+CREATE OR REPLACE FUNCTION isexy.answer_call_session(p_call_session_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_me uuid;
+  v_s call_sessions%ROWTYPE;
+  v_caller_name text;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authenticated');
+  END IF;
+  SELECT id INTO v_me FROM profiles WHERE user_id = auth.uid();
+  SELECT * INTO v_s FROM call_sessions WHERE id = p_call_session_id FOR UPDATE;
+  IF v_me IS NULL OR v_s.id IS NULL OR v_s.provider <> 'in_app' OR v_s.receiver_profile_id IS DISTINCT FROM v_me THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_found');
+  END IF;
+  IF NOT ((v_s.status IN ('initiating', 'ringing') AND v_s.started_at > now() - interval '3 minutes')
+          OR v_s.status = 'connected') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'call_not_active', 'status', v_s.status);
+  END IF;
+  IF EXISTS (SELECT 1 FROM blocks
+              WHERE (blocker_id = v_me AND blocked_id = v_s.caller_profile_id)
+                 OR (blocker_id = v_s.caller_profile_id AND blocked_id = v_me)) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'call_not_active');
+  END IF;
+  SELECT first_name INTO v_caller_name FROM profiles WHERE id = v_s.caller_profile_id;
+  RETURN jsonb_build_object('success', true, 'status', v_s.status, 'caller_profile_id', v_s.caller_profile_id,
+                            'caller_name', v_caller_name, 'call_type', v_s.call_type);
+END;
+$$;
+
+-- decline_call_session: the receiver says no.
+CREATE OR REPLACE FUNCTION isexy.decline_call_session(p_call_session_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_me uuid;
+  v_s call_sessions%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authenticated');
+  END IF;
+  SELECT id INTO v_me FROM profiles WHERE user_id = auth.uid();
+  SELECT * INTO v_s FROM call_sessions WHERE id = p_call_session_id FOR UPDATE;
+  IF v_me IS NULL OR v_s.id IS NULL OR v_s.provider <> 'in_app' OR v_s.receiver_profile_id IS DISTINCT FROM v_me THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_found');
+  END IF;
+  IF v_s.status NOT IN ('initiating', 'ringing') THEN
+    RETURN jsonb_build_object('success', true, 'already_ended', true, 'status', v_s.status);
+  END IF;
+  UPDATE call_sessions
+     SET status = 'declined', ended_at = now(), end_reason = 'declined', updated_at = now()
+   WHERE id = p_call_session_id;
+  RETURN jsonb_build_object('success', true, 'status', 'declined');
+END;
+$$;
+
+-- mark_call_session_connected: media is flowing (either side). Billing starts.
+CREATE OR REPLACE FUNCTION isexy.mark_call_session_connected(p_call_session_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_me uuid;
+  v_s call_sessions%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authenticated');
+  END IF;
+  SELECT id INTO v_me FROM profiles WHERE user_id = auth.uid();
+  SELECT * INTO v_s FROM call_sessions WHERE id = p_call_session_id FOR UPDATE;
+  IF v_me IS NULL OR v_s.id IS NULL OR v_s.provider <> 'in_app'
+     OR v_me NOT IN (v_s.caller_profile_id, COALESCE(v_s.receiver_profile_id, v_s.caller_profile_id)) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_found');
+  END IF;
+  IF v_s.status NOT IN ('initiating', 'ringing', 'connected') OR v_s.ended_at IS NOT NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'call_not_active', 'status', v_s.status);
+  END IF;
+  UPDATE call_sessions
+     SET status = 'connected', answered_at = COALESCE(answered_at, now()), updated_at = now()
+   WHERE id = p_call_session_id
+  RETURNING answered_at INTO v_s.answered_at;
+  RETURN jsonb_build_object('success', true, 'answered_at', v_s.answered_at);
+END;
+$$;
+
+-- end_call_session: same contract as before, plus 'missed' (caller, no answer),
+-- 'declined' (receiver before connect), duration 0 when never connected, and
+-- settlement of unpaid minutes for connected in-app calls.
+CREATE OR REPLACE FUNCTION isexy.end_call_session(
+  p_call_session_id uuid,
+  p_end_reason text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_me uuid;
+  v_s call_sessions%ROWTYPE;
+  v_new_status text;
+  v_duration int := 0;
+  v_due int;
+  v_before int;
+  v_take int := 0;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authenticated');
+  END IF;
+  SELECT id INTO v_me FROM profiles WHERE user_id = auth.uid();
+  IF v_me IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'no_profile');
+  END IF;
+  SELECT * INTO v_s FROM call_sessions WHERE id = p_call_session_id FOR UPDATE;
+  IF v_s.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'session_not_found');
+  END IF;
+  IF v_s.caller_profile_id <> v_me AND v_s.receiver_profile_id IS DISTINCT FROM v_me THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authorized');
+  END IF;
+  IF v_s.status IN ('completed', 'canceled', 'failed', 'missed', 'declined') THEN
+    RETURN jsonb_build_object('success', true, 'already_ended', true, 'status', v_s.status);
+  END IF;
+
+  IF v_s.status = 'connected' THEN
+    v_new_status := 'completed';
+    v_duration := GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(v_s.answered_at, v_s.started_at)))::int);
+    IF v_s.provider = 'in_app' AND v_s.answered_at IS NOT NULL THEN
+      v_due := GREATEST(1, ceil(v_duration / 60.0)::int) - COALESCE(v_s.minutes_charged, 0);
+      IF v_due > 0 THEN
+        SELECT COALESCE(phone_minutes, 0) INTO v_before
+          FROM user_credits WHERE profile_id = v_s.caller_profile_id FOR UPDATE;
+        v_take := LEAST(v_due, GREATEST(COALESCE(v_before, 0), 0));
+        IF v_take > 0 THEN
+          UPDATE user_credits SET phone_minutes = phone_minutes - v_take, updated_at = now()
+           WHERE profile_id = v_s.caller_profile_id;
+          INSERT INTO call_minute_transactions
+            (profile_id, call_session_id, call_type, minutes_charged, balance_before, balance_after)
+          VALUES (v_s.caller_profile_id, v_s.id, v_s.call_type, v_take, v_before, v_before - v_take);
+          INSERT INTO credit_transactions (profile_id, amount, type, category, description)
+          VALUES (v_s.caller_profile_id, -v_take, 'spend', v_s.call_type, v_s.call_type || ' minutes (end of call)');
+        END IF;
+      END IF;
+    END IF;
+  ELSIF p_end_reason = 'no_answer' AND v_me = v_s.caller_profile_id THEN
+    v_new_status := 'missed';
+  ELSIF v_me = v_s.receiver_profile_id THEN
+    v_new_status := 'declined';
+  ELSIF p_end_reason = 'failed' THEN
+    v_new_status := 'failed';
+  ELSE
+    v_new_status := 'canceled';
+  END IF;
+
+  UPDATE call_sessions
+     SET status = v_new_status,
+         ended_at = now(),
+         duration_seconds = v_duration,
+         minutes_charged = COALESCE(minutes_charged, 0) + v_take,
+         end_reason = COALESCE(left(nullif(trim(p_end_reason), ''), 40), end_reason),
+         updated_at = now()
+   WHERE id = p_call_session_id;
+
+  RETURN jsonb_build_object('success', true, 'status', v_new_status, 'duration_seconds', v_duration,
+                            'minutes_charged', COALESCE(v_s.minutes_charged, 0) + v_take);
+END;
+$$;
+
+-- The receiver hears the call ring through Realtime (RLS lets participants read).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+     WHERE pubname = 'supabase_realtime' AND schemaname = 'isexy' AND tablename = 'call_sessions'
+  ) THEN
+    PERFORM isexy._realtime_add('call_sessions');
+  END IF;
+END;
+$$;
+
+CREATE INDEX IF NOT EXISTS idx_call_sessions_caller_created
+  ON isexy.call_sessions (caller_profile_id, created_at DESC);
+
+REVOKE ALL ON FUNCTION isexy.start_phone_line_call_session(uuid, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION isexy.answer_call_session(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION isexy.decline_call_session(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION isexy.mark_call_session_connected(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION isexy.end_call_session(uuid, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION isexy.charge_call_session_minute(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.start_phone_line_call_session(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION isexy.answer_call_session(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION isexy.decline_call_session(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION isexy.mark_call_session_connected(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION isexy.end_call_session(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION isexy.charge_call_session_minute(uuid) TO authenticated;
