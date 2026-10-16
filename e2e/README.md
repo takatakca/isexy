@@ -38,6 +38,7 @@ Pass/fail checks (print `PASS`/`FAIL` lines, exit 1 on a failure):
 | `chat-e2e.mjs` | Chat | read RPC, optimistic send + retry, history paging, translation cache, presence, locked chat | `node --import ./e2e/offline-browser.mjs e2e/chat-e2e.mjs http://127.0.0.1:4173 SHOTS public/og-image.png` |
 | `chat-notifications-e2e.mjs` | Chat | badges, push opt-in + settings, email settings, missed calls, group chat, matches list | same as chat-e2e |
 | `calls-e2e.mjs` | Calls | two browsers, real WebRTC (fake camera/mic): ring, answer, video + audio-only, mute/camera/speaker/switch camera, ICE drop -> Reconnecting -> restart, give up, decline, ringing catch-up, camera blocked -> audio only, mic blocked, missed call RPC, out of minutes, every track stopped | `node --import ./e2e/offline-browser.mjs e2e/calls-e2e.mjs SHOTS http://127.0.0.1:4173` |
+| `calls-twilio-test.mjs` | Calls (Phone Line by phone) | the three Twilio webhooks run in Node against an in-memory Supabase (no browser, no network): signature over the public URL (Twilio's test vector, wrong account, internal URL refused), well-formed escaped TwiML, caller by verified number + 18+ birth date, one session per CallSid, menu keys, silence -> hang up, browse (blocked / shadow-banned left out, WAV/MP3 played from a signed URL, other formats read by headline), status callback -> `apply_twilio_call_status`, 500 on a database error | `node --experimental-strip-types --no-warnings --import ./e2e/calls-twilio-loader.mjs e2e/calls-twilio-test.mjs` |
 
 Broad smoke scripts (print a log to read; they stop with an error if a step cannot run):
 
@@ -50,7 +51,9 @@ Broad smoke scripts (print a log to read; they stop with an error if a step cann
 
 Helpers: `accounts-mockdb.mjs` (in-memory PostgREST/Auth/Storage/Functions mock
 used by the accounts scripts), `no-network.mjs` (build-time fetch blocker),
-`offline-browser.mjs` (browser network guard).
+`offline-browser.mjs` (browser network guard), `calls-twilio-loader.mjs`
+(maps the functions' esm.sh supabase-js import to the in-memory fake, blocks
+every other network import).
 
 ## Database checks
 

@@ -75,15 +75,15 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
     the answered/connected states are not separated (the caller could start
     billing before anyone answers); client (PhoneLineCall + ringing for the
     receiver) not done.
-19. [ ] Twilio IVR: inbound and menu select `profiles.age` / `profiles.status`
+19. [x] Twilio IVR: inbound and menu select `profiles.age` / `profiles.status`
     (do not exist): every verified caller is treated as unknown.
-20. [ ] TwiML: `&` in Gather/Redirect URLs not XML-escaped (browse is a parse
+20. [x] TwiML: `&` in Gather/Redirect URLs not XML-escaped (browse is a parse
     error), names not escaped, browse ignores the digits (2 = repeat, 9 =
     main menu do nothing).
 21. [ ] Greetings recorded as WebM/Opus (Safari: MP4) and labelled
     `audio/webm`: Twilio `<Play>` plays neither, so browse by phone is silent;
     older Safari cannot play WebM in the app either.
-22. [ ] Twilio signature checked against `req.url` (the internal URL, not
+22. [x] Twilio signature checked against `req.url` (the internal URL, not
     the public URL Twilio signed) with a non constant-time compare; the menu
     builds its own URL from `req.url`.
 23. [x] Status callback: `ringing` maps to `initiating`, late callbacks move a
@@ -185,6 +185,23 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
   `e2e/calls-e2e.mjs` sections 8-9 (17 checks: ring, answer, audio both
   ways, billing after media only, mute, hang up, decline, no minutes, mic
   blocked, every track stopped).
+
+- Twilio webhooks (#19, #20, #22, function half of #23/#24):
+  `supabase/functions/_shared/twilio.ts` (signature = HMAC-SHA1 over the
+  public URL `ISEXY_TWILIO_WEBHOOK_BASE` or `${SUPABASE_URL}/functions/v1`
+  + the request's query string + sorted POST params, constant-time compare,
+  `AccountSid` must match `TWILIO_ACCOUNT_SID` when set; `xmlEscape` on every
+  name, headline and URL; caller = verified `phone_line_numbers` row + active
+  profile 18+ from `birth_date`), `isexy-twilio-inbound-phone-line` (unknown
+  callers logged hashed + masked, one `call_sessions` row per CallSid),
+  `isexy-twilio-phone-line-menu` (absolute escaped Gather/Redirect URLs,
+  menu 1-5/9, silence repeats then hangs up after 3 rounds, browse keys
+  1 next / 2 again / 3 reply in the app / 9 menu, blocked and shadow-banned
+  voices left out, only WAV/MP3 greetings are `<Play>`ed from a signed URL,
+  others are introduced by name + headline), `isexy-twilio-call-status`
+  (`apply_twilio_call_status`, 500 on a database error so Twilio retries).
+  Verified: `e2e/calls-twilio-test.mjs` 43/43 PASS (Node, in-memory
+  Supabase, Twilio's documented signature test vector).
 
 ## Verification
 

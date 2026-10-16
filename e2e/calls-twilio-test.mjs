@@ -238,7 +238,7 @@ check("browse: a WebM greeting Twilio cannot play is introduced by its headline 
 keys = new URL(gatherAction(r.body));
 check("browse: seen carries both voices", keys.searchParams.get("seen") === `${P.bee},${P.cee}`);
 r = await press("1", keys.search);
-check("browse 1 at the end: that's everyone, back to the menu", twimlOk(r) && /That's everyone for now/.test(r.body));
+check("browse 1 at the end: that's everyone, back to the menu", twimlOk(r) && /That(?:'|&apos;)s everyone for now/.test(r.body), wellFormed(r.body) ?? r.body.slice(60, 300));
 r = await press("3", keys.search);
 check("browse 3: voice replies are sent from the app", twimlOk(r) && /sent from the ISEXY app/.test(r.body));
 r = await press("9", keys.search);
