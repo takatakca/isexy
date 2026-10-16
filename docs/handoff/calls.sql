@@ -21,7 +21,8 @@
 --      link_my_phone_line_number fixed and admin-only (no DELETE).
 --   6. Moderation state: greetings / voice replies / banned voice profiles
 --      change only through staff RPCs (get_voice_greetings_for_review,
---      review_voice_greeting); admins read video_call_sessions.
+--      review_voice_greeting); a greeting goes only on the member's own
+--      voice profile; admins read video_call_sessions.
 --
 -- Test: scripts/isexy/test/calls-smoke.sql (instructions at its top).
 
@@ -1032,6 +1033,13 @@ AS $$
 BEGIN
   IF current_user IN ('authenticated', 'anon') THEN
     IF TG_OP = 'INSERT' THEN
+      -- The insert policy only checks profile_id: the greeting must also go
+      -- on the member's own voice profile (not on someone else's, where it
+      -- would become that person's newest greeting once approved).
+      IF NOT EXISTS (SELECT 1 FROM phone_line_profiles plp
+                      WHERE plp.id = NEW.phone_line_profile_id AND plp.profile_id = NEW.profile_id) THEN
+        RAISE EXCEPTION 'A greeting goes on your own voice profile' USING ERRCODE = '42501';
+      END IF;
       NEW.moderation_status := 'pending';
       NEW.rejected_reason := NULL;
       NEW.report_count := 0;

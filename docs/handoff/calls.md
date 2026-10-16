@@ -109,6 +109,11 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 31. [x] AdminCallTests shows only `call_sessions`; in-app calls
     (`video_call_sessions`) are invisible.
 
+36. [x] A member could insert a greeting with their own `profile_id` on
+    someone else's voice profile (`phone_line_profile_id`): the insert
+    policy checks only `profile_id`; once approved it would be that
+    person's newest greeting. `voice_greetings_member_guard` now refuses it.
+
 ### Found outside this area (cross-area notes, not changed here)
 
 - `user_credits` policy "Users can update own credits" lets a member set

@@ -463,6 +463,26 @@ SELECT pg_temp.as_user('ca110000-0000-4000-8000-00000000000e');
 SELECT pg_temp.ok('6 staff reject with a reason', r->>'moderation_status' = 'rejected', r::text)
   FROM (SELECT isexy.review_voice_greeting('ca11c000-0000-4000-8000-000000000001', false, 'Too quiet') r) x;
 
+-- A greeting goes only on the member's own voice profile.
+SELECT pg_temp.as_user('ca110000-0000-4000-8000-00000000000c');
+DO $$ BEGIN
+  INSERT INTO isexy.voice_greetings (phone_line_profile_id, profile_id, audio_url, duration_seconds)
+  VALUES ('ca11b000-0000-4000-8000-000000000001', 'ca110000-0000-4000-8000-00000000000c', 'ca110000-0000-4000-8000-00000000000c/x.wav', 10);
+  PERFORM pg_temp.ok('6 a member cannot put a greeting on someone else''s voice profile', false, 'inserted');
+EXCEPTION WHEN insufficient_privilege THEN
+  PERFORM pg_temp.ok('6 a member cannot put a greeting on someone else''s voice profile', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('ca110000-0000-4000-8000-00000000000b');
+INSERT INTO isexy.voice_greetings (id, phone_line_profile_id, profile_id, audio_url, duration_seconds)
+VALUES ('ca11c000-0000-4000-8000-000000000002', 'ca11b000-0000-4000-8000-000000000001', 'ca110000-0000-4000-8000-00000000000b',
+        'ca110000-0000-4000-8000-00000000000b/g3.wav', 15);
+SELECT pg_temp.ok('6 the owner adds a new greeting on their own voice profile (pending)', bool_and(moderation_status = 'pending'), string_agg(moderation_status, ','))
+  FROM isexy.voice_greetings WHERE id = 'ca11c000-0000-4000-8000-000000000002';
+UPDATE isexy.voice_greetings SET is_active = false
+ WHERE phone_line_profile_id = 'ca11b000-0000-4000-8000-000000000001' AND id <> 'ca11c000-0000-4000-8000-000000000002';
+SELECT pg_temp.ok('6 the owner switches the older greeting off (Voice profile save)', bool_and(NOT is_active), string_agg(is_active::text, ','))
+  FROM isexy.voice_greetings WHERE id = 'ca11c000-0000-4000-8000-000000000001';
+
 SELECT pg_temp.as_user('ca110000-0000-4000-8000-00000000000d');
 INSERT INTO isexy.phone_line_voice_replies (id, from_profile_id, to_profile_id, audio_url, duration_seconds, moderation_status)
 VALUES ('ca11d000-0000-4000-8000-000000000001', 'ca110000-0000-4000-8000-00000000000d', 'ca110000-0000-4000-8000-00000000000b',
