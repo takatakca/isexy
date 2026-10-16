@@ -34,8 +34,14 @@ export function iceServers(env: Env = import.meta.env): RTCIceServer[] {
   return servers;
 }
 
-export function rtcConfiguration(env: Env = import.meta.env): RTCConfiguration {
+/**
+ * `privateRelay`: calls between people who are not matched (Phone Line) send
+ * media through TURN when it is configured, so neither side learns the
+ * other's IP address. Without TURN they connect directly like other calls.
+ */
+export function rtcConfiguration(env: Env = import.meta.env, opts: { privateRelay?: boolean } = {}): RTCConfiguration {
   const servers = iceServers(env);
-  const relayOnly = env.VITE_TURN_RELAY_ONLY === "true" && servers.length > 1;
+  const hasTurn = servers.length > 1;
+  const relayOnly = hasTurn && (env.VITE_TURN_RELAY_ONLY === "true" || !!opts.privateRelay);
   return { iceServers: servers, iceTransportPolicy: relayOnly ? "relay" : "all" };
 }

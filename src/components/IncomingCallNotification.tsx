@@ -3,26 +3,47 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Phone, PhoneOff, Video, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { declineCall } from "@/lib/callSessions";
+import { declineCall, declinePhoneLineCall } from "@/lib/callSessions";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface IncomingCall {
   id: string;
-  matchId: string;
+  /** "match": in-app call from a match (VideoCall); "phone_line": Phone Line voice call. */
+  source: "match" | "phone_line";
+  matchId: string | null;
   callerId: string;
   callerName: string;
   callerPhoto?: string;
   callType: "video" | "phone";
 }
 
+/** A ringing call from either table, normalised. */
 interface SessionRow {
   id: string;
-  match_id: string;
+  source: "match" | "phone_line";
+  match_id: string | null;
   caller_id: string;
   status: string;
   call_type?: string | null;
   created_at?: string;
 }
+
+interface PhoneLineRow {
+  id: string;
+  caller_profile_id: string;
+  receiver_profile_id: string | null;
+  provider: string;
+  call_type: string;
+  status: string;
+  started_at?: string;
+}
+
+const fromVideoRow = (r: { id: string; match_id: string; caller_id: string; status: string; call_type?: string | null; created_at?: string }): SessionRow =>
+  ({ ...r, source: "match" });
+const fromPhoneLineRow = (r: PhoneLineRow): SessionRow | null =>
+  r.provider === "in_app" && r.call_type === "phone_line_profile"
+    ? { id: r.id, source: "phone_line", match_id: null, caller_id: r.caller_profile_id, status: r.status, call_type: "phone", created_at: r.started_at }
+    : null;
 
 const RING_MS = 35_000;
 /** Routes where I'm already in a call: a second call rings out (missed call). */
@@ -30,11 +51,13 @@ const IN_CALL = /^\/(video-call|phone-line\/call)\//;
 
 /**
  * Full-screen incoming call sheet. Listens for new video_call_sessions rows
+ * (calls from matches) and call_sessions rows (Phone Line voice calls)
  * addressed to me (Realtime) and, when the app opens or comes back to the
  * foreground (e.g. from the incoming-call push), looks for a call that is
- * already ringing. Answer opens VideoCall in answer mode; Decline goes through
- * the decline_call RPC. State that callbacks read lives in refs so stopping
- * the ringtone and dismissing always act on the current call.
+ * already ringing. Answer opens VideoCall / PhoneLineCall in answer mode;
+ * Decline goes through decline_call / decline_call_session. State that
+ * callbacks read lives in refs so stopping the ringtone and dismissing always
+ * act on the current call.
  */
 export function IncomingCallNotification() {
   const navigate = useNavigate();
@@ -97,21 +120,25 @@ export function IncomingCallNotification() {
 
   /** `catchUp`: found by query, maybe rung for a while (device clocks may differ: clamp). */
   const ring = useCallback(async (row: SessionRow, catchUp = false) => {
-    if (row.status !== "ringing" && row.status !== "connecting") return;
+    if (row.status !== "ringing" && !(row.source === "match" && row.status === "connecting")) return;
     if (callRef.current || handledRef.current.has(row.id)) return; // already ringing / handled
     if (IN_CALL.test(pathRef.current)) return; // busy: let it ring out
     const age = catchUp && row.created_at ? Date.now() - new Date(row.created_at).getTime() : 0;
     const left = Math.min(RING_MS, Math.max(8_000, RING_MS - age));
     handledRef.current.add(row.id);
 
+    // Phone Line is voice first: name only, no photo.
     const [{ data: caller }, { data: photos }] = await Promise.all([
       supabase.from("profiles").select("first_name").eq("id", row.caller_id).maybeSingle(),
-      supabase.from("profile_photos").select("photo_url").eq("profile_id", row.caller_id).order("position").limit(1),
+      row.source === "match"
+        ? supabase.from("profile_photos").select("photo_url").eq("profile_id", row.caller_id).order("position").limit(1)
+        : Promise.resolve({ data: [] as { photo_url: string }[] }),
     ]);
     if (callRef.current) return;
 
     setIncomingCall({
       id: row.id,
+      source: row.source,
       matchId: row.match_id,
       callerId: row.caller_id,
       callerName: caller?.first_name || "Someone",
@@ -134,15 +161,26 @@ export function IncomingCallNotification() {
       // Wider than the ring time: device clocks are not exact. Calls that rang
       // out are already 'missed' on the server.
       const since = new Date(Date.now() - 90_000).toISOString();
-      const { data } = await supabase
-        .from("video_call_sessions")
-        .select("id, match_id, caller_id, status, call_type, created_at")
-        .eq("receiver_id", me)
-        .eq("status", "ringing")
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      const row = data?.[0] as SessionRow | undefined;
+      const [{ data }, { data: pl }] = await Promise.all([
+        supabase
+          .from("video_call_sessions")
+          .select("id, match_id, caller_id, status, call_type, created_at")
+          .eq("receiver_id", me)
+          .eq("status", "ringing")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("call_sessions")
+          .select("id, caller_profile_id, receiver_profile_id, provider, call_type, status, started_at")
+          .eq("receiver_profile_id", me)
+          .eq("provider", "in_app")
+          .eq("status", "ringing")
+          .gte("started_at", since)
+          .order("started_at", { ascending: false })
+          .limit(1),
+      ]);
+      const row = data?.[0] ? fromVideoRow(data[0]) : pl?.[0] ? fromPhoneLineRow(pl[0] as PhoneLineRow) : null;
       if (row) void ring(row, true);
     };
 
@@ -151,7 +189,7 @@ export function IncomingCallNotification() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "isexy", table: "video_call_sessions", filter: `receiver_id=eq.${me}` },
-        (payload) => { void ring(payload.new as SessionRow); },
+        (payload) => { void ring(fromVideoRow(payload.new as Parameters<typeof fromVideoRow>[0])); },
       )
       .on(
         "postgres_changes",
@@ -159,6 +197,22 @@ export function IncomingCallNotification() {
         (payload) => {
           const call = payload.new as { id: string; status: string };
           // Caller hung up, the ring timed out, or I answered/declined on another device.
+          if (callRef.current?.id === call.id && call.status !== "ringing") dismiss();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "isexy", table: "call_sessions", filter: `receiver_profile_id=eq.${me}` },
+        (payload) => {
+          const row = fromPhoneLineRow(payload.new as PhoneLineRow);
+          if (row) void ring(row);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "isexy", table: "call_sessions", filter: `receiver_profile_id=eq.${me}` },
+        (payload) => {
+          const call = payload.new as { id: string; status: string };
           if (callRef.current?.id === call.id && call.status !== "ringing") dismiss();
         },
       )
@@ -180,7 +234,8 @@ export function IncomingCallNotification() {
     const call = callRef.current;
     if (!call) return;
     dismiss();
-    navigate(`/video-call/${call.matchId}?type=${call.callType}&answer=${call.id}`);
+    if (call.source === "phone_line") navigate(`/phone-line/call/${call.id}?answer=1`);
+    else navigate(`/video-call/${call.matchId}?type=${call.callType}&answer=${call.id}`);
   };
 
   const declineIncoming = async () => {
@@ -188,7 +243,8 @@ export function IncomingCallNotification() {
     if (!call) return;
     dismiss();
     // The caller's screen watches this row and shows "can't take your call".
-    await declineCall(call.id);
+    if (call.source === "phone_line") await declinePhoneLineCall(call.id);
+    else await declineCall(call.id);
   };
 
   return (
@@ -199,7 +255,7 @@ export function IncomingCallNotification() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -100 }}
           role="alertdialog"
-          aria-label={`Incoming ${incomingCall.callType} call from ${incomingCall.callerName}`}
+          aria-label={`Incoming ${incomingCall.source === "phone_line" ? "Phone Line" : incomingCall.callType} call from ${incomingCall.callerName}`}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
         >
           <motion.div
@@ -223,7 +279,11 @@ export function IncomingCallNotification() {
             <h2 className="text-2xl font-bold text-foreground mb-2">{incomingCall.callerName}</h2>
             <div className="flex items-center justify-center gap-2 text-muted-foreground mb-8">
               {incomingCall.callType === "phone" ? <Phone className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-              <span>Incoming {incomingCall.callType === "phone" ? "voice" : "video"} call…</span>
+              <span>
+                {incomingCall.source === "phone_line"
+                  ? "Phone Line call…"
+                  : `Incoming ${incomingCall.callType === "phone" ? "voice" : "video"} call…`}
+              </span>
             </div>
 
             <div className="flex items-center justify-center gap-10">

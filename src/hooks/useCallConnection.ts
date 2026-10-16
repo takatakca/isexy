@@ -16,6 +16,8 @@ interface Options {
   role: CallRole;
   /** Video call: receive the other person's video even when my own camera is unavailable. */
   video: boolean;
+  /** Relay media through TURN when configured (calls with people you are not matched with). */
+  privateRelay?: boolean;
   onRemoteStream: (stream: MediaStream) => void;
   onConnected: () => void;
   /** Caller only: the other person answered and joined the call. */
@@ -80,7 +82,7 @@ const newId = () =>
  * without media the call fails with "connection_lost". A callee page reload
  * (new peer-connection id) makes the caller start a fresh peer connection.
  */
-export function useCallConnection({ myId, role, video, onRemoteStream, onConnected, onPeerJoined, onPeerHangup, onFailed }: Options) {
+export function useCallConnection({ myId, role, video, privateRelay, onRemoteStream, onConnected, onPeerJoined, onPeerHangup, onFailed }: Options) {
   const [phase, setPhaseState] = useState<ConnectionPhase>("idle");
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [peerState, setPeerState] = useState<PeerMediaState>({ micOn: true, camOn: video });
@@ -249,7 +251,7 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
     queuedIce.current = [];
     remoteRef.current = null;
     pcIdRef.current = newId();
-    const pc = new RTCPeerConnection(rtcConfiguration());
+    const pc = new RTCPeerConnection(rtcConfiguration(import.meta.env, { privateRelay }));
     const stream = streamRef.current;
     stream?.getTracks().forEach((t) => pc.addTrack(t, stream));
     // Video call without my camera: still receive theirs.
@@ -266,7 +268,7 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
     pc.onconnectionstatechange = () => evaluate(pc);
     pcRef.current = pc;
     return pc;
-  }, [role, video, send, evaluate]);
+  }, [role, video, privateRelay, send, evaluate]);
 
   const handleSignal = useCallback(async (msg: Signal) => {
     if (!msg || msg.from === myId || (msg.to !== myId && msg.to !== "*") || endedRef.current) return;
@@ -365,8 +367,9 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
   }, []);
 
   /**
-   * Join the call with media already granted (see getCallMedia). `callKey` is
-   * the call session id: both sides meet on channel `call-<callKey>`.
+   * Join the call with media already granted (see getCallMedia). `callKey`
+   * names the call (session id; `pl-<id>` for Phone Line calls): both sides
+   * meet on channel `call-<callKey>`.
    */
   const start = useCallback((stream: MediaStream, callKey: string) => {
     endedRef.current = false;

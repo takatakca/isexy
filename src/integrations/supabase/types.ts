@@ -3403,6 +3403,34 @@ export type Database = {
         Args: { p_call_type?: string; p_match_id: string }
         Returns: Json
       }
+      answer_call_session: { Args: { p_call_session_id: string }; Returns: Json }
+      decline_call_session: { Args: { p_call_session_id: string }; Returns: Json }
+      mark_call_session_connected: {
+        Args: { p_call_session_id: string }
+        Returns: Json
+      }
+      link_my_verified_phone: { Args: never; Returns: Json }
+      get_voice_greetings_for_review: {
+        Args: { p_limit?: number }
+        Returns: {
+          age: number
+          city: string | null
+          created_at: string
+          display_name: string
+          duration_seconds: number
+          greeting_id: string
+          headline: string | null
+          moderation_status: string
+          phone_line_profile_id: string
+          profile_id: string
+          profile_status: string
+          report_count: number
+        }[]
+      }
+      review_voice_greeting: {
+        Args: { p_approve: boolean; p_greeting_id: string; p_reason?: string | null }
+        Returns: Json
+      }
       check_promo_eligibility: {
         Args: { p_profile_id: string; p_tier: string }
         Returns: Json
