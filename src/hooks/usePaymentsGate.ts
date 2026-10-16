@@ -19,13 +19,24 @@ export function usePaymentsGate() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase.functions.invoke("isexy-payments-gate-status");
-        if (!cancelled && data) {
+        const { data, error } = await supabase.functions.invoke("isexy-payments-gate-status");
+        if (error || !data || typeof data.blocked !== "boolean" ||
+            !["test", "live", "unknown"].includes(data.mode)) {
+          throw new Error("Payment availability unavailable");
+        }
+        if (!cancelled) {
           cached = data as GateStatus;
           setStatus(cached);
         }
       } catch {
-        // Silently ignore — page still renders without microcopy.
+        // When the server's payment state is unknown, do not initiate sales.
+        if (!cancelled) setStatus({
+          liveEnabled: false,
+          isTestKey: false,
+          isLiveKey: false,
+          blocked: true,
+          mode: "unknown",
+        });
       }
     })();
     return () => {

@@ -12,7 +12,9 @@ serve((req) => {
   const liveEnabled = (isexyEnv("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
   const isTestKey = stripeKey.startsWith("sk_test_");
   const isLiveKey = stripeKey.startsWith("sk_live_");
-  const blocked = !liveEnabled && !isTestKey;
+  // The opt-in flag alone must not enable purchases with a missing or
+  // malformed secret key. Test mode remains available with test keys.
+  const blocked = !isTestKey && !(liveEnabled && isLiveKey);
   return new Response(JSON.stringify({
     liveEnabled,
     isTestKey,

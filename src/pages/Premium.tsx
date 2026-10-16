@@ -38,8 +38,8 @@ export default function Premium() {
   const selectedPlan = plans.find((p) => p.duration === selectedDuration)!;
 
   const handleSubscribe = async () => {
-    if (gate?.blocked) {
-      toast.error("Subscriptions are not available for purchase yet.");
+    if (!gate || gate.blocked) {
+      toast.error("Subscription availability could not be confirmed. Please retry later.");
       return;
     }
     setLoading(true);
@@ -48,8 +48,13 @@ export default function Premium() {
       const { data, error } = await supabase.functions.invoke("isexy-create-checkout", {
         body: { tier: activeTier, duration: selectedDuration },
       });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
+      if (error || data?.error) throw error ?? new Error(String(data.error));
+      if (typeof data?.url !== "string") throw new Error("Checkout session is unavailable");
+      const checkout = new URL(data.url);
+      if (checkout.protocol !== "https:" || checkout.hostname !== "checkout.stripe.com") {
+        throw new Error("Unexpected payment provider URL");
+      }
+      window.location.assign(checkout.toString());
     } catch (err: any) {
       toast.error(err.message || "Failed to start checkout");
     } finally {
@@ -163,10 +168,10 @@ export default function Premium() {
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
-        {gate?.blocked && (
+        {(!gate || gate.blocked) && (
           <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
             <Lock className="w-3.5 h-3.5" />
-            Live payments are disabled during testing
+            {!gate ? "Checking payment availability…" : "Subscriptions are currently unavailable"}
           </div>
         )}
         <button
@@ -177,7 +182,7 @@ export default function Premium() {
         </button>
         <button
           onClick={handleSubscribe}
-          disabled={loading || gate?.blocked}
+          disabled={loading || !gate || gate.blocked}
           className="cta-primary w-full text-base"
         >
           {loading ? (
