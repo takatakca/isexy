@@ -8,11 +8,10 @@ const corsHeaders = {
 };
 
 interface WhatsAppCallPayload {
-  receiverId: string;
-  callerId: string;
-  callerName: string;
   matchId: string;
-  callSessionId: string;
+  callSessionId?: string;
+  /** "phone" or "video" (sent by VideoCall.tsx). */
+  callType?: string;
 }
 
 
@@ -68,6 +67,7 @@ serve(async (req) => {
 
     const payload = await req.json() as WhatsAppCallPayload;
     const { matchId, callSessionId } = payload;
+    const isPhone = payload.callType === "phone";
     const resolved = await resolveCall(supabaseClient, req, matchId);
     if (!resolved.ok) {
       return new Response(JSON.stringify({ error: resolved.error }), {
@@ -78,6 +78,25 @@ serve(async (req) => {
     void callerId;
 
     console.log(`[WHATSAPP-CALL] Notifying user ${receiverId} about call from ${callerName}`);
+
+    // Push first, for every member (it used to be sent only to members with a
+    // verified WhatsApp number). The tap opens the conversation: opening
+    // /video-call/:matchId without ?answer= would start a new outgoing call;
+    // the in-app ringer (IncomingCallNotification) offers Answer while it rings.
+    await supabaseClient.functions.invoke("isexy-send-push-notification", {
+      body: {
+        userId: receiverId,
+        title: isPhone ? "📞 Incoming call" : "📹 Incoming video call",
+        body: `${callerName} is calling you on ISEXY`,
+        data: {
+          type: isPhone ? "phone_call" : "video_call",
+          matchId: matchId,
+          callSessionId: String(callSessionId ?? ""),
+          url: `/chat/${matchId}`,
+        },
+        tag: "video-call",
+      },
+    }).catch((e: unknown) => console.error("[WHATSAPP-CALL] Push failed:", e));
 
     // Get receiver's Cuban verification info (which has their WhatsApp number)
     const { data: verification, error: verifyError } = await supabaseClient
@@ -111,24 +130,8 @@ serve(async (req) => {
     if (!WHATSAPP_API_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
       console.log("[WHATSAPP-CALL] WhatsApp API not configured, sending SMS fallback");
       
-      // Fallback: Log the call notification for now
+      // Fallback: Log the call notification for now (the push above already went out)
       console.log(`[WHATSAPP-CALL] Would notify +${whatsappNumber}: Incoming video call from ${callerName}`);
-      
-      // Also send push notification as backup
-      await supabaseClient.functions.invoke("isexy-send-push-notification", {
-        body: {
-          userId: receiverId,
-          title: "📹 Incoming Video Call",
-          body: `${callerName} is calling you on ISEXY!`,
-          data: {
-            type: "video_call",
-            matchId: matchId,
-            callSessionId: callSessionId,
-            url: `/video-call/${matchId}`,
-          },
-          tag: "video-call",
-        },
-      });
 
       return new Response(
         JSON.stringify({ 
@@ -186,22 +189,6 @@ serve(async (req) => {
     }
 
     console.log("[WHATSAPP-CALL] WhatsApp notification sent:", whatsappData);
-
-    // Also send push notification
-    await supabaseClient.functions.invoke("isexy-send-push-notification", {
-      body: {
-        userId: receiverId,
-        title: "📹 Incoming Video Call",
-        body: `${callerName} is calling you on ISEXY!`,
-        data: {
-          type: "video_call",
-          matchId: matchId,
-          callSessionId: callSessionId,
-          url: `/video-call/${matchId}`,
-        },
-        tag: "video-call",
-      },
-    });
 
     return new Response(
       JSON.stringify({ 

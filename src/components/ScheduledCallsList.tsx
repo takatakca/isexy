@@ -27,8 +27,11 @@ export function ScheduledCallsList() {
   useEffect(() => {
     if (profile?.id) {
       fetchScheduledCalls();
-      subscribeToChanges();
+      // The cleanup was dropped before, so every visit to the Chat tab left a
+      // channel behind and later visits got no live updates.
+      return subscribeToChanges();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
   const fetchScheduledCalls = async () => {
@@ -53,7 +56,7 @@ export function ScheduledCallsList() {
 
   const subscribeToChanges = () => {
     const channel = supabase
-      .channel("scheduled-calls-changes")
+      .channel(`scheduled-calls-${profile?.id}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "isexy", table: "scheduled_calls" },

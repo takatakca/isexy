@@ -14,8 +14,9 @@ interface Match {
   matched_at: string;
   last_message_at: string | null;
   last_message_preview: string | null;
+  /** The last message was sent by me (the tick only shows on my own messages). */
+  last_message_mine: boolean | null;
   unread_count: number;
-  last_message_read: boolean;
   is_unlocked: boolean;
   other_profile: {
     id: string;
@@ -33,8 +34,6 @@ export default function Matches() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const { openChat, contactModal } = useChatOpener();
-
   const meId = profile?.id;
   const mePremium = profile?.is_premium;
 
@@ -56,8 +55,8 @@ export default function Matches() {
           matched_at: c.matched_at,
           last_message_at: c.last_message_at,
           last_message_preview: c.last_message_preview,
+          last_message_mine: c.last_message_mine,
           unread_count: c.unread_count,
-          last_message_read: c.unread_count === 0,
           is_unlocked: c.is_unlocked,
           other_profile: {
             id: c.other_id,
@@ -79,28 +78,21 @@ export default function Matches() {
   }, [meId, mePremium]);
 
   useEffect(() => {
-    fetchMatches();
+    void fetchMatches();
   }, [fetchMatches]);
 
-  // Subscribe to new matches (RLS only delivers the member's own rows).
+  // Closing the contact sheet may have unlocked a conversation: refresh.
+  const { openChat, contactModal } = useChatOpener({ onClose: () => void fetchMatches() });
+
+  // New matches and messages refresh the list (RLS only delivers the member's own rows).
+  // Topic per mount: a fixed topic can hand a remounted page the old, closing channel.
   useEffect(() => {
     if (!meId) return;
-
     const channel = supabase
-      .channel(`matches-list-${meId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "isexy",
-          table: "matches",
-        },
-        () => {
-          fetchMatches();
-        }
-      )
+      .channel(`matches-list-${meId}-${Math.random().toString(36).slice(2, 8)}`)
+      .on("postgres_changes", { event: "*", schema: "isexy", table: "matches" }, () => void fetchMatches())
+      .on("postgres_changes", { event: "INSERT", schema: "isexy", table: "messages" }, () => void fetchMatches())
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
@@ -128,7 +120,7 @@ export default function Matches() {
           Matches
         </h1>
         <button
-          onClick={() => navigate("/messages")}
+          onClick={() => navigate("/matches")}
           className="p-2 -mr-2 rounded-full hover:bg-muted/60 transition-colors"
           aria-label="Open messages"
         >
@@ -161,7 +153,7 @@ export default function Matches() {
             <h2 className="text-2xl font-bold text-foreground mb-2">We couldn't load your matches</h2>
             <p className="text-muted-foreground mb-6">Check your connection and try again.</p>
             <button
-              onClick={() => { setLoading(true); fetchMatches(); }}
+              onClick={() => { setLoading(true); void fetchMatches(); }}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold"
             >
               <RefreshCw className="w-4 h-4" />
@@ -295,7 +287,7 @@ export default function Matches() {
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 text-sm">
-                        {match.last_message_preview && match.last_message_read && (
+                        {match.last_message_preview && match.last_message_mine && (
                           <CheckCheck className="w-4 h-4 text-primary flex-shrink-0" />
                         )}
                         <span className={`truncate ${match.unread_count > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>

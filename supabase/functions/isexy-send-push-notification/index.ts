@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +73,23 @@ serve(async (req) => {
       }
     }
 
+    // Push settings page (user_preferences.notification_settings.push): honour
+    // the member's "Messages" / "New Matches" switches. Calls always ring through.
+    const kind = typeof data?.type === "string" ? data.type : "";
+    const prefKey = kind === "message" ? "messages" : kind === "new_match" || kind === "match" ? "newMatches" : null;
+    if (prefKey) {
+      const { data: prefs } = await supabaseClient
+        .from("user_preferences")
+        .select("notification_settings")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (prefs?.notification_settings?.push?.[prefKey] === false) {
+        return new Response(JSON.stringify({ success: false, skipped: "opted_out" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     console.log(`[PUSH] Sending notification to user: ${userId}`);
 
     // Get user's push subscriptions
@@ -104,25 +122,47 @@ serve(async (req) => {
       );
     }
 
+    // Clicking the notification opens data.url (public/sw.js); only same-site paths.
+    const safeData: Record<string, string> = {};
+    for (const [k, v] of Object.entries(data ?? {})) {
+      if (typeof v === "string") safeData[k] = v.slice(0, 200);
+    }
+    if (!safeData.url || !safeData.url.startsWith("/") || safeData.url.startsWith("//")) safeData.url = "/matches";
+
     const payload = JSON.stringify({
       title,
       body,
-      data: data || {},
-      tag: tag || "default",
+      data: safeData,
+      tag: String(tag || "default").slice(0, 64),
     });
 
-    // Send to all subscriptions (web-push would be used in production)
-    // For now, log the notification
-    console.log(`[PUSH] Would send to ${subscriptions.length} subscriptions:`, payload);
+    webpush.setVapidDetails(isexyEnv("VAPID_SUBJECT") ?? isexyEnv("APP_URL") ?? "https://isexy.ca", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-    // In production, you would use web-push library here
-    // For each subscription, send the push notification
+    const results = await Promise.allSettled(
+      subscriptions.map((s) =>
+        webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          payload,
+          { TTL: 60 * 60 },
+        )
+      ),
+    );
+    let sent = 0;
+    let expired = 0;
+    results.forEach((r) => {
+      if (r.status === "fulfilled") {
+        sent++;
+        return;
+      }
+      const statusCode = (r.reason as { statusCode?: number } | undefined)?.statusCode;
+      // 404/410: the browser unsubscribed. The row is kept (no deletes); it just fails quietly.
+      if (statusCode === 404 || statusCode === 410) expired++;
+      else console.error("[PUSH] Send failed:", statusCode, (r.reason as Error | undefined)?.message);
+    });
+    console.log(`[PUSH] Sent ${sent}/${subscriptions.length} (expired ${expired})`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Notification queued for ${subscriptions.length} device(s)` 
-      }),
+      JSON.stringify({ success: sent > 0, sent, expired, failed: subscriptions.length - sent - expired }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

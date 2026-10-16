@@ -18,7 +18,7 @@ interface ChatTarget {
  * which unlocks the conversation server-side first.
  * Render `contactModal` once in the page.
  */
-export function useChatOpener() {
+export function useChatOpener(options?: { onClose?: () => void }) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [target, setTarget] = useState<ChatTarget | null>(null);
@@ -31,7 +31,7 @@ export function useChatOpener() {
   const contactModal = target ? (
     <ContactMethodModal
       isOpen
-      onClose={() => setTarget(null)}
+      onClose={() => { setTarget(null); options?.onClose?.(); }}
       matchId={target.matchId}
       otherName={target.otherName}
       otherPhotoUrl={target.otherPhotoUrl}
