@@ -49,6 +49,7 @@ interface Greeting {
   duration_seconds: number;
   is_active: boolean;
   moderation_status?: string;
+  rejected_reason?: string | null;
 }
 
 export default function PhoneLineSetup() {
@@ -102,7 +103,7 @@ export default function PhoneLineSetup() {
 
         const { data: g } = await supabase
           .from("voice_greetings")
-          .select("id, audio_url, duration_seconds, is_active, moderation_status")
+          .select("id, audio_url, duration_seconds, is_active, moderation_status, rejected_reason")
           .eq("phone_line_profile_id", pl.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -303,7 +304,9 @@ export default function PhoneLineSetup() {
         icon: AlertTriangle,
         tone: "border-destructive/40 bg-destructive/10 text-destructive",
         label: "Rejected",
-        desc: "This greeting wasn't approved. Please re-record following the guidelines.",
+        desc: greeting.rejected_reason
+          ? `This greeting wasn't approved (reason: ${greeting.rejected_reason}). Please record a new one.`
+          : "This greeting wasn't approved. Please re-record following the guidelines.",
       };
     } else if (modStatus === "approved" && plProfile?.status === "active") {
       modBanner = {

@@ -3,7 +3,8 @@
 // Owners can fetch their own greeting at any status.
 // Other authenticated users can only fetch greetings that are
 // approved + active + not hidden, on a public + active phone-line profile,
-// and only if neither party has blocked the other.
+// and only if neither party has blocked the other. Staff (admin, moderator)
+// can fetch any greeting, to review it.
 
 import { createClient } from "../_shared/supabase.ts";
 
@@ -72,7 +73,20 @@ Deno.serve(async (req) => {
     const viewerProfileId = viewerProfile?.id ?? null;
     const isOwner = viewerProfileId && viewerProfileId === greeting.profile_id;
 
+    // Staff (admin, moderator) listen to greetings waiting for review
+    // (AdminCallTests > Voice greetings to review).
+    let isStaff = false;
     if (!isOwner) {
+      const { data: roles } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .in("role", ["admin", "moderator"])
+        .limit(1);
+      isStaff = (roles?.length ?? 0) > 0;
+    }
+
+    if (!isOwner && !isStaff) {
       // Public access checks
       if (
         greeting.moderation_status !== "approved" ||

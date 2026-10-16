@@ -106,7 +106,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
     statuses), `banned` missing; "Live" while the greeting is pending.
 30. [x] No moderation queue for voice greetings: greetings default to
     `pending` and nothing approves them, so Browse voices stays empty.
-31. [ ] AdminCallTests shows only `call_sessions`; in-app calls
+31. [~] AdminCallTests shows only `call_sessions`; in-app calls
     (`video_call_sessions`) are invisible.
 
 ### Found outside this area (cross-area notes, not changed here)
