@@ -107,8 +107,9 @@ const COPY: Record<Lang, {
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/isexy-ai-chat`;
 const STORAGE_KEY = "isexy_assistant_v2";
 const TEASER_KEY = "isexy_assistant_teaser_seen";
-// Pages with their own fixed composer / call UI where a floating button gets in the way.
-const HIDDEN_ON = [/^\/discover/, /^\/explore\/./, /^\/chat\//, /^\/group-chat\//, /^\/video-call\//, /^\/phone-line\/call\//, /^\/admin/, /^\/agent-dashboard/];
+// Pages with their own fixed composer / call UI / buy button bar where a floating button gets in the way.
+const HIDDEN_ON = [/^\/discover/, /^\/explore\/./, /^\/chat\//, /^\/group-chat\//, /^\/video-call\//, /^\/phone-line\/call\//, /^\/admin/, /^\/agent-dashboard/,
+  /^\/(premium|compare-plans|my-subscription|get-boosts|get-super-likes|buy-credits|buy-minutes)\/?$/];
 
 function storageGet<T>(key: string, fallback: T): T {
   try {
