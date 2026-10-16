@@ -239,8 +239,52 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 
 ## Verification
 
-(commands and e2e results)
+Last full run (2026-10-16, HEAD of wf/calls), all local, nothing deployed:
+
+- `npm run typecheck` clean; `npm run build` OK (with
+  `NODE_OPTIONS=--import=./e2e/no-network.mjs`); eslint on every file this
+  branch changed: no new findings (the 4 `no-explicit-any` errors left are
+  old lines of `AdminDashboardFull.tsx`).
+- Edge functions: Deno is not installed here, so CI's `deno check` was
+  approximated with `tsc --strict` + a `Deno` shim and the real supabase-js
+  types (esm.sh import mapped to node_modules): clean for the 3 Twilio
+  functions, `isexy-get-voice-greeting-url`, `isexy-get-voice-reply-url`.
+  CI still runs the real `deno check`.
+- `e2e/calls-e2e.mjs` 61/61 PASS (two Chromium contexts, real WebRTC with
+  fake camera/mic, mocked RPCs + Realtime; port 4304).
+- `e2e/calls-phone-line-pages.mjs` 52/52 PASS (build with
+  `VITE_PHONE_LINE_NUMBER="+1 514 555 0100"`).
+- `e2e/calls-twilio-test.mjs` 43/43 PASS (Node, in-memory Supabase).
+- SQL, exactly like the CI `migrations` job on a throwaway Postgres 16
+  (new data dir, port 55471, stopped afterwards): `v1-mock.sql`,
+  `migrate.sh` dry run / `--apply` / re-run "up to date" (0001-0004), then
+  calls.sql as `0005_calls_test.sql` through `migrate.sh` (dry run, apply,
+  re-run; guard silent), calls.sql applied once more (idempotent),
+  `0004-smoke.sql` 34/34, `calls-smoke.sql` 101/101.
 
 ## Left to do
 
-(exact next steps)
+1. Integrator: fold `docs/handoff/calls.sql` into the next isexy migration
+   (append to the unapplied `0004_app_completion.sql`, or a new
+   `0005_calls.sql`), re-run the SQL checks above, regenerate
+   `src/integrations/supabase/types.ts` if needed (the RPCs used here are
+   already in it). The client in this branch needs that SQL: ship together.
+2. Deploy (owner/integrator, never from an agent): `isexy-twilio-inbound-phone-line`,
+   `isexy-twilio-phone-line-menu`, `isexy-twilio-call-status`,
+   `isexy-get-voice-greeting-url`; Twilio number > Voice webhooks
+   (`V1-MIGRATION.md` 3.6); secrets `ISEXY_TWILIO_ACCOUNT_SID`,
+   `ISEXY_TWILIO_AUTH_TOKEN` (+ `ISEXY_TWILIO_WEBHOOK_BASE` only behind a
+   custom domain); build vars `VITE_PHONE_LINE_NUMBER`, `VITE_TURN_URL`,
+   `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` (a TURN server is needed
+   for calls on mobile data).
+3. Owner decision: greetings and replies recorded before this branch are
+   WebM (Chrome) or MP4 (Safari). Twilio cannot play them (browse by phone
+   reads the name + headline instead) and Safari cannot play WebM. Either
+   ask those members to re-record (Voice profile shows the current one) or
+   add a server-side transcode.
+4. Moderators: `get_voice_greetings_for_review` / `review_voice_greeting`
+   accept moderators, but the queue UI is on the admin-only
+   `/admin/call-tests`. If moderators should review voices, add the same
+   queue to the moderator dashboard (trust area).
+5. The phone menu (IVR) speaks English only; French prompts need the
+   owner's wording (and a Polly French voice, e.g. `Polly.Chantal`).
