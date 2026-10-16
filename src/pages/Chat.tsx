@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { checkContent, reportViolation, checkUserBanStatus, type ModerationStatus } from "@/hooks/useContentModeration";
+import { fetchHiddenMemberIds } from "@/lib/blocks";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Phone, Check, CheckCheck, Calendar, AlertTriangle, AlertCircle, Gift, Clock, ChevronDown, RefreshCw } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
@@ -273,13 +274,9 @@ export default function Chat() {
     }
 
     const otherId = match.profile1_id === myId ? match.profile2_id : match.profile1_id;
-    const [blockRes, otherRes, photoRes, unlockRes] = await Promise.all([
-      supabase
-        .from("blocks")
-        .select("id")
-        .or(`and(blocker_id.eq.${myId},blocked_id.eq.${otherId}),and(blocker_id.eq.${otherId},blocked_id.eq.${myId})`)
-        .limit(1)
-        .maybeSingle(),
+    const [hidden, otherRes, photoRes, unlockRes] = await Promise.all([
+      // Blocked either way (who blocked whom is not shown).
+      fetchHiddenMemberIds(myId),
       supabase.from("profiles").select("id, first_name").eq("id", otherId).maybeSingle(),
       supabase.from("profile_photos").select("photo_url").eq("profile_id", otherId).order("position").limit(1),
       isPremium
@@ -287,7 +284,7 @@ export default function Chat() {
         : supabase.from("conversation_unlocks").select("id").eq("match_id", matchId).eq("unlocked_by", myId).eq("unlock_type", "chat").limit(1),
     ]);
 
-    if (blockRes.data) {
+    if (hidden.has(otherId)) {
       toast.error("Messaging is unavailable with this member");
       navigate("/matches");
       return;
@@ -798,7 +795,7 @@ export default function Chat() {
                 <Languages className="w-4 h-4 mr-2" /> {translationsEnabled ? "Turn translation off" : "Turn translation on"}
               </DropdownMenuItem>
               {otherProfile && (
-                <DropdownMenuItem onClick={() => navigate(`/block-report/${otherProfile.id}`)} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={() => navigate(`/block-report/${otherProfile.id}`, { state: { returnTo: "/matches", source: "chat" } })} className="text-destructive focus:text-destructive">
                   <AlertTriangle className="w-4 h-4 mr-2" /> Block or report
                 </DropdownMenuItem>
               )}

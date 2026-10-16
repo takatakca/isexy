@@ -257,7 +257,7 @@ export default function PhoneLineBrowse() {
   };
 
   const reportUser = (g: PLProfile) => {
-    navigate(`/block-report/${g.profile_id}`);
+    navigate(`/block-report/${g.profile_id}`, { state: { source: "phone_line" } });
   };
 
   /** The call screen checks the microphone first, then rings (lib/callSessions). */

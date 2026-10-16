@@ -2526,6 +2526,7 @@ export type Database = {
           reason: string
           reported_id: string
           reporter_id: string
+          source: string | null
           status: string | null
         }
         Insert: {
@@ -2544,6 +2545,7 @@ export type Database = {
           reason?: string
           reported_id?: string
           reporter_id?: string
+          source?: string | null
           status?: string | null
         }
         Relationships: [
@@ -3320,6 +3322,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      block_member: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
       get_my_conversations: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3336,6 +3342,10 @@ export type Database = {
           photo_url: string | null
           unread_count: number
         }[]
+      }
+      get_my_hidden_member_ids: {
+        Args: never
+        Returns: string[]
       }
       get_my_moderation_status: {
         Args: never
@@ -3359,6 +3369,10 @@ export type Database = {
       get_my_wallet: { Args: Record<PropertyKey, never>; Returns: Json }
       get_my_referral_code: { Args: Record<PropertyKey, never>; Returns: string }
       get_my_loyalty: { Args: Record<PropertyKey, never>; Returns: Json }
+      my_blocker_ids: {
+        Args: never
+        Returns: string[]
+      }
       record_contact_sharing: {
         Args: { p_excerpt?: string; p_match_id?: string | null; p_types: string[] }
         Returns: Json
@@ -3367,6 +3381,10 @@ export type Database = {
       redeem_loyalty_reward: { Args: { p_reward: string }; Returns: Json }
       convert_credits_to_minutes: {
         Args: { p_credits: number; p_type: string }
+        Returns: Json
+      }
+      report_member: {
+        Args: { p_block?: boolean; p_details?: string | null; p_reason: string; p_reported_id: string; p_source?: string | null }
         Returns: Json
       }
       request_star_cashout: {

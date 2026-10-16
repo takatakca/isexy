@@ -236,7 +236,7 @@ export default function PhoneLineInbox() {
               size="sm"
               variant="ghost"
               className="gap-1 rounded-full text-muted-foreground"
-              onClick={() => navigate(`/block-report/${r.from_profile_id}`)}
+              onClick={() => navigate(`/block-report/${r.from_profile_id}`, { state: { source: "phone_line" } })}
             >
               <Flag className="h-3.5 w-3.5" /> Report
             </Button>

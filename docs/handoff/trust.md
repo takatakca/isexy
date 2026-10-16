@@ -100,6 +100,13 @@ REVOKE ALL FROM PUBLIC/anon, GRANT to authenticated; every staff RPC checks
   `get_my_moderation_status()`, `record_contact_sharing(types, excerpt, match)`
   (strikes 24 h / 7 days / permanent, no new strike while restricted),
   `validate_message_allowed` refuses a restricted sender.
+- T2 blocks and reports: `reports.source`; profiles SELECT policy hides the
+  profile of anyone who blocked the caller (`my_blocker_ids()`, evaluated once
+  per statement) and a new "Members view own profile" policy (a suspended
+  member keeps their own row); `get_my_hidden_member_ids()`,
+  `block_member(id)` (idempotent), `report_member(id, reason, details, block,
+  source)` (reasons checked, no self-report, one pending report per pair, 20 a
+  day).
 
 ## Progress
 
@@ -108,3 +115,9 @@ REVOKE ALL FROM PUBLIC/anon, GRANT to authenticated; every staff RPC checks
       (`src/hooks/useContentModeration.ts`; 30 sample sentences: no false positive,
       no miss), strikes and restriction on the server (T1), Chat shows the server's
       status and refuses on "restricted"; trust-smoke T1 13/13
+- [x] #3 + #4 blocks and reports: `src/lib/blocks.ts` (RPCs, old table writes as
+      fallback), Block/Report page behind sign-in, idempotent block, name in the
+      header, honest copy, back to the inbox after blocking from a chat; hidden
+      either way in Likes > Sent, group chat messages, chat links (Chat uses the
+      hidden ids), web profile (RLS); suspended members see a "suspended" screen
+      instead of profile setup; trust-smoke T2 20/20

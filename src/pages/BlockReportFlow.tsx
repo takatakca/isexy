@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
   ArrowLeft, Ban, Flag, AlertTriangle, UserX, DollarSign, 
   Camera, MessageSquare, AlertCircle, Globe, Shield, Check,
@@ -10,15 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { blockMember, blockReportErrorText, reportMember, type ReportReason } from "@/lib/blocks";
+import { goBack } from "@/lib/navigation";
 
-type ReportReason = {
-  id: string;
+type ReasonOption = {
+  id: ReportReason;
   icon: React.ReactNode;
   title: string;
   description: string;
 };
 
-const reportReasons: ReportReason[] = [
+const reportReasons: ReasonOption[] = [
   {
     id: "fake",
     icon: <UserX className="w-5 h-5" />,
@@ -65,63 +67,71 @@ const reportReasons: ReportReason[] = [
 
 export default function BlockReportFlow() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userId } = useParams();
   const { profile } = useAuth();
-  
+  /** Where to go once the member is blocked (a chat with them would no longer open). */
+  const returnTo = (location.state as { returnTo?: string; source?: string } | null)?.returnTo;
+  const source = (location.state as { source?: string } | null)?.source;
+
   const [step, setStep] = useState<"choice" | "report-reason" | "report-details" | "complete">("choice");
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
+  const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
   const [details, setDetails] = useState("");
   const [blockUser, setBlockUser] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [duplicate, setDuplicate] = useState(false);
+  const [name, setName] = useState<string | null>(null);
+  const isSelf = !!profile && profile.id === userId;
+
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    supabase.from("profiles").select("first_name").eq("id", userId).maybeSingle().then(({ data }) => {
+      if (alive && data?.first_name) setName(data.first_name);
+    });
+    return () => { alive = false; };
+  }, [userId]);
+
+  const leave = () => {
+    if (returnTo) navigate(returnTo, { replace: true });
+    else goBack(navigate, "/discover");
+  };
 
   const handleBlock = async () => {
-    if (!profile || !userId) return;
-    
+    if (!profile || !userId || isSelf) return;
+
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("blocks")
-        .insert({
-          blocker_id: profile.id,
-          blocked_id: userId,
-        });
-
-      if (error) throw error;
-      toast.success("User blocked successfully");
-      navigate(-1);
+      await blockMember(profile.id, userId);
+      toast.success(name ? `${name} is blocked` : "Member blocked");
+      leave();
     } catch (err) {
-      toast.error("Failed to block user");
+      console.error("Block failed:", err);
+      toast.error(blockReportErrorText(err));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleReport = async () => {
-    if (!profile || !userId || !selectedReason) return;
-    
+    if (!profile || !userId || !selectedReason || isSelf) return;
+
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("reports")
-        .insert({
-          reporter_id: profile.id,
-          reported_id: userId,
-          reason: selectedReason,
-          description: details || null,
-        });
-
-      if (error) throw error;
-
-      if (blockUser) {
-        await supabase.from("blocks").insert({
-          blocker_id: profile.id,
-          blocked_id: userId,
-        });
-      }
-
+      const result = await reportMember(profile.id, {
+        reportedId: userId,
+        reason: selectedReason,
+        details,
+        block: blockUser,
+        source,
+      });
+      setBlocked(result.blocked);
+      setDuplicate(result.duplicate);
       setStep("complete");
     } catch (err) {
-      toast.error("Failed to submit report");
+      console.error("Report failed:", err);
+      toast.error(blockReportErrorText(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -131,7 +141,7 @@ export default function BlockReportFlow() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <header className="px-4 py-4">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button onClick={() => (blocked ? navigate(returnTo ?? "/discover", { replace: true }) : goBack(navigate, "/discover"))} className="p-2 -ml-2" aria-label="Close">
             <X className="w-6 h-6 text-foreground" />
           </button>
         </header>
@@ -142,26 +152,28 @@ export default function BlockReportFlow() {
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Report Submitted</h1>
           <p className="text-muted-foreground mb-8">
-            Thank you for helping keep ISEXY safe. Our team will review your report within 24 hours.
+            {duplicate
+              ? "You had already reported this member: we added these details to your report. Thank you for helping keep ISEXY safe."
+              : "Thank you for helping keep ISEXY safe. Our safety team reviews every report; the member is not told who reported them."}
           </p>
-          
-          {blockUser && (
+
+          {blocked && (
             <div className="bg-muted/50 rounded-xl p-4 w-full mb-6">
               <div className="flex items-center gap-2">
                 <Ban className="w-5 h-5 text-destructive" />
-                <span className="text-foreground font-medium">User has been blocked</span>
+                <span className="text-foreground font-medium">{name ? `${name} is blocked` : "Member blocked"}</span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                They won't be able to see or contact you.
+                You won't see each other on ISEXY and they can't message or call you. Unblock anytime in Settings › Block Contacts.
               </p>
             </div>
           )}
 
-          <Button 
-            onClick={() => navigate("/discover")} 
+          <Button
+            onClick={() => navigate(blocked && returnTo ? returnTo : "/discover", { replace: true })}
             className="w-full gradient-primary py-6"
           >
-            Continue Swiping
+            {blocked && returnTo === "/matches" ? "Back to messages" : "Back to Discover"}
           </Button>
         </div>
       </div>
@@ -204,7 +216,8 @@ export default function BlockReportFlow() {
             <Textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="Please provide any additional information that might help us investigate..."
+              placeholder="What happened? Dates, messages or anything that helps our team look into it."
+              maxLength={2000}
               className="min-h-[120px]"
             />
           </div>
@@ -216,7 +229,7 @@ export default function BlockReportFlow() {
           >
             <div className="flex items-center gap-3">
               <Ban className="w-5 h-5 text-destructive" />
-              <span className="font-medium text-foreground">Also block this user</span>
+              <span className="font-medium text-foreground">Also block {name ?? "this member"}</span>
             </div>
             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
               blockUser ? "border-primary bg-primary" : "border-muted-foreground"
@@ -237,7 +250,7 @@ export default function BlockReportFlow() {
 
           <Button
             onClick={handleReport}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isSelf}
             className="w-full py-6 bg-destructive hover:bg-destructive/90"
           >
             {isSubmitting ? "Submitting..." : "Submit Report"}
@@ -297,18 +310,21 @@ export default function BlockReportFlow() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button onClick={() => goBack(navigate, "/discover")} className="p-2 -ml-2" aria-label="Back">
             <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">What would you like to do?</h1>
+          <h1 className="text-xl font-bold text-foreground">{name ? `Block or report ${name}` : "Block or report"}</h1>
         </div>
       </header>
 
       <div className="px-4 py-6 space-y-4">
+        {isSelf && (
+          <p className="text-sm text-muted-foreground">This is your own profile.</p>
+        )}
         {/* Block Option */}
         <button
           onClick={handleBlock}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isSelf}
           className="w-full flex items-start gap-4 p-5 bg-card rounded-xl border border-border hover:border-primary/50 transition-colors"
         >
           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -317,7 +333,7 @@ export default function BlockReportFlow() {
           <div className="text-left">
             <h3 className="font-bold text-foreground text-lg">Block</h3>
             <p className="text-muted-foreground text-sm">
-              They won't be able to see your profile or contact you. You can unblock them anytime in settings.
+              You won't see each other on ISEXY and they can't message or call you. They aren't told. Unblock anytime in Settings › Block Contacts.
             </p>
           </div>
         </button>
@@ -325,6 +341,7 @@ export default function BlockReportFlow() {
         {/* Report Option */}
         <button
           onClick={() => setStep("report-reason")}
+          disabled={isSelf}
           className="w-full flex items-start gap-4 p-5 bg-card rounded-xl border border-border hover:border-destructive/50 transition-colors"
         >
           <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
@@ -333,7 +350,7 @@ export default function BlockReportFlow() {
           <div className="text-left">
             <h3 className="font-bold text-foreground text-lg">Report</h3>
             <p className="text-muted-foreground text-sm">
-              Report concerning behavior to our safety team. All reports are confidential and reviewed within 24 hours.
+              Tell our safety team about fake profiles, scams, harassment or anyone under 18. Reports are confidential.
             </p>
           </div>
         </button>

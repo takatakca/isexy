@@ -249,7 +249,7 @@ const App = () => (
               <Route path="/cuban-rewards" element={<CubanRewards />} />
               <Route path="/cuban-cashout" element={<CubanCashout />} />
               <Route path="/my-stars" element={<ProtectedRoute><MyStars /></ProtectedRoute>} />
-              <Route path="/block-report/:userId" element={<BlockReportFlow />} />
+              <Route path="/block-report/:userId" element={<ProtectedRoute><BlockReportFlow /></ProtectedRoute>} />
               <Route path="/reset-password" element={<Navigate to="/auth" replace />} />
               <Route path="/update-password" element={<Navigate to="/auth" replace />} />
               <Route path="/video-call/:matchId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />

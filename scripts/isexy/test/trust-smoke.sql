@@ -126,6 +126,99 @@ RESET ROLE;
 -- Clean slate for the next parts (rolled back anyway).
 UPDATE isexy.user_warnings SET lifted_at = now() WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000a';
 
+-- T2 blocks and reports -------------------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000f');  -- Gil blocks Ana
+INSERT INTO results SELECT 'T2 block_member blocks', (r ->> 'blocked')::boolean AND NOT (r ->> 'already')::boolean, r::text
+  FROM (SELECT isexy.block_member('dddddddd-0000-0000-0000-00000000000a') AS r) s;
+INSERT INTO results SELECT 'T2 blocking twice is fine (already)', (r ->> 'already')::boolean, r::text
+  FROM (SELECT isexy.block_member('dddddddd-0000-0000-0000-00000000000a') AS r) s;
+DO $$ BEGIN
+  PERFORM isexy.block_member('dddddddd-0000-0000-0000-00000000000f');
+  INSERT INTO results VALUES ('T2 cannot block yourself', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T2 cannot block yourself', true, SQLERRM);
+END $$;
+INSERT INTO results SELECT 'T2 the blocker still sees the blocked profile (to unblock)', count(*) = 1, count(*)::text
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000a';
+INSERT INTO results SELECT 'T2 hidden ids of the blocker', isexy.get_my_hidden_member_ids() = ARRAY['dddddddd-0000-0000-0000-00000000000a']::uuid[],
+  isexy.get_my_hidden_member_ids()::text;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+INSERT INTO results SELECT 'T2 a blocked member cannot read the blocker''s profile', count(*) = 0, count(*)::text
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000f';
+INSERT INTO results SELECT 'T2 other profiles still visible', count(*) = 4, string_agg(first_name, ',')
+  FROM isexy.profiles WHERE id IN ('dddddddd-0000-0000-0000-00000000000a', 'dddddddd-0000-0000-0000-00000000000b',
+                                   'dddddddd-0000-0000-0000-00000000000c', 'dddddddd-0000-0000-0000-00000000000d');
+INSERT INTO results SELECT 'T2 hidden ids of the blocked member', isexy.get_my_hidden_member_ids() = ARRAY['dddddddd-0000-0000-0000-00000000000f']::uuid[],
+  isexy.get_my_hidden_member_ids()::text;
+DO $$ BEGIN
+  INSERT INTO isexy.messages (match_id, sender_id, content)
+  VALUES ('eeeeeeee-0000-0000-0000-000000000002', 'dddddddd-0000-0000-0000-00000000000a', 'hi Gil');
+  INSERT INTO results VALUES ('T2 no message to someone who blocked you', false, 'insert succeeded');
+EXCEPTION WHEN raise_exception THEN
+  INSERT INTO results VALUES ('T2 no message to someone who blocked you', SQLERRM LIKE '%blocked%', SQLERRM);
+END $$;
+RESET ROLE;
+UPDATE isexy.profiles SET is_active = false WHERE id = 'dddddddd-0000-0000-0000-00000000000a';
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+INSERT INTO results SELECT 'T2 a suspended member still reads their own profile', count(*) = 1 AND NOT bool_and(is_active), count(*)::text
+  FROM isexy.profiles WHERE user_id = 'dddddddd-0000-0000-0000-00000000000a';
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
+INSERT INTO results SELECT 'T2 others do not see a suspended member', count(*) = 0, count(*)::text
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000a';
+RESET ROLE;
+UPDATE isexy.profiles SET is_active = true WHERE id = 'dddddddd-0000-0000-0000-00000000000a';
+
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');  -- Ana reports Cleo
+INSERT INTO results SELECT 'T2 report + block',
+  (r ->> 'report_id') IS NOT NULL AND NOT (r ->> 'duplicate')::boolean AND (r ->> 'blocked')::boolean, r::text
+  FROM (SELECT isexy.report_member('dddddddd-0000-0000-0000-00000000000c', 'scam', 'asked for gift cards', true, 'chat') AS r) s;
+INSERT INTO results SELECT 'T2 second report on the same member joins the first',
+  (r ->> 'duplicate')::boolean, r::text
+  FROM (SELECT isexy.report_member('dddddddd-0000-0000-0000-00000000000c', 'harassment', 'and insults', false, 'profile') AS r) s;
+INSERT INTO results SELECT 'T2 reporter sees one report with both details',
+  count(*) = 1 AND bool_and(description LIKE '%gift cards%and insults%'), max(description)
+  FROM isexy.reports WHERE reported_id = 'dddddddd-0000-0000-0000-00000000000c';
+INSERT INTO results SELECT 'T2 the block was made', count(*) = 1, count(*)::text
+  FROM isexy.blocks WHERE blocker_id = 'dddddddd-0000-0000-0000-00000000000a' AND blocked_id = 'dddddddd-0000-0000-0000-00000000000c';
+DO $$ BEGIN
+  PERFORM isexy.report_member('dddddddd-0000-0000-0000-00000000000a', 'spam', NULL, false, NULL);
+  INSERT INTO results VALUES ('T2 cannot report yourself', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T2 cannot report yourself', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.report_member('dddddddd-0000-0000-0000-00000000000b', 'i dont like them', NULL, false, NULL);
+  INSERT INTO results VALUES ('T2 unknown reason refused', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T2 unknown reason refused', true, SQLERRM);
+END $$;
+RESET ROLE;
+INSERT INTO isexy.reports (reporter_id, reported_id, reason, status)
+SELECT 'dddddddd-0000-0000-0000-00000000000a', 'dddddddd-0000-0000-0000-00000000000d', 'spam', 'dismissed'
+  FROM generate_series(1, 20);
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+DO $$ BEGIN
+  PERFORM isexy.report_member('dddddddd-0000-0000-0000-00000000000b', 'spam', NULL, false, NULL);
+  INSERT INTO results VALUES ('T2 at most 20 reports a day', false, 'call succeeded');
+EXCEPTION WHEN program_limit_exceeded THEN
+  INSERT INTO results VALUES ('T2 at most 20 reports a day', true, SQLERRM);
+END $$;
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+DO $$ BEGIN
+  PERFORM isexy.report_member('dddddddd-0000-0000-0000-00000000000b', 'spam', NULL, false, NULL);
+  INSERT INTO results VALUES ('T2 anon cannot report', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T2 anon cannot report', true, SQLERRM);
+END $$;
+INSERT INTO results SELECT 'T2 anon reads no profiles', count(*) = 0, count(*)::text FROM isexy.profiles;
+RESET ROLE;
+
 -- @@PARTS@@
 
 -- Report ---------------------------------------------------------------------

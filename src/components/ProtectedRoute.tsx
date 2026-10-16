@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { isProfileComplete } from "@/lib/profileStatus";
 
 interface ProtectedRouteProps {
@@ -22,7 +22,7 @@ export function ProtectedRoute({
   children,
   requireCompleteProfile = true,
 }: ProtectedRouteProps) {
-  const { user, profile, photoCount, loading, profileError, refreshProfile } = useAuth();
+  const { user, profile, photoCount, loading, profileError, refreshProfile, signOut } = useAuth();
   const location = useLocation();
   const [retrying, setRetrying] = useState(false);
 
@@ -57,6 +57,28 @@ export function ProtectedRoute({
           {retrying ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Try again
         </button>
+      </div>
+    );
+  }
+
+  // Suspended by the safety team (staff set is_active = false): say so instead
+  // of showing pages that would all come back empty.
+  if (requireCompleteProfile && profile && profile.is_active === false) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+        <ShieldAlert className="w-12 h-12 text-destructive" aria-hidden="true" />
+        <h1 className="text-lg font-semibold text-foreground">Your account is suspended</h1>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Our safety team suspended this account for breaking the community guidelines. Other members can't see your profile.
+          If you think this is a mistake, contact support.
+        </p>
+        <Link to="/contact-us" className="px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold">
+          Contact support
+        </Link>
+        <div className="flex gap-4 text-sm">
+          <Link to="/community-guidelines" className="text-primary underline">Community guidelines</Link>
+          <button onClick={() => void signOut()} className="text-muted-foreground underline">Sign out</button>
+        </div>
       </div>
     );
   }

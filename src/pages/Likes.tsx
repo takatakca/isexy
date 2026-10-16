@@ -6,6 +6,7 @@ import { Heart, Star, Loader2, BadgeCheck, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ageFrom } from "@/lib/discoverFeed";
+import { fetchHiddenMemberIds } from "@/lib/blocks";
 
 interface LikedProfile {
   id: string;
@@ -30,6 +31,8 @@ export default function Likes() {
   const [hasMore, setHasMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const loadedSwipes = useRef(0);
+  /** Blocked either way: never listed. Read once per visit. */
+  const hiddenRef = useRef<Set<string> | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
 
   const meId = userProfile?.id;
@@ -49,9 +52,12 @@ export default function Likes() {
         .order("created_at", { ascending: false })
         .range(from, from + PAGE - 1);
       if (error) throw error;
-      const rows = swipes ?? [];
-      loadedSwipes.current = from + rows.length;
-      setHasMore(rows.length === PAGE);
+      const fetched = swipes ?? [];
+      loadedSwipes.current = from + fetched.length;
+      setHasMore(fetched.length === PAGE);
+      if (mode === "first" || !hiddenRef.current) hiddenRef.current = await fetchHiddenMemberIds(meId);
+      const hidden = hiddenRef.current;
+      const rows = fetched.filter((s) => !hidden.has(s.swiped_id));
 
       const ids = rows.map((s) => s.swiped_id);
       let page: LikedProfile[] = [];

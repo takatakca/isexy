@@ -233,3 +233,168 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+-- =====================================================================
+-- T2. Blocks and reports (members)
+-- =====================================================================
+-- Hidden either way: a member never reads the profile row of someone who
+-- blocked them (the policy calls my_blocker_ids() once per statement), and
+-- can always read their own profile (a suspended member, is_active = false,
+-- used to lose it and was sent to profile setup).
+-- get_my_hidden_member_ids(): ids blocked either way, for the pages that list
+-- people (Likes sent, web profile, group chat, chat links).
+-- block_member(): idempotent block. report_member(): one RPC for the report
+-- (+ optional block): reasons checked, no self-report, one pending report
+-- per pair, at most 20 reports a day per member.
+ALTER TABLE isexy.reports ADD COLUMN IF NOT EXISTS source text;
+
+CREATE OR REPLACE FUNCTION isexy.my_blocker_ids()
+RETURNS uuid[]
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+  SELECT coalesce(array_agg(b.blocker_id), ARRAY[]::uuid[])
+    FROM isexy.blocks b
+    JOIN isexy.profiles me ON me.id = b.blocked_id
+   WHERE me.user_id = auth.uid()
+$$;
+REVOKE ALL ON FUNCTION isexy.my_blocker_ids() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.my_blocker_ids() TO authenticated;
+
+DROP POLICY IF EXISTS "Authenticated users can view active profiles" ON isexy.profiles;
+CREATE POLICY "Authenticated users can view active profiles" ON isexy.profiles
+  FOR SELECT TO authenticated
+  USING (is_active = true AND NOT (id = ANY ((SELECT isexy.my_blocker_ids())::uuid[])));
+
+DROP POLICY IF EXISTS "Members view own profile" ON isexy.profiles;
+CREATE POLICY "Members view own profile" ON isexy.profiles
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+
+CREATE OR REPLACE FUNCTION isexy.get_my_hidden_member_ids()
+RETURNS uuid[]
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+  SELECT coalesce(array_agg(DISTINCT x.other), ARRAY[]::uuid[])
+    FROM isexy.profiles me
+    CROSS JOIN LATERAL (
+      SELECT b.blocked_id AS other FROM isexy.blocks b WHERE b.blocker_id = me.id
+      UNION
+      SELECT b.blocker_id FROM isexy.blocks b WHERE b.blocked_id = me.id
+    ) x
+   WHERE me.user_id = auth.uid()
+$$;
+REVOKE ALL ON FUNCTION isexy.get_my_hidden_member_ids() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.get_my_hidden_member_ids() TO authenticated;
+
+CREATE OR REPLACE FUNCTION isexy.block_member(p_profile_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_me uuid;
+  v_id uuid;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Sign in first' USING ERRCODE = '42501';
+  END IF;
+  SELECT id INTO v_me FROM isexy.profiles WHERE user_id = auth.uid();
+  IF v_me IS NULL THEN
+    RAISE EXCEPTION 'Profile not found' USING ERRCODE = 'P0002';
+  END IF;
+  IF p_profile_id IS NULL OR p_profile_id = v_me THEN
+    RAISE EXCEPTION 'You cannot block yourself' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM isexy.profiles WHERE id = p_profile_id) THEN
+    RAISE EXCEPTION 'Member not found' USING ERRCODE = 'P0002';
+  END IF;
+  INSERT INTO isexy.blocks (blocker_id, blocked_id)
+  VALUES (v_me, p_profile_id)
+  ON CONFLICT (blocker_id, blocked_id) DO NOTHING
+  RETURNING id INTO v_id;
+  RETURN jsonb_build_object('blocked', true, 'already', v_id IS NULL);
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.block_member(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.block_member(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION isexy.report_member(
+  p_reported_id uuid,
+  p_reason text,
+  p_details text DEFAULT NULL,
+  p_block boolean DEFAULT false,
+  p_source text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  c_reasons CONSTANT text[] := ARRAY['fake', 'harassment', 'scam', 'inappropriate', 'underage', 'spam', 'other'];
+  v_me uuid;
+  v_report uuid;
+  v_duplicate boolean := false;
+  v_blocked boolean := false;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Sign in first' USING ERRCODE = '42501';
+  END IF;
+  SELECT id INTO v_me FROM isexy.profiles WHERE user_id = auth.uid();
+  IF v_me IS NULL THEN
+    RAISE EXCEPTION 'Profile not found' USING ERRCODE = 'P0002';
+  END IF;
+  IF p_reported_id IS NULL OR p_reported_id = v_me THEN
+    RAISE EXCEPTION 'You cannot report yourself' USING ERRCODE = '22023';
+  END IF;
+  IF NOT (p_reason = ANY (c_reasons)) THEN
+    RAISE EXCEPTION 'Unknown report reason' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM isexy.profiles WHERE id = p_reported_id) THEN
+    RAISE EXCEPTION 'Member not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- One open report per pair: a second one adds its details to the first.
+  SELECT id INTO v_report
+    FROM isexy.reports
+   WHERE reporter_id = v_me AND reported_id = p_reported_id
+     AND coalesce(status, 'pending') = 'pending'
+   ORDER BY created_at DESC
+   LIMIT 1;
+  IF v_report IS NOT NULL THEN
+    v_duplicate := true;
+    IF nullif(btrim(p_details), '') IS NOT NULL THEN
+      UPDATE isexy.reports
+         SET description = left(concat_ws(E'\n---\n', description, btrim(p_details)), 4000)
+       WHERE id = v_report;
+    END IF;
+  ELSE
+    IF (SELECT count(*) FROM isexy.reports
+         WHERE reporter_id = v_me AND created_at > now() - interval '1 day') >= 20 THEN
+      RAISE EXCEPTION 'Too many reports today, please contact support' USING ERRCODE = '54000';
+    END IF;
+    INSERT INTO isexy.reports (reporter_id, reported_id, reason, description, status, source)
+    VALUES (v_me, p_reported_id, p_reason, left(nullif(btrim(p_details), ''), 2000), 'pending',
+            left(nullif(btrim(p_source), ''), 40))
+    RETURNING id INTO v_report;
+  END IF;
+
+  IF p_block THEN
+    INSERT INTO isexy.blocks (blocker_id, blocked_id)
+    VALUES (v_me, p_reported_id)
+    ON CONFLICT (blocker_id, blocked_id) DO NOTHING;
+    v_blocked := true;
+  END IF;
+
+  RETURN jsonb_build_object('report_id', v_report, 'duplicate', v_duplicate, 'blocked', v_blocked);
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.report_member(uuid, text, text, boolean, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.report_member(uuid, text, text, boolean, text) TO authenticated;
