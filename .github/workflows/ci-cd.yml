@@ -136,6 +136,9 @@ jobs:
       - name: Atomic Stripe credits and minutes assertions
         run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/atomic-credit-checkout.sql
 
+      - name: Atomic Stripe boost assertions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/atomic-boost-checkout.sql
+
       - name: Re-run is a no-op
         run: scripts/isexy/migrate.sh | tee /tmp/rerun.txt && grep -q "up to date" /tmp/rerun.txt
 

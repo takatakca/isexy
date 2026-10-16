@@ -393,58 +393,21 @@ serve(async (req) => {
           }
 
           // ---- Boosts / Super Likes / Primetime / Super Boosts ----
-          if (productId.startsWith("super_likes_") || productId.startsWith("boost_")
-              || productId.startsWith("primetime_") || productId.startsWith("superboost_")) {
-            const { data: existingBoost } = await supabaseClient
-              .from("boost_transactions").select("id")
-              .eq("stripe_session_id", session.id).maybeSingle();
-            if (existingBoost) { logStep("Boost already fulfilled", { sessionId: session.id }); break; }
-
-            // Map to wallet updates
-            const qtyMatch = productId.match(/_(\d+)(h?)$/);
-            const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
-            let action = "credit";
-            let boostType = productId;
-
-            if (productId.startsWith("super_likes_")) {
-              const { data: w } = await supabaseClient.from("allowances").select("weekly_super_likes_max").eq("profile_id", profileId).maybeSingle();
-              await supabaseClient.from("allowances").upsert(
-                { profile_id: profileId, weekly_super_likes_max: (w?.weekly_super_likes_max ?? 0) + qty },
-                { onConflict: "profile_id" }
-              );
-              boostType = "super_like";
-            } else if (productId.startsWith("boost_")) {
-              const { data: w } = await supabaseClient.from("boost_wallets").select("boosts").eq("profile_id", profileId).maybeSingle();
-              await supabaseClient.from("boost_wallets").upsert(
-                { profile_id: profileId, boosts: (w?.boosts ?? 0) + qty },
-                { onConflict: "profile_id" }
-              );
-              boostType = "boost";
-            } else if (productId.startsWith("primetime_")) {
-              const { data: w } = await supabaseClient.from("boost_wallets").select("primetime_boosts").eq("profile_id", profileId).maybeSingle();
-              await supabaseClient.from("boost_wallets").upsert(
-                { profile_id: profileId, primetime_boosts: (w?.primetime_boosts ?? 0) + qty },
-                { onConflict: "profile_id" }
-              );
-              boostType = "primetime_boost";
-            } else if (productId.startsWith("superboost_")) {
-              const hours = qtyMatch ? parseInt(qtyMatch[1], 10) : 3;
-              const { data: w } = await supabaseClient.from("boost_wallets").select("super_boost_hours").eq("profile_id", profileId).maybeSingle();
-              await supabaseClient.from("boost_wallets").upsert(
-                { profile_id: profileId, super_boost_hours: (w?.super_boost_hours ?? 0) + hours },
-                { onConflict: "profile_id" }
-              );
-              boostType = "super_boost";
-            }
-
-            await supabaseClient.from("boost_transactions").insert({
-              profile_id: profileId,
-              boost_type: boostType,
-              action,
-              quantity: qty,
-              stripe_session_id: session.id,
+          // A single SQL transaction both increments the balance and records
+          // the Stripe session, so retries and concurrent hooks cannot double grant.
+          if (/^(super_likes_|boost_|primetime_|superboost_)/.test(productId)) {
+            const { data: granted, error: boostError } = await supabaseClient.rpc(
+              "fulfill_stripe_boost_purchase",
+              {
+                p_profile_id: profileId,
+                p_stripe_session_id: session.id,
+                p_product_id: productId,
+              },
+            );
+            if (boostError) throw new Error("Unable to atomically fulfill Stripe boost purchase");
+            logStep(granted ? "Boost package granted" : "Boost package already fulfilled", {
+              sessionId: session.id, productId,
             });
-            logStep("Boost fulfilled", { profileId, productId, qty });
             break;
           }
 
