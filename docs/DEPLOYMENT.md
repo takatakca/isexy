@@ -1,3 +1,17 @@
+## 16 octobre 2026 — migration 0011 et Cron (publication conditionnelle)
+
+- Dernier commit de code vérifié avant cette note : `7778ede04ba8653ceb15352066a00f351d84d807`, branche `main`.
+- La migration `0011_atomic_credit_checkout.sql` et `fulfill_stripe_credit_purchase` ajoutent une transaction atomique, protégée par session Stripe, pour les achats de crédits/minutes. **Non appliquées à Supabase** : CI initiale `38883496854` en échec sur la fixture SQL (`id` ambigu); test corrigé au commit `7778ede`, nouveau run `38884128241` à vérifier.
+- En production, les migrations ISEXY appliquées restent `0001`–`0010`; le webhook Stripe publié reste **v2** (sans RPC 0011).
+- Le workflow `.github/workflows/isexy-allowance-cron.yml` (commit `3a6b4188`) prévoit une exécution quotidienne à 04:13 UTC avec **JWT anon Supabase + secret Cron privé**, sans désactiver `verify_jwt`. Le handler modifié refuse GET et exige un secret d'au moins 16 caractères. Le handler actualisé n'est pas encore déployé; secret GitHub `ISEXY_CRON_SECRET` non vérifié, aucune exécution du Cron confirmée.
+- CI verte confirmée : run `38883203014` (SHA `abb2b0bd`); Render observé `08b41aa6` live; les SHA ultérieurs et leur CI sont à revérifier.
+- Blocages inchangés : secrets de déploiement GitHub → Supabase, Coolify/ISEXY.CA, Stripe sandbox et idempotence des autres produits, OTP, SMS, téléphonie et messagerie réels.
+
+
+**Ordre impératif :** CI verte 0011 → appliquer SQL → vérifier permissions → déployer webhook mis à jour. Ne jamais déployer le nouveau webhook avec RPC absent. Cron : JWT Gateway maintenu et secret privé GitHub/Supabase apparié.
+
+---
+
 ## Validation de publication — 16 octobre 2026
 
 - Render autoDeploy sur `main` est confirmé. Le SHA

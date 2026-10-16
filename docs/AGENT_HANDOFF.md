@@ -1,3 +1,48 @@
+# PRIORITÉ RELÈVE — 16 octobre 2026
+
+## 16 octobre 2026 — migration 0011 et Cron (publication conditionnelle)
+
+- Dernier commit de code vérifié avant cette note : `7778ede04ba8653ceb15352066a00f351d84d807`, branche `main`.
+- La migration `0011_atomic_credit_checkout.sql` et `fulfill_stripe_credit_purchase` ajoutent une transaction atomique, protégée par session Stripe, pour les achats de crédits/minutes. **Non appliquées à Supabase** : CI initiale `38883496854` en échec sur la fixture SQL (`id` ambigu); test corrigé au commit `7778ede`, nouveau run `38884128241` à vérifier.
+- En production, les migrations ISEXY appliquées restent `0001`–`0010`; le webhook Stripe publié reste **v2** (sans RPC 0011).
+- Le workflow `.github/workflows/isexy-allowance-cron.yml` (commit `3a6b4188`) prévoit une exécution quotidienne à 04:13 UTC avec **JWT anon Supabase + secret Cron privé**, sans désactiver `verify_jwt`. Le handler modifié refuse GET et exige un secret d'au moins 16 caractères. Le handler actualisé n'est pas encore déployé; secret GitHub `ISEXY_CRON_SECRET` non vérifié, aucune exécution du Cron confirmée.
+- CI verte confirmée : run `38883203014` (SHA `abb2b0bd`); Render observé `08b41aa6` live; les SHA ultérieurs et leur CI sont à revérifier.
+- Blocages inchangés : secrets de déploiement GitHub → Supabase, Coolify/ISEXY.CA, Stripe sandbox et idempotence des autres produits, OTP, SMS, téléphonie et messagerie réels.
+
+
+
+**Fichiers touchés depuis la relève précédente :**
+`supabase/isexy-migrations/0011_atomic_credit_checkout.sql`,
+`scripts/isexy/test/atomic-credit-checkout.sql`,
+`supabase/functions/isexy-stripe-webhook/index.ts`,
+`supabase/functions/isexy-reset-allowances/index.ts`,
+`.github/workflows/ci-cd.yml`,
+`.github/workflows/isexy-allowance-cron.yml`,
+`WORKLOG.md`, et les cinq fichiers de suivi `docs/`.
+
+**Contrôles effectués :** GitHub CI/jobs/logs (erreur précise relevée),
+GitHub main, Render `live`, introspection SQL des colonnes/contraintes
+et comptages de transactions (0 crédit, 0 webhook), sans mutation métier.
+Aucun essai Stripe réel, aucun reset Cron réel.
+
+**Prochaine action exacte :**
+1. Relire `main`, `docs/AGENT_HANDOFF.md` puis le run `38884128241`.
+2. Si toutes les validations passent, appliquer 0011 (schema `isexy`
+   uniquement) avec checksum, vérifier le RPC et ses privilèges de
+   service puis déployer `isexy-stripe-webhook` mis à jour.
+3. Vérifier la CI du nouveau workflow Cron, déployer
+   `isexy-reset-allowances` en conservant `verify_jwt=true`,
+   approvisionner `ISEXY_CRON_SECRET` GitHub via accès sécurisé et
+   vérifier un run autorisé. Si la CI échoue, corriger plutôt que déployer.
+4. Résoudre les secrets `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN`
+   de GitHub, les contrôles Coolify/ISEXY.CA et les tests fournisseurs.
+
+**Blocages et autorisations** : aucune valeur de secret documentée;
+GitHub backend auto-deploy saute actuellement ses étapes. La relève
+ne constitue pas un orchestrateur de redémarrage automatique.
+
+---
+
 # Relève immédiate — 16 octobre 2026, vérifications Stripe et Data API
 
 **Dépôt :** `takatakca/isexy`, branche `main`.

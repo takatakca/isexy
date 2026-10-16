@@ -3,6 +3,8 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-16 | ChatGPT | main | done (awaiting CI before DB apply) | Created 0011 atomic credit/minute RPC and test; corrected ambiguous SQL fixture; created JWT-authenticated daily Cron workflow, no secret or live job claimed | next: check run 38884128241, apply 0011 only after green, deploy webhook/cron and check production
+
 - 2026-10-16 | ChatGPT | main | done (partial release; P0 blocked) | Hardened Stripe checkout metadata and webhook settlement/duplicate handling, fail-closed payment gate, added Data API smoke test; six existing migrations unchanged | next: inspect Data API CI outcome, resolve backend deploy secrets, Cron JWT and live billing idempotency
 
 - 2026-10-15 | ChatGPT | main | done (incremental release) | Added release.json+smoke checks and superseded-run detection; removed unfulfilled 50% promo and blocked premium checkout; support confirmation shows email success only when actually sent | next: verify final CI/Render SHA, backend auto-deploy secrets, Coolify/domain and provider/OTP/payment tests

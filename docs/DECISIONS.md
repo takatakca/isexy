@@ -80,3 +80,6 @@ Dernière revue : 2026-10-14.
 24. **API multi-tenant** : le smoke test de production doit
     valider une lecture REST du schéma `isexy`, et pas
     uniquement l'existence des privilèges SQL.
+
+25. **Attribution atomique Stripe** : solde et journal crédits/minutes dans la même transaction SQL, idempotente par session, service-role uniquement (migration 0011 à valider).
+26. **Cron protégé** : conserver `verify_jwt=true`; utiliser JWT anon public pour la Gateway + `ISEXY_CRON_SECRET` privé pour le handler, méthode POST seulement.
