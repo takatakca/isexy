@@ -3,6 +3,7 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
+- 2026-10-16 | claude (workflow, integrator B) | claude/zealous-brown-kv2hmx | active | integrate wf/calls + wf/rewards, fold calls.sql + rewards.sql into 0004, docs/HANDOFF.md | see docs/handoff/integration-b.md
 - 2026-10-16 | claude (workflow) | claude/zealous-brown-kv2hmx | integrated + pushed, not deployed (calls, rewards, trust still running) | integrate wf/discover + wf/accounts + wf/chat, 0004_app_completion.sql, docs/HANDOFF.md | see docs/handoff/integration-a.md
 - 2026-10-13 | claude (wf chat agent) | wf/chat → (integrator) | done (local, not pushed) | Chat, messages & notifications audit + fixes (read RPC, retry, history paging, translation cache, push, badges, missed calls, group chat, notification settings) | integrator: merge, fold docs/handoff/chat.sql into next migration, deploy 5 functions, set VAPID keys (docs/handoff/chat.md › Left to do)
 - 2026-10-13 | claude (wf accounts) | wf/accounts → no PR (local, not pushed) | stopped at usage limit after 14 commits, merged by integrator A | Accounts, profile and every form: review WIP ad684b4, fix sign-in routing, profile setup/edit, photos, settings persistence, verification, delete request | see docs/handoff/accounts.md
