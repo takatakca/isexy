@@ -21,7 +21,7 @@ This page lists what the code already does, then **every step a person must do**
 | Prove V1 is untouched | Before and after each run, `scripts/isexy/guard.sql` fingerprints V1's `public` schema (tables, columns, functions, types, grants, RLS, policies), triggers and policies on `auth`, policies on `realtime`, non-ISEXY storage policies and buckets, and the non-isexy realtime tables. Any difference raises an error and rolls back. Tested: altering `public.profiles`, adding a trigger on `auth.users` or changing a V1 bucket are each rejected. |
 | Shared things stay shared safely | Storage buckets are `isexy-*`, storage policies are named `isexy: …`. Realtime tables are added to `supabase_realtime` one by one (idempotent). `CREATE EXTENSION` is not run (database-wide). The Lovable policy on `realtime.messages` (`… ELSE TRUE`) is **not** carried over: on V1 it would have opened V1's private realtime channels to every signed-in user, and ISEXY uses no private channels. |
 | Functions renamed `isexy-<name>` | All 27 functions (`supabase/functions/isexy-*`); every `functions.invoke()` and `/functions/v1/…` URL updated. CI deploys them **one by one by name** and refuses any other name; it never runs a bare `supabase functions deploy`. |
-| Function secrets don't collide with V1 | Edge-function secrets are project-wide on V1. ISEXY reads **`ISEXY_<NAME>` first** (`_shared/env.ts`). Stripe values, `PAYMENTS_LIVE_ENABLED`, `CRON_SECRET`, `APP_URL`, `ANTHROPIC_API_KEY`, `AI_CHAT_MODEL`, `SEED_PROFILES_ENABLED` and `TWILIO_SIGNATURE_BYPASS` **only** come from the `ISEXY_` name; shared provider keys (Resend, Twilio, WhatsApp, VAPID) fall back to V1's value of the same name if no `ISEXY_` value exists. |
+| Function secrets don't collide with V1 | Edge-function secrets are project-wide on V1. ISEXY reads **`ISEXY_<NAME>` first** (`_shared/env.ts`). Stripe values, `PAYMENTS_LIVE_ENABLED`, `CRON_SECRET`, `APP_URL`, `ANTHROPIC_API_KEY`, `AI_CHAT_MODEL`, `SEED_PROFILES_ENABLED`, `TWILIO_SIGNATURE_BYPASS` and `TWILIO_WEBHOOK_BASE` **only** come from the `ISEXY_` name; shared provider keys (Resend, Twilio, WhatsApp, VAPID) fall back to V1's value of the same name if no `ISEXY_` value exists. |
 | Takatak Auth | Sign-in is Google, email code or SMS code on V1's shared `auth.users` (`src/components/TakatakSignIn.tsx`). Passwords, the custom email-OTP and password-reset functions, and the TAKATAK master-API bridge are removed. `isexy.profiles.id = user_id = auth.users.id` (migration `0002_takatak_identity.sql`; enforced by a check constraint). **No trigger on `auth.users`**: a takatak.ca account becomes an ISEXY member only when that person signs up in ISEXY. |
 | No Lovable | `lovable-tagger`, `.lovable/`, `bun.lockb`, Lovable npm-cache URLs in `package-lock.json`, `LOVABLE_API_KEY` and the Lovable AI gateway (replaced by Claude) are gone; defaults are `https://isexy.onrender.com` and V1. |
 
@@ -121,7 +121,8 @@ are provided by Supabase.
 | `ISEXY_STRIPE_PRICE_{PHONE_20,PHONE_150,PHONE_450,VIDEO_20,VIDEO_150,VIDEO_450,CHAT_1MO}` | minute packs (7) | optional: overrides the price ids built into `isexy-create-minute-purchase` (needed if ISEXY uses a different Stripe account than before) |
 | `ISEXY_RESEND_API_KEY`, `ISEXY_RESEND_FROM` | notification emails | sender on a domain verified in Resend, e.g. `ISEXY <no-reply@isexy.ca>`; falls back to V1's `RESEND_API_KEY` |
 | `ISEXY_CRON_SECRET` | `isexy-subscription-resets` | ≥ 16 random characters |
-| `ISEXY_TWILIO_ACCOUNT_SID`, `ISEXY_TWILIO_AUTH_TOKEN`, `ISEXY_TWILIO_PHONE_LINE_NUMBER` | PhoneLine voice messages | Twilio webhooks verify `X-Twilio-Signature` with this token |
+| `ISEXY_TWILIO_ACCOUNT_SID`, `ISEXY_TWILIO_AUTH_TOKEN`, `ISEXY_TWILIO_PHONE_LINE_NUMBER` | Phone Line by phone (IVR) | Twilio webhooks verify `X-Twilio-Signature` with this token over the public function URL, and refuse another `AccountSid`. Twilio number › Voice: *A call comes in* `POST https://<ref>.supabase.co/functions/v1/isexy-twilio-inbound-phone-line`, *Call status changes* `POST …/isexy-twilio-call-status` |
+| `ISEXY_TWILIO_WEBHOOK_BASE` | optional | only if Twilio calls the functions through another domain: the base Twilio uses, e.g. `https://api.isexy.ca/functions/v1` (default `${SUPABASE_URL}/functions/v1`); a wrong value makes every Twilio request fail with 403 |
 | `ISEXY_WHATSAPP_API_TOKEN`, `ISEXY_WHATSAPP_BUSINESS_TOKEN`, `ISEXY_WHATSAPP_PHONE_NUMBER_ID` | WhatsApp codes and call alerts | |
 | `ISEXY_VAPID_PUBLIC_KEY`, `ISEXY_VAPID_PRIVATE_KEY` | web push | |
 | `ISEXY_SEED_PROFILES_ENABLED` | never in production | admin demo seeding |
@@ -183,7 +184,7 @@ MochaHost is no longer used.
 | Build pack | Nixpacks, **"Is it a static site?" on** |
 | Publish directory | `/dist` |
 | Install / build | taken from `nixpacks.toml`: Node 22, `npm ci`, `npm run build` (no bun, no deno) |
-| Environment (optional) | `VITE_SITE_URL` = the public URL (default in `.env`: `https://isexy.onrender.com`); `VITE_TURN_URLS`, `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` for calls from strict mobile networks |
+| Environment (optional) | `VITE_SITE_URL` = the public URL (default in `.env`: `https://isexy.onrender.com`); `VITE_TURN_URL` (older name `VITE_TURN_URLS`), `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` for calls from strict mobile networks (see `DEPLOYMENT.md` › Variables) |
 
 Why `nixpacks.toml` exists: `package-lock.json` is the only lockfile, but
 Nixpacks auto-detection is unreliable for this repo. The Lovable-era `bun.lockb`

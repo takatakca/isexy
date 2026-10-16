@@ -812,6 +812,14 @@ export default function AdminDashboardFull() {
                 <MessageCircle className="w-6 h-6" />
                 <span>Agent Dashboard</span>
               </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col gap-2"
+                onClick={() => navigate("/admin/call-tests")}
+              >
+                <Video className="w-6 h-6" />
+                <span>Calls &amp; voice review</span>
+              </Button>
             </div>
           </TabsContent>
         </Tabs>

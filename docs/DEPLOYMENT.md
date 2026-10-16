@@ -44,8 +44,16 @@ on V1 itself as `ISEXY_*` names, not in GitHub: see `V1-MIGRATION.md` › 3.6.
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` | defaults: V1 URL and anon key |
 | `VITE_GA4_ID` | *(optional)* Google Analytics 4 measurement ID |
 | `VITE_META_PIXEL_ID` | *(optional)* Meta Pixel ID |
-| `VITE_TURN_URLS` | *(recommended)* comma-separated TURN URLs, e.g. `turn:turn.isexy.ca:3478,turns:turn.isexy.ca:5349` — needed for calls on strict mobile NAT (Cuba) |
+| `VITE_TURN_URL` | *(recommended)* comma-separated TURN URLs, e.g. `turn:turn.isexy.ca:3478?transport=udp,turns:turn.isexy.ca:5349?transport=tcp` — needed for calls on strict mobile NAT (Cuba); the older name `VITE_TURN_URLS` is still read |
 | `VITE_TURN_USERNAME` | *(recommended)* TURN username |
+| `VITE_STUN_URL` | *(optional)* comma-separated STUN URLs; default Google public STUN |
+| `VITE_PHONE_LINE_NUMBER` | *(optional)* the Twilio number members call for the phone line by phone, as shown, e.g. `+1 514 555 0100`; without it the app hides the "Use the phone line by phone" card |
+| `VITE_TURN_RELAY_ONLY` | *(optional, testing)* `true` sends every call through TURN (proves TURN works); leave unset in production |
+
+Calls without TURN still connect on most home Wi-Fi, but two phones on mobile
+data often never do. With TURN set, Phone Line calls (people who are not
+matched) always go through TURN so neither side learns the other's IP
+address. Details: `src/lib/iceServers.ts`.
 
 ## Database migrations by hand
 

@@ -141,7 +141,7 @@ Payments, Stripe, Twilio and WhatsApp secrets: unchanged, see `docs/V1-MIGRATION
 **Build env (Render/Coolify)**: `VITE_VAPID_PUBLIC_KEY` = the same public key
 (the hard-coded fallback key has no known private half). Existing:
 `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SITE_URL`,
-`VITE_TURN_URLS`/`VITE_TURN_USERNAME`/`VITE_TURN_CREDENTIAL` (calls).
+`VITE_TURN_URL` (older name `VITE_TURN_URLS`)/`VITE_TURN_USERNAME`/`VITE_TURN_CREDENTIAL` (calls).
 
 **Dashboard**: none new for 0004 (the `isexy-photo-verifications` bucket and its
 policies come with the migration; the `isexy` schema is already exposed).

@@ -3134,9 +3134,11 @@ export type Database = {
         Row: {
           call_type: string
           caller_id: string
+          connected_at: string | null
           created_at: string
           credits_used: number | null
           duration_seconds: number | null
+          end_reason: string | null
           ended_at: string | null
           id: string
           match_id: string
@@ -3386,6 +3388,47 @@ export type Database = {
       }
       charge_call_session_minute: {
         Args: { p_call_session_id: string }
+        Returns: Json
+      }
+      answer_call: { Args: { p_call_session_id: string }; Returns: Json }
+      charge_call_minute: { Args: { p_call_session_id: string }; Returns: Json }
+      decline_call: { Args: { p_call_session_id: string }; Returns: Json }
+      end_call: {
+        Args: { p_call_session_id: string; p_reason?: string | null }
+        Returns: Json
+      }
+      mark_call_connected: { Args: { p_call_session_id: string }; Returns: Json }
+      record_missed_call: { Args: { p_call_session_id: string }; Returns: Json }
+      start_call: {
+        Args: { p_call_type?: string; p_match_id: string }
+        Returns: Json
+      }
+      answer_call_session: { Args: { p_call_session_id: string }; Returns: Json }
+      decline_call_session: { Args: { p_call_session_id: string }; Returns: Json }
+      mark_call_session_connected: {
+        Args: { p_call_session_id: string }
+        Returns: Json
+      }
+      link_my_verified_phone: { Args: never; Returns: Json }
+      get_voice_greetings_for_review: {
+        Args: { p_limit?: number }
+        Returns: {
+          age: number
+          city: string | null
+          created_at: string
+          display_name: string
+          duration_seconds: number
+          greeting_id: string
+          headline: string | null
+          moderation_status: string
+          phone_line_profile_id: string
+          profile_id: string
+          profile_status: string
+          report_count: number
+        }[]
+      }
+      review_voice_greeting: {
+        Args: { p_approve: boolean; p_greeting_id: string; p_reason?: string | null }
         Returns: Json
       }
       check_promo_eligibility: {

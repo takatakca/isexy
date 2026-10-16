@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVoiceRecorder, voiceIssueText } from "@/hooks/useVoiceRecorder";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -24,12 +25,13 @@ import {
   Phone,
   Headphones,
   Lock,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const MAX_REPLY_SECONDS = 90;
-const AUTO_APPROVE_VOICE_REPLIES =
-  import.meta.env.VITE_AUTO_APPROVE_VOICE_REPLIES === "true";
 
 interface PLProfile {
   id: string;
@@ -47,20 +49,36 @@ export default function PhoneLineBrowse() {
   const navigate = useNavigate();
   const [items, setItems] = useState<PLProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // reply modal
+  // reply modal (the recorder releases the microphone when closed or on leaving)
   const [replyTo, setReplyTo] = useState<PLProfile | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<number | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+  const recorder = useVoiceRecorder(MAX_REPLY_SECONDS);
+  const recording = recorder.state === "recording" || recorder.state === "starting";
+  const processing = recorder.state === "processing";
+  const recorded = recorder.recording;
+  const elapsed = recorded ? recorded.seconds : recorder.elapsed;
   const [sending, setSending] = useState(false);
+
+  const stopAudio = useCallback(() => {
+    const audio = audioRef.current;
+    audioRef.current = null;
+    if (audio) {
+      audio.onended = null;
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    }
+    setPlayingId(null);
+  }, []);
+
+  // A greeting never keeps playing after leaving the page.
+  useEffect(() => () => stopAudio(), [stopAudio]);
 
   useEffect(() => {
     const load = async () => {
@@ -68,7 +86,9 @@ export default function PhoneLineBrowse() {
         setLoading(false);
         return;
       }
-      const { data: profs } = await supabase
+      setLoading(true);
+      setLoadError(false);
+      const { data: profs, error: profsError } = await supabase
         .from("phone_line_profiles")
         .select("id, profile_id, display_name, age, city, headline")
         .eq("status", "active")
@@ -77,6 +97,11 @@ export default function PhoneLineBrowse() {
         .order("last_active_at", { ascending: false, nullsFirst: false })
         .limit(60);
 
+      if (profsError) {
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
       if (!profs || profs.length === 0) {
         setItems([]);
         setLoading(false);
@@ -86,7 +111,7 @@ export default function PhoneLineBrowse() {
       const plIds = profs.map((p) => p.id);
       const profileIds = profs.map((p) => p.profile_id);
 
-      const { data: greetings } = await supabase
+      const { data: greetings, error: greetingsError } = await supabase
         .from("voice_greetings")
         .select("id, phone_line_profile_id, duration_seconds, created_at")
         .in("phone_line_profile_id", plIds)
@@ -94,6 +119,11 @@ export default function PhoneLineBrowse() {
         .eq("is_active", true)
         .eq("is_hidden", false)
         .order("created_at", { ascending: false });
+      if (greetingsError) {
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
 
       const greetingByPl = new Map<string, { id: string; duration: number }>();
       (greetings ?? []).forEach((g) => {
@@ -137,7 +167,7 @@ export default function PhoneLineBrowse() {
       setLoading(false);
     };
     load();
-  }, [profile?.id]);
+  }, [profile?.id, reloadKey]);
 
   if (!user) {
     navigate("/auth");
@@ -145,98 +175,72 @@ export default function PhoneLineBrowse() {
   }
 
   const playGreeting = async (g: PLProfile) => {
+    if (playingId === g.greeting_id) {
+      stopAudio();
+      return;
+    }
+    stopAudio();
+    setLoadingAudioId(g.greeting_id);
     try {
-      if (playingId === g.greeting_id && audioRef.current) {
-        audioRef.current.pause();
-        setPlayingId(null);
-        return;
-      }
       const { data, error } = await supabase.functions.invoke("isexy-get-voice-greeting-url", {
         body: { greeting_id: g.greeting_id },
       });
-      if (error || !data?.signed_url) throw new Error(error?.message ?? "Cannot load audio");
-      if (audioRef.current) audioRef.current.pause();
+      if (error || !data?.signed_url) throw new Error("This greeting can't be played right now.");
       const audio = new Audio(data.signed_url);
-      audio.onended = () => setPlayingId(null);
+      audio.onended = () => {
+        if (audioRef.current === audio) setPlayingId(null);
+      };
       audioRef.current = audio;
       await audio.play();
-      setPlayingId(g.greeting_id);
-    } catch (e: any) {
-      toast.error(e.message ?? "Could not play greeting");
+      if (audioRef.current === audio) setPlayingId(g.greeting_id);
+    } catch (e) {
+      stopAudio();
+      const name = (e as { name?: string })?.name;
+      toast.error(
+        name === "NotSupportedError"
+          ? "This greeting can't be played in this browser."
+          : (e as { message?: string })?.message ?? "Could not play greeting",
+      );
+    } finally {
+      setLoadingAudioId(null);
     }
   };
 
   const openReply = (g: PLProfile) => {
+    stopAudio();
+    recorder.reset();
     setReplyTo(g);
-    setRecordedBlob(null);
-    setRecordedUrl(null);
-    setElapsed(0);
   };
 
-  const startRec = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
-      mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setRecordedBlob(blob);
-        if (recordedUrl) URL.revokeObjectURL(recordedUrl);
-        setRecordedUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach((t) => t.stop());
-      };
-      mr.start();
-      mediaRecorderRef.current = mr;
-      setRecording(true);
-      setElapsed(0);
-      timerRef.current = window.setInterval(() => {
-        setElapsed((s) => {
-          const next = s + 1;
-          if (next >= MAX_REPLY_SECONDS) stopRec();
-          return next;
-        });
-      }, 1000);
-    } catch {
-      toast.error("Microphone permission denied");
-    }
-  };
-
-  const stopRec = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    setRecording(false);
+  const closeReply = () => {
+    recorder.reset();
+    setReplyTo(null);
   };
 
   const sendReply = async () => {
-    if (!profile?.id || !user || !replyTo || !recordedBlob) return;
+    if (!profile?.id || !user || !replyTo || !recorded) return;
     setSending(true);
     try {
-      const path = `${user.id}/${replyTo.id}-${Date.now()}.webm`;
+      const path = `${user.id}/${replyTo.id}-${Date.now()}.${recorded.ext}`;
       const { error: upErr } = await supabase.storage
         .from("isexy-voice-replies")
-        .upload(path, recordedBlob, { contentType: "audio/webm", upsert: false });
+        .upload(path, recorded.blob, { contentType: recorded.mime, upsert: false });
       if (upErr) throw upErr;
 
+      // moderation_status is set by the server (always pending at first).
       const { error: insErr } = await supabase.from("phone_line_voice_replies").insert({
         from_profile_id: profile.id,
         to_profile_id: replyTo.profile_id,
         greeting_id: replyTo.greeting_id,
         audio_url: path,
-        duration_seconds: Math.max(1, Math.min(elapsed || 1, MAX_REPLY_SECONDS)),
-        moderation_status: AUTO_APPROVE_VOICE_REPLIES ? "approved" : "pending",
+        duration_seconds: recorded.seconds,
       });
       if (insErr) throw insErr;
 
       toast.success("Voice reply sent.");
-      setReplyTo(null);
-      setRecordedBlob(null);
-      setRecordedUrl(null);
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to send reply");
+      closeReply();
+    } catch (e) {
+      toast.error((e as { message?: string })?.message ?? "Failed to send reply");
     } finally {
       setSending(false);
     }
@@ -256,33 +260,10 @@ export default function PhoneLineBrowse() {
     navigate(`/block-report/${g.profile_id}`);
   };
 
-  const callVoice = async (g: PLProfile) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setPlayingId(null);
-    }
-    const { data, error } = await supabase.rpc("start_phone_line_call_session", {
-      p_target_profile_id: g.profile_id,
-      p_call_type: "phone_line_profile",
-    });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    const r = data as { success: boolean; error?: string; call_session_id?: string };
-    if (!r?.success) {
-      if (r?.error === "no_minutes") {
-        toast.error("You need phone minutes to call.");
-        navigate("/buy-minutes");
-        return;
-      }
-      if (r?.error === "blocked") return toast.error("This user is unavailable.");
-      if (r?.error === "age_restricted") return toast.error("18+ only.");
-      if (r?.error === "incomplete_profile") return toast.error("Complete your profile first.");
-      if (r?.error === "voice_profile_unavailable") return toast.error("Voice profile not available.");
-      return toast.error(r?.error ?? "Could not start call");
-    }
-    navigate(`/phone-line/call/${r.call_session_id}`);
+  /** The call screen checks the microphone first, then rings (lib/callSessions). */
+  const callVoice = (g: PLProfile) => {
+    stopAudio();
+    navigate(`/phone-line/call/new?to=${g.profile_id}`);
   };
 
   return (
@@ -301,7 +282,7 @@ export default function PhoneLineBrowse() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-10">
+      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-40">
         <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-2 text-xs text-muted-foreground">
           <Lock className="h-3.5 w-3.5 text-primary" />
           Your real phone number stays private. 18+ only.
@@ -313,6 +294,22 @@ export default function PhoneLineBrowse() {
               <div key={i} className="h-32 animate-pulse rounded-2xl bg-card" />
             ))}
           </div>
+        ) : loadError ? (
+          <Card
+            role="alert"
+            className="flex flex-col items-center gap-3 rounded-2xl border-border/60 bg-card p-10 text-center"
+          >
+            <div className="rounded-full bg-destructive/10 p-4 text-destructive">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <div>
+              <div className="font-bold">Voices couldn't load.</div>
+              <div className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</div>
+            </div>
+            <Button onClick={() => setReloadKey((k) => k + 1)} variant="outline" className="gap-2 rounded-full">
+              <RefreshCw className="h-4 w-4" /> Try again
+            </Button>
+          </Card>
         ) : items.length === 0 ? (
           <Card className="flex flex-col items-center gap-3 rounded-2xl border-border/60 bg-card p-10 text-center">
             <div className="rounded-full bg-primary/10 p-4 text-primary">
@@ -346,7 +343,13 @@ export default function PhoneLineBrowse() {
                       {isPlaying && (
                         <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
                       )}
-                      {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="ml-0.5 h-6 w-6" />}
+                      {loadingAudioId === g.greeting_id ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : isPlaying ? (
+                        <Pause className="h-6 w-6" />
+                      ) : (
+                        <Play className="ml-0.5 h-6 w-6" />
+                      )}
                     </button>
 
                     <div className="min-w-0 flex-1">
@@ -412,7 +415,7 @@ export default function PhoneLineBrowse() {
       </main>
 
       {/* Reply dialog */}
-      <Dialog open={!!replyTo} onOpenChange={(o) => !o && setReplyTo(null)}>
+      <Dialog open={!!replyTo} onOpenChange={(o) => !o && closeReply()}>
         <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>Voice reply to {replyTo?.display_name}</DialogTitle>
@@ -429,22 +432,39 @@ export default function PhoneLineBrowse() {
                 )}
                 <button
                   type="button"
-                  onClick={recording ? stopRec : startRec}
-                  disabled={!!recordedBlob}
+                  onClick={recording ? () => recorder.stop() : () => void recorder.start()}
+                  disabled={!!recorded || processing || recorder.state === "starting"}
                   aria-label={recording ? "Stop recording" : "Start recording"}
                   className={`relative flex h-20 w-20 items-center justify-center rounded-full transition-transform active:scale-95 ${
                     recording
                       ? "bg-destructive text-white"
-                      : recordedBlob
+                      : recorded || processing
                       ? "bg-muted text-muted-foreground"
                       : "bg-primary text-primary-foreground glow-primary"
                   } disabled:cursor-not-allowed`}
                 >
-                  {recording ? <Square className="h-7 w-7" /> : <Mic className="h-7 w-7" />}
+                  {processing ? (
+                    <Loader2 className="h-7 w-7 animate-spin" />
+                  ) : recording ? (
+                    <Square className="h-7 w-7" />
+                  ) : (
+                    <Mic className="h-7 w-7" />
+                  )}
                 </button>
               </div>
               <div className="font-mono text-xl font-bold tabular-nums">
                 {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")}
+              </div>
+              <div className="text-xs text-muted-foreground" data-testid="recorder-status">
+                {recorder.state === "starting"
+                  ? "Allow microphone access…"
+                  : recording
+                  ? "Recording… tap to stop"
+                  : processing
+                  ? "Preparing your recording…"
+                  : recorded
+                  ? "Listen, then send"
+                  : "Tap to start recording"}
               </div>
               <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-muted">
                 <div
@@ -454,16 +474,24 @@ export default function PhoneLineBrowse() {
               </div>
             </div>
 
-            {!recording && recordedBlob && recordedUrl && (
+            {recorder.issue && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <div>
+                  <div className="font-semibold">{voiceIssueText(recorder.issue).title}</div>
+                  <div className="opacity-90">{voiceIssueText(recorder.issue).detail}</div>
+                </div>
+              </div>
+            )}
+
+            {recorded && (
               <div className="space-y-2 rounded-xl border border-border/60 bg-background/40 p-3">
-                <audio src={recordedUrl} controls className="w-full" />
+                <audio src={recorded.url} controls className="w-full" />
                 <Button
-                  onClick={() => {
-                    setRecordedBlob(null);
-                    if (recordedUrl) URL.revokeObjectURL(recordedUrl);
-                    setRecordedUrl(null);
-                    setElapsed(0);
-                  }}
+                  onClick={() => recorder.reset()}
                   variant="outline"
                   className="w-full gap-2 rounded-full"
                 >
@@ -473,15 +501,15 @@ export default function PhoneLineBrowse() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setReplyTo(null)} className="rounded-full">
+            <Button variant="ghost" onClick={closeReply} className="rounded-full">
               Cancel
             </Button>
             <Button
               onClick={sendReply}
-              disabled={!recordedBlob || sending}
+              disabled={!recorded || sending}
               className="gap-2 rounded-full bg-primary text-primary-foreground hover:brightness-110"
             >
-              <Send className="h-4 w-4" /> Send reply
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Send reply
             </Button>
           </DialogFooter>
         </DialogContent>
