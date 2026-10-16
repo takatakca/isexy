@@ -266,7 +266,7 @@ export default function PhoneLine() {
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                 <span>
-                  Linked: <span className="font-mono">{linkedPhone.startsWith("+") ? maskPhone(linkedPhone) : linkedPhone}</span>
+                  Linked: <span className="font-mono">{/^\+\d+$/.test(linkedPhone) ? maskPhone(linkedPhone) : linkedPhone}</span>
                 </span>
               </div>
             ) : (
