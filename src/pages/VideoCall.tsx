@@ -293,6 +293,7 @@ function CallScreen() {
       if (!r.success && r.error === "call_not_ringing" && r.status === "connecting") {
         // They answered at the last second: the connect timer takes over.
         setStatus("connecting");
+        callRef.current?.expectPeer();
         return;
       }
       recorded = r.success;
@@ -400,6 +401,7 @@ function CallScreen() {
             if (ringTimerRef.current) clearTimeout(ringTimerRef.current);
             ringTimerRef.current = null;
             setStatus("connecting");
+            callRef.current?.expectPeer();
           }
         })
       .subscribe();

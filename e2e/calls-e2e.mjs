@@ -2,8 +2,10 @@
 // Real WebRTC between two Chromium contexts (fake camera/mic); Supabase REST, RPCs and
 // Realtime (Phoenix websocket: broadcast relay + postgres_changes) are mocked here.
 //
-//   npm run build && npx vite preview --host 127.0.0.1 --port 4304 --strictPort &
-//   node e2e/calls-e2e.mjs [outDir] [baseUrl]
+//   NODE_OPTIONS="--import=./e2e/no-network.mjs" npm run build
+//   npx vite preview --host 127.0.0.1 --port 4304 --strictPort &
+//   node --import ./e2e/offline-browser.mjs e2e/calls-e2e.mjs [outDir] [baseUrl]
+// About 3 minutes (ring timeout, out-of-minutes tick and reconnect give-up run in real time).
 import { chromium } from "/opt/node22/lib/node_modules/playwright/index.mjs";
 import { mkdirSync } from "node:fs";
 

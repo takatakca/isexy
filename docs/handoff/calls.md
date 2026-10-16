@@ -28,39 +28,39 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
    `deduct_call_minute` inserts `credit_transactions.type = 'spend'`, which
    the CHECK (purchase/video_call/bonus/refund) rejects. Same bug in
    `charge_call_session_minute` (Phone Line) and `unlock_conversation`.
-1. [~] TURN is read from `VITE_TURN_URLS` only; the documented name for this
+1. [x] TURN is read from `VITE_TURN_URLS` only; the documented name for this
    run is `VITE_TURN_URL` (accept both); no STUN override; not documented.
-2. [~] ICE recovery: only the caller restarts, only on `failed`, only once;
+2. [x] ICE recovery: only the caller restarts, only on `failed`, only once;
    `disconnected` shows "Reconnecting" forever; no give-up timer.
-3. [~] Camera/mic denied or missing: the call hangs up at once with a toast;
+3. [x] Camera/mic denied or missing: the call hangs up at once with a toast;
    no audio-only fallback when only the camera fails; the other side keeps
    ringing.
-4. [~] Missing controls: speaker (sound on/off) and switch camera on phones.
+4. [x] Missing controls: speaker (sound on/off) and switch camera on phones.
 5. [~] Ring timeout: missed call inserted by the edge function with the
    service role; members can INSERT `missed_calls` for anyone (known hole).
    Needs RPC `record_missed_call` (caller only, active match, once per call).
 6. [~] Billing is client-driven (`deduct_call_minute` every 60 s from the
    caller, not tied to a session; skipping it = free calls; caller writes
    duration/credits/status into `video_call_sessions`). Needs session RPCs.
-7. [~] Signaling topic `call-<matchId>` shared by every call of the match;
+7. [x] Signaling topic `call-<matchId>` shared by every call of the match;
    channel errors/timeouts ignored (sits on "Ringing" forever).
-8. [~] Repeated "ready" makes the caller create a new offer each time.
-9. [~] Callee opened from a push never sees the already ringing call.
-10. [~] Answering a call that already ended starts a dead call screen.
-11. [~] "Open chat" during a call unmounts the screen and silently hangs up.
-12. [~] End states navigate away after 0.9 s with a toast; failures need a
+8. [x] Repeated "ready" makes the caller create a new offer each time.
+9. [x] Callee opened from a push never sees the already ringing call.
+10. [x] Answering a call that already ended starts a dead call screen.
+11. [x] "Open chat" during a call unmounts the screen and silently hangs up.
+12. [x] End states navigate away after 0.9 s with a toast; failures need a
     clear screen with "Call again" / "Message".
-13. [~] Peer camera off / audio-only peer shows black video, no indicator.
-14. [~] Remote audio `play()` rejection (autoplay) swallowed: silent call.
-15. [~] Closing the tab mid-call leaves the session `connected`.
-16. [~] Brand: green answer button, `bg-red-500`, amber minutes pill; "No
+13. [x] Peer camera off / audio-only peer shows black video, no indicator.
+14. [x] Remote audio `play()` rejection (autoplay) swallowed: silent call.
+15. [x] Closing the tab mid-call leaves the session `connected`.
+16. [x] Brand: green answer button, `bg-red-500`, amber minutes pill; "No
     minutes" Cancel does `navigate(-1)` (can leave the app).
-32. [ ] WIP review: the hook's unmount effect depends on `send` (my id), so
+32. [x] WIP review: the hook's unmount effect depends on `send` (my id), so
     a change of `myId` mid-call would run the cleanup and kill the call.
-33. [ ] WIP review: the caller only starts the connect timeout when the
+33. [x] WIP review: the caller only starts the connect timeout when the
     callee's "ready" arrives; if the callee answered (row `connecting`) but
     its signaling never arrives, the caller sits on "Connecting…" forever.
-34. [ ] WIP review: `e2e/calls-e2e.mjs` written but never run to the end;
+34. [x] WIP review: `e2e/calls-e2e.mjs` written but never run to the end;
     `e2e/smoke-call.mjs` still drives the removed direct-table flow.
 35. [ ] Docs/CI: DEPLOYMENT.md, V1-MIGRATION.md, HANDOFF.md and the CI build
     only know `VITE_TURN_URLS`.
@@ -122,6 +122,28 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 ## Fixed
 
 (each entry: files, how verified)
+
+- In-app calls rewritten on the session RPCs (#1-#16, #32-#34):
+  `src/hooks/useCallConnection.ts` (per-call topic `call-<sessionId>`,
+  signaling steps applied one at a time, ICE restart after a 2.5 s grace on
+  `disconnected` or at once on `failed`, retried every 5 s, give-up after
+  25 s with "Connection lost", connect timeout 30 s also when the server says
+  answered but no signaling arrives, peer mute/camera state, switch camera
+  with `replaceTrack`, every track stopped on hang-up, hang-up sent on
+  `pagehide`), `src/pages/VideoCall.tsx` (microphone first, camera failure =
+  audio-only banner, clear blocked/missing/busy screens with Try again,
+  start/answer/decline/connected/charge/end RPCs, ring timeout 35 s ->
+  `record_missed_call`, end screens with Call again / Message / Buy minutes,
+  speaker on/off, "Tap to hear" when autoplay is blocked),
+  `src/components/IncomingCallNotification.tsx` (catch-up query for a call
+  already ringing, busy while in a call, decline RPC, brand tokens),
+  `src/lib/iceServers.ts` (STUN default, `VITE_STUN_URL`, TURN from
+  `VITE_TURN_URL` or `VITE_TURN_URLS` + `VITE_TURN_USERNAME` /
+  `VITE_TURN_CREDENTIAL`, `VITE_TURN_RELAY_ONLY`), `src/lib/callMedia.ts`,
+  `src/lib/callSessions.ts`. Verified: `e2e/calls-e2e.mjs` 44/44 PASS (two
+  Chromium contexts, real WebRTC with fake devices, mocked RPCs/Realtime),
+  screenshots at 390x844. `e2e/smoke-call.mjs` removed (it drove the old
+  direct-table flow; calls-e2e covers everything it did).
 
 - SQL part 1 (`docs/handoff/calls.sql` §1-3), PGlite only so far: CHECK
   widened to accept `spend`; `start_call`, `answer_call`, `decline_call`,

@@ -37,6 +37,7 @@ Pass/fail checks (print `PASS`/`FAIL` lines, exit 1 on a failure):
 | `accounts-layout.mjs` | Accounts | 390x844 sweep: no horizontal scroll, no covered controls | same pattern |
 | `chat-e2e.mjs` | Chat | read RPC, optimistic send + retry, history paging, translation cache, presence, locked chat | `node --import ./e2e/offline-browser.mjs e2e/chat-e2e.mjs http://127.0.0.1:4173 SHOTS public/og-image.png` |
 | `chat-notifications-e2e.mjs` | Chat | badges, push opt-in + settings, email settings, missed calls, group chat, matches list | same as chat-e2e |
+| `calls-e2e.mjs` | Calls | two browsers, real WebRTC (fake camera/mic): ring, answer, video + audio-only, mute/camera/speaker/switch camera, ICE drop -> Reconnecting -> restart, give up, decline, ringing catch-up, camera blocked -> audio only, mic blocked, missed call RPC, out of minutes, every track stopped | `node --import ./e2e/offline-browser.mjs e2e/calls-e2e.mjs SHOTS http://127.0.0.1:4173` |
 
 Broad smoke scripts (print a log to read; they stop with an error if a step cannot run):
 
@@ -44,7 +45,6 @@ Broad smoke scripts (print a log to read; they stop with an error if a step cann
 |---|---|---|
 | `smoke-swipe.mjs` | Discover deck: drag, like → match, failed swipe, keyboard, undo, photo tap | `node --import ./e2e/offline-browser.mjs e2e/smoke-swipe.mjs SHOTS public/og-image.png` |
 | `smoke-chat.mjs` | inbox search, chat history, translation, optimistic send, failed send | same pattern |
-| `smoke-call.mjs` | two members: incoming video call, answer, media both ways, hang up, phone call decline | `node --import ./e2e/offline-browser.mjs e2e/smoke-call.mjs SHOTS` |
 | `smoke-auth.mjs` | Takatak sign-in (email/SMS code, Google redirect) | `node --import ./e2e/offline-browser.mjs e2e/smoke-auth.mjs SHOTS` |
 | `smoke-reposition.mjs` | old dating URLs redirect, no dating wording on public pages | `node --import ./e2e/offline-browser.mjs e2e/smoke-reposition.mjs SHOTS` |
 

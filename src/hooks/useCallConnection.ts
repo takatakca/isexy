@@ -103,6 +103,15 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
   const myState = useRef<PeerMediaState>({ micOn: true, camOn: video });
   const facingRef = useRef<"user" | "environment">("user");
   const timers = useRef<Timers>({});
+  /**
+   * Offers, answers and candidates are applied one at a time: two offers
+   * handled concurrently (an ICE-restart retry crossing a "restart" request)
+   * leave the peer connection in the wrong state for the second answer.
+   */
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  const serial = useCallback((task: () => Promise<void>) => {
+    queue.current = queue.current.then(task).catch((e) => console.warn("Call signaling step failed:", e));
+  }, []);
   const callbacks = useRef({ onRemoteStream, onConnected, onPeerJoined, onPeerHangup, onFailed });
   callbacks.current = { onRemoteStream, onConnected, onPeerJoined, onPeerHangup, onFailed };
 
@@ -171,12 +180,12 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
         clearTimerIn(timers.current, "restart");
         return;
       }
-      if (role === "caller") void makeOffer(true);
+      if (role === "caller") serial(() => makeOffer(true));
       else send({ type: "restart", to: peerIdRef.current });
     };
     attempt();
     timers.current.restart = setInterval(attempt, RESTART_EVERY_MS);
-  }, [role, makeOffer, send]);
+  }, [role, makeOffer, send, serial]);
 
   const startGiveUp = useCallback(() => {
     if (timers.current.giveUp) return;
@@ -369,7 +378,7 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
     void refreshCameraChoice();
 
     const channel = supabase.channel(`call-${callKey}`, { config: { broadcast: { self: false, ack: false } } });
-    channel.on("broadcast", { event: "signal" }, ({ payload }) => { void handleSignalRef.current(payload as Signal); });
+    channel.on("broadcast", { event: "signal" }, ({ payload }) => { serial(() => handleSignalRef.current(payload as Signal)); });
     channelRef.current = channel;
     let subscribed = false;
     timers.current.subscribe = setTimeout(() => {
@@ -404,7 +413,7 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
       }
     });
     setPhase(role === "caller" ? "waiting" : "connecting");
-  }, [role, createPeer, refreshCameraChoice, fail, beginRestart, send, startConnectTimer, setPhase]);
+  }, [role, createPeer, refreshCameraChoice, fail, beginRestart, send, startConnectTimer, setPhase, serial]);
 
   const hangUp = useCallback(() => {
     if (!endedRef.current) {
@@ -492,13 +501,24 @@ export function useCallConnection({ myId, role, video, onRemoteStream, onConnect
     };
   }, [beginRestart, send]);
 
+  // Unmount only (refs, not deps: a re-render must never tear the call down).
+  const sendRef = useRef(send);
+  sendRef.current = send;
   useEffect(() => () => {
     if (!endedRef.current && channelRef.current) {
       endedRef.current = true;
-      send({ type: "hangup", to: peerIdRef.current });
+      sendRef.current({ type: "hangup", to: peerIdRef.current });
     }
     cleanup();
-  }, [send, cleanup]);
+  }, [cleanup]);
 
-  return { phase, localStream, peerState, canSwitchCamera, facing, start, hangUp, setMuted, setVideoOff, switchCamera };
+  /**
+   * Caller: the server says the other person answered. Their signaling should
+   * follow; if it never does, fail with "timeout" instead of waiting forever.
+   */
+  const expectPeer = useCallback(() => {
+    if (!endedRef.current && role === "caller") startConnectTimer();
+  }, [role, startConnectTimer]);
+
+  return { phase, localStream, peerState, canSwitchCamera, facing, start, hangUp, setMuted, setVideoOff, switchCamera, expectPeer };
 }
