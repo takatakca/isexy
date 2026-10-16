@@ -12,7 +12,12 @@ interface MissedCallPayload {
   matchId: string;
   /** "phone" or "video" (VideoCall.tsx sends it); otherwise taken from the call session. */
   callType?: string;
+  /** The video_call_sessions row that isexy.record_missed_call just marked missed. */
+  callSessionId?: string;
 }
+
+/** A missed call is reported only while it is recent. */
+const MISSED_CALL_MAX_AGE_MS = 5 * 60_000;
 
 
 /**
@@ -79,35 +84,59 @@ serve(async (req) => {
 
     console.log(`[MISSED-CALL] Processing missed call notification for receiver ${receiverId}`);
 
-    // Link the call that rang out (newest session from this caller in this match).
-    const { data: session } = await supabaseClient
-      .from("video_call_sessions")
-      .select("id, call_type")
-      .eq("match_id", matchId)
-      .eq("caller_id", callerId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Only a call that really rang out: the session isexy.record_missed_call
+    // marked missed, placed by this caller in this match, a few minutes old at
+    // most. Without it this endpoint could email/push "missed call" at will.
+    const callSessionId = typeof payload.callSessionId === "string" ? payload.callSessionId : "";
+    const { data: session } = callSessionId
+      ? await supabaseClient
+        .from("video_call_sessions")
+        .select("id, call_type, status, created_at")
+        .eq("id", callSessionId)
+        .eq("match_id", matchId)
+        .eq("caller_id", callerId)
+        .maybeSingle()
+      : { data: null };
+    const createdAt = session?.created_at ? new Date(session.created_at).getTime() : NaN;
+    if (!session || session.status !== "missed" || !(Date.now() - createdAt <= MISSED_CALL_MAX_AGE_MS)) {
+      return new Response(JSON.stringify({ error: "No missed call to report" }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const callType = payload.callType === "phone" || payload.callType === "video"
       ? payload.callType
       : session?.call_type === "phone" ? "phone" : "video";
     const callLabel = callType === "phone" ? "call" : "video call";
     const appUrl = (isexyEnv("APP_URL") ?? "https://isexy.onrender.com").replace(/\/+$/, "");
 
-    // Record the missed call
-    const { data: missedCall, error: insertError } = await supabaseClient
+    // record_missed_call already wrote the missed_calls row (one per call
+    // session); insert it only if it is somehow missing.
+    let { data: missedCall } = await supabaseClient
       .from("missed_calls")
-      .insert({
-        caller_id: callerId,
-        receiver_id: receiverId,
-        match_id: matchId,
-        call_session_id: session?.id ?? null,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("[MISSED-CALL] Error recording missed call:", insertError);
+      .select("id, notified_push")
+      .eq("call_session_id", session.id)
+      .maybeSingle();
+    if (!missedCall) {
+      const { data: inserted, error: insertError } = await supabaseClient
+        .from("missed_calls")
+        .insert({
+          caller_id: callerId,
+          receiver_id: receiverId,
+          match_id: matchId,
+          call_session_id: session.id,
+        })
+        .select("id, notified_push")
+        .single();
+      if (insertError) {
+        console.error("[MISSED-CALL] Error recording missed call:", insertError);
+      }
+      missedCall = inserted;
+    }
+    if (missedCall?.notified_push) {
+      // Already reported (a retry): do not notify twice.
+      return new Response(JSON.stringify({ success: true, already_notified: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Get receiver's details
