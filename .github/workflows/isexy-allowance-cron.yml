@@ -1,0 +1,66 @@
+# ISEXY allowance maintenance. Keep Supabase verify_jwt=true:
+# JWT gets past the gateway; the independently stored Cron secret
+# authorizes the handler. No service-role secret is sent by GitHub.
+name: ISEXY Allowance Maintenance
+
+on:
+  schedule:
+    - cron: "13 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: isexy-allowance-cron
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Authorized daily allowance maintenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CRON_SECRET: ${{ secrets.ISEXY_CRON_SECRET }}
+      SUPABASE_URL: https://pcjfahhlozsseqqevimi.supabase.co
+      # This is the public legacy anon JWT, *not* the project service key.
+      # Set vars.ISEXY_ANON_JWT if the legacy key rotates.
+      ANON_JWT: ${{ vars.ISEXY_ANON_JWT || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjamZhaGhsb3pzc2VxcWV2aW1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDA0NzQsImV4cCI6MjEwMDY3NjQ3NH0.jhy7N0I7uRjDt0Frzsu_F00lDL6cGr2ZxHPKsnoWY3Q' }}
+    steps:
+      - name: Check Cron configuration without printing secrets
+        id: config
+        run: |
+          set -euo pipefail
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::notice::ISEXY_CRON_SECRET is not configured in GitHub Actions; no maintenance request sent."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${#CRON_SECRET}" -lt 16 ]; then
+            echo "::error::ISEXY_CRON_SECRET must be at least 16 characters."
+            exit 1
+          fi
+          if [[ "$ANON_JWT" != eyJ* ]]; then
+            echo "::error::ISEXY_ANON_JWT must be a valid legacy JWT for Supabase verify_jwt=true."
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Call ISEXY maintenance with both authentication layers
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --show-error --max-time 25 --output /tmp/isexy-cron.json \
+            --write-out '%{http_code}' --request POST \
+            --url "$SUPABASE_URL/functions/v1/isexy-reset-allowances" \
+            --header "apikey: $ANON_JWT" \
+            --header "Authorization: Bearer $ANON_JWT" \
+            --header "x-cron-secret: $CRON_SECRET" \
+            --header "Content-Type: application/json" \
+            --data '{}')
+          echo "ISEXY maintenance response HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::ISEXY scheduled maintenance failed, check function logs for details."
+            exit 1
+          fi
+          echo "ISEXY authenticated maintenance finished."

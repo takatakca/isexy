@@ -11,12 +11,21 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Allow": "POST, OPTIONS" },
+    });
+  }
 
   try {
-    // Require shared cron secret
+    // Require a strong independent secret, even after the Supabase gateway
+    // verifies the caller's JWT. The secret is never exposed to browsers.
     const cronSecret = isexyEnv("CRON_SECRET");
     const provided = req.headers.get("x-cron-secret");
-    if (!cronSecret || provided !== cronSecret) {
+    if (!cronSecret || cronSecret.length < 16 || !provided ||
+        provided.length !== cronSecret.length ||
+        !Array.from(provided).every((char, i) => char === cronSecret[i])) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
