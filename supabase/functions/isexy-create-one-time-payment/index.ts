@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { safeCheckoutMetadata } from "../_shared/checkout-metadata.ts";
 import { isexyAppUrl } from "../_shared/app-url.ts";
 
 const corsHeaders = {
@@ -69,7 +70,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const productId: string | undefined = body?.productId;
-    const metadata = (body?.metadata ?? {}) as Record<string, string>;
+    const clientMetadata: unknown = body?.metadata;
 
     let item: CatalogItem | null = null;
     let resolvedName: string | undefined;
@@ -94,13 +95,10 @@ serve(async (req) => {
         currency: "usd",
       };
       resolvedName = item.name;
-      metadata.gift_package_id = pkg.id;
-      metadata.type = "gift";
+
     } else if (productId && CATALOG[productId]) {
       item = CATALOG[productId];
-      if (productId.startsWith("donation_") || productId.startsWith("topup_") || productId.startsWith("food_")) {
-        metadata.type = metadata.type || (productId.startsWith("topup_") ? "topup" : productId.startsWith("food_") ? "food" : "donation");
-      }
+
     }
 
     if (!item || !productId) {
@@ -121,15 +119,19 @@ serve(async (req) => {
     const stripeCustomerId = await ensureStripeCustomerId(stripe, user);
     const customerId = stripeCustomerId;
 
-    // Sanitize metadata: drop any monetary fields the client tried to inject.
-    const safeMeta: Record<string, string> = {};
-    for (const [k, v] of Object.entries(metadata)) {
-      if (typeof v === "string" && v.length <= 500 && !/(amount|price|cents|usd|cad)/i.test(k)) {
-        safeMeta[k] = v;
-      }
+    // Untrusted client metadata must never select a different payer,
+    // product, account, entitlement or fulfillment branch.
+    let safeMeta: Record<string, string>;
+    try {
+      safeMeta = safeCheckoutMetadata(
+        productId, clientMetadata, user.id,
+        productId.startsWith("gift_") ? productId.slice(5) : undefined,
+      );
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: error instanceof Error ? error.message : "Invalid checkout metadata",
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    safeMeta.user_id = user.id;
-    safeMeta.product_id = productId;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

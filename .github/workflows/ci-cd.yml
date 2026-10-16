@@ -76,6 +76,9 @@ jobs:
       - name: Isolated Stripe customer ownership tests
         run: deno test scripts/isexy/test/stripe-customer.test.ts
 
+      - name: Checkout metadata isolation tests
+        run: deno test scripts/isexy/test/checkout-metadata.test.ts
+
       - name: Type-check every edge function
         # Functions are bundled without the web app's package.json (as on
         # Supabase), so npm: specifiers resolve from the registry, not node_modules.
