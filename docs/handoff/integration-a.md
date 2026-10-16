@@ -5,7 +5,7 @@ Branch `claude/zealous-brown-kv2hmx`. Notes so the integration survives a stop.
 ## Progress
 
 - [x] merge wf/discover (typecheck clean)
-- [ ] merge wf/accounts
+- [x] merge wf/accounts (App.tsx + types.ts auto-merged; typecheck clean)
 - [ ] merge wf/chat
 - [ ] cross-area notes
 - [ ] 0004_app_completion.sql + CI-style migration test

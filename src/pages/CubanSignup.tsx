@@ -38,6 +38,7 @@ export default function CubanSignup() {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   
@@ -56,6 +57,14 @@ export default function CubanSignup() {
       setStep("whatsapp");
     }
   }, [user, loading]);
+
+  // Live camera preview while recording (the <video> exists only in that state).
+  useEffect(() => {
+    if (isRecordingVideo && videoRef.current && videoStreamRef.current) {
+      videoRef.current.srcObject = videoStreamRef.current;
+      videoRef.current.play().catch(() => undefined);
+    }
+  }, [isRecordingVideo]);
 
   const handleSendWhatsAppCode = async () => {
     const result = whatsappSchema.safeParse(whatsappNumber);
@@ -145,10 +154,8 @@ export default function CubanSignup() {
   const startVideoRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
+      // The <video> preview only renders while recording; the effect below attaches it.
+      videoStreamRef.current = stream;
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -328,6 +335,11 @@ export default function CubanSignup() {
       if (audioFile) {
         setUploadProgress(70);
         audioUrl = await uploadFile(audioFile, `${userId}/verification-audio.webm`);
+      }
+
+      // uploadFile already showed the error: don't submit a request with missing files.
+      if ((carnetFront && !carnetFrontUrl) || (carnetBack && !carnetBackUrl) || (videoFile && !videoUrl) || (audioFile && !audioUrl)) {
+        throw new Error("Some files could not be uploaded. Please try again.");
       }
 
       setUploadProgress(85);

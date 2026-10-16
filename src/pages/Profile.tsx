@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Shield, Settings, Pencil, Star, Zap, Flame, Check, Lock, Image, FileText, BadgeCheck, Plus, ChevronRight, Briefcase, GraduationCap, MapPin, Quote, Heart, Sparkles } from "lucide-react";
+import { Shield, Settings, Pencil, Star, Zap, Flame, Check, Lock, Image, FileText, BadgeCheck, Plus, ChevronRight, Briefcase, GraduationCap, MapPin, Quote, Heart, Sparkles, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 import { Progress } from "@/components/ui/progress";
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   Image, FileText, BadgeCheck, Briefcase, GraduationCap, MapPin, Quote, Heart, Sparkles,
 };
 
@@ -60,9 +60,9 @@ export default function Profile() {
   const completedItems = items.filter(i => i.completed);
 
   const quickActions = [
-    { id: "superlikes", icon: Star, iconColor: "text-cyan-500", title: `${profile?.super_likes_remaining ?? 0} Super Likes`, action: "GET MORE" },
-    { id: "boosts", icon: Zap, iconColor: "text-purple-500", title: `${profile?.boosts_remaining ?? 0} Boosts`, action: "GET MORE" },
-    { id: "subscription", icon: Flame, iconColor: "text-primary", title: profile?.subscription_tier && profile.subscription_tier !== 'free' ? profile.subscription_tier.charAt(0).toUpperCase() + profile.subscription_tier.slice(1) : "Subscribe", action: null },
+    { id: "superlikes", icon: Star, iconColor: "text-cyan-500", title: `${profile?.super_likes_remaining ?? 0} Super Likes`, action: "GET MORE", path: "/get-super-likes" },
+    { id: "boosts", icon: Zap, iconColor: "text-purple-500", title: `${profile?.boosts_remaining ?? 0} Boosts`, action: "GET MORE", path: "/get-boosts" },
+    { id: "subscription", icon: Flame, iconColor: "text-primary", title: profile?.subscription_tier && profile.subscription_tier !== 'free' ? profile.subscription_tier.charAt(0).toUpperCase() + profile.subscription_tier.slice(1) : "Subscribe", action: null, path: "/premium" },
   ];
 
   return (
@@ -70,7 +70,7 @@ export default function Profile() {
       {/* Header */}
       <div className="bg-background px-4 pt-12 pb-6">
         <div className="flex items-start gap-4">
-          <div className="w-24 h-24 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+          <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
             {profilePhoto ? (
               <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -79,23 +79,23 @@ export default function Profile() {
               </div>
             )}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-foreground">{profile?.first_name || "User"}</h1>
+              <h1 className="text-2xl font-bold text-foreground truncate">{profile?.first_name || "User"}</h1>
               {profile?.is_verified && <BadgeCheck className="w-5 h-5 text-cyan-500" />}
             </div>
             <button
               onClick={() => navigate("/edit-profile")}
-              className="flex items-center gap-2 px-4 py-2 bg-background text-background rounded-full font-semibold text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-foreground text-background rounded-full font-semibold text-sm whitespace-nowrap"
             >
               <Pencil className="w-4 h-4" />
               Edit profile
             </button>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center shrink-0">
             <LanguageSelector variant="icon" />
-            <button className="p-2"><Shield className="w-6 h-6 text-muted-foreground" /></button>
-            <button onClick={() => navigate("/settings")} className="p-2"><Settings className="w-6 h-6 text-muted-foreground" /></button>
+            <button onClick={() => navigate("/safety")} className="p-1.5" aria-label="Safety"><Shield className="w-6 h-6 text-muted-foreground" /></button>
+            <button onClick={() => navigate("/settings")} className="p-1.5" aria-label="Settings"><Settings className="w-6 h-6 text-muted-foreground" /></button>
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function Profile() {
         {quickActions.map((action) => (
           <button
             key={action.id}
-            onClick={() => navigate("/premium")}
+            onClick={() => navigate(action.path)}
             className="relative bg-background rounded-2xl p-4 flex flex-col items-center shadow-sm"
           >
             <Plus className="absolute top-2 right-2 w-4 h-4 text-muted-foreground" />
@@ -178,14 +178,14 @@ export default function Profile() {
 
       {/* Gold Upsell */}
       <div className="px-4">
-        <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-2xl p-4">
+        <div className="bg-card border border-yellow-500/30 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Flame className="w-6 h-6 text-yellow-600" />
-              <span className="font-bold text-yellow-800">ISEXY</span>
+              <Flame className="w-6 h-6 text-yellow-500" />
+              <span className="font-bold text-foreground">ISEXY</span>
               <span className="px-2 py-0.5 bg-yellow-600 text-white text-xs font-bold rounded">GOLD</span>
             </div>
-            <button onClick={() => navigate("/premium")} className="px-4 py-2 bg-yellow-500 text-foreground font-bold rounded-full text-sm">Upgrade</button>
+            <button onClick={() => navigate("/premium")} className="px-4 py-2 bg-yellow-500 text-black font-bold rounded-full text-sm">Upgrade</button>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">

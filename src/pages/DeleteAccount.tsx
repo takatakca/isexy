@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useMemberSettings } from "@/hooks/useMemberSettings";
 
 const deleteReasons = [
   { id: "found_someone", label: "I found the friends I was looking for" },
@@ -27,21 +30,73 @@ const deleteReasons = [
   { id: "other", label: "Other reason" },
 ];
 
+const ticketNumber = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "DEL-";
+  for (let i = 0; i < 6; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  return result;
+};
+
+/**
+ * Deleting an account is a request handled by the ISEXY team (a support
+ * ticket), never an instant client-side delete: the TAKATAK sign-in is shared
+ * with other TAKATAK services and member data is only removed by staff.
+ */
 const DeleteAccount = () => {
   const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+  const { save } = useMemberSettings();
   const [selectedReason, setSelectedReason] = useState("");
   const [otherReason, setOtherReason] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (selectedReason === "other" && !otherReason.trim()) {
+      setShowConfirmDialog(false);
+      toast.error("Please tell us a little more about why you're leaving");
+      return;
+    }
     setIsDeleting(true);
-    // Simulate deletion process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const reason = deleteReasons.find((r) => r.id === selectedReason)?.label ?? selectedReason;
+    const number = ticketNumber();
+    // support_tickets needs a contact (3+ characters); phone-only members have no email.
+    const contact = user.email || (user.phone ? `+${user.phone.replace(/^\+/, "")}` : "no-email-on-file");
+    const { error } = await supabase.from("support_tickets").insert({
+      ticket_number: number,
+      user_id: user.id,
+      name: (profile?.first_name || "ISEXY member").slice(0, 200),
+      email: contact,
+      subject: "Account deletion request",
+      category: "Account Issues",
+      priority: "high",
+      status: "open",
+      message: [
+        "Please delete my ISEXY account and data.",
+        `Reason: ${reason}${otherReason.trim() ? ` - ${otherReason.trim().slice(0, 2000)}` : ""}`,
+        `Member id: ${user.id}`,
+      ].join("\n"),
+    });
+    if (error) {
+      console.error("Deletion request failed:", error);
+      setIsDeleting(false);
+      setShowConfirmDialog(false);
+      toast.error("We couldn't send your request. Please try again, or write to us from Contact Us.");
+      return;
+    }
+    await save({ deletionRequestedAt: new Date().toISOString() });
+    if (user.email) {
+      // Best effort: the member gets the ticket number by email.
+      supabase.functions.invoke("isexy-send-ticket-confirmation", {
+        body: { name: profile?.first_name || "ISEXY member", email: user.email, ticketNumber: number, subject: "Account deletion request", category: "Account Issues", priority: "high", message: `Reason: ${reason}` },
+      }).catch(() => undefined);
+    }
     setIsDeleting(false);
     setShowConfirmDialog(false);
-    toast.success("Account deleted successfully");
-    navigate("/welcome");
+    toast.success(`Request received (ticket ${number}). Our team will delete your ISEXY account and confirm by email.`, { duration: 10000 });
+    await signOut();
+    navigate("/", { replace: true });
   };
 
   return (
@@ -59,6 +114,7 @@ const DeleteAccount = () => {
             <h3 className="font-semibold text-destructive">This action is permanent</h3>
             <p className="text-sm text-destructive/80 mt-1">
               Deleting your account will permanently remove all your data, matches, messages, and subscription.
+              Your TAKATAK sign-in itself stays, so other TAKATAK services keep working.
             </p>
           </div>
         </div>
@@ -133,14 +189,14 @@ const DeleteAccount = () => {
               className="w-full justify-start"
               onClick={() => navigate("/settings")}
             >
-              Pause your account temporarily
+              Hide your profile from Discover
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/email-settings")}
             >
-              Hide your profile from discovery
+              Get fewer emails
             </Button>
           </div>
         </div>
@@ -166,14 +222,18 @@ const DeleteAccount = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your account
-              and remove all your data from our servers.
+              This action cannot be undone. We'll sign you out and our team will permanently
+              delete your ISEXY account and data, then confirm by email.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteAccount}
+              onClick={(e) => {
+                // Keep the dialog open (with "Deleting...") until the request is sent.
+                e.preventDefault();
+                handleDeleteAccount();
+              }}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
