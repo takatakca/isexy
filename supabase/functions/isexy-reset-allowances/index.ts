@@ -4,7 +4,7 @@ import { isexyEnv } from "../_shared/env.ts";
 
 // Scheduler (x-cron-secret): weekly Super Likes / First Impressions, the
 // monthly Boost (only when 30 days have passed), plans that ended, and old
-// promotions. The rules live in SQL (docs/handoff/rewards.sql, R8).
+// promotions. The rules live in SQL (0004_app_completion.sql part R8).
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

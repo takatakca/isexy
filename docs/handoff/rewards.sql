@@ -1,3 +1,4 @@
+-- FOLDED INTO supabase/isexy-migrations/0004_app_completion.sql (part R). Kept as the branch notes; do not apply this file.
 -- ISEXY rewards area (branch wf/rewards): points, credits, loyalty, boosts and
 -- payments. NOT a migration file: the integrator appends it to
 -- supabase/isexy-migrations/0004_app_completion.sql (part R) before 0004 is

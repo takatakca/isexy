@@ -1,9 +1,9 @@
--- Smoke tests for docs/handoff/calls.sql (calls area: in-app calls, missed
--- calls, Phone Line calls, Twilio statuses, phone numbers, moderation state).
+-- Smoke tests for part D of supabase/isexy-migrations/0004_app_completion.sql
+-- (calls area: in-app calls, missed calls, Phone Line calls, Twilio statuses,
+-- phone numbers, moderation state).
 -- Run on a THROWAWAY local Postgres only (never on V1), after:
 --   psql "$ISEXY_DB_URL" -f scripts/isexy/test/v1-mock.sql
---   scripts/isexy/migrate.sh --apply        (0001-0004)
---   psql "$ISEXY_DB_URL" -1 -f docs/handoff/calls.sql   (or calls.sql folded into a migration)
+--   scripts/isexy/migrate.sh --apply        (0001-0004, part D included)
 -- then (everything is rolled back):
 --   printf 'BEGIN;\n\\i scripts/isexy/test/calls-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
 -- Fake members call each RPC as the authenticated / anon / service_role roles

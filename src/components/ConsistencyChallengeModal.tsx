@@ -14,7 +14,7 @@ interface ConsistencyChallengeModalProps {
   earnedBadges?: string[];
 }
 
-// Rewards given by the server (isexy.record_daily_visit, docs/handoff/rewards.sql R9).
+// Rewards given by the server (isexy.record_daily_visit, 0004_app_completion.sql part R9).
 const MILESTONES = [
   { days: 3, badge: "3_day" as const, reward: "25 loyalty points" },
   { days: 7, badge: "7_day" as const, reward: "1 Free Super Like" },

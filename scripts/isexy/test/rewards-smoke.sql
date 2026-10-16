@@ -1,9 +1,9 @@
--- Smoke tests for docs/handoff/rewards.sql (wf/rewards: points, credits,
--- loyalty, boosts, payments). Run on a THROWAWAY local Postgres only (never
--- on V1), after v1-mock.sql, migrate.sh --apply and rewards.sql:
---   printf 'BEGIN;\n\\i docs/handoff/rewards.sql\n\\i scripts/isexy/test/rewards-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
--- (once rewards.sql is folded into 0004: drop the first \i). Fake members
--- call each RPC as authenticated / anon / service_role with
+-- Smoke tests for part R of supabase/isexy-migrations/0004_app_completion.sql
+-- (wf/rewards: points, credits, loyalty, boosts, payments). Run on a
+-- THROWAWAY local Postgres only (never on V1), after v1-mock.sql and
+-- migrate.sh --apply (0001-0004, part R included):
+--   printf 'BEGIN;\n\\i scripts/isexy/test/rewards-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
+-- Fake members call each RPC as authenticated / anon / service_role with
 -- request.jwt.claim(s) set: at least one allowed and one forbidden call each.
 \set ON_ERROR_STOP on
 SET client_min_messages = warning;

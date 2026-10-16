@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * In-app call sessions (isexy.video_call_sessions) go through SECURITY
- * DEFINER RPCs only (docs/handoff/calls.sql): the server checks the match,
+ * DEFINER RPCs only (0004_app_completion.sql part D): the server checks the match,
  * stamps the times and bills the caller's minutes.
  */
 export interface CallRpcResult {
