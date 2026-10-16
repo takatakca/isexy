@@ -211,6 +211,11 @@ serve(async (req) => {
 
           // ---- Chat subscription (chat_1mo) ----
           if (meta.type === "chat_sub" || meta.package_id === "chat_1mo") {
+            if (session.payment_status !== "paid" &&
+                session.payment_status !== "no_payment_required") {
+              logStep("Chat checkout awaiting payment", { sessionId: session.id });
+              break;
+            }
             const months = parseInt(meta.plan_months || "1", 10) || 1;
             const { data: existingChatSub } = await supabaseClient
               .from("chat_subscriptions").select("id")
@@ -220,18 +225,20 @@ serve(async (req) => {
               break;
             }
             const expiresAt = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
-            await supabaseClient.from("chat_subscriptions").insert({
+            const { error: chatInsertError } = await supabaseClient.from("chat_subscriptions").insert({
               profile_id: profileId,
               plan_months: months,
               status: "active",
               expires_at: expiresAt,
               stripe_session_id: session.id,
             });
-            await supabaseClient.from("credit_transactions").insert({
+            if (chatInsertError) throw new Error("Unable to record chat subscription");
+            const { error: chatLedgerError } = await supabaseClient.from("credit_transactions").insert({
               profile_id: profileId, amount: 0, type: "purchase", category: "chat_sub",
               description: `Chat subscription ${months} month(s)`,
               stripe_session_id: session.id,
             });
+            if (chatLedgerError) throw new Error("Unable to record chat subscription ledger");
             logStep("Chat subscription fulfilled", { profileId, months });
             break;
           }
@@ -474,7 +481,7 @@ serve(async (req) => {
 
         if (sub && appTier) {
           const isActive = ["active", "trialing"].includes(subscription.status);
-          await supabaseClient
+          const { error: profileUpdateError } = await supabaseClient
             .from("profiles")
             .update({
               is_premium: isActive,
@@ -482,7 +489,10 @@ serve(async (req) => {
               subscription_expires_at: isActive ? periodEnd : null,
             })
             .eq("id", sub.profile_id);
-          await supabaseClient.rpc("sync_entitlements", { p_profile_id: sub.profile_id });
+          if (profileUpdateError) throw new Error("Unable to update subscription entitlements");
+          const { error: syncError } = await supabaseClient
+            .rpc("sync_entitlements", { p_profile_id: sub.profile_id });
+          if (syncError) throw new Error("Unable to synchronize subscription entitlements");
         }
         break;
       }
@@ -491,10 +501,11 @@ serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription;
         logStep("Subscription cancelled", { subscriptionId: subscription.id });
 
-        await supabaseClient
+        const { error: cancelError } = await supabaseClient
           .from("subscriptions")
           .update({ status: "canceled" })
           .eq("stripe_subscription_id", subscription.id);
+        if (cancelError) throw new Error("Unable to record canceled subscription");
 
         const { data: sub } = await supabaseClient
           .from("subscriptions")
@@ -503,7 +514,7 @@ serve(async (req) => {
           .single();
 
         if (sub) {
-          await supabaseClient
+          const { error: revokeError } = await supabaseClient
             .from("profiles")
             .update({
               is_premium: false,
@@ -511,7 +522,10 @@ serve(async (req) => {
               subscription_expires_at: null,
             })
             .eq("id", sub.profile_id);
-          await supabaseClient.rpc("sync_entitlements", { p_profile_id: sub.profile_id });
+          if (revokeError) throw new Error("Unable to revoke canceled premium access");
+          const { error: syncError } = await supabaseClient
+            .rpc("sync_entitlements", { p_profile_id: sub.profile_id });
+          if (syncError) throw new Error("Unable to synchronize canceled subscription access");
         }
         break;
       }
