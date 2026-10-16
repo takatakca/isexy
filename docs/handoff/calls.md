@@ -24,7 +24,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 
 ### In-app calls (VideoCall, useCallConnection, IncomingCallNotification)
 
-0. [~] Every connected call is cut off at once with "Out of minutes":
+0. [x] Every connected call is cut off at once with "Out of minutes":
    `deduct_call_minute` inserts `credit_transactions.type = 'spend'`, which
    the CHECK (purchase/video_call/bonus/refund) rejects. Same bug in
    `charge_call_session_minute` (Phone Line) and `unlock_conversation`.
@@ -36,10 +36,10 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
    no audio-only fallback when only the camera fails; the other side keeps
    ringing.
 4. [x] Missing controls: speaker (sound on/off) and switch camera on phones.
-5. [~] Ring timeout: missed call inserted by the edge function with the
+5. [x] Ring timeout: missed call inserted by the edge function with the
    service role; members can INSERT `missed_calls` for anyone (known hole).
    Needs RPC `record_missed_call` (caller only, active match, once per call).
-6. [~] Billing is client-driven (`deduct_call_minute` every 60 s from the
+6. [x] Billing is client-driven (`deduct_call_minute` every 60 s from the
    caller, not tied to a session; skipping it = free calls; caller writes
    duration/credits/status into `video_call_sessions`). Needs session RPCs.
 7. [x] Signaling topic `call-<matchId>` shared by every call of the match;
@@ -67,9 +67,9 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 
 ### Phone Line
 
-17. [~] `start_phone_line_call_session` reads `profiles.age` (no such
+17. [x] `start_phone_line_call_session` reads `profiles.age` (no such
     column): every "Call" on Browse voices fails at runtime.
-18. [ ] Phone Line calls are fake: the session starts `connected`, the
+18. [~] Phone Line calls are fake: the session starts `connected`, the
     receiver is never told, no audio flows, the caller pays per minute.
     SQL part (ring, answer, decline, connected, settle) is in calls.sql but
     the answered/connected states are not separated (the caller could start
@@ -86,11 +86,11 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 22. [ ] Twilio signature checked against `req.url` (the internal URL, not
     the public URL Twilio signed) with a non constant-time compare; the menu
     builds its own URL from `req.url`.
-23. [ ] Status callback: `ringing` maps to `initiating`, late callbacks move a
+23. [x] Status callback: `ringing` maps to `initiating`, late callbacks move a
     finished call back to `connected`, `answered_at` overwritten on every
     `in-progress`; inbound session stamped `answered_at` at once.
-24. [ ] Inbound inserts a new `call_sessions` row on every webhook retry.
-25. [ ] `link_my_phone_line_number` (AdminCallTests) uses a `verified_at`
+24. [x] Inbound inserts a new `call_sessions` row on every webhook retry.
+25. [x] `link_my_phone_line_number` (AdminCallTests) uses a `verified_at`
     column and an `ON CONFLICT (profile_id)` target that do not exist, so it
     always fails; it is granted to every member (anyone could mark any number
     verified) and it DELETEs rows.
@@ -104,7 +104,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
     the page; reply recorder has the same issues; no error state.
 29. [ ] PhoneLine hub: labels for `pending` / `rejected` (not phone line
     statuses), `banned` missing; "Live" while the greeting is pending.
-30. [ ] No moderation queue for voice greetings: greetings default to
+30. [x] No moderation queue for voice greetings: greetings default to
     `pending` and nothing approves them, so Browse voices stays empty.
 31. [ ] AdminCallTests shows only `call_sessions`; in-app calls
     (`video_call_sessions`) are invisible.
@@ -145,10 +145,32 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
   screenshots at 390x844. `e2e/smoke-call.mjs` removed (it drove the old
   direct-table flow; calls-e2e covers everything it did).
 
-- SQL part 1 (`docs/handoff/calls.sql` §1-3), PGlite only so far: CHECK
-  widened to accept `spend`; `start_call`, `answer_call`, `decline_call`,
-  `mark_call_connected`, `charge_call_minute`, `end_call`,
-  `record_missed_call`. To be re-verified on Postgres 16 (CI style).
+- SQL (`docs/handoff/calls.sql`, 6 sections, header lists them) for #0, #5,
+  #6, #17, the server half of #18, #23, #24, #25, #27 (moderation state) and
+  #30 (staff review RPCs): `credit_transactions` CHECK accepts `spend`;
+  in-app session RPCs and `record_missed_call` (+ unique index on
+  `missed_calls.call_session_id`); member INSERT/UPDATE policies on
+  `video_call_sessions` dropped (RPCs only); Phone Line ring -> answer
+  (connected, not billed) -> media connected (billed) -> end with
+  settlement; `charge_call_session_minute` in-app only; `call_sessions` on
+  Realtime; one Twilio session per CallSid (unique index);
+  `apply_twilio_call_status` (service role, statuses only move forward,
+  `answered_at` kept); members cannot mark phone numbers verified;
+  `link_my_verified_phone` (SMS-confirmed sign-in number);
+  `link_my_phone_line_number` admin-only, real columns, no DELETE;
+  greetings / voice replies always start `pending`, owners cannot change
+  moderation fields, new audio goes back to review, banned voice profiles
+  stay banned and cannot be deleted, voice profile age from the birth date;
+  `get_voice_greetings_for_review` / `review_voice_greeting` (admin or
+  moderator); admins read `video_call_sessions`.
+  Verified on a throwaway Postgres 16 exactly like the CI `migrations` job:
+  `v1-mock.sql`, `migrate.sh` dry run / `--apply` / re-run "up to date"
+  (0001-0004), then calls.sql as a 0005 through `migrate.sh` (dry run,
+  apply, re-run; V1 guard silent), calls.sql applied a third time
+  (idempotent), `0004-smoke.sql` 34/34 PASS, new
+  `scripts/isexy/test/calls-smoke.sql` 98/98 PASS (allowed and forbidden
+  call for every RPC, policy and trigger). The PGlite scripts
+  (`e2e/calls-sql-*.mjs`) are replaced by calls-smoke.sql.
 
 ## Verification
 
