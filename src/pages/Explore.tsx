@@ -84,7 +84,7 @@ export default function Explore() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-40">
       <div className="sticky top-0 z-10 bg-background px-4 pt-12 pb-4">
         <h1 className="text-3xl font-extrabold text-foreground">Explore</h1>
       </div>

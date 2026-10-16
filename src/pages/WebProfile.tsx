@@ -307,7 +307,7 @@ function MemberProfile({ id }: { id: string }) {
   const age = ageFrom(member.birth_date);
 
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-40">
       {seo}
       {header}
 

@@ -96,7 +96,7 @@ export default function Likes() {
   }, [hasMore, activeTab, loadingMore, fetchSent]);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-40">
       <div className="sticky top-0 z-10 bg-background px-4 pt-12 pb-2">
         <h1 className="text-3xl font-extrabold text-foreground mb-4">Likes</h1>
         <div className="flex border-b border-border" role="tablist">

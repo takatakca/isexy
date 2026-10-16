@@ -66,7 +66,7 @@ export default function Profile() {
   ];
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-24">
+    <div className="min-h-screen bg-muted/30 pb-40">
       {/* Header */}
       <div className="bg-background px-4 pt-12 pb-6">
         <div className="flex items-start gap-4">

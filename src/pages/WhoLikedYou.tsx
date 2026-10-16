@@ -7,7 +7,7 @@ export default function WhoLikedYou() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-40">
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex items-center gap-4 px-4 py-4">
           <button onClick={() => navigate(-1)} className="p-1" aria-label="Go back">
