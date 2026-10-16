@@ -1,5 +1,19 @@
 # ISEXY — État réel du projet
 
+## Vérification prioritaire — 16 octobre 2026 (relève courante)
+
+- Dernier SHA de code `dd06a77ba9616c46670287614fba7310ce505d63` sur `main` **avant** le présent commit documentaire. Render `dd06a77b` observé `live`, mais CI du SHA `38950628292` encore en cours à la dernière vérification.
+- CI confirmées `38949682815` (SHA `1d2d5e77`, success), `38950001783` (SHA `a2bb95b1`, success), `38950381063` (SHA `9fa72736`, success).
+- Supabase TAKATAK V1 `pcjfahhlozsseqqevimi` : 11 migrations ISEXY (0001–0011) appliquées, crédit/minute transactionnel service-role-only; pas de modification des identités ni du schéma `public`.
+- `isexy-stripe-webhook` **ACTIVE v4** : identification exclusive par `user_id` de session Stripe issue du serveur, vérification du profil et de l'identifiant propriétaire du client Stripe. **Plus aucune attribution par email**; anciennes sessions sans identité vérifiable nécessitent rapprochement manuel.
+- `isexy-send-ticket-confirmation` **ACTIVE v2** : ticket propriétaire ou staff uniquement, pas d'envoi déclenchable anonymement par numéro de ticket. Pour un ticket créé anonymement, la confirmation email directe peut ne pas être envoyée; le ticket demeure enregistré et traçable.
+- `9fa72736` : aucune promotion Premium pour statut Stripe `incomplete`, `past_due`, `unpaid`, `canceled`; seul `active`/`trialing` permet l'attribution. `dd06a77b` : retour d'erreur sur échec d'enregistrement ou de synchronisation des droits et vérification du statut payé pour abonnement chat. **Ces deux corrections récentes de webhook ne sont pas encore publiées sur Supabase**; v4 reste stable jusqu'à CI du dernier commit.
+- Hébergement : Render disponible et publie `main`; `isexy.ca` / Coolify / DNS / TLS non vérifiés. GitHub → Supabase continue d'ignorer les étapes qui nécessitent `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN`. Cron v3 avec JWT+secret existe, mais job effectif non prouvé.
+- Pas de paiement réel, d'appel ni de message sortant à un vrai client effectué. Le statut 100 % reste **NON atteint**.
+
+---
+
+
 ## 16 octobre 2026 — migration 0011 et Cron (publication conditionnelle)
 
 - Dernier commit de code vérifié avant cette note : `7778ede04ba8653ceb15352066a00f351d84d807`, branche `main`.

@@ -1,3 +1,46 @@
+# Relève immédiate — 16 octobre 2026, sécurité des paiements et tickets
+
+## Dernier travail réellement terminé
+- `takatakca/isexy` branche `main`. Dernier SHA de code avant cette mise à jour : `dd06a77ba9616c46670287614fba7310ce505d63`. La nouvelle relève génère un commit de documentation ultérieur; relever le nouveau HEAD avant toute action.
+- `1d2d5e77` — CI run `38949682815` success; remplacement de l'attribution Stripe par email par l'identité `user_id` de session + propriétaire du client. `isexy-stripe-webhook` **v4 ACTIVE** publié après CI.
+- `a2bb95b1` — CI `38950001783` success; `isexy-send-ticket-confirmation` **v2 ACTIVE** : propriétaire ou staff seulement, méthode POST, email marqué envoyé après réponse du fournisseur.
+- `9fa72736` — CI `38950381063` success; Premium attribué uniquement si statut Stripe `active` ou `trialing`, paiement incomplet ne donnant plus accès.
+- `dd06a77b` — contrôle d'erreurs du webhook sur les écritures d'abonnements, droits Premium et revocations, et statut chat non payé. **CI run `38950628292` non finalisée** à la dernière lecture; **webhook de ce SHA non encore déployé** à Supabase.
+- Render `dd06a77b` observé `live`. Pas de preuve directe d'accès `isexy.ca` ou à Coolify.
+
+## Fichiers modifiés dans cette session
+- `supabase/functions/_shared/stripe-identity.ts`
+- `supabase/functions/isexy-stripe-webhook/index.ts`
+- `scripts/isexy/test/stripe-identity.test.ts`
+- `supabase/functions/_shared/ticket-confirmation-auth.ts`
+- `supabase/functions/isexy-send-ticket-confirmation/index.ts`
+- `scripts/isexy/test/ticket-confirmation-auth.test.ts`
+- `supabase/functions/_shared/subscription-entitlement.ts`
+- `scripts/isexy/test/subscription-entitlement.test.ts`
+- `.github/workflows/ci-cd.yml`, `WORKLOG.md`, les cinq documents de suivi.
+
+## Vérifications réellement exécutées
+- Relecture AGENTS, WORKLOG, 5 documents, dernier HEAD, open PR/issues (aucun), jobs CI 38884419476, 38949682815, 38950001783, 38950381063 et 38950628292.
+- Liste de déploiements Render et SHA `live`.
+- Supabase : 11 migrations ISEXY confirmées (dont 0011), contrôle des privilèges RPC, 25 fonctions ISEXY; publication directe des fonctions v4 webhook et v2 confirmation de tickets avec leurs dépendances.
+- Tests Deno/GitHub des nouveaux helpers réussis dans les runs indiqués. Aucun test Stripe payé, OTP, appel, ou email réellement envoyé.
+- Vérification réseau `isexy.ca` et `isexy.onrender.com` non concluante depuis les outils de navigation réseau; ne pas extrapoler.
+
+## Blocages et accès manquants
+1. `dd06a77b` : CI finale à vérifier, puis seulement déployer le webhook Stripe avec `_shared/stripe-identity.ts`, `_shared/subscription-entitlement.ts`, `_shared/env.ts` et `_shared/supabase.ts`, `verify_jwt=false` car signature Stripe contrôlée.
+2. GitHub → Supabase ignore encore la publication automatique (secrets `ISEXY_DB_URL`, `SUPABASE_ACCESS_TOKEN` non accessibles au job).
+3. Cron : `isexy-reset-allowances` v3 JWT vrai, méthode POST, `ISEXY_CRON_SECRET` GitHub non confirmé et aucune exécution réelle.
+4. Coolify/ISEXY.CA, DNS/TLS, identité TAKATAK email/SMS, Stripe sandbox, fonctions de dons/boosts idempotentes, remboursement et notifications réelles non validés.
+5. `isexy-send-ticket-confirmation` requiert maintenant un membre propriétaire ou staff; pour visiteurs anonymes ne pas prétendre qu'un email a été envoyé automatiquement. Contrôler la compatibilité Resend et les mails de service en recette.
+
+## Prochaine action exacte
+1. Vérifier la conclusion du run `38950628292` et corriger les erreurs éventuelles.
+2. Si vert, publier le dernier `isexy-stripe-webhook` et lire son état ACTIVE/version. Vérifier Render `main` et `release.json` avec SHA de publication.
+3. Poursuivre les P0 indépendants : config GitHub backend, Cron et hébergement cible Coolify/ISEXY.CA, tests Stripe test-mode et réconciliation des événements partiels.
+4. Continuer de corriger les workflows selon les journaux, documenter avant toute session suivante. Ne pas éditer les migrations 0001–0011 déjà appliquées, ne pas toucher aux autres schémas V1 ni supprimer Cuba.
+
+---
+
 # PRIORITÉ RELÈVE — 16 octobre 2026
 
 ## 16 octobre 2026 — migration 0011 et Cron (publication conditionnelle)

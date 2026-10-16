@@ -83,3 +83,7 @@ Dernière revue : 2026-10-14.
 
 25. **Attribution atomique Stripe** : solde et journal crédits/minutes dans la même transaction SQL, idempotente par session, service-role uniquement (migration 0011 à valider).
 26. **Cron protégé** : conserver `verify_jwt=true`; utiliser JWT anon public pour la Gateway + `ISEXY_CRON_SECRET` privé pour le handler, méthode POST seulement.
+
+29. **Identité d'acheteur Stripe** : ne jamais attribuer à un profil par correspondance d'adresse courriel. Accepter exclusivement l'identifiant TAKATAK issu des métadonnées rédigées par le backend de checkout et le faire concorder avec le propriétaire du client Stripe; sessions historiques ambiguës à rapprocher manuellement.
+30. **Confirmations de tickets** : une référence de ticket ne donne aucun pouvoir d'envoi d'email. Un utilisateur connecté propriétaire ou staff peut demander une confirmation; les tickets créés anonymement demeurent consultables par les parcours autorisés, mais aucun email automatique depuis un client inconnu sans vérification.
+31. **Droits abonnements** : un Stripe Checkout terminé n'accorde pas Premium si `subscription.status` n'est pas `active` ou `trialing`. Les erreurs de synchronisation des droits sont traitées comme erreurs, non comme succès de webhook.

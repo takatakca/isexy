@@ -1,3 +1,13 @@
+## Dernière vérification du 16 octobre 2026
+
+- Render `dd06a77b` LIVE; GitHub CI du code `38950628292` en cours au dernier contrôle, runs 38949682815/38950001783/38950381063 success.
+- Backend publié directement (sans secrets du pipeline) : `isexy-stripe-webhook` v4 ACTIVE (mapping sûr), `isexy-send-ticket-confirmation` v2 ACTIVE (auth propriétaire/staff), `isexy-reset-allowances` v3 ACTIVE (JWT), migration 0011 et 11 migrations au total.
+- Webhook Stripe modifié dans `dd06a77b` **pas encore publié** au moment de cette note; attendre CI puis l'activer.
+- GitHub Actions → Supabase et SSH toujours skipped; Coolify/ISEXY.CA, DNS/TLS non vérifiés.
+- Réalité commerciale non prouvée : Stripe test checkout/webhooks, cartes, abonnements, email Resend, OTP et VOIP; ne pas déclarer production commerciale terminée.
+
+---
+
 ## 16 octobre 2026 — migration 0011 et Cron (publication conditionnelle)
 
 - Dernier commit de code vérifié avant cette note : `7778ede04ba8653ceb15352066a00f351d84d807`, branche `main`.

@@ -3,7 +3,7 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
-- 2026-10-16 | ChatGPT | main | active | Enforce Stripe webhook TAKATAK identity without email fallback; verify replay and fulfillment error responses | next: CI, deploy Edge Function and update handoff
+- 2026-10-16 | ChatGPT | main + Supabase | done (partial release) | Removed Stripe webhook email-based member lookup, deployed webhook v4 after CI; restricted ticket confirmation to owner/staff (Edge v2), gated unpaid subscriptions and exposed entitlement write failures (commit dd06); tests last CI pending | next: confirm dd06 CI, deploy new webhook v5 if green, check Cron & Coolify, Stripe sandbox
 
 - 2026-10-16 | ChatGPT | main | done (awaiting CI before DB apply) | Created 0011 atomic credit/minute RPC and test; corrected ambiguous SQL fixture; created JWT-authenticated daily Cron workflow, no secret or live job claimed | next: check run 38884128241, apply 0011 only after green, deploy webhook/cron and check production
 
