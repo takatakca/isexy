@@ -1,3 +1,4 @@
+-- FOLDED INTO supabase/isexy-migrations/0004_app_completion.sql (part B). Kept as the branch notes; do not apply this file.
 -- ISEXY accounts area (branch wf/accounts): SQL the client code on this branch expects.
 -- Not a migration file: the integrator copies it into the next isexy migration.
 -- Idempotent, isexy schema (plus the isexy-photo-verifications storage bucket),

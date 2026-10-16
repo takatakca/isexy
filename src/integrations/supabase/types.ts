@@ -3331,6 +3331,23 @@ export type Database = {
         Args: { p_message: string; p_swiped_id: string }
         Returns: Json
       }
+      review_photo_verification: {
+        Args: { p_approve: boolean; p_reason?: string; p_request_id: string }
+        Returns: {
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_path: string
+          status: string
+          submitted_at: string
+        }
+      }
+      is_group_chat_member: {
+        Args: { p_group_chat_id: string }
+        Returns: boolean
+      }
       analytics_overview: {
         Args: { p_days?: number }
         Returns: Json
