@@ -18,6 +18,20 @@ survives a stop.
 - [x] types.ts: member RPCs already matched the DB (args compared); + service_role RPCs the
       edge functions call (apply_chat_subscription, apply_stripe_subscription,
       apply_twilio_call_status, fulfill_stripe_payment, expire_member_plans, reset_daily_likes)
-- [ ] typecheck, build, lint, every e2e
-- [ ] cross-area notes
+- [x] typecheck clean; build OK (offline); lint 120 errors, all pre-existing (148 at
+      336099c): per-file comparison with 336099c found one new one in the new
+      supabase/functions/_shared/payments.ts (`sub: any`), now typed. Edge functions
+      type-checked with tsc + Deno shims + Stripe 18.5 types (17 changed functions, clean).
+- [x] e2e (vite preview on 4410, offline guard): discover 36, accounts-auth-setup 28,
+      accounts-profile 24, accounts-settings 54, accounts-signups 26, accounts-layout 33,
+      chat 39, chat-notifications 21, rewards 86/86, calls 61 + ALL PASS, calls-twilio
+      43, calls-phone-line-pages 52 + ALL PASS (build with VITE_PHONE_LINE_NUMBER),
+      smoke-swipe/chat/auth/reposition logs read, no page errors. Preview and
+      Postgres stopped.
+- [x] cross-area notes: isexy-send-missed-call-notification needs the session
+      record_missed_call marked missed (same match + caller, < 5 min), reuses its
+      missed_calls row, no double notify. Left for the Security stage (listed in
+      HANDOFF): user_credits "Users can update own credits", anon EXECUTE on
+      deduct_call_minute. Left for owners: moderator voice review, sticky bars under
+      the assistant button on other pages, PromoOfferBanner deletion.
 - [ ] docs/HANDOFF.md, WORKLOG, push
