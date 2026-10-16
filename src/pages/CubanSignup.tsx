@@ -344,11 +344,8 @@ export default function CubanSignup() {
 
       setUploadProgress(85);
 
-      // Update profile as Cuban
-      await supabase
-        .from("profiles")
-        .update({ is_cuban: true } as any)
-        .eq("id", profileId);
+      // Mark the profile as Cuban (server-side: is_cuban is not member-writable).
+      await supabase.rpc("set_my_cuban_flag", { p_is_cuban: true });
 
       // Submit verification
       const { error } = await supabase.from("cuban_verifications" as any).insert({

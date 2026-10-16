@@ -1,21 +1,84 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { isMissingRpc } from "@/lib/payments";
 
 interface Badge {
-  id: string;
   badge_type: string;
-  earned_at: string;
-  streak_count: number;
 }
 
-const BADGE_THRESHOLDS = [
-  { days: 3, type: "3_day" },
-  { days: 7, type: "7_day" },
-  { days: 14, type: "14_day" },
-  { days: 30, type: "30_day" },
-  { days: 100, type: "100_day" },
-];
+/** isexy.record_daily_visit(): the streak, points and badges are decided on the server. */
+interface VisitResult {
+  streak: number;
+  new_badges: string[];
+  badges: string[];
+  points_earned: number;
+}
+
+// The app opens this hook twice (StreakProvider and Discover): one visit per
+// profile and page load.
+let visit: { profileId: string; promise: Promise<VisitResult | null> } | null = null;
+
+/** Before isexy.record_daily_visit is deployed: the old on-device count, display only (no rewards). */
+function deviceStreak(): number {
+  try {
+    const today = new Date().toDateString();
+    const lastVisit = localStorage.getItem("last_visit_date");
+    const stored = parseInt(localStorage.getItem("current_streak") || "0", 10);
+    let streak = 1;
+    if (lastVisit) {
+      const diffDays = Math.floor((new Date(today).getTime() - new Date(lastVisit).getTime()) / 86_400_000);
+      if (diffDays === 1) streak = stored + 1;
+      else if (diffDays === 0) streak = stored || 1;
+    }
+    localStorage.setItem("current_streak", String(streak));
+    localStorage.setItem("last_visit_date", today);
+    return streak;
+  } catch {
+    return 1;
+  }
+}
+
+async function recordVisit(profileId: string): Promise<VisitResult | null> {
+  const { data, error } = await supabase.rpc("record_daily_visit");
+  if (!error && data) {
+    const r = data as Partial<VisitResult>;
+    return {
+      streak: r.streak ?? 0,
+      new_badges: Array.isArray(r.new_badges) ? r.new_badges : [],
+      badges: Array.isArray(r.badges) ? r.badges : [],
+      points_earned: r.points_earned ?? 0,
+    };
+  }
+  if (isMissingRpc(error)) {
+    const { data: badges } = await supabase.from("streak_badges").select("badge_type").eq("profile_id", profileId);
+    return { streak: deviceStreak(), new_badges: [], badges: (badges ?? []).map((b) => b.badge_type), points_earned: 0 };
+  }
+  return null;
+}
+
+function todaysVisit(profileId: string): Promise<VisitResult | null> {
+  if (!visit || visit.profileId !== profileId) {
+    visit = { profileId, promise: recordVisit(profileId).catch(() => null) };
+  }
+  return visit.promise;
+}
+
+function safeGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSet(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function useStreakTracker() {
   const { profile } = useAuth();
@@ -25,112 +88,56 @@ export function useStreakTracker() {
   const [newBadge, setNewBadge] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [loading, setLoading] = useState(true);
-  const initializedRef = useRef(false);
-  const profileIdRef = useRef<string | null>(null);
 
   const clearNewBadge = useCallback(() => {
     setNewBadge(null);
     setShowConfetti(false);
   }, []);
 
-  // Single initialization effect - runs once per profile
   useEffect(() => {
     const profileId = profile?.id;
     if (!profileId) {
       setLoading(false);
       return;
     }
+    let cancelled = false;
 
-    // Skip if already initialized for this profile
-    if (initializedRef.current && profileIdRef.current === profileId) return;
-    initializedRef.current = true;
-    profileIdRef.current = profileId;
-
-    const initialize = async () => {
-      // 1. Calculate streak from localStorage
-      const today = new Date().toDateString();
-      const lastVisit = localStorage.getItem("last_visit_date");
-      const storedStreak = parseInt(localStorage.getItem("current_streak") || "0", 10);
-      const challengeStarted = localStorage.getItem("challenge_started");
-      const modalShownToday = localStorage.getItem("modal_shown_date") === today;
-
-      let newStreak = 1;
-      if (lastVisit) {
-        const lastDate = new Date(lastVisit);
-        const todayDate = new Date(today);
-        const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays === 1) newStreak = storedStreak + 1;
-        else if (diffDays === 0) newStreak = storedStreak;
-        else newStreak = 1;
-      }
-
-      setCurrentStreak(newStreak);
-      localStorage.setItem("current_streak", newStreak.toString());
-      localStorage.setItem("last_visit_date", today);
-
-      if (!challengeStarted && !modalShownToday && newStreak >= 3) {
-        setShowModal(true);
-        localStorage.setItem("modal_shown_date", today);
-      }
-
-      // 2. Fetch badges
-      const { data: badges } = await supabase
-        .from("streak_badges")
-        .select("*")
-        .eq("profile_id", profileId);
-      
-      const currentBadges = badges || [];
-      setEarnedBadges(currentBadges);
-
-      // 3. Update last active (fire and forget)
-      supabase
-        .from("profiles")
-        .update({ last_active_at: new Date().toISOString() })
-        .eq("id", profileId)
-        .then(() => {});
-
-      // 4. Check and award new badges via server-side RPC
-      for (const threshold of BADGE_THRESHOLDS) {
-        if (newStreak >= threshold.days) {
-          const exists = currentBadges.some(b => b.badge_type === threshold.type);
-          if (!exists) {
-            const { data: res } = await supabase.rpc("award_streak_badge", {
-              p_badge_type: threshold.type,
-              p_streak_count: newStreak,
-            });
-            if ((res as any)?.success) {
-              setNewBadge(threshold.type);
-              setShowConfetti(true);
-              const { data: updated } = await supabase
-                .from("streak_badges")
-                .select("*")
-                .eq("profile_id", profileId);
-              if (updated) setEarnedBadges(updated);
-              break;
-            }
-          }
-        }
-      }
-
+    todaysVisit(profileId).then((result) => {
+      if (cancelled) return;
       setLoading(false);
-    };
+      if (!result) return;
+      setCurrentStreak(result.streak);
+      setEarnedBadges(result.badges.map((badge_type) => ({ badge_type })));
+      if (result.new_badges.length > 0) {
+        setNewBadge(result.new_badges[result.new_badges.length - 1]);
+        setShowConfetti(true);
+      }
+      // The challenge sheet: once a day from a 3-day streak until started (device preference).
+      const today = new Date().toDateString();
+      if (!safeGet("challenge_started") && safeGet("modal_shown_date") !== today && result.streak >= 3) {
+        setShowModal(true);
+        safeSet("modal_shown_date", today);
+      }
+    });
 
-    initialize();
+    return () => {
+      cancelled = true;
+    };
   }, [profile?.id]);
 
-  // Update last_active every 5 minutes
+  // Presence: last active now, then every 5 minutes.
   useEffect(() => {
     const profileId = profile?.id;
     if (!profileId) return;
-
-    const interval = setInterval(() => {
+    const touch = () => {
       supabase
         .from("profiles")
         .update({ last_active_at: new Date().toISOString() })
         .eq("id", profileId)
         .then(() => {});
-    }, 5 * 60 * 1000);
-
+    };
+    touch();
+    const interval = setInterval(touch, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [profile?.id]);
 
@@ -143,6 +150,6 @@ export function useStreakTracker() {
     showConfetti,
     clearNewBadge,
     loading,
-    hasBadge: (type: string) => earnedBadges.some(b => b.badge_type === type),
+    hasBadge: (type: string) => earnedBadges.some((b) => b.badge_type === type),
   };
 }

@@ -130,11 +130,12 @@ export default function AdminVerifications() {
 
       if (error) throw error;
 
-      // Update profile is_verified
-      await supabase
-        .from("profiles")
-        .update({ is_verified: true } as any)
-        .eq("id", verification.profile_id);
+      // Mark the member verified (staff-only RPC: is_verified is not writable from the browser).
+      const { error: verifyError } = await supabase.rpc("staff_set_profile_verified", {
+        p_profile_id: verification.profile_id,
+        p_verified: true,
+      });
+      if (verifyError) throw verifyError;
 
       toast.success("Verification approved!");
       await fetchVerifications();

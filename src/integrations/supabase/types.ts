@@ -3350,7 +3350,10 @@ export type Database = {
         Args: { p_details?: Json; p_method: string; p_stars: number }
         Returns: Json
       }
-      set_my_cuban_flag: { Args: Record<PropertyKey, never>; Returns: undefined }
+      set_my_cuban_flag: {
+        Args: { p_is_cuban?: boolean }
+        Returns: undefined
+      }
       staff_set_profile_verified: {
         Args: { p_profile_id: string; p_verified: boolean }
         Returns: undefined

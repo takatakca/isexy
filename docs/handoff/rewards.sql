@@ -1604,23 +1604,26 @@ REVOKE ALL ON FUNCTION isexy.request_star_cashout(integer, text, jsonb) FROM PUB
 GRANT EXECUTE ON FUNCTION isexy.request_star_cashout(integer, text, jsonb) TO authenticated;
 
 -- Cuban signup (on hold, unchanged behaviour): a member may still declare
--- themselves Cuban at signup; this only sets the caller's own is_cuban.
+-- themselves Cuban at signup (CubanSignup), or switch back when finishing the
+-- tourist signup (TouristSignup); this only sets the caller's own is_cuban.
 -- is_verified stays staff-only.
-CREATE OR REPLACE FUNCTION isexy.set_my_cuban_flag()
+DROP FUNCTION IF EXISTS isexy.set_my_cuban_flag();
+CREATE OR REPLACE FUNCTION isexy.set_my_cuban_flag(p_is_cuban boolean DEFAULT true)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = isexy, extensions
 AS $$
 BEGIN
-  UPDATE profiles SET is_cuban = true WHERE user_id = auth.uid() AND is_cuban IS DISTINCT FROM true;
+  UPDATE profiles SET is_cuban = coalesce(p_is_cuban, true)
+   WHERE user_id = auth.uid() AND is_cuban IS DISTINCT FROM coalesce(p_is_cuban, true);
   IF NOT FOUND AND NOT EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid()) THEN
     RAISE EXCEPTION 'not allowed' USING ERRCODE = '42501';
   END IF;
 END;
 $$;
-REVOKE ALL ON FUNCTION isexy.set_my_cuban_flag() FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION isexy.set_my_cuban_flag() TO authenticated;
+REVOKE ALL ON FUNCTION isexy.set_my_cuban_flag(boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.set_my_cuban_flag(boolean) TO authenticated;
 
 -- Staff (admin or moderator) mark a member verified, e.g. after approving a
 -- Cuban ID check in AdminVerifications (photo checks use

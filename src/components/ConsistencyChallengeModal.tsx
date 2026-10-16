@@ -14,12 +14,13 @@ interface ConsistencyChallengeModalProps {
   earnedBadges?: string[];
 }
 
+// Rewards given by the server (isexy.record_daily_visit, docs/handoff/rewards.sql R9).
 const MILESTONES = [
-  { days: 3, badge: "3_day" as const, reward: "Priority visibility for 1 hour" },
+  { days: 3, badge: "3_day" as const, reward: "25 loyalty points" },
   { days: 7, badge: "7_day" as const, reward: "1 Free Super Like" },
-  { days: 14, badge: "14_day" as const, reward: "Profile Boost for 30 min" },
+  { days: 14, badge: "14_day" as const, reward: "1 Free Boost" },
   { days: 30, badge: "30_day" as const, reward: "3 Free Super Likes + Badge" },
-  { days: 100, badge: "100_day" as const, reward: "Exclusive Crown Badge + 5 Boosts" },
+  { days: 100, badge: "100_day" as const, reward: "Exclusive Crown Badge + 5 Free Boosts" },
 ];
 
 export function ConsistencyChallengeModal({ 
@@ -29,7 +30,11 @@ export function ConsistencyChallengeModal({
   earnedBadges = []
 }: ConsistencyChallengeModalProps) {
   const handleStartChallenge = () => {
-    localStorage.setItem("challenge_started", new Date().toISOString());
+    try {
+      localStorage.setItem("challenge_started", new Date().toISOString());
+    } catch {
+      /* storage blocked: the sheet may show again tomorrow */
+    }
     onClose();
   };
 

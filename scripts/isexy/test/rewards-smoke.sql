@@ -402,6 +402,10 @@ SELECT pg_temp.refused('R11 non-Cuban member cannot request a cash-out', $q$SELE
 SELECT isexy.set_my_cuban_flag();
 INSERT INTO r_results SELECT 'R11 set_my_cuban_flag sets only the caller',
   (SELECT is_cuban FROM isexy.profiles WHERE id = :A) AND NOT coalesce((SELECT is_cuban FROM isexy.profiles WHERE id = :B), false), NULL;
+SELECT isexy.set_my_cuban_flag(false);
+INSERT INTO r_results SELECT 'R11 set_my_cuban_flag(false) clears the caller (tourist signup)',
+  NOT (SELECT is_cuban FROM isexy.profiles WHERE id = :A), NULL;
+SELECT isexy.set_my_cuban_flag(true);
 SELECT pg_temp.refused('R11 member cannot mark someone verified', $q$SELECT isexy.staff_set_profile_verified('dddddddd-0000-0000-0000-000000000001', true)$q$);
 SELECT pg_temp.as_user('dddddddd-0000-0000-0000-000000000007');
 SELECT isexy.staff_set_profile_verified(:A, true);

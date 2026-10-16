@@ -82,16 +82,19 @@ export default function TouristSignup() {
         love_language: loveLanguage,
         education,
         interests,
-        is_cuban: false,
         privacy_accepted: true,
       };
       // profiles.id is set to the auth user id by the database (Takatak identity).
       // A member who already started a profile (another signup flow) gets it updated, not a duplicate.
       const { data: profile, error: profileError } = existingProfile
         ? await supabase.from("profiles").update(fields).eq("id", existingProfile.id).select().single()
-        : await supabase.from("profiles").insert({ user_id: user.id, ...fields }).select().single();
+        : await supabase.from("profiles").insert({ user_id: user.id, ...fields, is_cuban: false }).select().single();
 
       if (profileError) throw profileError;
+      // is_cuban is not member-writable: a profile started in the Cuban signup is switched server-side.
+      if (existingProfile && (existingProfile as { is_cuban?: boolean | null }).is_cuban) {
+        await supabase.rpc("set_my_cuban_flag", { p_is_cuban: false });
+      }
 
       if (photos.length > 0) {
         const photoInserts = photos.map((url, index) => ({
