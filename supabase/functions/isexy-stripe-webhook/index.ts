@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
+import { checkoutOwnerId } from "../_shared/stripe-identity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,40 +155,23 @@ serve(async (req) => {
     const VALID_TIERS = ["free", "plus", "gold", "platinum"];
     const VALID_DURATIONS = ["week", "month", "six_months"];
 
-    async function resolveProfileId(opts: {
-      metaProfileId?: string;
-      metaUserId?: string;
-      email?: string | null;
-    }): Promise<string | null> {
-      if (opts.metaProfileId) {
-        const { data } = await supabaseClient
-          .from("profiles")
-          .select("id")
-          .eq("id", opts.metaProfileId)
-          .maybeSingle();
-        if (data?.id) return data.id;
+    async function resolveProfileId(
+      checkoutMeta: Record<string, string>,
+      customerMeta?: Record<string, string> | null,
+    ): Promise<string> {
+      // No search by email: Stripe and TAKATAK can both have duplicate or
+      // recycled email addresses. Never credit the wrong account.
+      const userId = checkoutOwnerId(checkoutMeta, customerMeta);
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("id", userId)
+        .maybeSingle();
+      if (error || !data?.id) {
+        throw new Error("ISEXY checkout account not found: manual reconciliation required");
       }
-      if (opts.metaUserId) {
-        const { data } = await supabaseClient
-          .from("profiles")
-          .select("id")
-          .eq("user_id", opts.metaUserId)
-          .maybeSingle();
-        if (data?.id) return data.id;
-      }
-      if (opts.email) {
-        const { data: users } = await supabaseClient.auth.admin.listUsers();
-        const user = users.users.find((u) => u.email === opts.email);
-        if (user) {
-          const { data } = await supabaseClient
-            .from("profiles")
-            .select("id")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if (data?.id) return data.id;
-        }
-      }
-      return null;
+      return data.id;
     }
 
     function tierFromMetadata(meta: Record<string, string> | null | undefined): string | null {
@@ -221,18 +205,8 @@ serve(async (req) => {
           const meta = (session.metadata ?? {}) as Record<string, string>;
 
           const customer = await stripe.customers.retrieve(customerId);
-          const email = (customer as Stripe.Customer).email;
-
-          const profileId = await resolveProfileId({
-            metaProfileId: meta.profile_id,
-            metaUserId: meta.user_id,
-            email,
-          });
-
-          if (!profileId) {
-            logStep("Could not resolve profile for subscription", { sessionId: session.id });
-            break;
-          }
+          if (customer.deleted) throw new Error("Stripe checkout customer was deleted");
+          const profileId = await resolveProfileId(meta, customer.metadata);
 
           // ---- Chat subscription (chat_1mo) ----
           if (meta.type === "chat_sub" || meta.package_id === "chat_1mo") {
@@ -296,22 +270,16 @@ serve(async (req) => {
 
           logStep("Subscription created", { profileId, tier: appTier, duration });
         } else if (session.mode === "payment") {
-          const customerId = session.customer as string;
+          const customerId = session.customer as string | null;
           const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
-          const email = (customer as Stripe.Customer | null)?.email ?? session.customer_details?.email ?? null;
+          if (customer?.deleted) throw new Error("Stripe checkout customer was deleted");
           const meta = (session.metadata ?? {}) as Record<string, string>;
           const productId = meta.product_id || "";
           const packageId = meta.package_id;
 
-          const profileId = await resolveProfileId({
-            metaProfileId: meta.profile_id,
-            metaUserId: meta.user_id,
-            email,
-          });
-          if (!profileId) {
-            logStep("Could not resolve profile for one-time payment");
-            break;
-          }
+          const profileId = await resolveProfileId(
+            meta, customer ? (customer as Stripe.Customer).metadata : null,
+          );
 
           // ---- Credits and phone/video minutes ----
           // All wallet and ledger writes happen in a single SQL transaction,
