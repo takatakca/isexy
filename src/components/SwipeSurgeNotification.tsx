@@ -81,43 +81,10 @@ export function SwipeSurgeNotification({
   );
 }
 
-// Hook to manage Swipe Surge state
+// Hook to manage Swipe Surge state.
+// There is no server signal for surges yet, so no surge is ever shown. The
+// previous version simulated random surges with invented "people active
+// nearby" numbers, which members would read as real activity.
 export function useSwipeSurge() {
-  const [isActive, setIsActive] = useState(false);
-  const [surgeData, setSurgeData] = useState({
-    multiplier: 15,
-    usersActive: 47,
-  });
-
-  useEffect(() => {
-    // Simulate random surge events (in real app, this would be from backend)
-    const checkSurge = () => {
-      // Random chance of surge (10% every check)
-      const hasSurge = Math.random() < 0.1;
-      if (hasSurge) {
-        setIsActive(true);
-        setSurgeData({
-          multiplier: Math.floor(Math.random() * 10) + 10,
-          usersActive: Math.floor(Math.random() * 50) + 30,
-        });
-        
-        // Surge lasts for 5-15 minutes
-        const duration = (Math.random() * 10 + 5) * 60 * 1000;
-        setTimeout(() => setIsActive(false), duration);
-      }
-    };
-
-    // Check every 2 minutes
-    const interval = setInterval(checkSurge, 2 * 60 * 1000);
-    
-    // Initial check after 10 seconds
-    const initialCheck = setTimeout(checkSurge, 10000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(initialCheck);
-    };
-  }, []);
-
-  return { isActive, ...surgeData };
+  return { isActive: false, multiplier: 0, usersActive: 0 };
 }

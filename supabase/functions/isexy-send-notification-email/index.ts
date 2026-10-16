@@ -25,6 +25,8 @@ interface NotificationEmailRequest {
 }
 
 const recentlyNotified = new Map<string, number>();
+/** Links in emails follow the app's address (ISEXY_APP_URL), defaulting to isexy.ca. */
+const APP_URL = (isexyEnv("APP_URL") ?? "https://isexy.ca").replace(/\/+$/, "");
 
 function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -74,6 +76,16 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: other } = await admin.from("profiles").select("user_id, first_name").eq("id", otherId).maybeSingle();
       if (!other?.user_id) return json({ success: true, skipped: "no_recipient" });
 
+      // Email settings page (user_preferences.notification_settings.email).
+      const { data: prefs } = await admin
+        .from("user_preferences")
+        .select("notification_settings")
+        .eq("user_id", other.user_id)
+        .maybeSingle();
+      if (prefs?.notification_settings?.email?.new_messages === false) {
+        return json({ success: true, skipped: "opted_out" });
+      }
+
       // At most one "new message" email per conversation every 10 minutes.
       const key = `${body.matchId}:${otherId}`;
       const last = recentlyNotified.get(key) ?? 0;
@@ -102,6 +114,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     let subject: string;
     let htmlContent: string;
+    // "Reply" opens the conversation itself when we know it.
+    const chatPath = typeof body.matchId === "string" && /^[0-9a-f-]{36}$/i.test(body.matchId)
+      ? `/chat/${body.matchId}`
+      : "/matches";
     const firstName = data.firstName || "there";
 
     switch (type) {
@@ -114,9 +130,9 @@ const handler = async (req: Request): Promise<Response> => {
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
+                .header { background: linear-gradient(135deg, #060D1F, #0B1B3D); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
                 .content { background: #fff; padding: 40px; border-radius: 0 0 16px 16px; border: 1px solid #e0e0e0; }
-                .button { display: inline-block; background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; margin: 20px 0; }
+                .button { display: inline-block; background: #1565D8; color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; margin: 20px 0; }
                 .emoji { font-size: 48px; margin-bottom: 20px; }
               </style>
             </head>
@@ -130,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="font-size: 18px;">Hey ${firstName}!</p>
                   <p>Great news! You and <strong>${data.matchName || "a new member"}</strong> both want to talk. Start a conversation now!</p>
                   <center>
-                    <a href="https://isexy.ca/matches" class="button">Say Hello →</a>
+                    <a href="${APP_URL}/matches" class="button">Say Hello →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px;">Don't keep them waiting! Every new friendship starts with a simple hello.</p>
                 </div>
@@ -149,10 +165,10 @@ const handler = async (req: Request): Promise<Response> => {
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #2196F3, #03A9F4); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
+                .header { background: linear-gradient(135deg, #060D1F, #0B1B3D); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
                 .content { background: #fff; padding: 40px; border-radius: 0 0 16px 16px; border: 1px solid #e0e0e0; }
-                .message-preview { background: #f5f5f5; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #E91E63; }
-                .button { display: inline-block; background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
+                .message-preview { background: #f5f5f5; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #1F8BFF; }
+                .button { display: inline-block; background: #1565D8; color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
               </style>
             </head>
             <body>
@@ -167,7 +183,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <p style="margin: 0; font-style: italic;">"${data.messagePreview || "..."}"</p>
                   </div>
                   <center>
-                    <a href="https://isexy.ca/matches" class="button">Reply Now →</a>
+                    <a href="${APP_URL}${chatPath}" class="button">Reply Now →</a>
                   </center>
                 </div>
               </div>
@@ -185,9 +201,9 @@ const handler = async (req: Request): Promise<Response> => {
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #2196F3, #00BCD4); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
+                .header { background: linear-gradient(135deg, #060D1F, #0B1B3D); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
                 .content { background: #fff; padding: 40px; border-radius: 0 0 16px 16px; border: 1px solid #e0e0e0; }
-                .button { display: inline-block; background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
+                .button { display: inline-block; background: #1565D8; color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
                 .star { font-size: 64px; }
               </style>
             </head>
@@ -201,7 +217,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="font-size: 18px;">Wow, ${firstName}!</p>
                   <p>Someone really stands out from the crowd - they Super Liked your profile! This means they'd <em>really</em> like to get to know you.</p>
                   <center>
-                    <a href="https://isexy.ca/likes" class="button">See Who →</a>
+                    <a href="${APP_URL}/likes" class="button">See Who →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px;">A Super Like means they really want to talk. Say hi!</p>
                 </div>
@@ -220,9 +236,9 @@ const handler = async (req: Request): Promise<Response> => {
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #9C27B0, #673AB7); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
+                .header { background: linear-gradient(135deg, #060D1F, #0B1B3D); color: white; padding: 40px; text-align: center; border-radius: 16px 16px 0 0; }
                 .content { background: #fff; padding: 40px; border-radius: 0 0 16px 16px; border: 1px solid #e0e0e0; }
-                .button { display: inline-block; background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
+                .button { display: inline-block; background: #1565D8; color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
               </style>
             </head>
             <body>
@@ -234,7 +250,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="font-size: 18px;">Hey ${firstName}!</p>
                   <p><strong>${data.fromName || data.senderName || "A member"}</strong> wants to video chat with you! Don't miss the chance to connect face-to-face.</p>
                   <center>
-                    <a href="https://isexy.ca/matches" class="button">Open App →</a>
+                    <a href="${APP_URL}/matches" class="button">Open App →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px;">Video calls are the easiest way to get to know someone new!</p>
                 </div>
@@ -253,10 +269,10 @@ const handler = async (req: Request): Promise<Response> => {
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 50px; text-align: center; border-radius: 16px 16px 0 0; }
+                .header { background: linear-gradient(135deg, #060D1F, #0B1B3D); color: white; padding: 50px; text-align: center; border-radius: 16px 16px 0 0; }
                 .content { background: #fff; padding: 40px; border-radius: 0 0 16px 16px; border: 1px solid #e0e0e0; }
-                .button { display: inline-block; background: linear-gradient(135deg, #E91E63, #FF5722); color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
-                .tips { background: #fce4ec; padding: 20px; border-radius: 12px; margin: 20px 0; }
+                .button { display: inline-block; background: #1565D8; color: white; padding: 16px 32px; text-decoration: none; border-radius: 30px; font-weight: bold; }
+                .tips { background: #EAF3FF; padding: 20px; border-radius: 12px; margin: 20px 0; }
                 .tip { padding: 8px 0; }
               </style>
             </head>
@@ -277,7 +293,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <div class="tip">✅ Verify your profile for more trust</div>
                   </div>
                   <center>
-                    <a href="https://isexy.ca/discover" class="button">Start Meeting People →</a>
+                    <a href="${APP_URL}/discover" class="button">Start Meeting People →</a>
                   </center>
                   <p style="color: #666; font-size: 14px; margin-top: 30px; text-align: center;">Have fun meeting new people! 👋</p>
                 </div>
@@ -301,7 +317,7 @@ const handler = async (req: Request): Promise<Response> => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "ISEXY <notifications@isexy.ca>",
+          from: isexyEnv("RESEND_FROM") ?? "ISEXY <notifications@isexy.ca>",
           to: [email],
           subject,
           html: htmlContent,

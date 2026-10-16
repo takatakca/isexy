@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useDeviceSetting } from "@/hooks/useDeviceSetting";
 
 export default function TopPicks() {
   const navigate = useNavigate();
-  const [showInTopPicks, setShowInTopPicks] = useState(true);
+  const [showInTopPicks, setShowInTopPicks] = useDeviceSetting("top_picks_show_me", true);
 
   const handleToggle = (checked: boolean) => {
     setShowInTopPicks(checked);
@@ -18,7 +18,7 @@ export default function TopPicks() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex items-center justify-center px-4 py-4 relative">
-          <button onClick={() => navigate(-1)} className="absolute left-4 p-1">
+          <button onClick={() => navigate(-1)} className="absolute left-4 p-1" aria-label="Go back">
             <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="text-xl font-bold text-foreground">Top Picks</h1>
@@ -30,7 +30,7 @@ export default function TopPicks() {
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <div className="flex items-center justify-between p-4">
             <span className="text-foreground font-medium">Show me in Top Picks</span>
-            <Switch checked={showInTopPicks} onCheckedChange={handleToggle} />
+            <Switch checked={showInTopPicks} onCheckedChange={handleToggle} aria-label="Show me in Top Picks" />
           </div>
         </div>
         <p className="text-sm text-muted-foreground px-2">

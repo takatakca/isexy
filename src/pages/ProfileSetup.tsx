@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
 import { AuthButton } from "@/components/AuthButton";
@@ -13,6 +13,12 @@ import {
   Heart, GraduationCap, MapPin, Shield, Users, Lightbulb
 } from "lucide-react";
 import { track } from "@/lib/analytics";
+import { openConsentSettings } from "@/lib/consent";
+import { goBack } from "@/lib/navigation";
+import {
+  MIN_BIO_LENGTH, PLACEHOLDER_BIRTH_DATE, SHOW_ME_LABELS, isAdult, isProfileComplete,
+  showMeFrom, toggleShowMe, type ShowMe,
+} from "@/lib/profileStatus";
 
 const TOTAL_STEPS = 10;
 
@@ -31,18 +37,22 @@ const interestCategories = {
   "✈️ Travel": ["Adventure", "Backpacking", "Beaches", "Road trips", "Camping", "City breaks", "Cultural travel"],
 };
 
+const genderOptions = ["Woman", "Man", "More"];
+
 export default function ProfileSetup() {
   const navigate = useNavigate();
-  const { refreshProfile } = useAuth();
+  const { user, profile, photoCount, refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const userId = user?.id ?? null;
+  // Checked once on arrival: a returning member with a complete profile goes to Discover.
+  const [wasComplete] = useState(() => isProfileComplete(profile, photoCount));
 
   // Form state
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [gender, setGender] = useState("");
-  const [interestedIn, setInterestedIn] = useState<string[]>([]);
+  const [interestedIn, setInterestedIn] = useState<ShowMe[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [bio, setBio] = useState("");
   const [drinking, setDrinking] = useState("");
@@ -53,14 +63,65 @@ export default function ProfileSetup() {
   const [loveLanguage, setLoveLanguage] = useState("");
   const [education, setEducation] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locating, setLocating] = useState(false);
 
+  // Start from what the member already saved (an unfinished signup, a profile
+  // created by the Cuban or tourist flow, or one that lost its bio or photos).
+  const seededFor = useRef<string | null>(null);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
-    });
-  }, []);
+    if (!profile || seededFor.current === profile.id) return;
+    seededFor.current = profile.id;
+    setName(profile.first_name ?? "");
+    if (profile.birth_date && profile.birth_date !== PLACEHOLDER_BIRTH_DATE) setBirthdate(profile.birth_date);
+    const savedGender = genderOptions.find((g) => g.toLowerCase() === profile.gender?.toLowerCase());
+    if (savedGender) setGender(savedGender);
+    setInterestedIn(showMeFrom(profile.interested_in));
+    setBio(profile.bio ?? "");
+    setDrinking(profile.drinking ?? "");
+    setSmoking(profile.smoking ?? "");
+    setWorkout(profile.workout ?? "");
+    setPets(profile.pets ?? []);
+    setCommunication(profile.communication_style ?? "");
+    setLoveLanguage(profile.love_language ?? "");
+    setEducation(profile.education ?? "");
+    setInterests(profile.interests ?? []);
+    supabase
+      .from("profile_photos")
+      .select("photo_url")
+      .eq("profile_id", profile.id)
+      .order("position")
+      .then(({ data }) => {
+        if (data && data.length > 0) setPhotos(data.map((p) => p.photo_url));
+      });
+  }, [profile]);
 
-  const genderOptions = ["Woman", "Man", "More"];
+  const requestLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Location isn't available on this device. You can still continue.");
+      setStep(10);
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        // About 1 km precision: enough for distances, never an exact address.
+        setCoords({
+          latitude: Math.round(position.coords.latitude * 100) / 100,
+          longitude: Math.round(position.coords.longitude * 100) / 100,
+        });
+        setLocating(false);
+        toast.success("Location enabled!");
+        setStep(10);
+      },
+      () => {
+        setLocating(false);
+        toast.error("We couldn't get your location. You can turn it on later in your browser settings.");
+        setStep(10);
+      },
+      { timeout: 15000, maximumAge: 10 * 60 * 1000 }
+    );
+  };
 
   const handleComplete = async () => {
     if (!userId) {
@@ -69,33 +130,33 @@ export default function ProfileSetup() {
       return;
     }
 
+    const firstName = name.trim();
+    const about = bio.trim();
+
     // 18+ enforcement (frontend check; backend hardening can be added later)
-    if (birthdate) {
-      const ageMs = Date.now() - new Date(birthdate).getTime();
-      const age = ageMs / (365.25 * 24 * 60 * 60 * 1000);
-      if (age < 18) {
-        toast.error("You must be 18 or older to use this app.");
-        return;
-      }
+    if (birthdate && !isAdult(birthdate)) {
+      toast.error("You must be 18 or older to use this app.");
+      setStep(2);
+      return;
     }
 
     // Collect any missing required fields and show a single clear message
     const missing: string[] = [];
-    if (!name || name.trim().length < 2) missing.push("name");
+    if (firstName.length < 2) missing.push("name");
     if (!birthdate) missing.push("birth date");
     if (!gender) missing.push("gender");
-    if (interestedIn.length === 0) missing.push("who you're interested in");
-    if (bio.trim().length < 10) missing.push("bio (min 10 characters)");
+    if (interestedIn.length === 0) missing.push("who you'd like to meet");
+    if (about.length < MIN_BIO_LENGTH) missing.push(`bio (min ${MIN_BIO_LENGTH} characters)`);
     if (photos.length < 1) missing.push("at least 1 profile photo");
 
     if (missing.length > 0) {
       toast.error(`Please complete: ${missing.join(", ")}.`);
       // Jump to the first relevant step
-      if (!name || name.trim().length < 2) setStep(1);
+      if (firstName.length < 2) setStep(1);
       else if (!birthdate) setStep(2);
       else if (!gender || interestedIn.length === 0) setStep(3);
       else if (photos.length < 1) setStep(4);
-      else if (bio.trim().length < 10) setStep(5);
+      else if (about.length < MIN_BIO_LENGTH) setStep(5);
       return;
     }
 
@@ -108,11 +169,11 @@ export default function ProfileSetup() {
         .maybeSingle();
 
       const baseFields = {
-        first_name: name,
+        first_name: firstName,
         birth_date: birthdate,
         gender: gender.toLowerCase(),
         interested_in: interestedIn,
-        bio,
+        bio: about,
         drinking,
         smoking,
         workout,
@@ -122,6 +183,7 @@ export default function ProfileSetup() {
         education,
         interests,
         privacy_accepted: true,
+        ...(coords ? { ...coords, location_enabled: true } : {}),
       };
 
       let profileId: string;
@@ -141,31 +203,47 @@ export default function ProfileSetup() {
           .insert({ user_id: userId, ...baseFields })
           .select()
           .single();
-        if (insertError) throw insertError;
+        if (insertError) {
+          // A row exists that this member can't read: the profile is paused or suspended.
+          if (insertError.code === "23505") {
+            throw new Error("This account already has a profile that isn't active. Please contact support.");
+          }
+          throw insertError;
+        }
         profileId = newProfile.id;
       }
 
-      // Save photos to profile_photos table (replace set)
-      if (photos.length > 0) {
-        await supabase.from("profile_photos").delete().eq("profile_id", profileId);
-        const photoInserts = photos.map((url, index) => ({
-          profile_id: profileId,
-          photo_url: url,
-          position: index,
-        }));
-        const { error: photosError } = await supabase
-          .from("profile_photos")
-          .insert(photoInserts);
+      // Save photos in their new order. New rows go in before removed ones are
+      // taken out, so a failed save never leaves the profile without photos.
+      const { data: savedPhotos, error: savedPhotosError } = await supabase
+        .from("profile_photos")
+        .select("id, photo_url, position")
+        .eq("profile_id", profileId);
+      if (savedPhotosError) throw savedPhotosError;
+      const saved = savedPhotos ?? [];
+      const newPhotos = photos
+        .map((url, index) => ({ profile_id: profileId, photo_url: url, position: index }))
+        .filter((p) => !saved.some((row) => row.photo_url === p.photo_url));
+      if (newPhotos.length > 0) {
+        const { error: photosError } = await supabase.from("profile_photos").insert(newPhotos);
         if (photosError) throw photosError;
+      }
+      for (const row of saved) {
+        const index = photos.indexOf(row.photo_url);
+        if (index === row.position) continue;
+        const { error: photoError } = index === -1
+          ? await supabase.from("profile_photos").delete().eq("id", row.id)
+          : await supabase.from("profile_photos").update({ position: index }).eq("id", row.id);
+        if (photoError) throw photoError;
       }
 
       await refreshProfile();
       track("profile_completed");
       toast.success("Profile created successfully!");
       navigate("/discover");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Profile creation error:", error);
-      toast.error(error.message || "Failed to create profile");
+      toast.error((error as { message?: string })?.message || "Failed to create profile");
     } finally {
       setLoading(false);
     }
@@ -173,11 +251,11 @@ export default function ProfileSetup() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return name.length >= 2;
-      case 2: return !!birthdate;
+      case 1: return name.trim().length >= 2;
+      case 2: return !!birthdate && isAdult(birthdate);
       case 3: return !!gender && interestedIn.length > 0;
       case 4: return photos.length >= 1;
-      case 5: return bio.trim().length >= 10;
+      case 5: return bio.trim().length >= MIN_BIO_LENGTH;
       case 6: return true; // Lifestyle is optional
       case 7: return true; // Personality is optional  
       case 8: return interests.length >= 3;
@@ -202,7 +280,7 @@ export default function ProfileSetup() {
               autoFocus
             />
             <p className="text-muted-foreground text-sm mt-4 mb-8">
-              This is how it'll appear on your profile. Can't change it later.
+              This is how it'll appear on your profile.
             </p>
           </div>
         );
@@ -219,9 +297,13 @@ export default function ProfileSetup() {
               onChange={(e) => setBirthdate(e.target.value)}
               max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
             />
-            <p className="text-muted-foreground text-sm mt-4 mb-8">
-              Your age will be shown on your profile.
-            </p>
+            {birthdate && !isAdult(birthdate) ? (
+              <p role="alert" className="text-destructive text-sm mt-4 mb-8">You must be 18 or older to use ISEXY.</p>
+            ) : (
+              <p className="text-muted-foreground text-sm mt-4 mb-8">
+                Your age will be shown on your profile.
+              </p>
+            )}
           </div>
         );
 
@@ -251,29 +333,21 @@ export default function ProfileSetup() {
               Show me
             </h2>
             <div className="flex flex-wrap gap-2 mb-4">
-              {["Women", "Men", "Everyone"].map((option) => {
-                const value = option.toLowerCase();
+              {(["women", "men", "everyone"] as const).map((value) => {
                 const selected = interestedIn.includes(value);
                 return (
                   <button
-                    key={option}
-                    onClick={() => {
-                      if (value === "everyone") {
-                        setInterestedIn(["women", "men"]);
-                      } else {
-                        const others = interestedIn.filter((i) => i !== value);
-                        setInterestedIn(selected ? others : [...others, value]);
-                      }
-                    }}
+                    key={value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setInterestedIn(toggleShowMe(interestedIn, value))}
                     className={`px-4 py-2 rounded-full border-2 font-medium text-sm transition-all ${
-                      (value === "everyone"
-                        ? interestedIn.length === 2
-                        : selected)
+                      selected
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-foreground hover:border-muted-foreground"
                     }`}
                   >
-                    {option}
+                    {SHOW_ME_LABELS[value]}
                   </button>
                 );
               })}
@@ -311,23 +385,22 @@ export default function ProfileSetup() {
             
             <div className="space-y-4">
               <div className="bg-muted/30 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold">About me</span>
-                  <button className="w-8 h-8 bg-background text-background rounded-full flex items-center justify-center">
-                    <span className="text-xl">+</span>
-                  </button>
-                </div>
+                <label htmlFor="setup-bio" className="block font-semibold mb-2">About me</label>
                 <textarea
+                  id="setup-bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Introduce yourself to make a strong impression..."
                   className="w-full bg-transparent border-none outline-none resize-none text-foreground placeholder:text-muted-foreground min-h-[80px]"
                   maxLength={500}
                 />
+                <p className="text-xs text-muted-foreground text-right">
+                  {bio.trim().length < MIN_BIO_LENGTH ? `At least ${MIN_BIO_LENGTH} characters` : `${bio.length}/500`}
+                </p>
               </div>
 
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 flex items-start gap-3">
-                <Lightbulb className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="bg-primary/10 rounded-xl p-4 flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <p className="text-sm">
                   Adding a short intro about you could lead to{" "}
                   <span className="text-primary font-semibold">more conversations</span>
@@ -488,25 +561,23 @@ export default function ProfileSetup() {
               So, are you from around here?
             </h1>
             <p className="text-muted-foreground mb-8 max-w-xs">
-              Set your location to see who's in your neighbourhood or beyond. You won't be able to match with people otherwise.
+              Set your location to see who's in your neighbourhood or beyond. Other members only see an approximate distance, never where you are.
             </p>
-            
+
             <AuthButton
               variant="dark"
-              onClick={() => {
-                // In a real app, request geolocation
-                toast.success("Location enabled!");
-                setStep(10);
-              }}
+              onClick={requestLocation}
+              disabled={locating}
             >
-              Allow
+              {locating ? "Finding you..." : "Allow"}
             </AuthButton>
-            
+
             <button
               onClick={() => setStep(10)}
+              disabled={locating}
               className="mt-4 text-muted-foreground text-sm hover:text-foreground transition-colors"
             >
-              How is my location used?
+              Not now
             </button>
           </div>
         );
@@ -534,8 +605,8 @@ export default function ProfileSetup() {
             </AuthButton>
             
             <button
-              onClick={() => navigate("/settings")}
-              className="mt-4 w-full py-3 bg-background text-background rounded-full font-semibold hover:bg-background/90 transition-colors"
+              onClick={openConsentSettings}
+              className="mt-4 w-full py-3 border border-border text-foreground rounded-full font-semibold hover:bg-muted transition-colors"
             >
               Personalize
             </button>
@@ -558,11 +629,13 @@ export default function ProfileSetup() {
     }
   };
 
+  if (wasComplete) return <Navigate to="/discover" replace />;
+
   return (
-    <AuthLayout 
-      showBack 
-      variant="white" 
-      onBack={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
+    <AuthLayout
+      showBack
+      variant="white"
+      onBack={() => step > 1 ? setStep(s => s - 1) : goBack(navigate, "/")}
     >
       {/* Skip button for optional steps */}
       {[6, 7].includes(step) && (

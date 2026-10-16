@@ -147,7 +147,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      {/* Phones: keep toasts above the bottom nav and bottom form buttons instead of covering them. */}
+      <Sonner mobileOffset={{ bottom: 96 }} />
       <BrowserRouter>
         <AuthProvider>
           <LanguageProvider>
@@ -196,8 +197,8 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/news" element={<News />} />
               <Route path="/matches-list" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
-              <Route path="/interests" element={<Interests />} />
-              <Route path="/block-contacts" element={<BlockContacts />} />
+              <Route path="/interests" element={<ProtectedRoute><Interests /></ProtectedRoute>} />
+              <Route path="/block-contacts" element={<ProtectedRoute><BlockContacts /></ProtectedRoute>} />
               <Route path="/dark-mode" element={<DarkMode />} />
               <Route path="/autoplay-videos" element={<AutoplayVideos />} />
               <Route path="/top-picks" element={<ProtectedRoute><TopPicks /></ProtectedRoute>} />
@@ -205,17 +206,17 @@ const App = () => (
               <Route path="/safety-tips" element={<SafetyTips />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
               <Route path="/swipe-surge" element={<SwipeSurge />} />
-              <Route path="/active-status" element={<ActiveStatus />} />
+              <Route path="/active-status" element={<ProtectedRoute><ActiveStatus /></ProtectedRoute>} />
               <Route path="/friends-in-common" element={<FriendsInCommon />} />
-              <Route path="/email-settings" element={<EmailSettings />} />
-              <Route path="/push-notifications" element={<PushNotifications />} />
+              <Route path="/email-settings" element={<ProtectedRoute><EmailSettings /></ProtectedRoute>} />
+              <Route path="/push-notifications" element={<ProtectedRoute><PushNotifications /></ProtectedRoute>} />
               <Route path="/team-cubadate" element={<TeamCubaDate />} />
               <Route path="/manage-payment-account" element={<ManagePaymentAccount />} />
               <Route path="/restore-purchase" element={<RestorePurchase />} />
               <Route path="/help-support" element={<HelpSupport />} />
               <Route path="/web-profile/:userId" element={<WebProfile />} />
               <Route path="/web-profile" element={<WebProfile />} />
-              <Route path="/delete-account" element={<DeleteAccount />} />
+              <Route path="/delete-account" element={<ProtectedRoute requireCompleteProfile={false}><DeleteAccount /></ProtectedRoute>} />
               <Route path="/licenses" element={<Licenses />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/contact-us" element={<ContactUs />} />
@@ -239,7 +240,7 @@ const App = () => (
               <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
               <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
               <Route path="/photo-verification" element={<PhotoVerification />} />
-              <Route path="/double-hangout" element={<DoubleDate />} />
+              <Route path="/double-hangout" element={<ProtectedRoute><DoubleDate /></ProtectedRoute>} />
               <Route path="/double-date" element={<Navigate to="/double-hangout" replace />} />
               <Route path="/qa-events" element={<QAEvents />} />
               <Route path="/introductions" element={<Matchmaker />} />

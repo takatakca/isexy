@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Plus, X, Loader2, GripVertical } from "lucide-react";
+import { Plus, X, Loader2, GripVertical, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -78,9 +78,9 @@ export function DraggablePhotoUpload({
       onPhotosChange(newPhotos);
       
       toast.success("Photo uploaded!");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload photo");
+      toast.error((error as { message?: string })?.message || "Failed to upload photo");
     } finally {
       setUploading(null);
     }
@@ -89,6 +89,11 @@ export function DraggablePhotoUpload({
   const handleRemovePhoto = async (index: number) => {
     const photo = photos[index];
     if (!photo) return;
+    // A profile needs at least one photo to stay visible (and to pass the profile check).
+    if (photos.length <= 1) {
+      toast.error("Keep at least one photo. Add a new one first, then remove this one.");
+      return;
+    }
 
     try {
       if (photo.id) {
@@ -96,32 +101,51 @@ export function DraggablePhotoUpload({
           .from("profile_photos")
           .delete()
           .eq("id", photo.id);
-        
+
         if (error) throw error;
+      }
+
+      // The file itself: only ever one of the member's own uploads ({userId}/...).
+      const path = photo.url.split("/isexy-profile-photos/")[1]?.split("?")[0];
+      if (path && userId && path.startsWith(`${userId}/`)) {
+        const { error: storageError } = await supabase.storage.from("isexy-profile-photos").remove([decodeURIComponent(path)]);
+        if (storageError) console.warn("Photo file not removed:", storageError.message);
       }
 
       const newPhotos = photos.filter((_, i) => i !== index).map((p, i) => ({ ...p, position: i }));
       onPhotosChange(newPhotos);
-      
+
       // Update positions in database
       await updatePhotoPositions(newPhotos);
-      
+
       toast.success("Photo removed");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Remove error:", error);
       toast.error("Failed to remove photo");
     }
   };
 
   const updatePhotoPositions = async (updatedPhotos: Photo[]) => {
+    let failed = false;
     for (const photo of updatedPhotos) {
       if (photo.id) {
-        await supabase
+        const { error } = await supabase
           .from("profile_photos")
           .update({ position: photo.position })
           .eq("id", photo.id);
+        if (error) failed = true;
       }
     }
+    if (failed) toast.error("Couldn't save the new photo order. Please try again.");
+    return !failed;
+  };
+
+  /** Tap-friendly reordering (drag and drop does not work on touch screens). */
+  const handleMakeMain = async (index: number) => {
+    if (index === 0) return;
+    const newPhotos = [photos[index], ...photos.filter((_, i) => i !== index)].map((p, i) => ({ ...p, position: i }));
+    onPhotosChange(newPhotos);
+    if (await updatePhotoPositions(newPhotos)) toast.success("Main photo updated");
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -159,13 +183,11 @@ export function DraggablePhotoUpload({
     const updatedPhotos = newPhotos.map((p, i) => ({ ...p, position: i }));
     onPhotosChange(updatedPhotos);
     
-    // Sync to database
-    await updatePhotoPositions(updatedPhotos);
-    
     setDraggedIndex(null);
     setDragOverIndex(null);
-    
-    toast.success("Photos reordered");
+
+    // Sync to database
+    if (await updatePhotoPositions(updatedPhotos)) toast.success("Photos reordered");
   };
 
   const handleDragEnd = () => {
@@ -191,10 +213,12 @@ export function DraggablePhotoUpload({
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
+                // Clear the input so picking the same file again still triggers a change.
+                e.target.value = "";
                 if (file) handleFileSelect(index, file);
               }}
             />
-            
+
             {photo ? (
               <div
                 draggable
@@ -219,10 +243,20 @@ export function DraggablePhotoUpload({
                 </div>
                 
                 {/* Position badge */}
-                {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-primary text-foreground text-xs font-bold px-2 py-1 rounded">
+                {index === 0 ? (
+                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded">
                     Main
                   </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleMakeMain(index)}
+                    className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 text-white text-xs font-semibold px-2 py-1 rounded hover:bg-black/80"
+                    aria-label={`Make photo ${index + 1} your main photo`}
+                  >
+                    <Star className="w-3 h-3" />
+                    Main
+                  </button>
                 )}
               </div>
             ) : (
@@ -251,10 +285,11 @@ export function DraggablePhotoUpload({
                   fileInputRefs.current[photos.length]?.click();
                 }
               }}
+              aria-label={photo ? `Remove photo ${index + 1}` : "Add a photo"}
               className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-colors ${
                 photo
                   ? "bg-destructive text-white hover:bg-destructive/90"
-                  : "bg-background text-background hover:bg-background/90"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
               }`}
             >
               {photo ? (

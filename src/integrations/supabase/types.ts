@@ -2072,6 +2072,47 @@ export type Database = {
           },
         ]
       }
+      photo_verifications: {
+        Row: {
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_path: string
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path: string
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path?: string
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_verifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_photos: {
         Row: {
           created_at: string
@@ -2951,7 +2992,9 @@ export type Database = {
           auto_translate: boolean
           created_at: string
           id: string
+          notification_settings: Json
           preferred_language: string
+          settings: Json
           updated_at: string
           user_id: string
         }
@@ -2959,7 +3002,9 @@ export type Database = {
           auto_translate?: boolean
           created_at?: string
           id?: string
+          notification_settings?: Json
           preferred_language?: string
+          settings?: Json
           updated_at?: string
           user_id: string
         }
@@ -2967,7 +3012,9 @@ export type Database = {
           auto_translate?: boolean
           created_at?: string
           id?: string
+          notification_settings?: Json
           preferred_language?: string
+          settings?: Json
           updated_at?: string
           user_id?: string
         }
@@ -3234,6 +3281,17 @@ export type Database = {
           unread_count: number
         }[]
       }
+      mark_messages_read: {
+        Args: { p_match_id: string }
+        Returns: number
+      }
+      get_my_badge_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          new_likes: number
+          unread_messages: number
+        }[]
+      }
       get_discover_feed: {
         Args: {
           p_exclude?: string[]
@@ -3255,6 +3313,42 @@ export type Database = {
           photos: string[]
           school: string | null
         }[]
+      }
+      get_likes_received: {
+        Args: { p_before?: string; p_limit?: number }
+        Returns: {
+          action: string
+          birth_date: string | null
+          city: string | null
+          first_name: string | null
+          is_verified: boolean | null
+          liked_at: string
+          liker_id: string | null
+          locked: boolean
+          message: string | null
+          photo_url: string | null
+        }[]
+      }
+      set_first_impression: {
+        Args: { p_message: string; p_swiped_id: string }
+        Returns: Json
+      }
+      review_photo_verification: {
+        Args: { p_approve: boolean; p_reason?: string; p_request_id: string }
+        Returns: {
+          id: string
+          profile_id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_path: string
+          status: string
+          submitted_at: string
+        }
+      }
+      is_group_chat_member: {
+        Args: { p_group_chat_id: string }
+        Returns: boolean
       }
       analytics_overview: {
         Args: { p_days?: number }

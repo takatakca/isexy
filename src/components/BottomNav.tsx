@@ -5,12 +5,12 @@ import { useNotificationCounts } from "@/hooks/useNotificationCounts";
 
 export function BottomNav() {
   const location = useLocation();
-  const { unreadMessages, newMatches } = useNotificationCounts();
+  const { unreadMessages, newLikes } = useNotificationCounts();
   
   const navItems = [
     { path: "/discover", icon: Flame, label: "Home", badge: 0 },
     { path: "/explore", icon: Compass, label: "Explore", badge: 0 },
-    { path: "/likes", icon: Heart, label: "Likes", badge: newMatches },
+    { path: "/likes", icon: Heart, label: "Likes", badge: newLikes },
     { path: "/matches", icon: MessageCircle, label: "Chat", badge: unreadMessages },
     { path: "/profile", icon: User, label: "Profile", badge: 0 },
   ];
@@ -25,6 +25,8 @@ export function BottomNav() {
             <Link
               key={path}
               to={path}
+              aria-label={badge > 0 ? `${label}, ${badge} new` : label}
+              aria-current={isActive ? "page" : undefined}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}

@@ -1,19 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Flame, CheckCheck } from "lucide-react";
+import { Heart, MessageCircle, Flame, CheckCheck, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
-import { ContactMethodModal } from "@/components/ContactMethodModal";
+import { useChatOpener } from "@/hooks/useChatOpener";
+import { fetchInbox } from "@/lib/inbox";
+import { ageFrom } from "@/lib/discoverFeed";
 
 interface Match {
   id: string;
   matched_at: string;
   last_message_at: string | null;
   last_message_preview: string | null;
+  /** The last message was sent by me (the tick only shows on my own messages). */
+  last_message_mine: boolean | null;
   unread_count: number;
-  last_message_read: boolean;
+  is_unlocked: boolean;
   other_profile: {
     id: string;
     first_name: string;
@@ -24,152 +28,85 @@ interface Match {
   };
 }
 
-function calcAge(birthDate: string | null): number | null {
-  if (!birthDate) return null;
-  const b = new Date(birthDate);
-  const d = new Date();
-  let age = d.getFullYear() - b.getFullYear();
-  const m = d.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && d.getDate() < b.getDate())) age--;
-  return age;
-}
-
 export default function Matches() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
-  const [contactModal, setContactModal] = useState<{
-    matchId: string;
-    otherName: string;
-    otherPhotoUrl?: string;
-  } | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const meId = profile?.id;
+  const mePremium = profile?.is_premium;
 
-  useEffect(() => {
-    if (profile) {
-      fetchMatches();
-    }
-  }, [profile]);
+  // Whole inbox in one RPC (get_my_conversations) + one query for ages/cities.
+  const fetchMatches = useCallback(async () => {
+    if (!meId) return;
+    try {
+      const inbox = await fetchInbox({ id: meId, is_premium: mePremium });
+      const ids = inbox.map((c) => c.other_id);
+      const { data: details } = ids.length
+        ? await supabase.from("profiles").select("id, birth_date, city").in("id", ids)
+        : { data: [] as { id: string; birth_date: string; city: string | null }[] };
+      const detailBy = new Map((details ?? []).map((d) => [d.id, d]));
 
-  const fetchMatches = async () => {
-    if (!profile) return;
-
-    const [matchesRes, blocksRes] = await Promise.all([
-      supabase
-        .from("matches")
-        .select(`
-          id,
-          matched_at,
-          last_message_at,
-          profile1:profiles!matches_profile1_id_fkey(id, first_name),
-          profile2:profiles!matches_profile2_id_fkey(id, first_name)
-        `)
-        .or(`profile1_id.eq.${profile.id},profile2_id.eq.${profile.id}`)
-        .eq("is_active", true)
-        .order("matched_at", { ascending: false }),
-      supabase
-        .from("blocks")
-        .select("blocker_id, blocked_id")
-        .or(`blocker_id.eq.${profile.id},blocked_id.eq.${profile.id}`),
-    ]);
-
-    if (matchesRes.error) {
-      console.error("Error fetching matches:", matchesRes.error);
-      setLoading(false);
-      return;
-    }
-
-    const blockedIds = new Set<string>(
-      (blocksRes.data || []).map((b: any) =>
-        b.blocker_id === profile.id ? b.blocked_id : b.blocker_id
-      )
-    );
-
-    const data = (matchesRes.data || []).filter((m: any) => {
-      const otherId = m.profile1.id === profile.id ? m.profile2.id : m.profile1.id;
-      return !blockedIds.has(otherId);
-    });
-
-    // Get photos, last_active, and unread messages for each match
-    const matchesWithPhotos = await Promise.all(
-      (data || []).map(async (match: any) => {
-        const otherProfile = match.profile1.id === profile.id ? match.profile2 : match.profile1;
-        
-        const [photosResult, profileResult, unreadResult, lastMsgResult] = await Promise.all([
-          supabase
-            .from("profile_photos")
-            .select("photo_url")
-            .eq("profile_id", otherProfile.id)
-            .order("position")
-            .limit(1),
-          supabase
-            .from("profiles")
-            .select("last_active_at, birth_date, city")
-            .eq("id", otherProfile.id)
-            .single(),
-          supabase
-            .from("messages")
-            .select("id, is_read")
-            .eq("match_id", match.id)
-            .neq("sender_id", profile.id)
-            .eq("is_read", false),
-          supabase
-            .from("messages")
-            .select("content, created_at")
-            .eq("match_id", match.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
-
+      setMatches(inbox.map((c) => {
+        const d = detailBy.get(c.other_id);
         return {
-          id: match.id,
-          matched_at: match.matched_at,
-          last_message_at: match.last_message_at || lastMsgResult.data?.created_at || null,
-          last_message_preview: lastMsgResult.data?.content || null,
-          unread_count: unreadResult.data?.length || 0,
-          last_message_read: (unreadResult.data?.length || 0) === 0,
+          id: c.match_id,
+          matched_at: c.matched_at,
+          last_message_at: c.last_message_at,
+          last_message_preview: c.last_message_preview,
+          last_message_mine: c.last_message_mine,
+          unread_count: c.unread_count,
+          is_unlocked: c.is_unlocked,
           other_profile: {
-            ...otherProfile,
-            age: calcAge(profileResult.data?.birth_date || null),
-            city: profileResult.data?.city || null,
-            last_active_at: profileResult.data?.last_active_at || null,
-            photos: photosResult.data || [],
+            id: c.other_id,
+            first_name: c.first_name,
+            age: d?.birth_date ? ageFrom(d.birth_date) : null,
+            city: d?.city ?? null,
+            last_active_at: c.last_active_at,
+            photos: c.photo_url ? [{ photo_url: c.photo_url }] : [],
           },
         };
-      })
-    );
+      }));
+      setLoadError(false);
+    } catch (e) {
+      console.error("Error fetching matches:", e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [meId, mePremium]);
 
-    setMatches(matchesWithPhotos);
-    setLoading(false);
-  };
-
-  // Subscribe to new matches
   useEffect(() => {
-    if (!profile) return;
+    void fetchMatches();
+  }, [fetchMatches]);
 
+  // Closing the contact sheet may have unlocked a conversation: refresh.
+  const { openChat, contactModal } = useChatOpener({ onClose: () => void fetchMatches() });
+
+  // New matches and messages refresh the list (RLS only delivers the member's own rows).
+  // Topic per mount: a fixed topic can hand a remounted page the old, closing channel.
+  useEffect(() => {
+    if (!meId) return;
     const channel = supabase
-      .channel("matches-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "isexy",
-          table: "matches",
-        },
-        () => {
-          fetchMatches();
-        }
-      )
+      .channel(`matches-list-${meId}-${Math.random().toString(36).slice(2, 8)}`)
+      .on("postgres_changes", { event: "*", schema: "isexy", table: "matches" }, () => void fetchMatches())
+      .on("postgres_changes", { event: "INSERT", schema: "isexy", table: "messages" }, () => void fetchMatches())
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile]);
+  }, [meId, fetchMatches]);
+
+  const open = (match: Match) => openChat({
+    matchId: match.id,
+    otherName: match.other_profile.first_name,
+    otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
+    unlocked: match.is_unlocked,
+  });
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-40">
       {/* Header */}
       <header className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <button
@@ -183,7 +120,7 @@ export default function Matches() {
           Matches
         </h1>
         <button
-          onClick={() => navigate("/messages")}
+          onClick={() => navigate("/matches")}
           className="p-2 -mr-2 rounded-full hover:bg-muted/60 transition-colors"
           aria-label="Open messages"
         >
@@ -193,7 +130,7 @@ export default function Matches() {
 
       <main className="px-4 pt-4 safe-bottom">
         {loading ? (
-          <div className="space-y-6">
+          <div className="space-y-6" aria-busy="true">
             <div className="grid grid-cols-3 gap-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="aspect-square rounded-2xl bg-muted/40 animate-pulse" />
@@ -210,6 +147,18 @@ export default function Matches() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : loadError && matches.length === 0 ? (
+          <div className="text-center py-24 px-6" role="alert">
+            <h2 className="text-2xl font-bold text-foreground mb-2">We couldn't load your matches</h2>
+            <p className="text-muted-foreground mb-6">Check your connection and try again.</p>
+            <button
+              onClick={() => { setLoading(true); void fetchMatches(); }}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try again
+            </button>
           </div>
         ) : matches.length === 0 ? (
           <div className="text-center py-24 px-6">
@@ -242,22 +191,23 @@ export default function Matches() {
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                {matches.slice(0, 6).map((match) => (
+                {[...matches]
+                  .sort((a, b) => new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime())
+                  .slice(0, 6)
+                  .map((match) => (
                   <button
                     key={match.id}
-                    onClick={() => setContactModal({
-                      matchId: match.id,
-                      otherName: match.other_profile.first_name,
-                      otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
-                    })}
+                    onClick={() => open(match)}
                     className="group relative aspect-square rounded-2xl overflow-hidden ring-1 ring-border/60 hover:ring-primary/60 transition-all"
+                    aria-label={`Chat with ${match.other_profile.first_name}`}
                   >
                     {match.other_profile.photos[0] ? (
                       <img
                         src={match.other_profile.photos[0].photo_url}
-                        alt={match.other_profile.first_name}
+                        alt=""
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
@@ -298,20 +248,17 @@ export default function Matches() {
                 {matches.map((match) => (
                   <button
                     key={match.id}
-                    onClick={() => setContactModal({
-                      matchId: match.id,
-                      otherName: match.other_profile.first_name,
-                      otherPhotoUrl: match.other_profile.photos[0]?.photo_url,
-                    })}
+                    onClick={() => open(match)}
                     className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 transition-all active:scale-[0.99]"
                   >
                     <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-border/40">
                       {match.other_profile.photos[0] ? (
                         <img
                           src={match.other_profile.photos[0].photo_url}
-                          alt={match.other_profile.first_name}
+                          alt=""
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-muted to-muted/40 flex items-center justify-center">
@@ -340,7 +287,7 @@ export default function Matches() {
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 text-sm">
-                        {match.last_message_preview && match.last_message_read && (
+                        {match.last_message_preview && match.last_message_mine && (
                           <CheckCheck className="w-4 h-4 text-primary flex-shrink-0" />
                         )}
                         <span className={`truncate ${match.unread_count > 0 ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
@@ -369,15 +316,7 @@ export default function Matches() {
       </main>
 
       {/* Contact Method Modal */}
-      {contactModal && (
-        <ContactMethodModal
-          isOpen={true}
-          onClose={() => setContactModal(null)}
-          matchId={contactModal.matchId}
-          otherName={contactModal.otherName}
-          otherPhotoUrl={contactModal.otherPhotoUrl}
-        />
-      )}
+      {contactModal}
     </div>
   );
 }
