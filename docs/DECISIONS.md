@@ -64,3 +64,19 @@ Dernière revue : 2026-10-14.
 20. **Preuves de publication** : `release.json` fait correspondre
     le SHA Git au build servi; aucun seul statut de CI ne suffit à
     confirmer l'hébergement cible, DNS ou le fonctionnement métier.
+
+21. **Paiement sans confiance dans le client** : seules les
+    métadonnées de destinataire nécessaires aux cadeaux/dons
+    franchissent l'API checkout; le type d'achat, produit,
+    membre payeur et ID du package sont déterminés par le serveur.
+22. **Webhook Stripe** : ne jamais accepter un paiement unique
+    non soldé ni accuser réception d'un événement absent du
+    journal ou en état de traitement/échec. Les échecs partiels
+    nécessitent une procédure de reprise atomique, à finaliser
+    avant commercialisation.
+23. **Passerelle de paiement** : état fournisseur inconnu ou
+    clé absente = aucune session de checkout; les retours
+    doivent pointer exclusivement vers Stripe.
+24. **API multi-tenant** : le smoke test de production doit
+    valider une lecture REST du schéma `isexy`, et pas
+    uniquement l'existence des privilèges SQL.

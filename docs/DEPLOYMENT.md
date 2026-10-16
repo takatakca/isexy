@@ -1,3 +1,30 @@
+## Validation de publication — 16 octobre 2026
+
+- Render autoDeploy sur `main` est confirmé. Le SHA
+  `f6e6a029` a été observé `live`. La CI de cette
+  version est à relire jusqu'à sa conclusion; les SHA
+  `830c1062`, `5b9a6845` et `705cc269`
+  ont terminé leur CI avec `success`.
+- Publication manuelle directe Supabase TAKATAK V1 :
+  `isexy-create-one-time-payment` ACTIVE **v3**,
+  `isexy-stripe-webhook` ACTIVE **v2**,
+  `isexy-payments-gate-status` ACTIVE **v2**.
+  Pas de publication automatique GitHub du backend :
+  `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` toujours
+  non disponibles dans les jobs GitHub.
+- La nouvelle vérification REST `Accept-Profile: isexy`
+  lors du smoke test GitHub complète le contrôle de
+  `release.json`. Un grant au schéma seul ne prouve
+  pas que le Data API est exposé au niveau PostgREST.
+- URL de production `isexy.ca` et Coolify non prouvés.
+  Ne pas reconfigurer DNS ni exposer les secrets sans
+  validation réelle.
+- Pas de test Stripe live ni de Cron opérationnel
+  confirmé. Le rapprochement des événements échoués
+  reste une action d'administration nécessaire.
+
+---
+
 ## Suivi de déploiement — 15 octobre 2026, dernière mise à jour
 
 Le build génère `release.json`. GitHub compare ce SHA avec le commit

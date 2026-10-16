@@ -1,5 +1,25 @@
 # ISEXY — État réel du projet
 
+## Point de reprise — 16 octobre 2026
+
+- Source de vérité : `takatakca/isexy` `main`, **dernier commit applicatif** avant la présente documentation : `f6e6a0297cc8936246ced9ab922f52b697a342b3`.
+- CI confirmées : `830c1062` run `38882342512` SUCCESS;
+  `5b9a6845` run `38882538662` SUCCESS;
+  `705cc269` run `38882680228` SUCCESS.
+  La CI `f6e6a029` était encore en cours à la dernière vérification.
+- Render : `f6e6a029` observé **live**; la CI SHA de cette version doit être consultée jusqu'au résultat définitif.
+- Paiements :
+  - `_shared/checkout-metadata.ts` autorise seulement les champs de destination nécessaires aux cadeaux et aides Cuba; jamais `profile_id`, `user_id`, `product_id` ni `package_id` injectés par le client;
+  - `isexy-create-one-time-payment` a été déployée ACTIVE v3 directement à Supabase;
+  - `isexy-stripe-webhook` ACTIVE v2 : un paiement unique non soldé ne crédite pas les avantages; événements `async_payment_succeeded` gérés; un événement en échec ou en cours n'est plus acquitté comme terminé;
+  - `isexy-payments-gate-status` ACTIVE v2 : clé de paiement manquante ou invalide ne permet pas la vente, même avec flag live; le navigateur bloque le checkout tant que le statut n'est pas connu et n'ouvre que `checkout.stripe.com`.
+- Data API : la base confirme les privilèges USAGE au schéma `isexy` pour `anon` et `authenticated`, et SELECT pour `ticket_categories`. Nouveau smoke test GitHub vérifie une réponse REST HTTP 200 avec `Accept-Profile: isexy`, résultat encore à collecter.
+- Garde-fous inchangés : 10 migrations ISEXY appliquées; identités TAKATAK centrales; aucun ajout de projet Supabase facturable, aucun profil synthétique ni suppression Cuba.
+- Points P0 non résolus : validation réelle des traitements de paiement et du webhook de bout en bout (écritures de crédits et rejeu partiel non atomiques), secrets GitHub `ISEXY_DB_URL` / `SUPABASE_ACCESS_TOKEN` (étapes de publication Supabase sautées), authentification Cron JWT + secret, Coolify / `isexy.ca` DNS et TLS, OAuth/OTP/Twilio/resend en conditions réelles.
+
+---
+
+
 **Complément du 15 octobre 2026 :** la bannière artificielle de réduction 50 % a été retirée; le bouton Premium suit le verrou de paiement. La confirmation courriel des tickets n'est annoncée que sur réponse fournisseur positive. Les runs CI intermédiaires peuvent échouer au contrôle de SHA lorsqu'un autre commit les a déjà remplacés; `470f9ee2` distingue ces cas. Le dernier SHA applicatif avant cette note est `e05bcba8`, CI et Render encore à vérifier. Voir `AGENT_HANDOFF.md`.
 
 ## Sécurité, paiements et publication — 15 octobre 2026

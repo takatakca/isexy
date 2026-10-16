@@ -1,3 +1,99 @@
+# Relève immédiate — 16 octobre 2026, vérifications Stripe et Data API
+
+**Dépôt :** `takatakca/isexy`, branche `main`.
+**Dernier SHA de code avant ce commit documentaire :**
+`f6e6a0297cc8936246ced9ab922f52b697a342b3`.
+Relire le nouveau SHA `main` après la présente sauvegarde.
+
+## Terminé et publié
+
+- Commit `830c1062` : sécurisation des métadonnées client au checkout
+  (nouveau `_shared/checkout-metadata.ts`, tests Deno).
+  Tests GitHub `38882342512` SUCCESS.
+  Edge Function `isexy-create-one-time-payment` déployée **ACTIVE v3**.
+- Commit `5b9a6845` : webhook Stripe n'acquitte plus les événements
+  non traités; paiements uniques crédités seulement lorsque
+  `payment_status=paid`; prise en charge de
+  `checkout.session.async_payment_succeeded`.
+  Tests GitHub `38882538662` SUCCESS;
+  `isexy-stripe-webhook` déployé **ACTIVE v2**.
+- Commit `705cc269` : état de paiement de l'interface sécurisé en
+  échec fermé, autorisation checkout conditionnelle et redirection
+  limitée à l'hôte Stripe; contrôle serveur plus strict des clés.
+  Tests GitHub `38882680228` SUCCESS;
+  `isexy-payments-gate-status` déployé **ACTIVE v2**.
+- Commit `f6e6a029` : ajout du smoke test de Data API
+  `/rest/v1/ticket_categories` sur le schéma `isexy` dans
+  `.github/workflows/ci-cd.yml`. Render de ce SHA observé **live**.
+  GitHub Actions run `38882814481` en cours au dernier relevé.
+- Préservation : migrations 0001–0010 déjà appliquées, 25 Edge
+  Functions ISEXY (deux quarantaines), identité TAKATAK V1,
+  aucune donnée Cuba supprimée.
+
+## Fichiers modifiés durant cette session
+
+`WORKLOG.md`;
+`supabase/functions/_shared/checkout-metadata.ts`;
+`supabase/functions/isexy-create-one-time-payment/index.ts`;
+`supabase/functions/isexy-stripe-webhook/index.ts`;
+`supabase/functions/isexy-payments-gate-status/index.ts`;
+`src/hooks/usePaymentsGate.ts`;
+`src/pages/Premium.tsx`;
+`scripts/isexy/test/checkout-metadata.test.ts`;
+`.github/workflows/ci-cd.yml`;
+et les cinq documents de suivi dans `docs/`.
+
+## Contrôles réellement exécutés
+
+- Relecture AGENTS, WORKLOG, décisions, queue et ancienne relève,
+  branche `main`, PR et issues ouvertes (aucune), CI et jobs,
+  service et SHA de déploiement Render.
+- GitHub : Deno tests metadata, vérifications TypeScript, build,
+  migrations PostgreSQL V1 stand-in et contrôles de séparation réussis
+  sur `830c1062`, `5b9a6845`, `705cc269`.
+- Supabase : consultation des 10 migrations et des grants au schéma
+  `isexy`; déploiement direct avec retour ACTIVE des trois
+  fonctions Stripe (one-time v3, webhook v2, gate v2).
+- Web : tentative directe de `https://isexy.onrender.com/release.json`
+  et `https://isexy.ca`, non accessible depuis l'outil web;
+  Render et smoke CI servent de source de statut de publication.
+- Aucun débit Stripe, remboursement, OTP, appel téléphonique, ni
+  réinitialisation de quotas réel n'a été déclenché.
+
+## Risques et accès nécessaires
+
+1. Le webhook protège les duplications de statut, mais les écritures
+   des avantages/transactions ne sont pas toutes atomiques.
+   Un événement `failed` retourne 503 sur répétition et nécessite
+   rapprochement manuel; **ne pas déclarer le traitement commercial prêt**.
+2. `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` sont toujours absents
+   ou indisponibles dans GitHub Actions : jobs backend sautés.
+3. `isexy-reset-allowances` nécessite toujours JWT Gateway et secret
+   Cron. Pas de job périodique confirmé. Une tentative antérieure de
+   modification de la configuration avait été bloquée; ne pas
+   contourner les contrôles de sécurité.
+4. `isexy.ca` et Coolify non vérifiés en conditions réelles.
+   Secrets Stripe, Twilio, fournisseur mail/IA et Auth TAKATAK
+   non validés de bout en bout.
+5. N'afficher ni enregistrer les clés privées en documentation ou logs.
+
+## Prochaine action exacte
+
+1. Vérifier le run `38882814481` (en particulier le nouveau
+   test `ISEXY Data API`) et le SHA `main` puis Render `live`.
+2. Si le test REST renvoie 406, vérifier l'exposition du schéma
+   `isexy` sur le projet existant, sans toucher aux schémas
+   `public` et `auth`. Si 401/403, inspecter la clé publiable
+   et les grants RLS appropriés.
+3. Remplacer les écritures Stripe non atomiques par une transaction
+   vérifiée/idempotente et un chemin de reprise d'événement.
+   Effectuer ensuite les tests d'achat fictifs en mode Stripe test.
+4. Résoudre le déploiement backend automatisé, le Cron et le domaine
+   Coolify avec les accès réellement autorisés; terminer les P0
+   de `docs/TASK_QUEUE.md`.
+
+---
+
 ## Relève additionnelle — 15 octobre 2026, corrections après le commit de statut
 
 Dernier commit de code **avant le présent commit documentaire** :
