@@ -1,11 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Play, Pause, Flag, Ban, Inbox, SendHorizonal } from "lucide-react";
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  Flag,
+  Ban,
+  Inbox,
+  SendHorizonal,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface ReplyRow {
@@ -25,27 +36,55 @@ export default function PhoneLineInbox() {
   const [received, setReceived] = useState<ReplyRow[]>([]);
   const [sent, setSent] = useState<ReplyRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopAudio = useCallback(() => {
+    const audio = audioRef.current;
+    audioRef.current = null;
+    if (audio) {
+      audio.onended = null;
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    }
+    setPlayingId(null);
+  }, []);
+
+  // A reply never keeps playing after leaving the page.
+  useEffect(() => () => stopAudio(), [stopAudio]);
 
   useEffect(() => {
     const load = async () => {
       if (!profile?.id) return setLoading(false);
+      setLoading(true);
+      setLoadError(false);
 
-      const { data: rec } = await supabase
-        .from("phone_line_voice_replies")
-        .select("id, from_profile_id, to_profile_id, duration_seconds, is_read, created_at")
-        .eq("to_profile_id", profile.id)
-        .eq("is_hidden", false)
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      const { data: snt } = await supabase
-        .from("phone_line_voice_replies")
-        .select("id, from_profile_id, to_profile_id, duration_seconds, is_read, created_at")
-        .eq("from_profile_id", profile.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      // Rejected replies cannot be played by the receiver: leave them out.
+      const [{ data: rec, error: recError }, { data: snt, error: sntError }] = await Promise.all([
+        supabase
+          .from("phone_line_voice_replies")
+          .select("id, from_profile_id, to_profile_id, duration_seconds, is_read, created_at")
+          .eq("to_profile_id", profile.id)
+          .eq("is_hidden", false)
+          .neq("moderation_status", "rejected")
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabase
+          .from("phone_line_voice_replies")
+          .select("id, from_profile_id, to_profile_id, duration_seconds, is_read, created_at")
+          .eq("from_profile_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(100),
+      ]);
+      if (recError || sntError) {
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
 
       const otherIds = Array.from(
         new Set([
@@ -81,7 +120,7 @@ export default function PhoneLineInbox() {
       setLoading(false);
     };
     load();
-  }, [profile?.id]);
+  }, [profile?.id, reloadKey]);
 
   if (!user) {
     navigate("/auth");
@@ -89,31 +128,41 @@ export default function PhoneLineInbox() {
   }
 
   const playReply = async (r: ReplyRow, markRead: boolean) => {
+    if (playingId === r.id) {
+      stopAudio();
+      return;
+    }
+    stopAudio();
+    setLoadingAudioId(r.id);
     try {
-      if (playingId === r.id && audioRef.current) {
-        audioRef.current.pause();
-        setPlayingId(null);
-        return;
-      }
       const { data, error } = await supabase.functions.invoke("isexy-get-voice-reply-url", {
         body: { reply_id: r.id },
       });
-      if (error || !data?.signed_url) throw new Error(error?.message ?? "Cannot load audio");
-      if (audioRef.current) audioRef.current.pause();
+      if (error || !data?.signed_url) throw new Error("This reply can't be played right now.");
       const audio = new Audio(data.signed_url);
-      audio.onended = () => setPlayingId(null);
+      audio.onended = () => {
+        if (audioRef.current === audio) setPlayingId(null);
+      };
       audioRef.current = audio;
       await audio.play();
-      setPlayingId(r.id);
+      if (audioRef.current === audio) setPlayingId(r.id);
 
       if (markRead && !r.is_read) {
-        await supabase.rpc("mark_voice_reply_read", { p_reply_id: r.id });
-        setReceived((prev) =>
-          prev.map((x) => (x.id === r.id ? { ...x, is_read: true } : x))
-        );
+        const { error: readError } = await supabase.rpc("mark_voice_reply_read", { p_reply_id: r.id });
+        if (!readError) {
+          setReceived((prev) => prev.map((x) => (x.id === r.id ? { ...x, is_read: true } : x)));
+        }
       }
-    } catch (e: any) {
-      toast.error(e.message ?? "Could not play");
+    } catch (e) {
+      stopAudio();
+      const name = (e as { name?: string })?.name;
+      toast.error(
+        name === "NotSupportedError"
+          ? "This reply can't be played in this browser."
+          : (e as { message?: string })?.message ?? "Could not play",
+      );
+    } finally {
+      setLoadingAudioId(null);
     }
   };
 
@@ -123,6 +172,7 @@ export default function PhoneLineInbox() {
       .from("blocks")
       .insert({ blocker_id: profile.id, blocked_id: r.from_profile_id });
     if (error) return toast.error(error.message);
+    stopAudio();
     toast.success("User blocked");
     setReceived((prev) => prev.filter((x) => x.from_profile_id !== r.from_profile_id));
   };
@@ -150,7 +200,13 @@ export default function PhoneLineInbox() {
             {isPlaying && (
               <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
             )}
-            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
+            {loadingAudioId === r.id ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="h-5 w-5" />
+            ) : (
+              <Play className="ml-0.5 h-5 w-5" />
+            )}
           </button>
 
           <div className="min-w-0 flex-1">
@@ -235,6 +291,21 @@ export default function PhoneLineInbox() {
       </header>
 
       <main className="mx-auto max-w-2xl p-4 pb-10">
+        {loadError && !loading && (
+          <Card
+            role="alert"
+            className="mb-4 flex flex-col items-center gap-3 rounded-2xl border-border/60 bg-card p-6 text-center"
+          >
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+            <div>
+              <div className="font-bold">Your voice inbox couldn't load.</div>
+              <div className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</div>
+            </div>
+            <Button onClick={() => setReloadKey((k) => k + 1)} variant="outline" className="gap-2 rounded-full">
+              <RefreshCw className="h-4 w-4" /> Try again
+            </Button>
+          </Card>
+        )}
         <Tabs defaultValue="received">
           <TabsList className="mb-4 rounded-full bg-card p-1">
             <TabsTrigger value="received" className="rounded-full">Received</TabsTrigger>
@@ -247,7 +318,7 @@ export default function PhoneLineInbox() {
                   <div key={i} className="h-24 animate-pulse rounded-2xl bg-card" />
                 ))}
               </div>
-            ) : received.length === 0 ? (
+            ) : loadError ? null : received.length === 0 ? (
               emptyState("received")
             ) : (
               received.map((r) => renderRow(r, true))
@@ -260,7 +331,7 @@ export default function PhoneLineInbox() {
                   <div key={i} className="h-24 animate-pulse rounded-2xl bg-card" />
                 ))}
               </div>
-            ) : sent.length === 0 ? (
+            ) : loadError ? null : sent.length === 0 ? (
               emptyState("sent")
             ) : (
               sent.map((r) => renderRow(r, false))

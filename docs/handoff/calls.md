@@ -80,7 +80,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 20. [x] TwiML: `&` in Gather/Redirect URLs not XML-escaped (browse is a parse
     error), names not escaped, browse ignores the digits (2 = repeat, 9 =
     main menu do nothing).
-21. [ ] Greetings recorded as WebM/Opus (Safari: MP4) and labelled
+21. [~] Greetings recorded as WebM/Opus (Safari: MP4) and labelled
     `audio/webm`: Twilio `<Play>` plays neither, so browse by phone is silent;
     older Safari cannot play WebM in the app either.
 22. [x] Twilio signature checked against `req.url` (the internal URL, not
@@ -95,12 +95,12 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
     always fails; it is granted to every member (anyone could mark any number
     verified) and it DELETEs rows.
 26. [ ] No way for a member to link their phone to the IVR.
-27. [ ] PhoneLineSetup: a banned voice profile un-bans itself on "Save
+27. [~] PhoneLineSetup: a banned voice profile un-bans itself on "Save
     draft" (client writes `status`); owners can self-approve greetings and
     voice replies (`moderation_status` writable). Recorder: forced
     `audio/webm`, no MediaRecorder check, mic not released when leaving the
     page, timer stops the recorder inside a state updater.
-28. [ ] PhoneLineBrowse / PhoneLineInbox: audio keeps playing after leaving
+28. [~] PhoneLineBrowse / PhoneLineInbox: audio keeps playing after leaving
     the page; reply recorder has the same issues; no error state.
 29. [ ] PhoneLine hub: labels for `pending` / `rejected` (not phone line
     statuses), `banned` missing; "Live" while the greeting is pending.
