@@ -1,3 +1,20 @@
+## Déploiement vérifié — 16 octobre 2026 (référence courante)
+
+- Run GitHub `38951304397` SUCCESS, Render `445fc829` LIVE.
+- 12 migrations ISEXY appliquées sur Supabase V1; `0012`
+  sha256 `b6efb8f9e9daa9c11868cf4102be0e8bbb846ec7bcd1faaced89f0460196d905`.
+- Ordre respecté : CI (migration stand-in) → apply SQL sur `isexy`
+  → vérifier grants et checksum → déployer `isexy-stripe-webhook`
+  v6 ACTIVE; pas de mutation `public/auth`.
+- `isexy-send-ticket-confirmation` v2 ACTIVE;
+  `isexy-reset-allowances` v3 ACTIVE avec JWT requis.
+- GitHub auto-déploiement Supabase encore désactivé faute de
+  secrets disponibles, déploiements directs utilisés.
+- Render est l'hébergement observé. Coolify, `isexy.ca`, DNS
+  et TLS non vérifiés; pas de test commerce réellement facturé.
+
+---
+
 ## Dernière vérification du 16 octobre 2026
 
 - Render `dd06a77b` LIVE; GitHub CI du code `38950628292` en cours au dernier contrôle, runs 38949682815/38950001783/38950381063 success.

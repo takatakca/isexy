@@ -1,3 +1,94 @@
+# RELÈVE IMMÉDIATE — 16 octobre 2026, boost Stripe transactionnel
+
+**Dépôt :** `takatakca/isexy`, branche `main`.
+**Dernier commit applicatif (avant cette relève documentaire) :**
+`445fc8295b15cb581eb31d599f9a41bd7dcbe397`.
+
+## Dernière tâche terminée
+
+- Migration `supabase/isexy-migrations/0012_atomic_boost_checkout.sql`
+  créée, testée sur Postgres isolé et **appliquée** à la base existante
+  `pcjfahhlozsseqqevimi` (schéma `isexy` uniquement).
+- Empreinte SHA256 :
+  `b6efb8f9e9daa9c11868cf4102be0e8bbb846ec7bcd1faaced89f0460196d905`.
+  Total : **12 migrations** enregistrées; ne jamais les réécrire.
+- RPC `fulfill_stripe_boost_purchase(uuid,text,text)` exécutable par
+  `service_role` uniquement; grants anon/authenticated refusés;
+  index d'unicité sessions Stripe créé. Écrit portefeuille et
+  transaction d'achat atomiquement; rejeu de session idempotent.
+- `supabase/functions/isexy-stripe-webhook/index.ts` utilise ce RPC;
+  Edge Function **v6 ACTIVE** après CI et migration.
+- CI run `38951304397` **SUCCESS** ; Render `445fc829`
+  observé **live**. Aucun achat réel simulé sur la base partagée.
+- Intégrations antérieures confirmées : 0011 crédits/minutes,
+  webhook identité TAKATAK (sans mapping email),
+  `isexy-send-ticket-confirmation` v2 ACTIVE,
+  `isexy-reset-allowances` v3 ACTIVE avec JWT.
+
+## Fichiers modifiés
+
+`supabase/isexy-migrations/0012_atomic_boost_checkout.sql`,
+`scripts/isexy/test/atomic-boost-checkout.sql`,
+`supabase/functions/isexy-stripe-webhook/index.ts`,
+`.github/workflows/ci-cd.yml`,
+`WORKLOG.md`,
+`docs/PROJECT_STATUS.md`,
+`docs/TASK_QUEUE.md`,
+`docs/AGENT_HANDOFF.md`,
+`docs/DEPLOYMENT.md`,
+`docs/DECISIONS.md`.
+
+## Vérifications réalisées
+
+- GitHub `main`, AGENTS/WORKLOG, open PR/issues, jobs et CI.
+- PostgreSQL sur V1 stand-in en CI : achats quatre familles de
+  boosts, refus authenticated, idempotence, montant, journal et
+  produits inconnus; tests réussis.
+- Supabase SQL réel : checksum `0012` enregistré, grants service-only,
+  index unique, zéro `boost_transactions` avant/après application.
+- Edge Function déployée via Supabase : webhook v6 ACTIVE
+  (`verify_jwt=false` car signature Stripe requise).
+- Render : statut `live` du commit applicatif `445fc829`.
+- Pas de paiement, refund, SMS, email ou appel téléphonique réels.
+
+## Tâche en cours / obstacles
+
+1. Terminer l'idempotence et la traçabilité des **cadeaux/dons/
+   recharges et colis Cuba**, sans supprimer les parcours Cuba.
+   Actuellement certaines lignes sont marquées `completed` dès
+   paiement Stripe : prouver livraison fournisseur ou conserver
+   un état `pending` lorsque nécessaire.
+2. Stripe : tester checkout et webhook signés en **mode sandbox**,
+   avec un compte TAKATAK autorisé; prévoir reprise des événements
+   échoués, abonnement annulé, remboursements et erreurs fournisseur.
+3. GitHub → Supabase : les secrets `ISEXY_DB_URL` et
+   `SUPABASE_ACCESS_TOKEN` manquent ou ne sont pas accessibles
+   aux jobs de publication; CI verte ne les installe pas.
+4. Cron : secret `ISEXY_CRON_SECRET` du workflow GitHub non
+   vérifié, première exécution HTTP 200 non observée.
+5. Domaine `isexy.ca`, Coolify, DNS/TLS, Auth Google/SMS/email,
+   Resend, IA et VoIP sans recette réelle. La déclaration 100 %
+   serait incorrecte.
+6. Les deux Edge Functions seed fictif et abonnement resets restent
+   volontairement non déployées; ne pas contourner la quarantaine.
+
+## Prochaine action exacte
+
+1. Lire ce document, `AGENTS.md`, le HEAD réel après ce commit
+   de docs et les jobs GitHub récents; confirmer SHA Render.
+2. Auditer les tables `isexy.gift_transactions`/`isexy.donations`
+   et leurs codes de paiement; sécuriser le statut de livraison
+   et l'idempotence par session via migration/test si nécessaire.
+3. Après tests et migrations, publier uniquement les changements
+   permis et vérifiés, sans toucher à `public/auth` ni aux
+   données d'autres produits TAKATAK.
+4. Avec accès autorisé, configurer les secrets GitHub déploiement
+   et Cron; vérifier leurs journaux, Coolify/ISEXY.CA et les
+   transactions fournisseurs en sandbox.
+5. Actualiser WORKLOG et cinq documents à chaque relève.
+
+---
+
 # Relève immédiate — 16 octobre 2026, sécurité des paiements et tickets
 
 ## Dernier travail réellement terminé

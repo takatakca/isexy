@@ -1,5 +1,19 @@
 # ISEXY — État réel du projet
 
+## Dernier état vérifié — 16 octobre 2026 (plus récent que les notes historiques ci-dessous)
+
+- **Dernier SHA de code avant le présent commit documentaire :** `445fc8295b15cb581eb31d599f9a41bd7dcbe397` sur `main`.
+- **GitHub Actions :** run `38951304397` **SUCCESS** (TypeScript, build, Deno, migrations PostgreSQL stand-in, sécurité V1, smoke test). Render a confirmé le même SHA **LIVE**.
+- **Supabase TAKATAK V1** `pcjfahhlozsseqqevimi` : **12 migrations ISEXY (0001–0012)** appliquées dans `isexy`. La migration `0012_atomic_boost_checkout` est enregistrée avec SHA256 `b6efb8f9e9daa9c11868cf4102be0e8bbb846ec7bcd1faaced89f0460196d905`; index unique de sessions Stripe créé.
+- **RPC des boosts :** `isexy.fulfill_stripe_boost_purchase(uuid,text,text)` ne peut être exécuté que par `service_role` (anon=false, authenticated=false). Les soldes Boosts, Super Likes, Primetime et Super Boosts et leurs mouvements sont écrits dans la même transaction; rejouer une même session ne la crédite pas deux fois. Aucun achat réel existant n'a été modifié (`boost_transactions=0` lors de la vérification).
+- **Webhook Stripe :** `isexy-stripe-webhook` **v6 ACTIVE**, déployé après la migration et la CI. Le webhook hérite des protections précédentes (identité TAKATAK vérifiée, crédit/minutes atomiques, Premium actif uniquement si Stripe confirme le statut, retour d'erreur si écriture métier échoue).
+- **Autres fonctions :** `isexy-send-ticket-confirmation` v2 ACTIVE avec contrôle propriétaire/staff, `isexy-reset-allowances` v3 ACTIVE, JWT vérifié. Deux fonctions restent volontairement exclues (seed de faux membres, réinitialisation d'abonnement non auditée).
+- **Blocages de finalisation :** GitHub Actions saute encore les étapes de publication backend faute de `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN`; aucun Cron quotidien HTTP 200 confirmé (`ISEXY_CRON_SECRET` GitHub non vérifié); Coolify / `isexy.ca`, SSL et DNS non vérifiés; paiements Stripe sandbox, cadeaux/dons/recharges, notifications Resend, OAuth/OTP/VOIP et véritable vérification d'âge à tester. **Le produit n'est pas terminé à 100 %.**
+- L'ensemble des données Cuba est conservé; aucune création de projet Supabase facturable ni modification du schéma `public/auth`.
+
+---
+
+
 ## Vérification prioritaire — 16 octobre 2026 (relève courante)
 
 - Dernier SHA de code `dd06a77ba9616c46670287614fba7310ce505d63` sur `main` **avant** le présent commit documentaire. Render `dd06a77b` observé `live`, mais CI du SHA `38950628292` encore en cours à la dernière vérification.

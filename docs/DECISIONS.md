@@ -87,3 +87,13 @@ Dernière revue : 2026-10-14.
 29. **Identité d'acheteur Stripe** : ne jamais attribuer à un profil par correspondance d'adresse courriel. Accepter exclusivement l'identifiant TAKATAK issu des métadonnées rédigées par le backend de checkout et le faire concorder avec le propriétaire du client Stripe; sessions historiques ambiguës à rapprocher manuellement.
 30. **Confirmations de tickets** : une référence de ticket ne donne aucun pouvoir d'envoi d'email. Un utilisateur connecté propriétaire ou staff peut demander une confirmation; les tickets créés anonymement demeurent consultables par les parcours autorisés, mais aucun email automatique depuis un client inconnu sans vérification.
 31. **Droits abonnements** : un Stripe Checkout terminé n'accorde pas Premium si `subscription.status` n'est pas `active` ou `trialing`. Les erreurs de synchronisation des droits sont traitées comme erreurs, non comme succès de webhook.
+
+32. **Boosts et Super Likes Stripe** : portefeuille et écriture
+    de journal sont une seule transaction PostgreSQL service-only,
+    avec verrou par session et index unique (migration 0012,
+    appliquée le 16 octobre 2026). Les produits autorisés et
+    leurs quantités sont explicitement répertoriés côté serveur.
+33. **Publication financière** : ne déployer la fonction Stripe
+    compatible qu'après succès des tests de migration, application
+    checksummed et contrôle des permissions. Le statut `ACTIVE`
+    ne remplace pas un vrai essai fournisseur sandbox.
