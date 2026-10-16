@@ -5,7 +5,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface FirstImpressionModalProps {
   isOpen: boolean;
+  /** "Send without message": the Super Like goes out without a note. */
   onClose: () => void;
+  /** Close (X / backdrop) without sending anything. Defaults to onClose. */
+  onCancel?: () => void;
   onSend: (message: string) => void;
   targetName: string;
   targetPhotoUrl?: string;
@@ -15,6 +18,7 @@ interface FirstImpressionModalProps {
 export function FirstImpressionModal({
   isOpen,
   onClose,
+  onCancel,
   onSend,
   targetName,
   targetPhotoUrl,
@@ -30,15 +34,19 @@ export function FirstImpressionModal({
   }, [message, onSend]);
 
   if (!isOpen) return null;
+  const cancel = onCancel ?? onClose;
 
   return (
     <AnimatePresence>
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label="First Impression"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center"
-        onClick={onClose}
+        className="fixed inset-0 z-[60] bg-black/70 flex items-end justify-center"
+        onClick={cancel}
       >
         <motion.div
           initial={{ y: 300 }}
@@ -54,7 +62,7 @@ export function FirstImpressionModal({
               <Star className="w-6 h-6 text-cyan-500 fill-cyan-500" />
               <h2 className="text-lg font-bold text-foreground">First Impression</h2>
             </div>
-            <button onClick={onClose} className="p-1">
+            <button onClick={cancel} className="p-1" aria-label="Cancel">
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>

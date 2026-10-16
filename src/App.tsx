@@ -239,7 +239,7 @@ const App = () => (
               <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
               <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
               <Route path="/photo-verification" element={<PhotoVerification />} />
-              <Route path="/double-hangout" element={<DoubleDate />} />
+              <Route path="/double-hangout" element={<ProtectedRoute><DoubleDate /></ProtectedRoute>} />
               <Route path="/double-date" element={<Navigate to="/double-hangout" replace />} />
               <Route path="/qa-events" element={<QAEvents />} />
               <Route path="/introductions" element={<Matchmaker />} />

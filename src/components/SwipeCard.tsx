@@ -109,8 +109,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
 
       <div className="absolute bottom-0 inset-x-0 p-5 pb-6 text-white z-20">
         <div className="flex items-end gap-2 mb-2 pr-12">
-          <h2 className="text-3xl font-extrabold leading-none tracking-tight truncate">{profile.first_name}</h2>
-          <span className="text-2xl font-light leading-none opacity-90">{profile.age}</span>
+          <h2 className="text-3xl font-extrabold leading-none tracking-tight truncate min-w-0">{profile.first_name}</h2>
+          <span className="text-2xl font-light leading-none opacity-90 shrink-0">{profile.age}</span>
           {profile.is_verified && <BadgeCheck className="w-6 h-6 text-cyan-300 fill-cyan-400/20 mb-0.5 shrink-0" aria-label="Verified" />}
         </div>
 
