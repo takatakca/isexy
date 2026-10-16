@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface FileUploadProps {
-  onFilesUploaded: (urls: string[]) => void;
+  /** Storage paths in the private isexy-ticket-attachments bucket (staff open them with a signed URL). */
+  onFilesUploaded: (paths: string[]) => void;
   maxFiles?: number;
   maxSizeMB?: number;
   acceptedTypes?: string;
@@ -13,7 +14,9 @@ interface FileUploadProps {
 
 interface UploadedFile {
   name: string;
+  /** Short-lived preview link. */
   url: string;
+  path: string;
   type: string;
 }
 
@@ -79,11 +82,12 @@ export const FileUpload = ({
         // Generate a short-lived signed URL (bucket is private)
         const { data: signed } = await supabase.storage
           .from("isexy-ticket-attachments")
-          .createSignedUrl(data.path, 60 * 60 * 24 * 7);
+          .createSignedUrl(data.path, 60 * 60);
 
         newFiles.push({
           name: file.name,
-          url: signed?.signedUrl ?? data.path,
+          url: signed?.signedUrl ?? "",
+          path: data.path,
           type: file.type
         });
       } catch (error) {
@@ -95,7 +99,7 @@ export const FileUpload = ({
     if (newFiles.length > 0) {
       const allFiles = [...uploadedFiles, ...newFiles];
       setUploadedFiles(allFiles);
-      onFilesUploaded(allFiles.map(f => f.url));
+      onFilesUploaded(allFiles.map(f => f.path));
       toast.success(`${newFiles.length} file(s) uploaded`);
     }
 
@@ -108,7 +112,7 @@ export const FileUpload = ({
   const removeFile = (index: number) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
     setUploadedFiles(newFiles);
-    onFilesUploaded(newFiles.map(f => f.url));
+    onFilesUploaded(newFiles.map(f => f.path));
   };
 
   return (

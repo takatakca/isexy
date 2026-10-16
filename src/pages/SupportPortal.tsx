@@ -188,23 +188,36 @@ function SupportContent({ role }: { role: StaffRole }) {
     setReports(data || []);
   };
 
+  /** Status / reply e-mail; the function reads the ticket back (staff only). */
+  const notifyMember = async (ticketId: string, withResponse: boolean) => {
+    const { error } = await supabase.functions.invoke("isexy-send-ticket-status-update", { body: { ticketId, withResponse } });
+    if (error) console.error("Ticket e-mail failed:", error);
+  };
+
+  // Ticket changes go through staff_update_ticket (has_role checked on the server).
   const updateTicketStatus = async (ticketId: string, status: string) => {
-    const { error } = await supabase.from("support_tickets").update({ status }).eq("id", ticketId);
-    if (error) toast.error("Failed to update"); else { toast.success(`Ticket ${status}`); fetchTickets(); }
+    const { data, error } = await supabase.rpc("staff_update_ticket", { p_ticket_id: ticketId, p_status: status });
+    if (error) { toast.error("Failed to update"); return; }
+    if ((data as { notify?: boolean } | null)?.notify) await notifyMember(ticketId, false);
+    toast.success(`Ticket ${status.replace("_", " ")}`);
+    fetchTickets();
   };
 
   const submitResponse = async () => {
     if (!selectedTicket || !responseText.trim()) return;
-    const updates: any = { response: responseText, status: "resolved", responded_at: new Date().toISOString() };
-    if (internalNote) updates.admin_notes = (selectedTicket.admin_notes || "") + `\n[${new Date().toLocaleString()}] ${internalNote}`;
-    const { error } = await supabase.from("support_tickets").update(updates).eq("id", selectedTicket.id);
-    if (error) toast.error("Failed"); else {
-      toast.success("Response sent");
-      setSelectedTicket(null);
-      setResponseText("");
-      setInternalNote("");
-      fetchTickets();
-    }
+    const { data, error } = await supabase.rpc("staff_update_ticket", {
+      p_ticket_id: selectedTicket.id,
+      p_status: "resolved",
+      p_response: responseText.trim(),
+      p_note: internalNote.trim() || null,
+    });
+    if (error) { toast.error("Failed"); return; }
+    if ((data as { notify?: boolean } | null)?.notify) await notifyMember(selectedTicket.id, true);
+    toast.success("Response sent");
+    setSelectedTicket(null);
+    setResponseText("");
+    setInternalNote("");
+    fetchTickets();
   };
 
   const handleReportAction = async (reportId: string, action: string) => {
@@ -238,7 +251,7 @@ function SupportContent({ role }: { role: StaffRole }) {
   const statusColor = (s: string) => {
     switch (s) {
       case "open": return "destructive";
-      case "investigating": return "default";
+      case "in_progress": return "default";
       case "resolved": return "secondary";
       case "closed": return "outline" as any;
       default: return "default";
@@ -317,7 +330,7 @@ function SupportContent({ role }: { role: StaffRole }) {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="investigating">Investigating</SelectItem>
+                  <SelectItem value="in_progress">In progress</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
                 </SelectContent>
@@ -512,8 +525,8 @@ function SupportContent({ role }: { role: StaffRole }) {
                 {/* Actions */}
                 <div className="space-y-3 pt-2">
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => updateTicketStatus(selectedTicket.id, "investigating")}>
-                      <Clock className="w-3 h-3 mr-1" /> Investigating
+                    <Button size="sm" variant="outline" onClick={() => updateTicketStatus(selectedTicket.id, "in_progress")}>
+                      <Clock className="w-3 h-3 mr-1" /> In progress
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => updateTicketStatus(selectedTicket.id, "closed")}>
                       <XCircle className="w-3 h-3 mr-1" /> Close

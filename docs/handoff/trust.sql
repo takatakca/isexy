@@ -398,3 +398,175 @@ END;
 $$;
 REVOKE ALL ON FUNCTION isexy.report_member(uuid, text, text, boolean, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION isexy.report_member(uuid, text, text, boolean, text) TO authenticated;
+
+-- =====================================================================
+-- T3. Support tickets
+-- =====================================================================
+-- get_ticket_status(number, email): a guest (or a member who wrote from
+-- another address) tracks a ticket with its number + the email it was sent
+-- from; RLS only ever showed signed-in members their own tickets.
+-- Members can no longer UPDATE their tickets (any column: status, response,
+-- admin notes, assignee); no client code did. Members read their tickets by
+-- user id or by the e-mail in their JWT (the old policy read auth.users and
+-- failed for every signed-in reader, admins included).
+-- Staff (admin or moderator) read every ticket; staff changes go through
+-- staff_update_ticket / staff_bulk_update_tickets (status, response, internal
+-- note appended with the author and time, assignee), which return what the
+-- ticket email function needs to know.
+CREATE OR REPLACE FUNCTION isexy.get_ticket_status(p_ticket_number text, p_email text)
+RETURNS TABLE (
+  ticket_number text, subject text, category text, priority text, status text,
+  message text, response text, responded_at timestamptz, created_at timestamptz, updated_at timestamptz
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+  SELECT t.ticket_number, t.subject, t.category, t.priority, t.status,
+         t.message, t.response, t.responded_at, t.created_at, t.updated_at
+    FROM isexy.support_tickets t
+   WHERE t.ticket_number = upper(btrim(p_ticket_number))
+     AND lower(t.email) = lower(btrim(p_email))
+     AND length(btrim(coalesce(p_email, ''))) >= 3
+   LIMIT 1
+$$;
+REVOKE ALL ON FUNCTION isexy.get_ticket_status(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION isexy.get_ticket_status(text, text) TO anon, authenticated;
+
+DROP POLICY IF EXISTS "Users can update own tickets" ON isexy.support_tickets;
+
+-- The old SELECT policy read auth.users, which the authenticated role cannot
+-- read: every signed-in SELECT on support_tickets (members, and admins too,
+-- since permissive policies are OR-ed) failed with "permission denied for
+-- table users". The verified e-mail comes from the JWT instead.
+DROP POLICY IF EXISTS "Users can view own tickets by email" ON isexy.support_tickets;
+CREATE POLICY "Users can view own tickets by email" ON isexy.support_tickets
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid())
+         OR lower(email) = lower(nullif((SELECT auth.jwt()) ->> 'email', '')));
+
+DROP POLICY IF EXISTS "Staff view all tickets" ON isexy.support_tickets;
+CREATE POLICY "Staff view all tickets" ON isexy.support_tickets
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.is_staff()));
+
+CREATE OR REPLACE FUNCTION isexy.staff_update_ticket(
+  p_ticket_id uuid,
+  p_status text DEFAULT NULL,
+  p_response text DEFAULT NULL,
+  p_note text DEFAULT NULL,
+  p_assigned_to uuid DEFAULT NULL,
+  p_change_assignee boolean DEFAULT false
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  c_statuses CONSTANT text[] := ARRAY['open', 'in_progress', 'resolved', 'closed'];
+  v_uid uuid := auth.uid();
+  v_old isexy.support_tickets;
+  v_new isexy.support_tickets;
+  v_author text;
+  v_response text := nullif(btrim(p_response), '');
+  v_note text := nullif(btrim(p_note), '');
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Only ISEXY staff can update tickets' USING ERRCODE = '42501';
+  END IF;
+  IF p_status IS NOT NULL AND NOT (p_status = ANY (c_statuses)) THEN
+    RAISE EXCEPTION 'Unknown ticket status' USING ERRCODE = '22023';
+  END IF;
+  IF p_change_assignee AND p_assigned_to IS NOT NULL
+     AND NOT (isexy.has_role(p_assigned_to, 'admin') OR isexy.has_role(p_assigned_to, 'moderator')) THEN
+    RAISE EXCEPTION 'Tickets can only be assigned to staff' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_old FROM isexy.support_tickets WHERE id = p_ticket_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Ticket not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  SELECT coalesce(p.first_name, 'Staff') INTO v_author FROM isexy.profiles p WHERE p.user_id = v_uid;
+
+  UPDATE isexy.support_tickets t
+     SET status = coalesce(p_status, t.status),
+         response = coalesce(left(v_response, 10000), t.response),
+         responded_at = CASE WHEN v_response IS NOT NULL THEN now() ELSE t.responded_at END,
+         admin_notes = CASE WHEN v_note IS NULL THEN t.admin_notes
+                            ELSE left(concat_ws(E'\n', t.admin_notes,
+                                   '[' || to_char(now() AT TIME ZONE 'America/Toronto', 'YYYY-MM-DD HH24:MI') || ' '
+                                   || coalesce(v_author, 'Staff') || '] ' || v_note), 20000) END,
+         assigned_to = CASE WHEN p_change_assignee THEN p_assigned_to ELSE t.assigned_to END,
+         updated_at = now()
+   WHERE t.id = p_ticket_id
+  RETURNING * INTO v_new;
+
+  RETURN jsonb_build_object(
+    'ticket_id', v_new.id,
+    'ticket_number', v_new.ticket_number,
+    'old_status', v_old.status,
+    'new_status', v_new.status,
+    'responded', v_response IS NOT NULL,
+    'notify', (v_new.status IS DISTINCT FROM v_old.status) OR v_response IS NOT NULL);
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_update_ticket(uuid, text, text, text, uuid, boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_update_ticket(uuid, text, text, text, uuid, boolean) TO authenticated;
+
+-- Returns the tickets whose status changed (for the status e-mails).
+CREATE OR REPLACE FUNCTION isexy.staff_bulk_update_tickets(
+  p_ticket_ids uuid[],
+  p_status text DEFAULT NULL,
+  p_assigned_to uuid DEFAULT NULL,
+  p_change_assignee boolean DEFAULT false
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  c_statuses CONSTANT text[] := ARRAY['open', 'in_progress', 'resolved', 'closed'];
+  v_changed jsonb;
+  v_count int;
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Only ISEXY staff can update tickets' USING ERRCODE = '42501';
+  END IF;
+  IF p_status IS NOT NULL AND NOT (p_status = ANY (c_statuses)) THEN
+    RAISE EXCEPTION 'Unknown ticket status' USING ERRCODE = '22023';
+  END IF;
+  IF coalesce(array_length(p_ticket_ids, 1), 0) > 200 THEN
+    RAISE EXCEPTION 'At most 200 tickets at a time' USING ERRCODE = '22023';
+  END IF;
+  IF p_change_assignee AND p_assigned_to IS NOT NULL
+     AND NOT (isexy.has_role(p_assigned_to, 'admin') OR isexy.has_role(p_assigned_to, 'moderator')) THEN
+    RAISE EXCEPTION 'Tickets can only be assigned to staff' USING ERRCODE = '22023';
+  END IF;
+
+  WITH old AS (
+    SELECT id, status FROM isexy.support_tickets WHERE id = ANY (p_ticket_ids) FOR UPDATE
+  ), upd AS (
+    UPDATE isexy.support_tickets t
+       SET status = coalesce(p_status, t.status),
+           assigned_to = CASE WHEN p_change_assignee THEN p_assigned_to ELSE t.assigned_to END,
+           updated_at = now()
+      FROM old
+     WHERE t.id = old.id
+    RETURNING t.id, t.ticket_number, old.status AS old_status, t.status AS new_status
+  )
+  SELECT count(*)::int,
+         coalesce(jsonb_agg(jsonb_build_object('ticket_id', id, 'ticket_number', ticket_number,
+                                               'old_status', old_status, 'new_status', new_status))
+                  FILTER (WHERE new_status IS DISTINCT FROM old_status), '[]'::jsonb)
+    INTO v_count, v_changed
+    FROM upd;
+
+  RETURN jsonb_build_object('updated', v_count, 'status_changed', v_changed);
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_bulk_update_tickets(uuid[], text, uuid, boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_bulk_update_tickets(uuid[], text, uuid, boolean) TO authenticated;

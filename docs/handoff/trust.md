@@ -107,6 +107,15 @@ REVOKE ALL FROM PUBLIC/anon, GRANT to authenticated; every staff RPC checks
   `block_member(id)` (idempotent), `report_member(id, reason, details, block,
   source)` (reasons checked, no self-report, one pending report per pair, 20 a
   day).
+- T3 support tickets: `get_ticket_status(number, email)` (anon + members);
+  member UPDATE policy dropped; the members' SELECT policy no longer reads
+  `auth.users` (it failed for every signed-in reader, admins included: the
+  authenticated role cannot read auth.users) and uses the JWT e-mail; staff
+  (admin + moderator) read all tickets; `staff_update_ticket(id, status,
+  response, note, assignee, change_assignee)` and
+  `staff_bulk_update_tickets(ids, status, assignee, change_assignee)`
+  (statuses open / in_progress / resolved / closed, notes appended with author
+  and time, assignee must be staff) return what the e-mail needs.
 
 ## Progress
 
@@ -121,3 +130,13 @@ REVOKE ALL FROM PUBLIC/anon, GRANT to authenticated; every staff RPC checks
       either way in Likes > Sent, group chat messages, chat links (Chat uses the
       hidden ids), web profile (RLS); suspended members see a "suspended" screen
       instead of profile setup; trust-smoke T2 20/20
+- [x] #6 + #7 tickets: tracking by number + e-mail (RPC, guests too), staff
+      replies shown to the member, own tickets only in "Your tickets", back
+      button stays in ISEXY; Contact Us prefills name/e-mail, IS- numbers, a
+      success panel with the number, attachments only when signed in and stored
+      as private paths (staff open them with a 10-minute signed URL); both
+      ticket e-mails send from `ISEXY_RESEND_FROM` (default
+      notifications@isexy.ca) instead of Resend's sandbox sender; the status
+      e-mail reads the ticket from the database (`{ ticketId, withResponse }`);
+      AdminTickets (single + bulk) and Support Portal use the staff RPCs and
+      e-mail only on a real status change or a new reply; trust-smoke T3 15/15

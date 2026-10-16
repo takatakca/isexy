@@ -228,7 +228,8 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "ISEXY Support <onboarding@resend.dev>",
+        // Resend's onboarding@resend.dev sender only delivers to the Resend account owner.
+        from: isexyEnv("RESEND_FROM") ?? "ISEXY <notifications@isexy.ca>",
         to: [email],
         subject: emailSubject,
         html: emailHtml,

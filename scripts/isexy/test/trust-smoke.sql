@@ -45,6 +45,11 @@ CREATE OR REPLACE FUNCTION pg_temp.as_user(p_uid text) RETURNS void LANGUAGE sql
          set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, false),
          set_config('request.jwt.claim.role', 'authenticated', false);
 $$;
+CREATE OR REPLACE FUNCTION pg_temp.as_user_email(p_uid text, p_email text) RETURNS void LANGUAGE sql AS $$
+  SELECT set_config('request.jwt.claim.sub', p_uid, false),
+         set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated', 'email', p_email)::text, false),
+         set_config('request.jwt.claim.role', 'authenticated', false);
+$$;
 CREATE OR REPLACE FUNCTION pg_temp.as_anon() RETURNS void LANGUAGE sql AS $$
   SELECT set_config('request.jwt.claim.sub', '', false),
          set_config('request.jwt.claims', json_build_object('role', 'anon')::text, false),
@@ -217,6 +222,76 @@ EXCEPTION WHEN insufficient_privilege THEN
   INSERT INTO results VALUES ('T2 anon cannot report', true, SQLERRM);
 END $$;
 INSERT INTO results SELECT 'T2 anon reads no profiles', count(*) = 0, count(*)::text FROM isexy.profiles;
+RESET ROLE;
+
+-- T3 support tickets ---------------------------------------------------------
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+INSERT INTO isexy.support_tickets (ticket_number, name, email, subject, category, priority, message)
+VALUES ('IS-GUEST1', 'Guest', 'Guest@Example.ca', 'Cannot sign in', 'account', 'medium', 'help');
+INSERT INTO results SELECT 'T3 guest tracks a ticket with number + email', count(*) = 1 AND max(status) = 'open', count(*)::text
+  FROM isexy.get_ticket_status(' is-guest1 ', 'guest@example.ca');
+INSERT INTO results SELECT 'T3 wrong email finds nothing', count(*) = 0, count(*)::text
+  FROM isexy.get_ticket_status('IS-GUEST1', 'other@example.ca');
+INSERT INTO results SELECT 'T3 guests cannot list tickets', count(*) = 0, count(*)::text FROM isexy.support_tickets;
+INSERT INTO isexy.support_tickets (ticket_number, name, email, subject, category, priority, message)
+VALUES ('IS-ANA001', 'Ana', 'TA@test.ca', 'Sent before signing in', 'account', 'low', 'hello');
+RESET ROLE;
+SET ROLE authenticated;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000a', 'ta@test.ca');
+INSERT INTO results SELECT 'T3 member reads tickets sent from their sign-in e-mail (no auth.users read)', count(*) = 1, string_agg(ticket_number, ',')
+  FROM isexy.support_tickets;
+RESET ROLE;
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
+INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
+VALUES ('IS-BEN001', 'dddddddd-0000-0000-0000-00000000000b', 'Ben', 'tb@test.ca', 'Billing', 'billing', 'high', 'charged twice');
+UPDATE isexy.support_tickets SET status = 'resolved', response = 'self-answered', admin_notes = 'x' WHERE ticket_number = 'IS-BEN001';
+INSERT INTO results SELECT 'T3 member cannot change their own ticket', bool_and(status = 'open' AND response IS NULL), max(status)
+  FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001';
+INSERT INTO results SELECT 'T3 member sees only their own tickets', count(*) = 1, string_agg(ticket_number, ',') FROM isexy.support_tickets;
+DO $$ BEGIN
+  PERFORM isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'), 'resolved', 'done', NULL, NULL, false);
+  INSERT INTO results VALUES ('T3 member cannot use the staff ticket RPC', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T3 member cannot use the staff ticket RPC', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator
+INSERT INTO results SELECT 'T3 moderator sees every ticket', count(*) >= 2, count(*)::text
+  FROM isexy.support_tickets WHERE ticket_number IN ('IS-GUEST1', 'IS-BEN001');
+INSERT INTO results SELECT 'T3 moderator answers a ticket',
+  (r ->> 'notify')::boolean AND r ->> 'old_status' = 'open' AND r ->> 'new_status' = 'in_progress' AND (r ->> 'responded')::boolean, r::text
+  FROM (SELECT isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'),
+          'in_progress', 'We are refunding the second charge.', 'checked Stripe', 'dddddddd-0000-0000-0000-00000000000e', true) AS r) s;
+INSERT INTO results SELECT 'T3 note, response and assignee saved',
+  admin_notes LIKE '%Mod] checked Stripe' AND response LIKE 'We are refunding%' AND responded_at IS NOT NULL
+    AND assigned_to = 'dddddddd-0000-0000-0000-00000000000e', admin_notes
+  FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001';
+INSERT INTO results SELECT 'T3 a note alone does not notify', NOT (r ->> 'notify')::boolean, r::text
+  FROM (SELECT isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'),
+          NULL, NULL, 'second note', NULL, false) AS r) s;
+DO $$ BEGIN
+  PERFORM isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'), 'investigating', NULL, NULL, NULL, false);
+  INSERT INTO results VALUES ('T3 unknown status refused', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T3 unknown status refused', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'), NULL, NULL, NULL, 'dddddddd-0000-0000-0000-00000000000b', true);
+  INSERT INTO results VALUES ('T3 cannot assign to a member', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T3 cannot assign to a member', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- admin
+INSERT INTO results SELECT 'T3 bulk update reports the status changes',
+  (r ->> 'updated')::int = 2 AND jsonb_array_length(r -> 'status_changed') = 2, r::text
+  FROM (SELECT isexy.staff_bulk_update_tickets(ARRAY(SELECT id FROM isexy.support_tickets WHERE ticket_number IN ('IS-GUEST1', 'IS-BEN001')),
+          'resolved', NULL, false) AS r) s;
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+INSERT INTO results SELECT 'T3 the guest sees the new status', max(status) = 'resolved', max(status)
+  FROM isexy.get_ticket_status('IS-GUEST1', 'guest@example.ca');
 RESET ROLE;
 
 -- @@PARTS@@

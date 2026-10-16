@@ -3351,6 +3351,21 @@ export type Database = {
         Args: never
         Returns: Json
       }
+      get_ticket_status: {
+        Args: { p_email: string; p_ticket_number: string }
+        Returns: {
+          ticket_number: string
+          subject: string
+          category: string
+          priority: string
+          status: string
+          message: string
+          response: string | null
+          responded_at: string | null
+          created_at: string
+          updated_at: string
+        }[]
+      }
       is_staff: {
         Args: never
         Returns: boolean
@@ -3394,6 +3409,10 @@ export type Database = {
       set_my_cuban_flag: {
         Args: { p_is_cuban?: boolean }
         Returns: undefined
+      }
+      staff_bulk_update_tickets: {
+        Args: { p_assigned_to?: string | null; p_change_assignee?: boolean; p_status?: string | null; p_ticket_ids: string[] }
+        Returns: Json
       }
       staff_set_profile_verified: {
         Args: { p_profile_id: string; p_verified: boolean }
@@ -3471,6 +3490,10 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: undefined
+      }
+      staff_update_ticket: {
+        Args: { p_assigned_to?: string | null; p_change_assignee?: boolean; p_note?: string | null; p_response?: string | null; p_status?: string | null; p_ticket_id: string }
+        Returns: Json
       }
       track_events: {
         Args: { p_events: Json }
