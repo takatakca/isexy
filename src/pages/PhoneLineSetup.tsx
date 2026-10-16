@@ -517,7 +517,8 @@ export default function PhoneLineSetup() {
         </Card>
 
         {/* Actions */}
-        <div className="sticky bottom-0 -mx-4 border-t border-border/60 bg-background/85 px-4 py-3 backdrop-blur-xl safe-bottom">
+        {/* pr-20 below lg: the floating assistant button sits over the right end of this bar. */}
+        <div className="sticky bottom-0 -mx-4 border-t border-border/60 bg-background/85 py-3 pl-4 pr-20 backdrop-blur-xl safe-bottom lg:px-4">
           <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={() => saveProfile(false)}

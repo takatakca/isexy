@@ -290,7 +290,7 @@ export default function PhoneLineInbox() {
         <h1 className="text-lg font-extrabold tracking-tight">Voice inbox</h1>
       </header>
 
-      <main className="mx-auto max-w-2xl p-4 pb-10">
+      <main className="mx-auto max-w-2xl p-4 pb-40">
         {loadError && !loading && (
           <Card
             role="alert"

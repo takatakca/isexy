@@ -282,7 +282,7 @@ export default function PhoneLineBrowse() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-10">
+      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-40">
         <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-2 text-xs text-muted-foreground">
           <Lock className="h-3.5 w-3.5 text-primary" />
           Your real phone number stays private. 18+ only.

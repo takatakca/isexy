@@ -80,7 +80,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 20. [x] TwiML: `&` in Gather/Redirect URLs not XML-escaped (browse is a parse
     error), names not escaped, browse ignores the digits (2 = repeat, 9 =
     main menu do nothing).
-21. [~] Greetings recorded as WebM/Opus (Safari: MP4) and labelled
+21. [x] Greetings recorded as WebM/Opus (Safari: MP4) and labelled
     `audio/webm`: Twilio `<Play>` plays neither, so browse by phone is silent;
     older Safari cannot play WebM in the app either.
 22. [x] Twilio signature checked against `req.url` (the internal URL, not
@@ -94,19 +94,19 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
     column and an `ON CONFLICT (profile_id)` target that do not exist, so it
     always fails; it is granted to every member (anyone could mark any number
     verified) and it DELETEs rows.
-26. [~] No way for a member to link their phone to the IVR.
-27. [~] PhoneLineSetup: a banned voice profile un-bans itself on "Save
+26. [x] No way for a member to link their phone to the IVR.
+27. [x] PhoneLineSetup: a banned voice profile un-bans itself on "Save
     draft" (client writes `status`); owners can self-approve greetings and
     voice replies (`moderation_status` writable). Recorder: forced
     `audio/webm`, no MediaRecorder check, mic not released when leaving the
     page, timer stops the recorder inside a state updater.
-28. [~] PhoneLineBrowse / PhoneLineInbox: audio keeps playing after leaving
+28. [x] PhoneLineBrowse / PhoneLineInbox: audio keeps playing after leaving
     the page; reply recorder has the same issues; no error state.
-29. [~] PhoneLine hub: labels for `pending` / `rejected` (not phone line
+29. [x] PhoneLine hub: labels for `pending` / `rejected` (not phone line
     statuses), `banned` missing; "Live" while the greeting is pending.
 30. [x] No moderation queue for voice greetings: greetings default to
     `pending` and nothing approves them, so Browse voices stays empty.
-31. [~] AdminCallTests shows only `call_sessions`; in-app calls
+31. [x] AdminCallTests shows only `call_sessions`; in-app calls
     (`video_call_sessions`) are invisible.
 
 ### Found outside this area (cross-area notes, not changed here)
@@ -209,6 +209,28 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
   webhook URLs, `ISEXY_TWILIO_WEBHOOK_BASE`) and 3.9, `HANDOFF.md`.
   `TWILIO_WEBHOOK_BASE` is ISEXY-only in `_shared/env.ts` (a V1 value of
   that name would break every signature check).
+
+- Phone Line pages (#21, #26-#29, #31 and the client half of #30):
+  `src/lib/voiceRecording.ts` + `src/hooks/useVoiceRecorder.ts` (one
+  recorder for greetings and replies: MediaRecorder check, real recorder
+  type, 90 s limit stops the recorder from the timer, microphone released
+  on stop / reset / leaving the page, clip converted to 16 kHz mono 16-bit
+  WAV so Safari and Twilio `<Play>` can play it, original kept if the
+  browser cannot decode it, plain mic messages); `PhoneLineSetup` (age from
+  the birth date, Save draft writes no status, removed-by-moderation
+  banner and everything disabled, new greeting inserted before older ones
+  are switched off, no client moderation_status, reject reason shown,
+  action bar clear of the assistant button); `PhoneLineBrowse` /
+  `PhoneLineInbox` (audio stops on leaving, load error + Try again, reply
+  recorder on the hook, rejected replies left out of Received); hub
+  (statuses draft / live + greeting review / paused / banned, "Use the
+  phone line by phone" card when `VITE_PHONE_LINE_NUMBER` is set, Link my
+  phone number -> `link_my_verified_phone`, masked number);
+  `AdminCallTests` (linked from admin Tools: voice greetings to review with
+  play / approve / reject + reason, in-app calls with billing flags);
+  `isexy-get-voice-greeting-url` lets admins/moderators fetch any greeting.
+  Verified: `e2e/calls-phone-line-pages.mjs` 52/52 PASS (390x844, fake mic,
+  uploaded bytes checked as a real WAV header).
 
 ## Verification
 

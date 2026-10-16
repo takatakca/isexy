@@ -168,7 +168,7 @@ export default function PhoneLine() {
         <h1 className="text-lg font-extrabold tracking-tight">Phone Line</h1>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-6 p-4 pb-10">
+      <main className="mx-auto max-w-3xl space-y-6 p-4 pb-40">
         {/* Hero */}
         <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-6">
           <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-primary/25 blur-3xl" />
