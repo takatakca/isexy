@@ -87,9 +87,12 @@ export function appBaseUrl(req: Request): string {
   return "https://isexy.ca";
 }
 
+/** The period fields of a Stripe subscription, wherever the API version puts them. */
+type PeriodFields = { current_period_start?: number | null; current_period_end?: number | null };
+type SubscriptionWithPeriod = PeriodFields & { items?: { data?: PeriodFields[] } };
+
 /** Stripe's subscription period (top level before API 2025-03-31.basil, on the item after). */
-// deno-lint-ignore no-explicit-any
-export function subscriptionPeriod(sub: any): { start: string | null; end: string | null } {
+export function subscriptionPeriod(sub: SubscriptionWithPeriod | null | undefined): { start: string | null; end: string | null } {
   const item = sub?.items?.data?.[0];
   const start = sub?.current_period_start ?? item?.current_period_start ?? null;
   const end = sub?.current_period_end ?? item?.current_period_end ?? null;
