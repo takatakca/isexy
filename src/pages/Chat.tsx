@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } fr
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useContentModeration } from "@/hooks/useContentModeration";
+import { checkContent, reportViolation, checkUserBanStatus, type ModerationStatus } from "@/hooks/useContentModeration";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Send, MoreVertical, Languages, Loader2, Video, Phone, Check, CheckCheck, Calendar, AlertTriangle, AlertCircle, Gift, Clock, ChevronDown, RefreshCw } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
@@ -125,7 +125,6 @@ export default function Chat() {
   const otherVisibleHereRef = useRef(false);
   const markReadRef = useRef({ inFlight: false, again: false, disabled: false });
   const translateFailuresRef = useRef(0);
-  const { checkContent, reportViolation, checkUserBanStatus } = useContentModeration();
 
   const myId = profile?.id;
   const isPremium = profile?.is_premium === true;
@@ -377,20 +376,25 @@ export default function Chat() {
     setLoadingOlder(false);
   }, [matchId, translateBatch]);
 
+  /** Messaging restriction decided by the server (contact sharing strikes, staff). */
+  const applyBanStatus = useCallback((status: ModerationStatus) => {
+    setIsBanned(status.isBanned);
+    if (!status.isBanned) {
+      setBanMessage("");
+    } else if (status.isPermanent) {
+      setBanMessage("Your messaging is suspended for breaking the community guidelines. Contact support if you think this is a mistake.");
+    } else if (status.banUntil) {
+      setBanMessage(`Messaging paused until ${format(status.banUntil, "MMM d 'at' h:mm a")} (community guidelines).`);
+    } else {
+      setBanMessage("Messaging is paused on your account (community guidelines).");
+    }
+  }, []);
+
   const checkBanStatus = useCallback(async () => {
     if (!myId) return;
-    const status = await checkUserBanStatus(myId);
-    if (status.isBanned) {
-      setIsBanned(true);
-      if (status.isPermanent) {
-        setBanMessage("Your account is permanently banned for violating community guidelines.");
-      } else if (status.banUntil) {
-        setBanMessage(`Messaging restricted until ${format(status.banUntil, "MMM d 'at' h:mm a")}`);
-      }
-    }
-    // checkUserBanStatus is recreated on every render by its hook.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myId]);
+    const status = await checkUserBanStatus();
+    if (!status.unknown) applyBanStatus(status);
+  }, [myId, applyBanStatus]);
 
   useEffect(() => {
     if (!matchId || !myId) return;
@@ -596,7 +600,11 @@ export default function Chat() {
     if (error || !inserted) {
       console.error("Error sending message:", error);
       const text = error?.message ?? "";
-      if (text.includes("blocked")) {
+      if (text.includes("restricted")) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        void checkBanStatus();
+        toast.error("Messaging is paused on your account.");
+      } else if (text.includes("blocked")) {
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         toast.error("You can't message this member.");
       } else if (text.includes("no longer active") || text.includes("not part") || text.includes("Match not found")) {
@@ -626,11 +634,18 @@ export default function Chat() {
     if (!content || !profile || !matchId || isBanned || locked) return;
 
     // Check content for personal information
+    // Contact details are never sent; the server records the strike and decides the pause.
     const modResult = checkContent(content);
     if (!modResult.isClean) {
-      await reportViolation(profile.id, null, modResult.violations);
-      await checkBanStatus();
-      toast.error("⚠️ Your message contains personal information which is not allowed. Please remove phone numbers, emails, or addresses.");
+      const result = await reportViolation(modResult.violations, matchId);
+      if (result) applyBanStatus(result);
+      if (result?.newStrike && result.isPermanent) {
+        toast.error("Messaging is suspended: contact details were shared again. Contact support if you think this is a mistake.");
+      } else if (result?.newStrike && result.banUntil) {
+        toast.error(`Sharing phone numbers, emails, addresses or social handles isn't allowed. Messaging is paused until ${format(result.banUntil, "MMM d 'at' h:mm a")}.`);
+      } else {
+        toast.error("Sharing phone numbers, emails, addresses or social handles isn't allowed. Please remove them to send.");
+      }
       return;
     }
 

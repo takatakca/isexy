@@ -3134,6 +3134,9 @@ export type Database = {
           id: string
           is_permanent_ban: boolean | null
           issued_by: string | null
+          lift_reason: string | null
+          lifted_at: string | null
+          lifted_by: string | null
           profile_id: string
           warning_level: number
           warning_type: string
@@ -3145,6 +3148,9 @@ export type Database = {
           id?: string
           is_permanent_ban?: boolean | null
           issued_by?: string | null
+          lift_reason?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
           profile_id: string
           warning_level?: number
           warning_type: string
@@ -3156,6 +3162,9 @@ export type Database = {
           id?: string
           is_permanent_ban?: boolean | null
           issued_by?: string | null
+          lift_reason?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
           profile_id?: string
           warning_level?: number
           warning_type?: string
@@ -3328,6 +3337,14 @@ export type Database = {
           unread_count: number
         }[]
       }
+      get_my_moderation_status: {
+        Args: never
+        Returns: Json
+      }
+      is_staff: {
+        Args: never
+        Returns: boolean
+      }
       mark_messages_read: {
         Args: { p_match_id: string }
         Returns: number
@@ -3342,6 +3359,10 @@ export type Database = {
       get_my_wallet: { Args: Record<PropertyKey, never>; Returns: Json }
       get_my_referral_code: { Args: Record<PropertyKey, never>; Returns: string }
       get_my_loyalty: { Args: Record<PropertyKey, never>; Returns: Json }
+      record_contact_sharing: {
+        Args: { p_excerpt?: string; p_match_id?: string | null; p_types: string[] }
+        Returns: Json
+      }
       record_daily_visit: { Args: Record<PropertyKey, never>; Returns: Json }
       redeem_loyalty_reward: { Args: { p_reward: string }; Returns: Json }
       convert_credits_to_minutes: {

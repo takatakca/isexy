@@ -95,8 +95,16 @@ Parts (all SECURITY DEFINER with `SET search_path = isexy, extensions`,
 REVOKE ALL FROM PUBLIC/anon, GRANT to authenticated; every staff RPC checks
 `has_role` admin or moderator, admin-only where noted):
 
-- (filled in as each part is written)
+- T1 moderation: `user_warnings.lifted_at/lifted_by/lift_reason`,
+  `is_staff()`, `active_restriction(profile)` (internal),
+  `get_my_moderation_status()`, `record_contact_sharing(types, excerpt, match)`
+  (strikes 24 h / 7 days / permanent, no new strike while restricted),
+  `validate_message_allowed` refuses a restricted sender.
 
 ## Progress
 
 - [x] defect list (this file)
+- [x] #1 + #2 chat contact-details guard: word-boundary patterns
+      (`src/hooks/useContentModeration.ts`; 30 sample sentences: no false positive,
+      no miss), strikes and restriction on the server (T1), Chat shows the server's
+      status and refuses on "restricted"; trust-smoke T1 13/13
