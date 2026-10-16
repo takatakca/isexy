@@ -104,28 +104,38 @@ serve(async (req) => {
       .maybeSingle();
 
     if (logInsertError) {
-      // Unique violation on stripe_event_id => duplicate event
-      if ((logInsertError as any).code === "23505") {
-        await supabaseClient
+      // A duplicate is successful only after the original event was actually
+      // processed. Never acknowledge failed/in-flight Stripe events as paid.
+      if ((logInsertError as { code?: string }).code === "23505") {
+        const { data: prior, error: priorError } = await supabaseClient
           .from("stripe_webhook_events")
-          .update({ processing_status: "skipped_duplicate", processed_at: new Date().toISOString() })
+          .select("processing_status")
           .eq("stripe_event_id", event.id)
-          .eq("processing_status", "received");
-        logStep("Duplicate event skipped", { eventId: event.id });
-        return new Response(JSON.stringify({ received: true, duplicate: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          .maybeSingle();
+        if (!priorError && prior?.processing_status === "processed") {
+          logStep("Already processed event", { eventId: event.id });
+          return new Response(JSON.stringify({ received: true, duplicate: true }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Requires manual reconciliation if a previous attempt failed or
+        // partially applied effects; never double-grant by blind retries.
+        logStep("Webhook event pending reconciliation", { eventId: event.id });
+        return new Response(JSON.stringify({ error: "Event requires reconciliation" }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      logStep("Failed to insert webhook log row", { error: logInsertError.message });
+      throw new Error("Unable to record Stripe webhook event before fulfillment");
     }
     const logRowId = insertedLog?.id ?? null;
 
     async function markProcessed() {
-      if (!logRowId) return;
-      await supabaseClient
+      if (!logRowId) throw new Error("Webhook event log not recorded");
+      const { error } = await supabaseClient
         .from("stripe_webhook_events")
         .update({ processing_status: "processed", processed_at: new Date().toISOString() })
         .eq("id", logRowId);
+      if (error) throw new Error("Unable to finalize Stripe webhook audit record");
     }
     async function markFailed(errMsg: string) {
       if (!logRowId) return;
@@ -193,9 +203,17 @@ serve(async (req) => {
     }
 
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
-        logStep("Checkout completed", { sessionId: session.id, mode: session.mode });
+        logStep("Checkout event", { sessionId: session.id, mode: session.mode, paymentStatus: session.payment_status });
+
+        if (session.mode === "payment" && session.payment_status !== "paid") {
+          // Async methods can emit checkout.session.completed before funds
+          // settle. Fulfill only on a later async_payment_succeeded event.
+          logStep("Payment not settled; awaiting Stripe success event", { sessionId: session.id });
+          break;
+        }
 
         if (session.mode === "subscription") {
           const customerId = session.customer as string;
