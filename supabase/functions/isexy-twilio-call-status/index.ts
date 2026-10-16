@@ -1,69 +1,39 @@
-// Twilio call status callback — updates call_sessions by provider_call_sid.
+// Twilio call status callback: saves the status of the call_sessions row with
+// this CallSid through isexy.apply_twilio_call_status (service role), which
+// only moves statuses forward (a late 'in-progress' never reopens a finished
+// call) and keeps the first answered_at.
 import { createClient } from "../_shared/supabase.ts";
-import { createHmac } from "node:crypto";
-import { isexyEnv } from "../_shared/env.ts";
+import { readTwilioRequest } from "../_shared/twilio.ts";
 
-const TWILIO_AUTH_TOKEN = isexyEnv("TWILIO_AUTH_TOKEN") ?? "";
-const SIG_BYPASS = isexyEnv("TWILIO_SIGNATURE_BYPASS") === "true";
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-function verifyTwilioSignature(url: string, params: Record<string, string>, sig: string): boolean {
-  if (SIG_BYPASS) return true;
-  if (!TWILIO_AUTH_TOKEN || !sig) return false;
-  const sortedKeys = Object.keys(params).sort();
-  let data = url;
-  for (const k of sortedKeys) data += k + params[k];
-  const expected = createHmac("sha1", TWILIO_AUTH_TOKEN).update(data).digest("base64");
-  return expected === sig;
-}
-
-const STATUS_MAP: Record<string, string> = {
-  "ringing": "initiating",
-  "in-progress": "connected",
-  "completed": "completed",
-  "busy": "missed",
-  "no-answer": "missed",
-  "failed": "failed",
-  "canceled": "canceled",
-};
+const FN = "isexy-twilio-call-status";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok");
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-
-  const url = req.url;
-  const sig = req.headers.get("x-twilio-signature") ?? "";
-  const formText = await req.text();
-  const form = new URLSearchParams(formText);
-  const params: Record<string, string> = {};
-  form.forEach((v, k) => (params[k] = v));
-
-  if (!verifyTwilioSignature(url, params, sig)) {
-    return new Response("Invalid Twilio signature", { status: 403 });
-  }
+  const read = await readTwilioRequest(FN, req);
+  if ("error" in read) return read.error;
+  const { params } = read;
 
   const callSid = params["CallSid"];
   const callStatus = params["CallStatus"];
-  const duration = parseInt(params["CallDuration"] ?? "0", 10) || 0;
+  if (!callSid || !callStatus) return new Response("ok");
+  const duration = Number.parseInt(params["CallDuration"] ?? "", 10);
 
-  if (!callSid) return new Response("ok");
-
-  const mapped = STATUS_MAP[callStatus] ?? "initiating";
-  const update: Record<string, unknown> = {
-    status: mapped,
-    updated_at: new Date().toISOString(),
-  };
-  if (["completed", "failed", "missed", "canceled"].includes(mapped)) {
-    update.ended_at = new Date().toISOString();
-    if (duration > 0) update.duration_seconds = duration;
+  const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
+    auth: { persistSession: false },
+  });
+  const { data, error } = await admin.rpc("apply_twilio_call_status", {
+    p_call_sid: callSid,
+    p_status: callStatus,
+    p_duration: Number.isFinite(duration) ? duration : null,
+  });
+  if (error) {
+    console.error(`[${FN}] ${callSid} ${callStatus}:`, error.message);
+    // 500 makes Twilio retry later (e.g. a database blip).
+    return new Response("error", { status: 500 });
   }
-  if (mapped === "connected") {
-    update.answered_at = new Date().toISOString();
+  const result = data as { success?: boolean; error?: string } | null;
+  if (result && !result.success && result.error !== "session_not_found") {
+    console.warn(`[${FN}] ${callSid} ${callStatus}: ${result.error}`);
   }
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  await supabase.from("call_sessions").update(update).eq("provider_call_sid", callSid);
-
   return new Response("ok");
 });
