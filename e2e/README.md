@@ -61,5 +61,6 @@ every other network import).
 
 SQL is checked separately on a throwaway local Postgres 16, like the CI
 `migrations` job: `scripts/isexy/test/v1-mock.sql`, `scripts/isexy/migrate.sh`
-(dry run, `--apply`, re-run), then `scripts/isexy/test/0004-smoke.sql`
-(instructions at the top of that file). Never point these at V1.
+(dry run, `--apply`, re-run), then `scripts/isexy/test/0004-smoke.sql`,
+`calls-smoke.sql` (part D) and `rewards-smoke.sql` (part R), each inside
+BEGIN/ROLLBACK (instructions at the top of each file). Never point these at V1.
