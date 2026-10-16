@@ -299,12 +299,13 @@ export default function CubanSignup() {
               birth_date: "2000-01-01",
               gender: "other",
               country: "CU",
-              is_cuban: true as any,
             } as any)
             .select()
             .single();
           
           if (createError) throw createError;
+          // is_cuban is not member-writable: set server-side.
+          await supabase.rpc("set_my_cuban_flag", { p_is_cuban: true });
           currentProfile = newProfile as any;
           await refreshProfile();
         } else {

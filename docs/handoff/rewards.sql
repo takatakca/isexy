@@ -31,7 +31,8 @@
 --     server-side; award_streak_badge() uses the server streak.
 -- R10. convert_credits_to_minutes(): credits are spendable (1 credit = 1 min).
 -- R11. Protected writes moved to RPCs: request_star_cashout(),
---     set_my_cuban_flag(), staff_set_profile_verified().
+--     set_my_cuban_flag(), staff_set_profile_verified(); check_promo_eligibility()
+--     (anyone could create promotion rows for any member) is service_role only.
 
 SET LOCAL search_path = isexy, extensions;
 
@@ -1647,3 +1648,10 @@ END;
 $$;
 REVOKE ALL ON FUNCTION isexy.staff_set_profile_verified(uuid, boolean) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION isexy.staff_set_profile_verified(uuid, boolean) TO authenticated;
+
+-- check_promo_eligibility(p_profile_id, p_tier) had the default EXECUTE grant
+-- (anon too) and no caller check: anyone could create or reset "50% off"
+-- promotion rows for any member. No client calls it (the first-week offer is
+-- a Stripe coupon applied by isexy-create-checkout), so it is service_role only.
+REVOKE ALL ON FUNCTION isexy.check_promo_eligibility(uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION isexy.check_promo_eligibility(uuid, text) TO service_role;

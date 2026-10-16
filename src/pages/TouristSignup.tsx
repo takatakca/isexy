@@ -88,10 +88,10 @@ export default function TouristSignup() {
       // A member who already started a profile (another signup flow) gets it updated, not a duplicate.
       const { data: profile, error: profileError } = existingProfile
         ? await supabase.from("profiles").update(fields).eq("id", existingProfile.id).select().single()
-        : await supabase.from("profiles").insert({ user_id: user.id, ...fields, is_cuban: false }).select().single();
+        : await supabase.from("profiles").insert({ user_id: user.id, ...fields }).select().single();
 
       if (profileError) throw profileError;
-      // is_cuban is not member-writable: a profile started in the Cuban signup is switched server-side.
+      // is_cuban (default false) is not member-writable: a profile started in the Cuban signup is switched server-side.
       if (existingProfile && (existingProfile as { is_cuban?: boolean | null }).is_cuban) {
         await supabase.rpc("set_my_cuban_flag", { p_is_cuban: false });
       }
