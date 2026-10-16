@@ -137,7 +137,6 @@
 --        matches_pair_unique) and swipes (swipes_swiper_id_swiped_id_key /
 --        swipes_swiper_swiped_unique) both back constraints: kept.
 
-
 -- =====================================================================
 -- A1. Protected profile columns
 -- =====================================================================
