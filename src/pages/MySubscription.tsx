@@ -4,6 +4,10 @@ import { X, Check, Crown, Sparkles, Loader2, Settings as SettingsIcon, ShieldChe
 import { supabase } from "@/integrations/supabase/client";
 import { SubscriptionTier } from "@/lib/subscriptionTiers";
 import { toast } from "sonner";
+import { useWallet, type Wallet } from "@/hooks/useWallet";
+import { useCheckoutReturn } from "@/hooks/useCheckoutReturn";
+import { startCheckout } from "@/lib/payments";
+import { goBack } from "@/lib/navigation";
 
 interface FeatureItem { title: string; description?: string; included: boolean; }
 interface TierSection { category: string; features: FeatureItem[]; }
@@ -17,7 +21,7 @@ const tierSections: Record<SubscriptionTier, TierSection[]> = {
     ]},
     { category: "Experience", features: [
       { title: "Unlimited Rewinds", included: true },
-      { title: "1 Free Boost / month", description: "Available with 1-month+ plans.", included: false },
+      { title: "1 Free Boost / month", included: false },
       { title: "5 Free Super Likes / week", included: false },
       { title: "First Impressions", description: "Send a message before matching.", included: false },
     ]},
@@ -83,43 +87,68 @@ const tierSections: Record<SubscriptionTier, TierSection[]> = {
 
 const tierLabel: Record<SubscriptionTier, string> = { plus: "Plus", gold: "Gold", platinum: "Platinum" };
 
+const longDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+
+/** One line about where the plan comes from and when it ends. */
+function planLine(w: Wallet): string {
+  const end = w.plan_expires_at ? longDate(w.plan_expires_at) : null;
+  switch (w.plan_source) {
+    case "stripe":
+      return end ? `Renews on ${end}. Cancel anytime.` : "Renews automatically. Cancel anytime.";
+    case "coupon":
+      return end ? `From a code · ends on ${end}` : "From a code · permanent";
+    case "loyalty":
+      return end ? `Loyalty reward · ends on ${end}` : "Loyalty reward";
+    case "staff":
+      return end ? `Gift from ISEXY · ends on ${end}` : "Gift from ISEXY";
+    default:
+      return end ? `Active until ${end}` : "Active";
+  }
+}
+
 export default function MySubscription() {
   const navigate = useNavigate();
-  
+  const { wallet, loading: walletLoading, refresh } = useWallet();
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
-  const [currentTier, setCurrentTier] = useState<SubscriptionTier | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(true);
 
+  useCheckoutReturn(refresh, "Payment received. Your plan starts in a few seconds.");
+
+  // Catch up with Stripe (a missed webhook), then show the plan from the database.
   useEffect(() => {
-    const check = async () => {
+    let cancelled = false;
+    (async () => {
       try {
         const { data } = await supabase.functions.invoke("isexy-check-subscription");
-        if (data?.subscribed && data?.tier && ["plus","gold","platinum"].includes(data.tier)) {
-          setCurrentTier(data.tier as SubscriptionTier);
-          setActiveTier(data.tier as SubscriptionTier);
-          if (data.subscription_end) setEndDate(data.subscription_end);
-        }
-      } catch {/* no-op */} finally {
-        setLoading(false);
+        if (!cancelled && (data as { restored?: number } | null)?.restored) await refresh();
+      } catch {
+        /* the database plan is still shown */
+      } finally {
+        if (!cancelled) setSyncing(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const currentTier = wallet && wallet.tier !== "free" ? (wallet.tier as SubscriptionTier) : null;
+  useEffect(() => {
+    if (currentTier) setActiveTier(currentTier);
+  }, [currentTier]);
+  const loading = walletLoading && !wallet;
+  const manageable = wallet?.plan_source === "stripe";
 
   const sections = tierSections[activeTier];
   const tiers: SubscriptionTier[] = ["plus", "gold", "platinum"];
 
   const handleManage = async () => {
     setPortalLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("isexy-customer-portal");
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (e: any) {
-      toast.error(e.message || "Could not open subscription manager");
-    } finally {
+    const result = await startCheckout("isexy-customer-portal");
+    if (!result.ok) {
+      toast.error(result.message);
       setPortalLoading(false);
     }
   };
@@ -133,7 +162,7 @@ export default function MySubscription() {
         <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-primary/5 to-transparent" aria-hidden />
         <div className="relative">
           <div className="flex items-center justify-between p-4">
-            <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-muted/50">
+            <button onClick={() => goBack(navigate, "/settings")} className="p-2 rounded-full hover:bg-muted/50" aria-label="Close">
               <X className="w-6 h-6 text-foreground" />
             </button>
             <h1 className="text-base font-bold text-foreground">My Subscription</h1>
@@ -144,21 +173,17 @@ export default function MySubscription() {
           <div className="px-4 pb-4">
             {loading ? (
               <div className="glass-card rounded-2xl p-5 animate-pulse h-24" />
-            ) : currentTier ? (
+            ) : currentTier && wallet ? (
               <div className="glass-card rounded-2xl p-5 ring-coral">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Crown className="w-5 h-5 text-primary fill-primary/30" />
                     <span className="text-xs font-bold uppercase tracking-wider text-primary">Active plan</span>
                   </div>
-                  {endDate && <span className="text-xs text-muted-foreground">renews soon</span>}
+                  {syncing && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" aria-label="Checking with Stripe" />}
                 </div>
                 <p className="text-2xl font-extrabold text-foreground">ISEXY {tierLabel[currentTier]}</p>
-                {endDate && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Renews on {new Date(endDate).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground mt-1">{planLine(wallet)}</p>
               </div>
             ) : (
               <div className="glass-card rounded-2xl p-5">
@@ -234,21 +259,25 @@ export default function MySubscription() {
       {/* Fixed bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
         <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
-          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout powered by Stripe
+          <ShieldCheck className="w-4 h-4 text-primary" /> Payments by Stripe · prices in CAD
         </div>
         {isFree ? (
           <button onClick={() => navigate("/premium")} className="cta-primary w-full">
             <Sparkles className="w-4 h-4" /> Upgrade to ISEXY {tierLabel[activeTier]}
           </button>
-        ) : (
+        ) : manageable ? (
           <div className="grid grid-cols-2 gap-2">
             <button onClick={handleManage} disabled={portalLoading} className="cta-secondary">
               {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><SettingsIcon className="w-4 h-4" /> Manage</>}
             </button>
-            <button onClick={() => navigate("/premium")} className="cta-primary">
+            <button onClick={handleManage} disabled={portalLoading} className="cta-primary">
               Change plan
             </button>
           </div>
+        ) : (
+          <button onClick={() => navigate("/premium")} className="cta-primary w-full">
+            See paid plans
+          </button>
         )}
       </div>
     </div>
