@@ -329,6 +329,7 @@ export type Database = {
           starts_at: string
           status: string
           stripe_session_id: string | null
+          stripe_subscription_id: string | null
           updated_at: string
         }
         Insert: {
@@ -340,6 +341,7 @@ export type Database = {
           starts_at?: string
           status?: string
           stripe_session_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -351,6 +353,7 @@ export type Database = {
           starts_at?: string
           status?: string
           stripe_session_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2072,6 +2075,50 @@ export type Database = {
           },
         ]
       }
+      loyalty_accounts: {
+        Row: {
+          created_at: string
+          current_streak: number
+          last_visit_on: string | null
+          lifetime_points: number
+          longest_streak: number
+          points: number
+          profile_id: string
+          updated_at: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      loyalty_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          points: number
+          profile_id: string
+          reason: string
+          ref: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      plan_grants: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          profile_id: string
+          source: string
+          source_ref: string | null
+          starts_at: string
+          tier: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       photo_verifications: {
         Row: {
           id: string
@@ -3289,6 +3336,24 @@ export type Database = {
           new_likes: number
           unread_messages: number
         }[]
+      }
+      get_my_wallet: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_my_referral_code: { Args: Record<PropertyKey, never>; Returns: string }
+      get_my_loyalty: { Args: Record<PropertyKey, never>; Returns: Json }
+      record_daily_visit: { Args: Record<PropertyKey, never>; Returns: Json }
+      redeem_loyalty_reward: { Args: { p_reward: string }; Returns: Json }
+      convert_credits_to_minutes: {
+        Args: { p_credits: number; p_type: string }
+        Returns: Json
+      }
+      request_star_cashout: {
+        Args: { p_details?: Json; p_method: string; p_stars: number }
+        Returns: Json
+      }
+      set_my_cuban_flag: { Args: Record<PropertyKey, never>; Returns: undefined }
+      staff_set_profile_verified: {
+        Args: { p_profile_id: string; p_verified: boolean }
+        Returns: undefined
       }
       get_discover_feed: {
         Args: {
