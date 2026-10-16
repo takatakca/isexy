@@ -37,6 +37,7 @@ Pass/fail checks (print `PASS`/`FAIL` lines, exit 1 on a failure):
 | `accounts-layout.mjs` | Accounts | 390x844 sweep: no horizontal scroll, no covered controls | same pattern |
 | `chat-e2e.mjs` | Chat | read RPC, optimistic send + retry, history paging, translation cache, presence, locked chat | `node --import ./e2e/offline-browser.mjs e2e/chat-e2e.mjs http://127.0.0.1:4173 SHOTS public/og-image.png` |
 | `chat-notifications-e2e.mjs` | Chat | badges, push opt-in + settings, email settings, missed calls, group chat, matches list | same as chat-e2e |
+| `rewards-e2e.mjs` | Rewards | payments not configured / paused / test mode, checkout bodies (no amounts) and return, promo only with the coupon, My Subscription plan sources, Boosts use/buy, credits to minutes, Loyalty, referral link, Restore purchases, Redeem code, wallet balances, sign-in guards, no browser write of protected data | `E2E_BASE=http://127.0.0.1:4173 node --import ./e2e/offline-browser.mjs e2e/rewards-e2e.mjs` |
 
 Broad smoke scripts (print a log to read; they stop with an error if a step cannot run):
 

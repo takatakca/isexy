@@ -163,14 +163,74 @@ they refuse without auth.uid()), the Security stage may revoke it.
 
 ## Verification
 
-- `npm run typecheck`: clean.
+- `npm run typecheck`: clean. `npm run build` (offline, `e2e/no-network.mjs`): OK.
 - ESLint on every changed file: no new errors (pre-existing `any` errors in
-  CubanSignup, AdminVerifications, MyStars, CubanRewards unchanged or fewer).
+  CubanSignup, AdminVerifications, MyStars, CubanRewards, GiftModal unchanged
+  or fewer). `npm run lint`: 124 errors in total, all pre-existing (148 at
+  336099c).
 - Functions: `tsc` with Deno shims + Stripe 18.5.0 types (scratchpad
-  `rewards/denocheck`): clean.
-- SQL: see Fixed (Postgres 16 in `/var/tmp/isexy-rewards-pg2`, port 55452: the
-  postgres user cannot enter the scratchpad, as integrator A noted).
+  `rewards/denocheck`): clean. CI runs the real `deno check`.
+- SQL: rewards.sql folded into 0004 and run the CI way on Postgres 16
+  (`/var/tmp/isexy-rewards-pg2`, port 55452: the postgres user cannot enter the
+  scratchpad, as integrator A noted): v1-mock, `migrate.sh` dry run,
+  `--apply`, re-run "up to date", guard silent; `0004-smoke.sql` 34/34,
+  `rewards-smoke.sql` 88/88; rewards.sql re-applied on top: no change.
+- e2e (mocked backend, 390x844, `vite preview` on 4305):
+  `e2e/rewards-e2e.mjs` 86/86 (see the file header for what it covers; the
+  last check asserts that no browser request wrote a protected table or a
+  protected profile column during the whole run). Regression:
+  `accounts-signups` 26, `accounts-settings` 54, `accounts-profile` 24,
+  `accounts-layout` 33, `accounts-auth-setup` 28 PASS (no FAIL).
+
+Run it:
+
+```bash
+NODE_OPTIONS="--import=./e2e/no-network.mjs" npm run build
+npx vite preview --port 4305 --strictPort --host 127.0.0.1 &
+E2E_BASE=http://127.0.0.1:4305 node --import ./e2e/offline-browser.mjs e2e/rewards-e2e.mjs
+```
 
 ## Left to do
 
-(exact next steps)
+1. **Integrator**: append `docs/handoff/rewards.sql` to
+   `supabase/isexy-migrations/0004_app_completion.sql` as part R (it is
+   idempotent and was tested folded in exactly that way), add R to the 0004
+   header, then run `rewards-smoke.sql` without the first `\i` (see its
+   header). Merge `src/integrations/supabase/types.ts` (new RPCs/tables are
+   already in it).
+2. **Deploy (main session, after 0004)**: `isexy-stripe-webhook`,
+   `isexy-create-checkout`, `isexy-create-credit-purchase`,
+   `isexy-create-minute-purchase`, `isexy-create-one-time-payment`,
+   `isexy-check-subscription`, `isexy-customer-portal`,
+   `isexy-payments-gate-status`, `isexy-reset-allowances`,
+   `isexy-subscription-resets`. Until then the pages degrade: wallet falls back
+   to table reads, Loyalty says "not switched on yet", streak is counted on the
+   device with no rewards.
+3. **Owner (Stripe, test mode first)**: secrets `ISEXY_STRIPE_SECRET_KEY`,
+   `ISEXY_STRIPE_WEBHOOK_SECRET` (without both the pages say "Payments are not
+   open yet"), the 9 plan prices `ISEXY_STRIPE_PRICE_{PLUS,GOLD,PLATINUM}_{WEEK,MONTH,SIX_MONTHS}`
+   (CAD, recurring), optional `ISEXY_STRIPE_COUPON_FIRST_WEEK` (a 50 %
+   "once" coupon: the banner says 50 %; no coupon = no banner),
+   `ISEXY_APP_URL`, and `ISEXY_PAYMENTS_LIVE_ENABLED=true` only after a test
+   run. Webhook endpoint `.../functions/v1/isexy-stripe-webhook` with events
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `customer.subscription.created|updated|deleted`. Then one test purchase per
+   kind (plan, Boost, Super Likes, credits, minutes) and `stripe events resend`
+   of one event to see it change nothing.
+4. **Security stage**: drop the member INSERT/UPDATE policies on
+   `credit_transactions`, `boost_transactions`, `boost_wallets`,
+   `star_transactions`, `gift_transactions`, `coupon_redemptions`,
+   `allowances` (no client code needs them: see "Switched call sites");
+   protect the profile columns with a BEFORE INSERT OR UPDATE trigger that,
+   when `current_user` is `authenticated` or `anon`, puts back OLD values
+   (UPDATE) or the defaults (INSERT): the SECURITY DEFINER RPCs above run as
+   the owner and are not affected, and a member could otherwise still INSERT a
+   profile row with privileged values; revoke anon
+   EXECUTE on `deduct_call_minute`, `charge_call_session_minute`.
+5. **Owner decisions**: the Premium promo countdown (30 min, kept per device in
+   sessionStorage) is not enforced by the server: keep, or drop the timer and
+   keep the offer; `src/components/PromoOfferBanner.tsx` is dead code (calls the
+   now service_role-only `check_promo_eligibility`): delete it.
+6. **Language owner**: the strings added on the reward pages are English only.
+7. **Cuba (on hold)**: Cuban Rewards has no backend (`cuban_points*` tables do
+   not exist in isexy); the page now says so instead of spinning.
