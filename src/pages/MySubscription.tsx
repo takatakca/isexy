@@ -94,7 +94,8 @@ function planLine(w: Wallet): string {
   const end = w.plan_expires_at ? longDate(w.plan_expires_at) : null;
   switch (w.plan_source) {
     case "stripe":
-      return end ? `Renews on ${end}. Cancel anytime.` : "Renews automatically. Cancel anytime.";
+      // Stripe may already be set to stop at the period end: say "paid until", not "renews on".
+      return end ? `Paid until ${end} · renews unless you cancel` : "Renews automatically. Cancel anytime.";
     case "coupon":
       return end ? `From a code · ends on ${end}` : "From a code · permanent";
     case "loyalty":
