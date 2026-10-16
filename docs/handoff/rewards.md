@@ -180,7 +180,10 @@ they refuse without auth.uid()), the Security stage may revoke it.
   last check asserts that no browser request wrote a protected table or a
   protected profile column during the whole run). Regression:
   `accounts-signups` 26, `accounts-settings` 54, `accounts-profile` 24,
-  `accounts-layout` 33, `accounts-auth-setup` 28 PASS (no FAIL).
+  `accounts-layout` 33, `accounts-auth-setup` 28, `discover-e2e` 36 PASS (no FAIL).
+  Final SQL re-run on a fresh database the same way: same results, 0004 (with
+  part R) re-applied on itself without error; `check_promo_eligibility` no
+  longer executable by anon/authenticated.
 
 Run it:
 
