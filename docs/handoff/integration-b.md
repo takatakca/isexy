@@ -34,4 +34,5 @@ survives a stop.
       HANDOFF): user_credits "Users can update own credits", anon EXECUTE on
       deduct_call_minute. Left for owners: moderator voice review, sticky bars under
       the assistant button on other pages, PromoOfferBanner deletion.
-- [ ] docs/HANDOFF.md, WORKLOG, push
+- [x] docs/HANDOFF.md (calls + rewards in Done/Left, Needs the owner, trust area still to do,
+      security next pass), WORKLOG, push to origin claude/zealous-brown-kv2hmx
