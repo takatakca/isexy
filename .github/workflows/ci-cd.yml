@@ -287,6 +287,7 @@ jobs:
     timeout-minutes: 5
     env:
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://pcjfahhlozsseqqevimi.supabase.co' }}
+      ISEXY_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjamZhaGhsb3pzc2VxcWV2aW1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDA0NzQsImV4cCI6MjEwMDY3NjQ3NH0.jhy7N0I7uRjDt0Frzsu_F00lDL6cGr2ZxHPKsnoWY3Q' }}
     steps:
       - name: Site and SPA routes respond
         run: |
@@ -329,6 +330,21 @@ jobs:
             exit 1
           fi
           echo "::warning::Custom hosting SHA unverified: configure build-time RENDER_GIT_COMMIT, GITHUB_SHA or SOURCE_COMMIT."
+
+      - name: Verify TAKATAK V1 ISEXY Data API is exposed
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/isexy-api-check.json -w '%{http_code}' --retry 2 --max-time 20 \
+            "$SUPABASE_URL/rest/v1/ticket_categories?select=id&limit=1" \
+            -H "apikey: $ISEXY_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $ISEXY_PUBLISHABLE_KEY" \
+            -H "Accept-Profile: isexy")
+          echo "ISEXY schema Data API → HTTP $code"
+          if [ "$code" != "200" ]; then
+            # Do not print provider configuration or token in logs.
+            echo "::error::ISEXY database schema unavailable to the expected Data API client (HTTP $code)"
+            exit 1
+          fi
 
       - name: ISEXY edge functions reachable
         run: |
