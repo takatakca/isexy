@@ -69,7 +69,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
 
 17. [x] `start_phone_line_call_session` reads `profiles.age` (no such
     column): every "Call" on Browse voices fails at runtime.
-18. [~] Phone Line calls are fake: the session starts `connected`, the
+18. [x] Phone Line calls are fake: the session starts `connected`, the
     receiver is never told, no audio flows, the caller pays per minute.
     SQL part (ring, answer, decline, connected, settle) is in calls.sql but
     the answered/connected states are not separated (the caller could start
@@ -171,6 +171,20 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
   `scripts/isexy/test/calls-smoke.sql` 98/98 PASS (allowed and forbidden
   call for every RPC, policy and trigger). The PGlite scripts
   (`e2e/calls-sql-*.mjs`) are replaced by calls-smoke.sql.
+
+- Phone Line calls (#18, client): `src/pages/PhoneLineCall.tsx` rewritten
+  (both sides: `/phone-line/call/new?to=<profileId>` for the caller,
+  `/phone-line/call/<sessionId>?answer=1` for the receiver; microphone
+  first, nothing rings without it; ring 35 s -> missed; billing only after
+  `mark_call_session_connected`; end screens with Buy minutes / Call again /
+  Leave a voice reply), `PhoneLineBrowse` "Call" opens it,
+  `IncomingCallNotification` rings Phone Line calls too (Realtime on
+  `call_sessions` + catch-up, decline RPC, name only: voice first),
+  `useCallConnection({ privateRelay })` sends Phone Line media through TURN
+  when configured (strangers never learn each other's IP). Verified:
+  `e2e/calls-e2e.mjs` sections 8-9 (17 checks: ring, answer, audio both
+  ways, billing after media only, mute, hang up, decline, no minutes, mic
+  blocked, every track stopped).
 
 ## Verification
 

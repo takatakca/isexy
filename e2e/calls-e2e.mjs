@@ -21,7 +21,9 @@ const users = {
 const byProfile = (id) => Object.values(users).find((u) => u.profileId === id);
 
 // ---------------- state ----------------
-const sessions = new Map(); // id -> row
+const sessions = new Map(); // id -> row (video_call_sessions)
+const plSessions = new Map(); // id -> row (call_sessions, Phone Line)
+let plMinutes = 5;
 const rpcLog = []; // { who, fn, args }
 const signals = []; // broadcast signal payloads (type, seq, from)
 const sockets = new Set();
@@ -30,6 +32,9 @@ let seq = 0;
 let chargeMode = "ok"; // "ok" | "no_minutes"
 let minutes = 10;
 const results = [];
+// ONLY=8,9 runs just those sections.
+const only = process.env.ONLY ? process.env.ONLY.split(",").map(Number) : null;
+const run = (n) => !only || only.includes(n);
 let failures = 0;
 const check = (label, ok, extra = "") => {
   if (!ok) failures++;
@@ -87,11 +92,52 @@ function update(id, patch) {
   emitPostgres("video_call_sessions", "UPDATE", { ...row }, old);
   return row;
 }
+function plUpdate(id, patch) {
+  const row = plSessions.get(id);
+  if (!row) return null;
+  const old = { ...row };
+  Object.assign(row, patch);
+  emitPostgres("call_sessions", "UPDATE", { ...row }, old);
+  return row;
+}
 function rpc(who, fn, args) {
   rpcLog.push({ who, fn, args });
   const me = users[who].profileId;
   const s = args.p_call_session_id ? sessions.get(args.p_call_session_id) : null;
+  const pl = args.p_call_session_id ? plSessions.get(args.p_call_session_id) : null;
   switch (fn) {
+    case "start_phone_line_call_session": {
+      if (plMinutes <= 0) return { success: false, error: "no_minutes", phone_minutes: 0 };
+      const id = `44444444-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
+      const row = { id, caller_profile_id: me, receiver_profile_id: args.p_target_profile_id, provider: "in_app", call_type: "phone_line_profile", status: "ringing", started_at: new Date().toISOString(), answered_at: null };
+      plSessions.set(id, row);
+      setTimeout(() => emitPostgres("call_sessions", "INSERT", { ...row }), 50);
+      return { success: true, call_session_id: id, phone_minutes: plMinutes, display_name: byProfile(args.p_target_profile_id)?.name ?? "Voice" };
+    }
+    case "answer_call_session":
+      if (!pl || pl.receiver_profile_id !== me) return { success: false, error: "not_found" };
+      if (!["ringing", "connected"].includes(pl.status)) return { success: false, error: "call_not_active", status: pl.status };
+      if (pl.status !== "connected") plUpdate(pl.id, { status: "connected" });
+      return { success: true, status: "connected", caller_name: byProfile(pl.caller_profile_id)?.name };
+    case "decline_call_session":
+      if (!pl || pl.receiver_profile_id !== me) return { success: false, error: "not_found" };
+      plUpdate(pl.id, { status: "declined" });
+      return { success: true, status: "declined" };
+    case "mark_call_session_connected":
+      if (!pl || ![pl.caller_profile_id, pl.receiver_profile_id].includes(me)) return { success: false, error: "not_found" };
+      if (pl.status !== "connected") return { success: false, error: "call_not_active", status: pl.status };
+      plUpdate(pl.id, { answered_at: pl.answered_at ?? new Date().toISOString() });
+      return { success: true };
+    case "charge_call_session_minute":
+      if (!pl || pl.caller_profile_id !== me) return { success: false, error: "not_authorized" };
+      if (pl.status !== "connected" || !pl.answered_at) return { success: false, error: "not_connected" };
+      plMinutes -= 1;
+      return { success: true, charged: true, remaining: plMinutes };
+    case "end_call_session":
+      if (!pl) return { success: false, error: "session_not_found" };
+      if (["completed", "missed", "declined", "canceled", "failed"].includes(pl.status)) return { success: true, already_ended: true, status: pl.status };
+      plUpdate(pl.id, { status: pl.answered_at ? "completed" : args.p_end_reason === "no_answer" ? "missed" : me === pl.receiver_profile_id ? "declined" : "canceled", end_reason: args.p_end_reason });
+      return { success: true, status: pl.status };
     case "start_call": {
       const id = `22222222-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
       const other = me === users.alex.profileId ? users.bea.profileId : users.alex.profileId;
@@ -208,6 +254,11 @@ async function setup(browser, who, media = {}) {
       return json(rows.reverse());
     }
     if (url.includes("/rest/v1/video_call_sessions")) { pageErrors.push(`[${who}] direct ${m} on video_call_sessions`); return json(null, 403); }
+    if (url.includes("/rest/v1/call_sessions") && m === "GET") {
+      const rows = [...plSessions.values()].filter((r) => url.includes(`receiver_profile_id=eq.${r.receiver_profile_id}`) && (!url.includes("status=eq.ringing") || r.status === "ringing"));
+      return json(rows.reverse());
+    }
+    if (url.includes("/rest/v1/call_sessions")) { pageErrors.push(`[${who}] direct ${m} on call_sessions`); return json(null, 403); }
     if (url.includes("/realtime/v1/api/broadcast")) {
       const body = JSON.parse(req.postData() || "{}");
       for (const msg of body.messages ?? []) relayBroadcast(null, msg.topic?.startsWith("realtime:") ? msg.topic : `realtime:${msg.topic}`, { type: "broadcast", event: msg.event, payload: msg.payload });
@@ -237,7 +288,7 @@ const allTracksEnded = (page) => page.evaluate(() => window.__streams.flatMap((s
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", "--autoplay-policy=no-user-gesture-required"] });
 
 // ===== 1. Video call: ring, answer, media both ways, controls, reconnect, hang up =====
-{
+if (run(1)) {
   const bea = await setup(browser, "bea");
   await bea.page.goto(`${base}/matches`, { waitUntil: "networkidle" });
   const alex = await setup(browser, "alex", { twoCameras: true });
@@ -309,7 +360,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
 }
 
 // ===== 2. Decline =====
-{
+if (run(2)) {
   const bea = await setup(browser, "bea");
   await bea.page.goto(`${base}/matches`, { waitUntil: "networkidle" });
   const alex = await setup(browser, "alex");
@@ -326,7 +377,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
 }
 
 // ===== 3. Audio-only call connects; callee opened later (catch-up, e.g. from the push) =====
-{
+if (run(3)) {
   const alex = await setup(browser, "alex");
   await alex.page.goto(`${base}/video-call/${MATCH}?type=phone`, { waitUntil: "domcontentloaded" });
   await waitFor(async () => /Ringing/.test(await status(alex.page) ?? ""), 8000);
@@ -353,7 +404,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
 }
 
 // ===== 4. Camera blocked: audio-only fallback, still receives video =====
-{
+if (run(4)) {
   const bea = await setup(browser, "bea");
   await bea.page.goto(`${base}/matches`, { waitUntil: "networkidle" });
   const alex = await setup(browser, "alex", { denyCamera: true });
@@ -370,7 +421,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
 }
 
 // ===== 5. Microphone blocked: nothing rings, clear message =====
-{
+if (run(5)) {
   const before = fnCalls("start_call").length;
   const alex = await setup(browser, "alex", { denyMic: true });
   await alex.page.goto(`${base}/video-call/${MATCH}?type=video`, { waitUntil: "domcontentloaded" });
@@ -382,7 +433,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
 }
 
 // ===== 6. No answer: missed call recorded through the RPC =====
-{
+if (run(6)) {
   const alex = await setup(browser, "alex");
   await alex.page.goto(`${base}/video-call/${MATCH}?type=video`, { waitUntil: "domcontentloaded" });
   check("missed: 'Bea didn't answer' after the ring timeout", await alex.page.getByText("Bea didn't answer").waitFor({ timeout: 45000 }).then(() => true).catch(() => false));
@@ -393,7 +444,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
 }
 
 // ===== 7. Connection lost for good -> gives up with a clear message =====
-{
+if (run(7)) {
   const bea = await setup(browser, "bea");
   await bea.page.goto(`${base}/matches`, { waitUntil: "networkidle" });
   const alex = await setup(browser, "alex");
@@ -407,6 +458,73 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
   await alex.page.screenshot({ path: `${out}/11_alex_connection_lost.png` });
   check("connection lost: tracks stopped", await allTracksEnded(alex.page));
   await alex.ctx.close(); await bea.ctx.close();
+}
+
+// ===== 8. Phone Line call: ring, answer, audio both ways, billed once audio flows, hang up =====
+if (run(8)) {
+  const bea = await setup(browser, "bea");
+  await bea.page.goto(`${base}/phone-line`, { waitUntil: "networkidle" });
+  const alex = await setup(browser, "alex");
+  await alex.page.goto(`${base}/phone-line/call/new?to=${users.bea.profileId}`, { waitUntil: "domcontentloaded" });
+  const sheet = bea.page.getByRole("alertdialog", { name: /Incoming Phone Line call from Alex/ });
+  check("phone line: receiver sees the incoming Phone Line call", await sheet.waitFor({ timeout: 10000 }).then(() => true).catch(() => false));
+  check("phone line: caller rings, nothing charged", /Ringing/.test(await status(alex.page) ?? "") && fnCalls("charge_call_session_minute").length === 0, await status(alex.page));
+  await bea.page.screenshot({ path: `${out}/12_bea_phone_line_incoming.png` });
+  await alex.page.screenshot({ path: `${out}/12_alex_phone_line_ringing.png` });
+  await bea.page.getByRole("button", { name: "Answer" }).click();
+  await bea.page.waitForURL(/phone-line\/call\//);
+  const t = await waitFor(async () => (await flowing(alex.page, "audio")) && (await flowing(bea.page, "audio")));
+  check("phone line: audio flowing both ways", t >= 0, `${t} ms`);
+  check("phone line: both show On call", await waitFor(async () => /On call/.test(await status(alex.page) ?? "") && /On call/.test(await status(bea.page) ?? ""), 8000) >= 0);
+  await waitFor(async () => fnCalls("charge_call_session_minute", "alex").length > 0, 5000);
+  check("phone line: billing starts after media (caller only)", fnCalls("mark_call_session_connected").length >= 1 && fnCalls("charge_call_session_minute", "alex").length === 1 && fnCalls("charge_call_session_minute", "bea").length === 0);
+  check("phone line: no camera opened", await alex.page.evaluate(() => window.__streams.every((s) => s.getVideoTracks().length === 0)));
+  check("phone line: signaling on its own topic call-pl-<id>", signals.some((x) => /realtime:call-pl-44444444-/.test(x.topic)));
+  await alex.page.waitForTimeout(800);
+  await alex.page.screenshot({ path: `${out}/13_alex_phone_line_on_call.png` });
+  await alex.page.getByRole("button", { name: "Mute" }).click();
+  check("phone line: peer sees the mute", await bea.page.getByText("Alex muted their microphone").waitFor({ timeout: 5000 }).then(() => true).catch(() => false));
+  await alex.page.getByRole("button", { name: "Hang up" }).click();
+  check("phone line: end_call_session called", (await waitFor(async () => fnCalls("end_call_session").length > 0, 5000)) >= 0);
+  await bea.page.waitForURL(/\/phone-line$/, { timeout: 10000 }).catch(() => undefined);
+  check("phone line: receiver returns to Phone Line when the caller hangs up", /\/phone-line$/.test(bea.page.url()), bea.page.url().replace(base, ""));
+  await alex.page.waitForTimeout(500);
+  check("phone line: every mic track stopped (both)", (await allTracksEnded(alex.page)) && (await allTracksEnded(bea.page)));
+  await alex.ctx.close(); await bea.ctx.close();
+}
+
+// ===== 9. Phone Line: decline, no minutes, microphone blocked =====
+if (run(9)) {
+  const bea = await setup(browser, "bea");
+  await bea.page.goto(`${base}/phone-line`, { waitUntil: "networkidle" });
+  const alex = await setup(browser, "alex");
+  await alex.page.goto(`${base}/phone-line/call/new?to=${users.bea.profileId}`, { waitUntil: "domcontentloaded" });
+  await bea.page.getByRole("alertdialog").waitFor({ timeout: 10000 });
+  await bea.page.getByRole("button", { name: "Decline" }).click();
+  check("phone line: decline_call_session used", (await waitFor(async () => fnCalls("decline_call_session", "bea").length > 0, 5000)) >= 0);
+  check("phone line: caller sees the decline with Leave a voice reply", await alex.page.getByText("Bea can't take your call right now").waitFor({ timeout: 8000 }).then(() => true).catch(() => false)
+    && await alex.page.getByRole("button", { name: "Leave a voice reply" }).isVisible());
+  await alex.page.screenshot({ path: `${out}/14_alex_phone_line_declined.png` });
+  check("phone line: caller mic released after decline", await allTracksEnded(alex.page));
+  await alex.ctx.close(); await bea.ctx.close();
+
+  plMinutes = 0;
+  const before = fnCalls("start_phone_line_call_session").length;
+  const a2 = await setup(browser, "alex");
+  await a2.page.goto(`${base}/phone-line/call/new?to=${users.bea.profileId}`, { waitUntil: "domcontentloaded" });
+  check("phone line: no minutes -> clear screen with Buy minutes", await a2.page.getByText("You need phone minutes to call").waitFor({ timeout: 8000 }).then(() => true).catch(() => false)
+    && await a2.page.getByRole("button", { name: "Buy minutes" }).isVisible());
+  check("phone line: no minutes -> nobody rang", plSessions.size === [...plSessions.values()].length && fnCalls("start_phone_line_call_session").length === before + 1 && [...plSessions.values()].every((r) => r.status !== "ringing"));
+  await a2.page.screenshot({ path: `${out}/15_alex_phone_line_no_minutes.png` });
+  await a2.ctx.close();
+  plMinutes = 5;
+
+  const before2 = fnCalls("start_phone_line_call_session").length;
+  const a3 = await setup(browser, "alex", { denyMic: true });
+  await a3.page.goto(`${base}/phone-line/call/new?to=${users.bea.profileId}`, { waitUntil: "domcontentloaded" });
+  check("phone line: mic blocked -> clear message, nobody rang", await a3.page.getByText("Microphone access is blocked").waitFor({ timeout: 8000 }).then(() => true).catch(() => false)
+    && fnCalls("start_phone_line_call_session").length === before2);
+  await a3.ctx.close();
 }
 
 await browser.close();
