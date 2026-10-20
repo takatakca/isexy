@@ -231,7 +231,53 @@ functions step can follow the migrations without a payment gap.
 
 Reviewer run on top of `c6162b6`. Running notes, updated with every commit.
 
-- [ ] A. Every main commit 0a0c6be..a188694: fix still present (kept / changed on purpose)
+- [x] A. Every main commit 0a0c6be..a188694: fix still present (kept / changed on purpose)
 - [ ] B. 0013/0014 on top of production (0001-0012): apply, no weaker redefinition of main's functions/policies/grants, main's deployed RPC calls still work
 - [ ] C. Malicious signed-in member against the final schema: findings proven locally, fixed in 0014, smoke cases
 - [ ] D. Both migration tests, all SQL tests, typecheck, build, lint, e2e; HANDOFF + deploy plan; push
+
+### A. Main's 47 commits against the merged tree
+
+Method: every file each commit touched, `git diff origin/main HEAD -- <file>`,
+hunks read. 34 of the 51 files main touched are byte-identical on the branch
+(all six `_shared` helpers, main's 0004-0012, five Deno tests, five of six SQL
+assertions, `ContactUs.tsx`, `isexy-send-ticket-confirmation`,
+`isexy-verify-iap-receipt`, the Cron workflow, `generate-seo.mjs`, main's docs).
+The 17 that differ were read hunk by hunk. **No accidental loss found; nothing
+had to be restored.**
+
+| Commit | What it fixed | Verdict |
+|---|---|---|
+| d713375 | SMS-only Stripe customers, portal return URL not from Origin | kept (`signedInMember` takes SMS members; portal returns to `isexyAppUrl("/my-subscription")`, main had `/settings`: on purpose, same host rule) |
+| f54b35f | 0004 `normalize_gender` search_path | kept (file identical; our copy in 0014 was removed; final definition checked in B) |
+| 75139c2 | 0005 12 FK indexes | kept (file identical; none dropped by 0013/0014, B) |
+| 6c90acc | My Subscription: lookup failure is not "Free plan" | kept, combined with the wallet (unavailable card + retry) |
+| e0f9a44 | 0006 adult trigger + CI assertion | kept (identical; trigger present after 0013/0014, B) |
+| b668f2c | IAP 501 fail closed | kept (identical) |
+| 6140d54 | Cuba: no fake 2000-01-01 birth date; CI quarantine | kept (redirect to profile setup; CI quarantine identical) |
+| e12c3ad | Cuba: stop when an upload failed | kept (same check, then the `set_my_cuban_flag` RPC instead of a direct `is_cuban` write: on purpose, the column is protected) |
+| e353ede | 0007 service-role resets, monthly Boost only when due | kept; 0013 R8 replaces the monthly body with the same "only when due" rule (B checks grants and behaviour) |
+| f889e93 | 0008 maintenance RPCs, `get_admin_users` staff only | kept (identical; our duplicate removed; B) |
+| 5949610 | reset-allowances: HTTP 500 when a task fails | kept (+ `expire_member_plans` task, same reporting) |
+| 7923772 | 0009 ticket staff-field trigger | kept (identical; C attacks it) |
+| ceeb511 | Restore Purchase: real `RP-` review ticket | kept (same code, next to the automatic restore) |
+| ef9c5cb | customer ownership tag, return URLs from `ISEXY_APP_URL` | kept (helpers identical; the 4 checkouts and the portal use `isexyAppUrl`; `returnPath` is a strict internal path) |
+| 99c1ea0 | 0010 ticket policies without `auth.users` | kept (identical; C2 regenerated skips them; B compares policies) |
+| 0978d57, 470f9ee, f6e6a02 | release SHA, superseded runs, Data API smoke | kept (CI hunks identical; ours only adds build vars and the smoke step) |
+| 62ca7c1 | no unfulfilled 50 % countdown | kept (no countdown anywhere in the UI; a Stripe coupon path stays server-side and inert until the owner sets `ISEXY_STRIPE_COUPON_FIRST_WEEK`) |
+| e05bcba | Contact: email confirmation only when sent | kept (identical) |
+| 830c106 | `safeCheckoutMetadata` (no client payer/product) | kept (+ gift recipient must be an active member, not the payer) |
+| 5b9a684 | never acknowledge unprocessed events / unpaid sessions | kept; changed on purpose: a **failed** event is processed again on the next delivery (every effect is one idempotent SQL transaction) instead of 503 for ever; in-flight duplicates still 503 |
+| 705cc26 | gate fails closed, redirect only to Stripe | kept, stricter (webhook secret also required; `billing.stripe.com` allowed for the portal only through `startCheckout`) |
+| 08b41aa, 7778ede | 0011 atomic credits/minutes | kept (file + test identical; 0013 routes it through `fulfill_stripe_payment`, same contract: B) |
+| 3a6b418 | JWT + secret Cron, POST only | kept (workflow identical; function POST/secret code untouched) |
+| 1d2d5e7 | identity from server metadata + customer tag, no email | kept (`checkoutOwnerId` in the webhook and in check-subscription) |
+| a2bb95b | ticket confirmation only for owner/staff | kept (identical) |
+| 9fa7273 | Premium only for active/trialing | kept (in SQL `refresh_member_plan`; B/C call it with `incomplete`) |
+| dd06a77 | entitlement write failures fail the event | kept (every RPC error throws, event 500) |
+| 445fc82 | 0012 atomic boosts | kept (file identical); changed on purpose: Super Likes go to the spendable balance (main's assertion updated) |
+| 137ff53, eabe020, d63ea01, 3fd32a5, de02fac, 731a6e2, 11b8af5, 55c54af, c089125, a5ac3d2, 40489d7, abb2b0b, 1a75cc2, a108c48, 1ac58e5, a188694 | docs / work-log claims | kept (docs identical; WORKLOG keeps both histories) |
+
+Not a regression, noted: `CubanDonations.tsx` still follows `data.url`
+without the Stripe-host check (same as main; Cuba is on hold, the URL comes
+from our own function).
