@@ -232,7 +232,7 @@ functions step can follow the migrations without a payment gap.
 Reviewer run on top of `c6162b6`. Running notes, updated with every commit.
 
 - [x] A. Every main commit 0a0c6be..a188694: fix still present (kept / changed on purpose)
-- [ ] B. 0013/0014 on top of production (0001-0012): apply, no weaker redefinition of main's functions/policies/grants, main's deployed RPC calls still work
+- [x] B. 0013/0014 on top of production (0001-0012): apply, no weaker redefinition of main's functions/policies/grants, main's deployed RPC calls still work
 - [ ] C. Malicious signed-in member against the final schema: findings proven locally, fixed in 0014, smoke cases
 - [ ] D. Both migration tests, all SQL tests, typecheck, build, lint, e2e; HANDOFF + deploy plan; push
 
@@ -281,3 +281,46 @@ had to be restored.**
 Not a regression, noted: `CubanDonations.tsx` still follows `data.url`
 without the Stripe-host check (same as main; Cuba is on hold, the URL comes
 from our own function).
+
+### B. 0013/0014 on top of production (0001-0012)
+
+Throwaway PostgreSQL 16 (port 55721, `/var/tmp/isexy-review-pg`: the
+postgres user cannot traverse `/tmp/claude-0`, mode 700). Database `prod` =
+v1-mock + 0001-0012 applied by `migrate.sh --apply` from a copy holding only
+those 12 files (byte-identical to origin/main; the 7 hashes main's docs record
+match). Main's six SQL assertions pass there (with main's own boost assertion).
+Snapshot of the catalog, then the real repo: dry run lists **only 0013 and
+0014**, `--apply` OK (guard "V1 objects unchanged" for both), re-run "up to
+date". Snapshot again and compared (`scratchpad/review/snap.sh`):
+
+| Compared | Result |
+|---|---|
+| Functions (52 before) | none dropped; 47 new; 14 bodies replaced: 11 of ours (0001-era RPCs), `reset_monthly_allowances`, `fulfill_stripe_credit_purchase`, `fulfill_stripe_boost_purchase` (below) |
+| EXECUTE (anon / authenticated / PUBLIC) | only revocations on existing functions (13 lose anon or authenticated); new anon-callable functions are only trigger functions and the pure `tier_rank(text)` |
+| Policies (153 before, 142 after) | 18 member write policies removed (0014 closures, RPCs instead), 7 SELECT/INSERT policies added on new tables, 84 changed only by the `(select auth.uid())` rewrite, 34 tightened (`has_role` initplan or stricter WITH CHECK). Main's two 0010 ticket policies unchanged |
+| Table grants | anon/authenticated lose TRUNCATE, TRIGGER, REFERENCES; nothing widened except SELECT/INSERT on 4 new tables |
+| Triggers | none removed or disabled (0006 adult, 0009 ticket guard on) |
+| Indexes | main's 12 `idx_isexy_*` kept; 2 dropped on purpose (`swipes_swiper_idx` duplicate, `referrals_referral_code_key`: one code is shared by all friends of a referrer, one referral per referred member instead) |
+| RLS | never turned off |
+
+Main's replaced functions:
+- `fulfill_stripe_credit_purchase` / `fulfill_stripe_boost_purchase`: same
+  signature, `search_path ''`, service-role check, session check, product
+  lists, 22023 errors and boolean answer; credit through `fulfill_stripe_payment`
+  (same catalog: credits_25 = 30, credits_50 = 65, credits_100 = 140, same
+  advisory lock keys). Super Likes to the spendable balance (on purpose, A).
+- `reset_monthly_allowances`: same "only when due" rule and service-role
+  grant. **Fixed in this review:** the 0013 body had `search_path = isexy,
+  extensions` where main's 0007 pinned `''`; now `''` with schema-qualified
+  names again (0013 is unapplied, so edited in place).
+
+Main's deployed functions against the final schema: new
+`scripts/isexy/test/live-functions-compat.sql` (54 checks, in CI's smoke
+step) replays every database call of the live webhook v6, reset-allowances
+v3, whatsapp-otp, missed-call, Twilio inbound/status and ai-chat as the
+service role, valid and invalid inputs, plus the service-only RPCs refused to
+members and anon. All pass on 0001-0014. The same file on 0001-0012 shows
+what production does **today**: the v6 `subscriptions` upsert fails (42P10, no
+unique `profile_id`), so a subscription checkout is never recorded until 0013
+is applied; and a boost purchase for a missing profile hits a foreign-key
+error instead of a clean 22023.

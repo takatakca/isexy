@@ -3115,33 +3115,34 @@ GRANT EXECUTE ON FUNCTION isexy.redeem_coupon_unchecked(text, uuid) TO service_r
 -- Monthly Boost every 30 days for Gold/Platinum. Replaces main's 0007 body
 -- (same rule: only when the wallet is due, service role only) and adds: the
 -- plan must be active (is_premium), permanent plans (no end date) get it too,
--- and a Gold/Platinum member without a wallet row gets one.
+-- and a Gold/Platinum member without a wallet row gets one. Keeps 0007's
+-- empty search_path (every name schema-qualified).
 CREATE OR REPLACE FUNCTION isexy.reset_monthly_allowances()
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = isexy, extensions
+SET search_path = ''
 AS $$
 DECLARE
   v_count integer;
 BEGIN
-  UPDATE allowances SET
+  UPDATE isexy.allowances SET
     monthly_boosts = monthly_boosts_max,
     monthly_reset_at = now() + interval '30 days',
     updated_at = now()
   WHERE monthly_reset_at <= now();
 
-  INSERT INTO boost_wallets (profile_id)
-  SELECT p.id FROM profiles p
+  INSERT INTO isexy.boost_wallets (profile_id)
+  SELECT p.id FROM isexy.profiles p
    WHERE p.is_premium AND p.subscription_tier IN ('gold', 'platinum')
      AND (p.subscription_expires_at IS NULL OR p.subscription_expires_at > now())
   ON CONFLICT (profile_id) DO NOTHING;
 
-  UPDATE boost_wallets w SET
+  UPDATE isexy.boost_wallets w SET
     monthly_boost_available = true,
     monthly_boost_reset_at = now() + interval '30 days',
     updated_at = now()
-  FROM profiles p
+  FROM isexy.profiles p
   WHERE p.id = w.profile_id
     AND p.is_premium AND p.subscription_tier IN ('gold', 'platinum')
     AND (p.subscription_expires_at IS NULL OR p.subscription_expires_at > now())
