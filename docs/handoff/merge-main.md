@@ -226,3 +226,12 @@ like-back, matches, referrals, star cash-out, Cuban flag/review, scheduled
 calls, Double Hangout, forum; scan of origin/main `src/`). The live webhook
 v6 keeps working against 0013 (its two RPCs keep their contract), so the
 functions step can follow the migrations without a payment gap.
+
+## 7. Review of the merge (adversarial, 2026-10-20)
+
+Reviewer run on top of `c6162b6`. Running notes, updated with every commit.
+
+- [ ] A. Every main commit 0a0c6be..a188694: fix still present (kept / changed on purpose)
+- [ ] B. 0013/0014 on top of production (0001-0012): apply, no weaker redefinition of main's functions/policies/grants, main's deployed RPC calls still work
+- [ ] C. Malicious signed-in member against the final schema: findings proven locally, fixed in 0014, smoke cases
+- [ ] D. Both migration tests, all SQL tests, typecheck, build, lint, e2e; HANDOFF + deploy plan; push
