@@ -13,9 +13,9 @@ on top of it.
 - [x] 1. Map of main's changes (this file)
 - [x] 2. `git merge origin/main`, conflicts resolved, decisions below (typecheck clean; `deno check` of every function and main's 5 Deno tests pass: Deno 2.5.6 from npm in the scratchpad)
 - [x] 3. Our migrations renumbered 0013/0014 and reconciled with main's 0004-0012
-- [ ] 4. Migration tests (from scratch + production simulation), every smoke test, typecheck, build, lint, e2e
-- [ ] 5. Functions to deploy (content differs from main, or new)
-- [ ] 6. HANDOFF.md, WORKLOG.md, push
+- [x] 4. Migration tests (from scratch + production simulation), every smoke test, typecheck, build, lint, e2e
+- [x] 5. Functions to deploy (content differs from main, or new)
+- [x] 6. HANDOFF.md, WORKLOG.md, push
 
 ## 1. What main changed and why (0a0c6be..a188694)
 
@@ -156,3 +156,73 @@ forced back to mode 700):
    files moved aside; main's six assertions pass there except the updated
    boost one, which describes 0013), files put back: dry run lists **only
    0013 and 0014**, `--apply` OK, re-run "up to date", all SQL tests above pass.
+
+## 4. Checks after the merge
+
+- Migration tests 1 (from scratch) and 2 (production simulation): §3, all pass.
+- `npm run typecheck`: clean. `npm run build` (offline): OK.
+- `npm run lint`: 116 errors on the branch, 161 on origin/main; compared per
+  file and rule: no file has more errors than on main (no new errors).
+- `deno check supabase/functions/isexy-*/index.ts` and main's five Deno tests
+  (`scripts/isexy/test/*.test.ts`): pass (Deno 2.5.6 from npm, scratchpad).
+- e2e on the offline preview build (390x844, mocked backend): discover 36,
+  accounts-auth-setup 28, accounts-profile 24, accounts-settings 54,
+  accounts-signups 26, accounts-layout 33, chat 39, chat-notifications 21,
+  calls 62, calls-phone-line-pages 53, calls-twilio 43, rewards 95: all PASS;
+  smoke-swipe / -chat / -auth / -reposition ran without page errors.
+  `rewards-e2e.mjs` changed with the merge: checkouts return a mocked Stripe
+  URL (the app only follows Stripe hosts now), the countdown section asserts
+  no banner and no `promo` in the body, + gate unreadable → "Payments
+  unavailable" and no checkout, + a non-Stripe checkout URL is refused, +
+  the review ticket of Restore purchase (`RP-…`, own user id, nothing
+  claimed restored).
+
+## 5. Functions to deploy (content differs from origin/main, `_shared` imports included)
+
+Computed with `git show origin/main:<file>` vs HEAD over each function's
+files plus every relative import, transitively. No function exists on only
+one side. `verify_jwt` from `supabase/config.toml` (absent = true).
+
+| Function | verify_jwt | Differing files |
+|---|---|---|
+| isexy-stripe-webhook | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-create-checkout | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-create-credit-purchase | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-create-minute-purchase | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-create-one-time-payment | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-check-subscription | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-customer-portal | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-payments-gate-status | false | index.ts, _shared/payments.ts, _shared/env.ts |
+| isexy-reset-allowances | true | index.ts, _shared/env.ts |
+| isexy-translate-message | false | index.ts, _shared/env.ts |
+| isexy-send-push-notification | false | index.ts, _shared/env.ts |
+| isexy-send-notification-email | false | index.ts, _shared/env.ts |
+| isexy-send-missed-call-notification | false | index.ts, _shared/env.ts |
+| isexy-send-whatsapp-call-notification | false | index.ts, _shared/env.ts |
+| isexy-twilio-inbound-phone-line | false | index.ts, _shared/twilio.ts, _shared/env.ts |
+| isexy-twilio-phone-line-menu | false | index.ts, _shared/twilio.ts, _shared/env.ts |
+| isexy-twilio-call-status | false | index.ts, _shared/twilio.ts, _shared/env.ts |
+| isexy-get-voice-greeting-url | true | index.ts |
+| isexy-ai-chat | false | _shared/env.ts only |
+| isexy-send-ticket-confirmation | false | _shared/env.ts only |
+| isexy-send-ticket-status-update | false | _shared/env.ts only |
+| isexy-send-verification-notification | false | _shared/env.ts only |
+| isexy-send-whatsapp-otp | false | _shared/env.ts only |
+
+`_shared/env.ts` differs by one line (`TWILIO_WEBHOOK_BASE` read only as
+`ISEXY_TWILIO_WEBHOOK_BASE`): no behaviour change for the five "env only"
+functions; redeploying them keeps the deployed bundles equal to the repo.
+Same as main: `isexy-get-voice-reply-url`, `isexy-verify-iap-receipt`.
+Differ but **quarantined (never deploy)**: `isexy-seed-profiles` (env only),
+`isexy-subscription-resets` (index.ts + env).
+
+## 6. Deploy order (also in docs/HANDOFF.md › Deploy plan)
+
+Migrations 0013 → 0014 (`migrate.sh` dry run must list only those two),
+then the 23 functions of §5, then merge this branch into `main` so Render
+serves the new client, in one window: main's live client writes tables
+that 0013/0014 close (video_call_sessions, messages read state, swipes
+like-back, matches, referrals, star cash-out, Cuban flag/review, scheduled
+calls, Double Hangout, forum; scan of origin/main `src/`). The live webhook
+v6 keeps working against 0013 (its two RPCs keep their contract), so the
+functions step can follow the migrations without a payment gap.

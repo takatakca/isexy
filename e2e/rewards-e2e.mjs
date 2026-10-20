@@ -133,11 +133,19 @@ async function open({ gate = "test", w = {}, loyalty = null, rpc = {}, fns = {},
     if (name === "isexy-payments-gate-status") return reply(route, 200, GATE[gate]);
     if (name === "isexy-check-subscription") return reply(route, 200, { subscribed: s.wallet.is_premium, tier: s.wallet.is_premium ? s.wallet.tier : null, subscription_end: s.wallet.plan_expires_at, restored: 0, purchases_restored: 0 });
     if (/^isexy-create-|^isexy-customer-portal$/.test(name)) {
-      // Stripe "sends the member back" at once: the returned URL is the success page.
+      // A Stripe page (the app only follows checkout.stripe.com / billing.stripe.com),
+      // which "sends the member back" at once to the success page (mocked below).
       const back = name === "isexy-create-checkout" ? "/my-subscription" : name === "isexy-customer-portal" ? "/my-subscription" : new URL(req.headers()["referer"] ?? base).pathname;
-      return reply(route, 200, { url: `${base}${back}?checkout=success` });
+      const host = name === "isexy-customer-portal" ? "billing.stripe.com" : "checkout.stripe.com";
+      return reply(route, 200, { url: `https://${host}/c/pay/cs_test_e2e?back=${encodeURIComponent(`${base}${back}?checkout=success`)}` });
     }
     return route.fallback();
+  });
+  // Stripe's pages, mocked: go straight back to the URL the checkout named.
+  await ctx.route(/^https:\/\/(checkout|billing)\.stripe\.com\//, (route) => {
+    const back = new URL(route.request().url()).searchParams.get("back") ?? base;
+    s.calls.push({ kind: "stripe", name: new URL(route.request().url()).hostname, body: null });
+    return route.fulfill({ status: 200, contentType: "text/html", body: `<!doctype html><script>location.replace(${JSON.stringify(back)})</script>` });
   });
   const page = await ctx.newPage();
   const errors = [];
@@ -195,6 +203,31 @@ async function finish(t, label) {
   await finish(t, "paused");
 }
 
+// ---------------------------------------------------------------- 2b. Gate unreadable: sales stay closed (main 705cc26)
+{
+  const t = await open({ fns: { "isexy-payments-gate-status": () => [500, { error: "boom" }] } });
+  await t.page.goto(base + "/get-boosts");
+  await settle(t.page, 900);
+  check("gate unreadable: Get Boosts button says Payments unavailable", await t.page.getByRole("button", { name: "Payments unavailable" }).first().isDisabled().catch(() => false));
+  await t.page.goto(base + "/premium");
+  await settle(t.page, 900);
+  check("gate unreadable: Premium button disabled", await t.page.getByRole("button", { name: "Payments unavailable" }).first().isDisabled().catch(() => false));
+  check("gate unreadable: notice says nothing can be bought", await t.page.getByText("could not check whether payments are open", { exact: false }).first().isVisible().catch(() => false));
+  check("gate unreadable: no checkout function called", calls(t.s, "fn").every((c) => !/create-|customer-portal/.test(c.name)), calls(t.s, "fn").map((c) => c.name).join(","));
+  await finish(t, "gate unreadable");
+}
+
+// ---------------------------------------------------------------- 2c. Only Stripe's own pages are followed (main 705cc26)
+{
+  const t = await open({ gate: "test", fns: { "isexy-create-one-time-payment": () => [200, { url: "https://evil.example/pay" }] } });
+  await t.page.goto(base + "/get-boosts");
+  await settle(t.page, 900);
+  await t.page.getByRole("button", { name: /Continue — \$32\.90 CAD/ }).click();
+  await settle(t.page, 800);
+  check("checkout URL not on Stripe: the page stays, member told", new URL(t.page.url()).pathname === "/get-boosts" && /Unexpected payment page/.test(await toastText(t.page)), `${t.page.url()} ${await toastText(t.page)}`);
+  await finish(t, "non-Stripe URL");
+}
+
 // ---------------------------------------------------------------- 3. Premium checkout (test mode) and return
 {
   const t = await open({ gate: "test" });
@@ -214,16 +247,16 @@ async function finish(t, label) {
   await finish(t, "premium");
 }
 
-// ---------------------------------------------------------------- 4. First-week offer only when the coupon exists
+// ---------------------------------------------------------------- 4. No countdown banner (main 62ca7c1, decision 19), even with the coupon
 {
   const t = await open({ gate: "test_promo" });
   await t.page.goto(base + "/premium");
   await settle(t.page, 900);
-  check("promo: banner shown when the coupon exists", await t.page.getByText("First week special offer").isVisible());
-  await t.page.getByRole("button", { name: /Claim Your 50% Discount/ }).click();
+  check("promo: no countdown/discount banner, even when the coupon exists", !(await t.page.getByText("First week special offer").isVisible().catch(() => false)) && !(await t.page.getByText(/Expires in/).isVisible().catch(() => false)));
+  await t.page.getByRole("button", { name: /Continue Gold/ }).click();
   await settle(t.page, 800);
   const checkout = calls(t.s, "fn", "isexy-create-checkout")[0];
-  check("promo: asks for the week plan with promo:true (server applies the coupon)", checkout?.body?.promo === true && checkout?.body?.duration === "week", JSON.stringify(checkout?.body));
+  check("promo: the plan button never asks for a discount", checkout && checkout.body?.promo === undefined, JSON.stringify(checkout?.body));
   await finish(t, "promo");
 }
 
@@ -356,6 +389,16 @@ async function finish(t, label) {
   const rc = calls(t.s, "fn", "isexy-check-subscription")[0];
   check("restore: asks the server with restore:true", rc?.body?.restore === true, JSON.stringify(rc?.body));
   check("restore: says what was found", await t.page.getByText(/ISEXY Gold plan is active/).isVisible() && await t.page.getByText(/1 missing purchase was added/).isVisible());
+  // Bought on another account (main ceeb511): a real review ticket, nothing granted.
+  await t.page.getByLabel("Purchase confirmation number").fill("pi_test_123");
+  await t.page.getByLabel("Your name").fill("Ana");
+  await t.page.getByLabel("Contact email address").fill("ana@example.com");
+  await t.page.getByRole("button", { name: "Request purchase review" }).click();
+  await settle(t.page, 900);
+  const ticket = calls(t.s, "write").find((c) => c.name.startsWith("POST support_tickets"));
+  const row = Array.isArray(ticket?.body) ? ticket.body[0] : ticket?.body;
+  check("restore: other account opens a support ticket (RP-, payments, own user id)", !!row && /^RP-[0-9A-F]{12}$/.test(row.ticket_number) && row.category === "Payments" && row.user_id === ID && /pi_test_123/.test(row.message), JSON.stringify(row));
+  check("restore: ticket number shown, nothing claimed restored", await t.page.getByText(/Review ticket created: RP-/).isVisible().catch(() => false) && await t.page.getByText(/has not been restored yet/).isVisible().catch(() => false));
   await finish(t, "restore");
 }
 
