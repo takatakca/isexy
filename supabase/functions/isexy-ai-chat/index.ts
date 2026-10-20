@@ -9,8 +9,9 @@ import { claudeClient, streamChatAsSse } from "../_shared/claude.ts";
  *   → text/event-stream (`data: {"choices":[{"delta":{"content"}}]}` lines, answered by Claude). Response headers:
  *     X-Conversation-Id  conversation row the transcript is stored in
  *     X-KB-Sources       JSON [{id,title,category}] of articles used to ground the answer
- * POST { action: "handoff", conversationId, guestSessionId?, note? }
- *   → { ok, sessionId } — queues the conversation for a human agent.
+ * POST { action: "handoff", conversationId }   (signed-in members only; guests get 401 sign_in_required)
+ *   → { ok, sessionId, conversationId } — queues the conversation for a person (or returns the
+ *     member's open session); replies arrive in isexy.live_chat_messages.
  *
  * Works for guests and signed-in members. All database writes use the service
  * role so RLS on chatbot_* / live_chat_sessions never blocks a visitor; ownership
@@ -287,7 +288,22 @@ serve(async (req) => {
     }
 
     // ---- Human handoff --------------------------------------------------
+    // Signed-in members only: an agent's replies reach the member through
+    // live_chat_messages (RLS: the session's user_id), which a guest session
+    // cannot have. Guests are offered sign-in or a ticket by the widget.
     if (body.action === "handoff") {
+      if (!userId) return json({ error: "Sign in to chat with our team, or send us a ticket.", code: "sign_in_required" }, 401);
+      // One open session per member: reuse it.
+      const { data: open } = await admin
+        .from("live_chat_sessions")
+        .select("id, chatbot_conversation_id")
+        .eq("user_id", userId)
+        .in("status", ["waiting", "active"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (open) return json({ ok: true, sessionId: open.id, conversationId: open.chatbot_conversation_id ?? null, reused: true });
+
       const conversationId = await resolveConversation(admin, userId, body.conversationId, guestSessionId);
       if (!conversationId) return json({ error: "Conversation not found" }, 404);
       await admin.from("chatbot_conversations").update({ status: "transferred" }).eq("id", conversationId);
@@ -297,17 +313,8 @@ serve(async (req) => {
         .select("id")
         .single();
       if (error) {
-        // Older databases without the chatbot_conversation_id column.
-        const retry = await admin
-          .from("live_chat_sessions")
-          .insert({ user_id: userId, status: "waiting" })
-          .select("id")
-          .single();
-        if (retry.error) {
-          console.error("Handoff failed:", retry.error.message);
-          return json({ error: "Could not reach the support queue" }, 500);
-        }
-        return json({ ok: true, sessionId: retry.data.id, conversationId });
+        console.error("Handoff failed:", error.message);
+        return json({ error: "Could not reach the support queue" }, 500);
       }
       return json({ ok: true, sessionId: data.id, conversationId });
     }

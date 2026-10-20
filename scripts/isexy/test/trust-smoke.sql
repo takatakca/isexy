@@ -294,6 +294,81 @@ INSERT INTO results SELECT 'T3 the guest sees the new status', max(status) = 're
   FROM isexy.get_ticket_status('IS-GUEST1', 'guest@example.ca');
 RESET ROLE;
 
+-- T4 live chat ----------------------------------------------------------------
+INSERT INTO isexy.chatbot_conversations (id, user_id, session_id, status)
+VALUES ('ffffffff-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000a', 'member_x', 'transferred');
+INSERT INTO isexy.chatbot_messages (conversation_id, role, content, created_at) VALUES
+ ('ffffffff-0000-0000-0000-000000000001', 'user', 'I was charged twice', now() - interval '2 minutes'),
+ ('ffffffff-0000-0000-0000-000000000001', 'assistant', 'Let me get a person', now() - interval '1 minute');
+INSERT INTO isexy.live_chat_sessions (id, user_id, status, chatbot_conversation_id)
+VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'dddddddd-0000-0000-0000-00000000000a', 'waiting', 'ffffffff-0000-0000-0000-000000000001');
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'user', 'dddddddd-0000-0000-0000-00000000000a', 'hello?');
+INSERT INTO results SELECT 'T4 member posts in their waiting session', count(*) = 1, count(*)::text
+  FROM isexy.live_chat_messages WHERE session_id = 'ffffffff-0000-0000-0000-0000000000a1';
+DO $$ BEGIN
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'agent', 'dddddddd-0000-0000-0000-00000000000a', 'fake agent');
+  INSERT INTO results VALUES ('T4 member cannot post as an agent', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T4 member cannot post as an agent', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.staff_accept_live_chat('ffffffff-0000-0000-0000-0000000000a1');
+  INSERT INTO results VALUES ('T4 member cannot accept a chat', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T4 member cannot accept a chat', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
+INSERT INTO results SELECT 'T4 other members see neither the session nor its messages',
+  (SELECT count(*) FROM isexy.live_chat_sessions) = 0 AND (SELECT count(*) FROM isexy.live_chat_messages) = 0, NULL;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator
+INSERT INTO results SELECT 'T4 moderator sees the waiting queue', count(*) = 1, count(*)::text
+  FROM isexy.live_chat_sessions WHERE status = 'waiting';
+INSERT INTO results SELECT 'T4 moderator reads the assistant transcript', count(*) = 2, string_agg(role, ',')
+  FROM isexy.staff_get_live_chat_transcript('ffffffff-0000-0000-0000-0000000000a1');
+INSERT INTO results SELECT 'T4 moderator accepts', r.status = 'active' AND r.agent_id = 'dddddddd-0000-0000-0000-00000000000d', r.status
+  FROM isexy.staff_accept_live_chat('ffffffff-0000-0000-0000-0000000000a1') r;
+INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'agent', 'dddddddd-0000-0000-0000-00000000000d', 'Hi Ana, I can help.');
+INSERT INTO results SELECT 'T4 joined message + agent reply', count(*) = 3 AND bool_or(sender_type = 'system' AND content LIKE 'Mod from ISEXY Support joined%'), string_agg(sender_type, ',' ORDER BY created_at)
+  FROM isexy.live_chat_messages WHERE session_id = 'ffffffff-0000-0000-0000-0000000000a1';
+DO $$ BEGIN
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'user', 'dddddddd-0000-0000-0000-00000000000d', 'as the member');
+  INSERT INTO results VALUES ('T4 agent cannot post as the member', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T4 agent cannot post as the member', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- admin
+DO $$ BEGIN
+  PERFORM isexy.staff_accept_live_chat('ffffffff-0000-0000-0000-0000000000a1');
+  INSERT INTO results VALUES ('T4 a taken chat cannot be accepted again', false, 'call succeeded');
+EXCEPTION WHEN no_data_found THEN
+  INSERT INTO results VALUES ('T4 a taken chat cannot be accepted again', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+INSERT INTO results SELECT 'T4 member reads the agent reply', count(*) = 1, count(*)::text
+  FROM isexy.live_chat_messages WHERE sender_type = 'agent';
+INSERT INTO results SELECT 'T4 member ends the chat', isexy.end_my_live_chat('ffffffff-0000-0000-0000-0000000000a1'), NULL;
+DO $$ BEGIN
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'user', 'dddddddd-0000-0000-0000-00000000000a', 'after the end');
+  INSERT INTO results VALUES ('T4 no member message after the end', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T4 no member message after the end', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');
+DO $$ BEGIN
+  PERFORM isexy.staff_close_live_chat('ffffffff-0000-0000-0000-0000000000a1');
+  INSERT INTO results VALUES ('T4 closing an ended chat is refused', false, 'call succeeded');
+EXCEPTION WHEN no_data_found THEN
+  INSERT INTO results VALUES ('T4 closing an ended chat is refused', true, SQLERRM);
+END $$;
+RESET ROLE;
+
 -- @@PARTS@@
 
 -- Report ---------------------------------------------------------------------

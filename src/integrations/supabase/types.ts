@@ -3326,6 +3326,10 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: Json
       }
+      end_my_live_chat: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       get_my_conversations: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3410,9 +3414,43 @@ export type Database = {
         Args: { p_is_cuban?: boolean }
         Returns: undefined
       }
+      staff_accept_live_chat: {
+        Args: { p_session_id: string }
+        Returns: {
+          agent_id: string | null
+          chatbot_conversation_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          started_at: string
+          status: string
+          ticket_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+      }
       staff_bulk_update_tickets: {
         Args: { p_assigned_to?: string | null; p_change_assignee?: boolean; p_status?: string | null; p_ticket_ids: string[] }
         Returns: Json
+      }
+      staff_close_live_chat: {
+        Args: { p_session_id: string }
+        Returns: {
+          agent_id: string | null
+          chatbot_conversation_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          started_at: string
+          status: string
+          ticket_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+      }
+      staff_get_live_chat_transcript: {
+        Args: { p_session_id: string }
+        Returns: { role: string; content: string; created_at: string }[]
       }
       staff_set_profile_verified: {
         Args: { p_profile_id: string; p_verified: boolean }

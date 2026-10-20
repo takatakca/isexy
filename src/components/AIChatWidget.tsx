@@ -30,6 +30,8 @@ type Lang = "en" | "es" | "fr";
 const COPY: Record<Lang, {
   title: string; subtitle: string; greeting: string; placeholder: string; human: string;
   teaser: string; thinking: string; error: string; retry: string; newChat: string; queued: string;
+  guestHuman: string; liveWaiting: string; liveActive: string; endChat: string; livePlaceholder: string;
+  supportName: string; liveEnded: string; liveSendFailed: string; supportReplied: string;
   related: string; disclaimer: string;
   actions: { label: string; query: string; icon: typeof Shield }[];
 }> = {
@@ -44,7 +46,16 @@ const COPY: Record<Lang, {
     error: "I couldn't reply just now.",
     retry: "Try again",
     newChat: "New chat",
-    queued: "✅ **You're in the support queue.** A team member will reply here or by email shortly.\n\n📧 cubaresort.ca@gmail.com · 📞 Canada +1 450 999 4999 · 📞 Cuba +53 5307 1185",
+    queued: "✅ **You're in the queue.** A member of our team will join this chat. Keep writing here; if you leave, their replies will be waiting when you open the assistant again.",
+    guestHuman: "To chat with a person, **[sign in](/auth)** first, or **[send us a ticket](/contact-us)** and we'll answer by e-mail.",
+    liveWaiting: "Live chat · waiting for a team member",
+    liveActive: "Live chat with ISEXY Support",
+    endChat: "End chat",
+    livePlaceholder: "Write to the team…",
+    supportName: "ISEXY Support",
+    liveEnded: "The chat with our team has ended. I'm here if you need anything else.",
+    liveSendFailed: "Not sent. Check your connection and try again.",
+    supportReplied: "ISEXY Support replied to you.",
     related: "Related articles",
     disclaimer: "AI can make mistakes. In an emergency call 911 (Canada) or 106 (Cuba).",
     actions: [
@@ -67,7 +78,16 @@ const COPY: Record<Lang, {
     error: "No pude responder ahora.",
     retry: "Reintentar",
     newChat: "Nuevo chat",
-    queued: "✅ **Estás en la cola de soporte.** Alguien del equipo te responderá aquí o por correo muy pronto.\n\n📧 cubaresort.ca@gmail.com · 📞 Canadá +1 450 999 4999 · 📞 Cuba +53 5307 1185",
+    queued: "✅ **Estás en la cola.** Alguien del equipo se unirá a este chat. Sigue escribiendo aquí; si te vas, sus respuestas te esperarán al volver a abrir el asistente.",
+    guestHuman: "Para hablar con una persona, primero **[inicia sesión](/auth)**, o **[envíanos un ticket](/contact-us)** y te responderemos por correo.",
+    liveWaiting: "Chat en vivo · esperando a alguien del equipo",
+    liveActive: "Chat en vivo con Soporte ISEXY",
+    endChat: "Terminar chat",
+    livePlaceholder: "Escribe al equipo…",
+    supportName: "Soporte ISEXY",
+    liveEnded: "El chat con el equipo terminó. Aquí sigo si necesitas algo más.",
+    liveSendFailed: "No se envió. Revisa tu conexión e inténtalo de nuevo.",
+    supportReplied: "Soporte ISEXY te respondió.",
     related: "Artículos relacionados",
     disclaimer: "La IA puede equivocarse. En una emergencia llama al 106 (Cuba) o 911 (Canadá).",
     actions: [
@@ -90,7 +110,16 @@ const COPY: Record<Lang, {
     error: "Je n'ai pas pu répondre pour le moment.",
     retry: "Réessayer",
     newChat: "Nouvelle discussion",
-    queued: "✅ **Vous êtes dans la file du support.** Un membre de l'équipe vous répondra ici ou par courriel sous peu.\n\n📧 cubaresort.ca@gmail.com · 📞 Canada +1 450 999 4999 · 📞 Cuba +53 5307 1185",
+    queued: "✅ **Vous êtes dans la file.** Un membre de l'équipe va se joindre à cette discussion. Continuez à écrire ici; si vous partez, ses réponses vous attendront à votre retour dans l'assistant.",
+    guestHuman: "Pour clavarder avec une personne, **[connectez-vous](/auth)** d'abord, ou **[envoyez-nous un billet](/contact-us)** et nous répondrons par courriel.",
+    liveWaiting: "Clavardage en direct · en attente d'un membre de l'équipe",
+    liveActive: "Clavardage en direct avec le Soutien ISEXY",
+    endChat: "Terminer",
+    livePlaceholder: "Écrivez à l'équipe…",
+    supportName: "Soutien ISEXY",
+    liveEnded: "La discussion avec l'équipe est terminée. Je reste là si vous avez besoin d'autre chose.",
+    liveSendFailed: "Non envoyé. Vérifiez votre connexion et réessayez.",
+    supportReplied: "Le Soutien ISEXY vous a répondu.",
     related: "Articles liés",
     disclaimer: "L'IA peut se tromper. En cas d'urgence, composez le 911 (Canada) ou le 106 (Cuba).",
     actions: [
@@ -139,12 +168,21 @@ interface Persisted {
   conversationId: string | null;
   guestSessionId: string;
   messages: Message[];
+  /** Open live chat with a person (signed-in members only). */
+  liveSessionId?: string | null;
+}
+
+interface LiveMessage {
+  id: string;
+  sender_type: "user" | "agent" | "system";
+  content: string;
+  created_at: string;
 }
 
 function loadPersisted(ownerId: string | null): Persisted {
   const saved = storageGet<Persisted | null>(STORAGE_KEY, null);
   if (saved && saved.ownerId === ownerId && Array.isArray(saved.messages)) return saved;
-  return { ownerId, conversationId: null, guestSessionId: saved?.guestSessionId ?? newGuestSessionId(), messages: [] };
+  return { ownerId, conversationId: null, guestSessionId: saved?.guestSessionId ?? newGuestSessionId(), messages: [], liveSessionId: null };
 }
 
 export function AIChatWidget() {
@@ -200,6 +238,98 @@ export function AIChatWidget() {
     return () => clearTimeout(timer);
   }, [isOpen]);
 
+  // ---- Live chat with a person (signed-in members; isexy.live_chat_*) ----------
+  const liveSessionId = user ? state.liveSessionId ?? null : null;
+  const [liveMessages, setLiveMessages] = useState<LiveMessage[]>([]);
+  const [liveStatus, setLiveStatus] = useState<"waiting" | "active" | "closed" | null>(null);
+  const [liveError, setLiveError] = useState(false);
+  const [unreadLive, setUnreadLive] = useState(0);
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+  const liveOpen = !!liveSessionId && (liveStatus === "waiting" || liveStatus === "active");
+
+  useEffect(() => {
+    if (isOpen) setUnreadLive(0);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!liveSessionId) {
+      setLiveMessages([]);
+      setLiveStatus(null);
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      const [sess, msgs] = await Promise.all([
+        supabase.from("live_chat_sessions").select("status").eq("id", liveSessionId).maybeSingle(),
+        supabase
+          .from("live_chat_messages")
+          .select("id, sender_type, content, created_at")
+          .eq("session_id", liveSessionId)
+          .order("created_at")
+          .limit(200),
+      ]);
+      if (!alive || sess.error || msgs.error) return;
+      if (!sess.data || sess.data.status === "closed") {
+        // Ended while the member was away: back to the assistant.
+        setState((prev) => ({ ...prev, liveSessionId: null }));
+        return;
+      }
+      setLiveStatus(sess.data.status === "active" ? "active" : "waiting");
+      setLiveMessages((msgs.data ?? []) as LiveMessage[]);
+    })();
+    const channel = supabase
+      .channel(`assistant-live-${liveSessionId}-${Math.random().toString(36).slice(2, 8)}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "isexy", table: "live_chat_messages", filter: `session_id=eq.${liveSessionId}` },
+        (payload) => {
+          const m = payload.new as LiveMessage;
+          setLiveMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+          if (m.sender_type === "agent" && !isOpenRef.current) setUnreadLive((n) => n + 1);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "isexy", table: "live_chat_sessions", filter: `id=eq.${liveSessionId}` },
+        (payload) => {
+          const st = (payload.new as { status?: string }).status;
+          if (st === "closed" || st === "active" || st === "waiting") setLiveStatus(st);
+        },
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      supabase.removeChannel(channel);
+    };
+  }, [liveSessionId]);
+
+  const sendLive = useCallback(async (content: string) => {
+    if (!user || !liveSessionId) return;
+    setInput("");
+    setLiveError(false);
+    const { data, error } = await supabase
+      .from("live_chat_messages")
+      .insert({ session_id: liveSessionId, sender_type: "user", sender_id: user.id, content })
+      .select("id, sender_type, content, created_at")
+      .single();
+    if (error || !data) {
+      console.error("Live chat send failed:", error);
+      setInput(content);
+      setLiveError(true);
+      return;
+    }
+    const sent = data as LiveMessage;
+    setLiveMessages((prev) => (prev.some((x) => x.id === sent.id) ? prev : [...prev, sent]));
+  }, [user, liveSessionId]);
+
+  const endLiveChat = async () => {
+    if (!liveSessionId) return;
+    const { error } = await supabase.rpc("end_my_live_chat", { p_session_id: liveSessionId });
+    if (error) console.error("End live chat failed:", error);
+    setLiveStatus("closed");
+  };
+
   const patchLast = useCallback((patch: Partial<Message>) => {
     setState((prev) => {
       const messages = [...prev.messages];
@@ -212,6 +342,11 @@ export function AIChatWidget() {
   const send = useCallback(async (text: string) => {
     const content = text.trim().slice(0, 2000);
     if (!content || streaming) return;
+    // A person is on (or joining) the chat: the message goes to them, not to the AI.
+    if (liveOpen) {
+      await sendLive(content);
+      return;
+    }
 
     const userMsg: Message = { id: `u_${Date.now()}`, role: "user", content };
     const assistantMsg: Message = { id: `a_${Date.now()}`, role: "assistant", content: "" };
@@ -275,9 +410,7 @@ export function AIChatWidget() {
               patchLast({ content: received });
             }
           } catch {
-            // Incomplete JSON line: put it back and wait for the next chunk.
-            buffer = `${line}\n${buffer}`;
-            break;
+            // A complete line that is not JSON (lines are only read up to a newline): skip it.
           }
         }
       }
@@ -293,7 +426,7 @@ export function AIChatWidget() {
       abortRef.current = null;
       setStreaming(false);
     }
-  }, [streaming, session?.access_token, lang, t.error, patchLast]);
+  }, [streaming, session?.access_token, lang, t.error, patchLast, liveOpen, sendLive]);
 
   // External "Ask AI" triggers (Help Center, FAQ…).
   useEffect(() => {
@@ -318,6 +451,14 @@ export function AIChatWidget() {
 
   const handoff = async () => {
     if (handingOff) return;
+    // A guest session has no owner an agent's reply could reach: sign in or send a ticket.
+    if (!user) {
+      setState((prev) => ({
+        ...prev,
+        messages: [...prev.messages, { id: `h_${Date.now()}`, role: "assistant", content: t.guestHuman }],
+      }));
+      return;
+    }
     setHandingOff(true);
     try {
       const { data, error } = await supabase.functions.invoke("isexy-ai-chat", {
@@ -327,11 +468,13 @@ export function AIChatWidget() {
           guestSessionId: state.guestSessionId,
         },
       });
-      if (error || !data?.ok) throw new Error("handoff failed");
+      if (error || !data?.ok || !data.sessionId) throw new Error("handoff failed");
       track("assistant_handoff");
+      setLiveStatus("waiting");
       setState((prev) => ({
         ...prev,
         conversationId: data.conversationId ?? prev.conversationId,
+        liveSessionId: data.sessionId,
         messages: [...prev.messages, { id: `h_${Date.now()}`, role: "assistant", content: t.queued }],
       }));
     } catch {
@@ -349,7 +492,9 @@ export function AIChatWidget() {
 
   const resetChat = () => {
     abortRef.current?.abort();
-    setState({ ownerId, conversationId: null, guestSessionId: newGuestSessionId(), messages: [] });
+    // Starting over also leaves the queue (an agent would otherwise join an empty chat).
+    if (liveOpen && liveSessionId) void supabase.rpc("end_my_live_chat", { p_session_id: liveSessionId });
+    setState({ ownerId, conversationId: null, guestSessionId: newGuestSessionId(), messages: [], liveSessionId: null });
   };
 
   if (HIDDEN_ON.some((re) => re.test(location.pathname))) return null;
@@ -382,7 +527,13 @@ export function AIChatWidget() {
             aria-label={`Open ${t.title}`}
           >
             <Sparkles className="w-6 h-6" />
-            <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white" />
+            {unreadLive > 0 ? (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-destructive text-white text-[11px] font-bold flex items-center justify-center border-2 border-white" aria-label={t.supportReplied}>
+                {unreadLive}
+              </span>
+            ) : (
+              <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white" />
+            )}
           </button>
         </div>
       )}
@@ -401,7 +552,7 @@ export function AIChatWidget() {
               <p className="font-bold leading-tight">{t.title}</p>
               <p className="text-xs text-white/85 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-300" />
-                {t.subtitle}
+                {liveOpen ? (liveStatus === "active" ? t.liveActive : t.liveWaiting) : t.subtitle}
               </p>
             </div>
             {!empty && (
@@ -441,7 +592,7 @@ export function AIChatWidget() {
                 </div>
               ) : m.content ? (
                 <div key={m.id}>
-                  <AssistantBubble content={m.content} error={m.error} />
+                  <AssistantBubble content={m.content} error={m.error} onNavigate={() => setIsOpen(false)} />
                   {m.error && (
                     <button onClick={retryLast} className="ml-1 mt-1 text-xs text-primary font-semibold hover:underline">{t.retry}</button>
                   )}
@@ -477,14 +628,51 @@ export function AIChatWidget() {
                 {t.thinking}
               </div>
             )}
+
+            {liveMessages.map((m) =>
+              m.sender_type === "system" ? (
+                <p key={m.id} className="text-center text-xs text-muted-foreground px-4">{m.content}</p>
+              ) : m.sender_type === "user" ? (
+                <div key={m.id} className="flex justify-end">
+                  <div className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-br-md bg-primary text-primary-foreground text-sm whitespace-pre-wrap break-words">
+                    {m.content}
+                  </div>
+                </div>
+              ) : (
+                <div key={m.id} className="flex gap-2 items-start">
+                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 mt-0.5" aria-hidden="true">
+                    <Headphones className="w-4 h-4" />
+                  </div>
+                  <div className="max-w-[85%]">
+                    <p className="text-[11px] font-semibold text-muted-foreground mb-0.5">{t.supportName}</p>
+                    <div className="px-4 py-2.5 rounded-2xl rounded-tl-md text-sm bg-card border border-border text-foreground whitespace-pre-wrap break-words">
+                      {m.content}
+                    </div>
+                  </div>
+                </div>
+              ),
+            )}
+            {liveSessionId && liveStatus === "closed" && (
+              <AssistantBubble content={t.liveEnded} />
+            )}
+            {liveError && (
+              <p className="text-xs text-destructive text-right px-1" role="alert">{t.liveSendFailed}</p>
+            )}
           </div>
 
           <div className="shrink-0 border-t border-border bg-background px-3 pt-2" style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}>
             <div className="flex items-center justify-between px-1 pb-2">
-              <button onClick={handoff} disabled={handingOff || streaming} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 disabled:opacity-50">
-                <Headphones className="w-3.5 h-3.5" />
-                {t.human}
-              </button>
+              {liveOpen ? (
+                <button onClick={() => void endLiveChat()} className="text-xs font-semibold text-destructive hover:underline flex items-center gap-1">
+                  <X className="w-3.5 h-3.5" />
+                  {t.endChat}
+                </button>
+              ) : (
+                <button onClick={handoff} disabled={handingOff || streaming} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 disabled:opacity-50">
+                  <Headphones className="w-3.5 h-3.5" />
+                  {t.human}
+                </button>
+              )}
               <Link to="/knowledge-base" onClick={() => setIsOpen(false)} className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
                 <BookOpen className="w-3.5 h-3.5" />
                 Help Center
@@ -503,7 +691,7 @@ export function AIChatWidget() {
                 }}
                 rows={1}
                 maxLength={2000}
-                placeholder={t.placeholder}
+                placeholder={liveOpen ? t.livePlaceholder : t.placeholder}
                 className="flex-1 resize-none max-h-32 min-h-[44px] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30"
               />
               {streaming ? (
@@ -524,7 +712,7 @@ export function AIChatWidget() {
   );
 }
 
-function AssistantBubble({ content, error }: { content: string; error?: boolean }) {
+function AssistantBubble({ content, error, onNavigate }: { content: string; error?: boolean; onNavigate?: () => void }) {
   return (
     <div className="flex gap-2 items-start">
       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-pink-500 text-white flex items-center justify-center shrink-0 mt-0.5">
@@ -534,9 +722,12 @@ function AssistantBubble({ content, error }: { content: string; error?: boolean 
         <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0">
           <ReactMarkdown
             components={{
-              a: ({ href, children }) => (
-                <a href={href} target={href?.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="text-primary underline">{children}</a>
-              ),
+              a: ({ href, children }) =>
+                href?.startsWith("/") ? (
+                  <Link to={href} onClick={onNavigate} className="text-primary underline">{children}</Link>
+                ) : (
+                  <a href={href} target="_blank" rel="noreferrer" className="text-primary underline">{children}</a>
+                ),
             }}
           >
             {content}

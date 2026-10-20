@@ -570,3 +570,152 @@ END;
 $$;
 REVOKE ALL ON FUNCTION isexy.staff_bulk_update_tickets(uuid[], text, uuid, boolean) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION isexy.staff_bulk_update_tickets(uuid[], text, uuid, boolean) TO authenticated;
+
+-- =====================================================================
+-- T4. Live chat with a person ("Talk to a human" in the assistant)
+-- =====================================================================
+-- The assistant's handoff (isexy-ai-chat, service role) queues a session for
+-- a signed-in member. Staff (admin + moderator) now see the queue and the
+-- messages (moderators saw nothing: the policy was admin or the assigned
+-- agent) and act through RPCs: staff_accept_live_chat (assigns the caller,
+-- posts "joined"), staff_close_live_chat, staff_get_live_chat_transcript (the
+-- assistant conversation that led to the handoff). The member ends their own
+-- session with end_my_live_chat. Message inserts are split: a member posts
+-- only as "user" in their own open session, an agent only as "agent" in a
+-- session assigned to them (either side could post as the other before).
+DROP POLICY IF EXISTS "Staff view live chat sessions" ON isexy.live_chat_sessions;
+CREATE POLICY "Staff view live chat sessions" ON isexy.live_chat_sessions
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.is_staff()));
+
+DROP POLICY IF EXISTS "Staff view live chat messages" ON isexy.live_chat_messages;
+CREATE POLICY "Staff view live chat messages" ON isexy.live_chat_messages
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.is_staff()));
+
+DROP POLICY IF EXISTS "Users can insert messages in their sessions" ON isexy.live_chat_messages;
+DROP POLICY IF EXISTS "Members post in their own live chat" ON isexy.live_chat_messages;
+CREATE POLICY "Members post in their own live chat" ON isexy.live_chat_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    sender_type = 'user'
+    AND sender_id = (SELECT auth.uid())
+    AND session_id IN (SELECT s.id FROM isexy.live_chat_sessions s
+                        WHERE s.user_id = (SELECT auth.uid()) AND s.status IN ('waiting', 'active'))
+  );
+DROP POLICY IF EXISTS "Agents post in their live chats" ON isexy.live_chat_messages;
+CREATE POLICY "Agents post in their live chats" ON isexy.live_chat_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    sender_type = 'agent'
+    AND sender_id = (SELECT auth.uid())
+    AND session_id IN (SELECT s.id FROM isexy.live_chat_sessions s
+                        WHERE s.agent_id = (SELECT auth.uid()) AND s.status = 'active')
+  );
+
+CREATE OR REPLACE FUNCTION isexy.staff_accept_live_chat(p_session_id uuid)
+RETURNS isexy.live_chat_sessions
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_row isexy.live_chat_sessions;
+  v_name text;
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Only ISEXY staff can answer live chats' USING ERRCODE = '42501';
+  END IF;
+  UPDATE isexy.live_chat_sessions
+     SET agent_id = v_uid, status = 'active', updated_at = now()
+   WHERE id = p_session_id
+     AND (status = 'waiting' OR (status = 'active' AND agent_id = v_uid))
+  RETURNING * INTO v_row;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'This chat was taken by someone else or has ended' USING ERRCODE = 'P0002';
+  END IF;
+  SELECT first_name INTO v_name FROM isexy.profiles WHERE user_id = v_uid;
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES (p_session_id, 'system', v_uid, coalesce(v_name, 'A team member') || ' from ISEXY Support joined the chat.');
+  RETURN v_row;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_accept_live_chat(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_accept_live_chat(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION isexy.staff_close_live_chat(p_session_id uuid)
+RETURNS isexy.live_chat_sessions
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_row isexy.live_chat_sessions;
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Only ISEXY staff can close live chats' USING ERRCODE = '42501';
+  END IF;
+  UPDATE isexy.live_chat_sessions
+     SET status = 'closed', ended_at = now(), updated_at = now()
+   WHERE id = p_session_id AND status <> 'closed'
+     AND (agent_id = v_uid OR agent_id IS NULL OR isexy.has_role(v_uid, 'admin'))
+  RETURNING * INTO v_row;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Chat not found, already closed or assigned to someone else' USING ERRCODE = 'P0002';
+  END IF;
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES (p_session_id, 'system', v_uid, 'This chat has ended. You can start a new one any time from the assistant.');
+  RETURN v_row;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_close_live_chat(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_close_live_chat(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION isexy.end_my_live_chat(p_session_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Sign in first' USING ERRCODE = '42501';
+  END IF;
+  UPDATE isexy.live_chat_sessions
+     SET status = 'closed', ended_at = now(), updated_at = now()
+   WHERE id = p_session_id AND user_id = auth.uid() AND status <> 'closed';
+  IF NOT FOUND THEN
+    RETURN false;
+  END IF;
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES (p_session_id, 'system', auth.uid(), 'The member ended the chat.');
+  RETURN true;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.end_my_live_chat(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.end_my_live_chat(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION isexy.staff_get_live_chat_transcript(p_session_id uuid)
+RETURNS TABLE (role text, content text, created_at timestamptz)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Staff only' USING ERRCODE = '42501';
+  END IF;
+  RETURN QUERY
+    SELECT m.role, m.content, m.created_at
+      FROM isexy.live_chat_sessions s
+      JOIN isexy.chatbot_messages m ON m.conversation_id = s.chatbot_conversation_id
+     WHERE s.id = p_session_id
+     ORDER BY m.created_at
+     LIMIT 200;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_get_live_chat_transcript(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_get_live_chat_transcript(uuid) TO authenticated;
