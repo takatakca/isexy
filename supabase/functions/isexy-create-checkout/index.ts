@@ -3,7 +3,8 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
-import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 // Plus / Gold / Platinum checkout. Prices are Stripe Price ids set as function
 // secrets (ISEXY_STRIPE_PRICE_<TIER>_<DURATION>, in CAD). The plan itself is
@@ -89,7 +90,6 @@ serve(async (req) => {
       tier,
       duration,
     };
-    const base = appBaseUrl(req);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -98,8 +98,8 @@ serve(async (req) => {
       metadata,
       subscription_data: { metadata },
       ...(discounts ? { discounts } : {}),
-      success_url: `${base}/my-subscription?checkout=success`,
-      cancel_url: `${base}/premium?checkout=cancelled`,
+      success_url: isexyAppUrl("/my-subscription?checkout=success"),
+      cancel_url: isexyAppUrl("/premium?checkout=cancelled"),
     });
 
     return json({ url: session.url });

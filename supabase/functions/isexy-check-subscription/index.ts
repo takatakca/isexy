@@ -4,11 +4,14 @@ import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { findStripeCustomerId } from "../_shared/stripe-customer.ts";
 import { corsHeaders, json, signedInMember, subscriptionPeriod } from "../_shared/payments.ts";
+import { checkoutOwnerId } from "../_shared/stripe-identity.ts";
 
 // "Restore purchases" and My Subscription: reads the member's Stripe
 // subscriptions and applies them to the database the same way the webhook
 // does (a missed or failed webhook is caught up here), then answers with the
 // member's plan from the database (Stripe, a redeemed code or a reward).
+// Only Stripe objects whose server-written metadata names this member are
+// applied (main 1d2d5e7: an email is never an identity).
 
 const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
@@ -47,9 +50,22 @@ serve(async (req) => {
       const customerId = await findStripeCustomerId(stripe, member);
       if (customerId) {
         const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 20 });
+        // findStripeCustomerId only returns a customer tagged with this member.
+        const customerMeta = { isexy_user_id: member.id };
+        const ownedBy = (meta: Record<string, string>): boolean => {
+          try {
+            return checkoutOwnerId(meta, customerMeta).toLowerCase() === member.id.toLowerCase();
+          } catch {
+            return false;
+          }
+        };
         for (const sub of subs.data) {
           const meta = (sub.metadata ?? {}) as Record<string, string>;
           if (!["active", "trialing"].includes(sub.status)) continue;
+          if (!ownedBy(meta)) {
+            logStep("Subscription without this member's identity skipped", { subscriptionId: sub.id });
+            continue;
+          }
           const period = subscriptionPeriod(sub);
           if (meta.type === "chat_sub" || meta.package_id === "chat_1mo") {
             const { error } = await db.rpc("apply_chat_subscription", {
@@ -81,9 +97,8 @@ serve(async (req) => {
           for (const session of sessions.data) {
             if (session.mode !== "payment" || session.payment_status !== "paid") continue;
             const meta = (session.metadata ?? {}) as Record<string, string>;
-            const owner = meta.profile_id || meta.user_id || member.id;
             const product = meta.product_id || meta.package_id || "";
-            if (owner !== member.id || !product) continue;
+            if (!ownedBy(meta) || !product) continue;
             const { data, error } = await db.rpc("fulfill_stripe_payment", {
               p_session_id: session.id,
               p_profile_id: member.id,
@@ -93,8 +108,12 @@ serve(async (req) => {
               p_meta: meta,
             });
             if (error) throw new Error(error.message);
-            const result = data as { success?: boolean; already_fulfilled?: boolean } | null;
-            if (result?.success && !result.already_fulfilled) {
+            const result = data as { success?: boolean; already_fulfilled?: boolean; error?: string } | null;
+            if (!result?.success) {
+              logStep("One-time purchase not restorable", { sessionId: session.id, product, error: result?.error });
+              continue;
+            }
+            if (!result.already_fulfilled) {
               restored++;
               purchasesRestored++;
               logStep("One-time purchase restored", { sessionId: session.id, product });

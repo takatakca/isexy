@@ -11,7 +11,7 @@ on top of it.
 ## Progress
 
 - [x] 1. Map of main's changes (this file)
-- [ ] 2. `git merge origin/main`, conflicts resolved, decisions below
+- [x] 2. `git merge origin/main`, conflicts resolved, decisions below (typecheck clean; `deno check` of every function and main's 5 Deno tests pass: Deno 2.5.6 from npm in the scratchpad)
 - [ ] 3. Our migrations renumbered 0013/0014 and reconciled with main's 0004-0012
 - [ ] 4. Migration tests (from scratch + production simulation), every smoke test, typecheck, build, lint, e2e
 - [ ] 5. Functions to deploy (content differs from main, or new)
@@ -91,4 +91,24 @@ ours become 0013/0014.
 
 ## 2. Merge decisions
 
-(filled in during the merge)
+Conflicts: `WORKLOG.md`, `usePaymentsGate.ts`, `CubanSignup.tsx`,
+`MySubscription.tsx`, `Premium.tsx`, `RestorePurchase.tsx`, the webhook, the
+four checkout functions, customer portal, check-subscription, gate status,
+reset-allowances. Auto-merged: CI workflow (main's Deno tests, SQL assertions,
+quarantine, live checks + our smoke step and TURN/phone build vars),
+`docs/DEPLOYMENT.md`, everything else main added.
+
+| Area | Kept from main | Kept from this branch | Combined decision |
+|---|---|---|---|
+| `isexy-stripe-webhook` | identity = server-written `metadata.user_id` checked by `checkoutOwnerId` against the customer tag and an existing profile (no email); customer deleted → error; subscription customer must equal checkout customer; tier metadata required; payment mode credited only when `paid`; chat checkout only when paid / no payment required; in-flight duplicate (insert 23505, or a `received` row younger than 5 min) answers 503, never 200; log insert/finalise failures are errors; unknown one-time product logged and acknowledged (as v6) | all effects through the atomic, idempotent SQL functions (`fulfill_stripe_payment`, `apply_stripe_subscription`, `apply_chat_subscription`); subscription state fetched again from Stripe, so a late or retried event never applies an old state | a **failed** event is processed again on the next delivery instead of answering 503 forever: safe because every effect is one idempotent SQL transaction (main's decision 22 asked for exactly this atomic recovery path). A paid session the SQL could not credit (bad gift details) fails the event. Subscription events without a member id in their metadata only update an existing row (other products' subscriptions are ignored) |
+| checkout x4 | return URLs only from `ISEXY_APP_URL` (`_shared/app-url.ts isexyAppUrl`, default Render); `safeCheckoutMetadata` for one-time payments | `_shared/payments.ts` (gate refusal, SMS-only `signedInMember`, JSON), CAD catalog, gift recipient checks, chat subscription, first-week coupon path in create-checkout | our `appBaseUrl(req)` (Origin fallback) removed; `returnPath` cannot start with `//` |
+| `isexy-customer-portal` | return URL from `ISEXY_APP_URL` | gate, 404 `no_customer`, returns to `/my-subscription` | `isexyAppUrl("/my-subscription")` |
+| `isexy-check-subscription` | SMS-only members, identity never by email | restore of subscriptions and paid one-time purchases through the SQL functions, DB plan answer | a Stripe subscription/session is applied only when its metadata names this member (`checkoutOwnerId`); a purchase the SQL refuses is skipped and logged |
+| gate (function + hook) | malformed or missing key never opens sales; client fails closed (unknown status = blocked) | `configured` also needs the webhook secret, `reason`, `firstWeekPromo`, shared cache | only `sk_test_`/`sk_live_` keys count (we had also accepted `rk_`); `blockedLabel(null)` = "Checking payments…" (buttons disabled while loading); unreadable/malformed answer = blocked, reason `unavailable` (not cached) |
+| client checkout | only `https://checkout.stripe.com` | `startCheckout` (same-tab, error words) | `startCheckout` refuses any URL that is not `checkout.stripe.com` / `billing.stripe.com` |
+| `isexy-reset-allowances` | POST only, secret ≥ 16 chars compared in full, HTTP 500 with task names only | `expire_member_plans` first | three RPCs + promotions, failures reported by task name, details only in the log |
+| `Premium.tsx` | countdown banner removed (decision 19), checkout blocked while the gate is unknown | wallet plan, Stripe payers sent to My Subscription, `startCheckout` | no countdown; the create-checkout coupon path stays server-side (no UI offers it any more: owner decision) |
+| `MySubscription.tsx` | a failed check never shows "Free plan": "status unavailable" + retry | plan from the wallet (Stripe, code, reward, staff), Stripe catch-up | the unavailable card shows when the wallet cannot be read, or the Stripe check failed and the wallet says free; retry re-runs both |
+| `RestorePurchase.tsx` | ticket for a purchase made on another account (`RP-…`, staff review) | automatic restore on the same account | both on one page |
+| `CubanSignup.tsx` (Cuba on hold, bug fixes only) | no profile with a fake birth date (go to profile setup); refuse when an upload failed | `set_my_cuban_flag` RPC (is_cuban is protected) | RPC, with main's error check |
+| WORKLOG | main's lines | ours | both, newest first; main's three 2026-10-09 lines are older statuses of our PR #1 lines (kept ours) |

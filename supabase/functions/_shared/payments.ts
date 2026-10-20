@@ -1,5 +1,6 @@
 // Shared by the isexy payment functions: CORS, JSON replies, the signed-in
-// member, the payments gate and the URL Stripe sends members back to.
+// member, the payments gate and the Stripe subscription period. Return URLs:
+// _shared/app-url.ts isexyAppUrl() (ISEXY_APP_URL only, never the Origin).
 import { createClient } from "./supabase.ts";
 import { isexyEnv } from "./env.ts";
 
@@ -34,8 +35,10 @@ export function paymentsGate(): PaymentsGate {
   const key = isexyEnv("STRIPE_SECRET_KEY") || "";
   const webhookSecret = isexyEnv("STRIPE_WEBHOOK_SECRET") || "";
   const liveEnabled = (isexyEnv("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
-  const isTestKey = key.startsWith("sk_test_") || key.startsWith("rk_test_");
-  const isLiveKey = key.startsWith("sk_live_") || key.startsWith("rk_live_");
+  // Only well-formed secret keys count (main 705cc26): a missing or malformed
+  // key is "not configured" whatever PAYMENTS_LIVE_ENABLED says.
+  const isTestKey = key.startsWith("sk_test_");
+  const isLiveKey = key.startsWith("sk_live_");
   const configured = (isTestKey || isLiveKey) && webhookSecret.length > 0;
   const reason = !configured ? "not_configured" : isLiveKey && !liveEnabled ? "live_disabled" : null;
   return {
@@ -76,15 +79,6 @@ export async function signedInMember(req: Request): Promise<Member | null> {
   const { data, error } = await auth.auth.getUser(token);
   if (error || !data.user) return null;
   return { id: data.user.id, email: data.user.email ?? null, phone: data.user.phone ?? null };
-}
-
-/** Where Stripe sends the member back: APP_URL, else the calling site's origin. */
-export function appBaseUrl(req: Request): string {
-  const configured = isexyEnv("APP_URL");
-  if (configured) return configured.replace(/\/+$/, "");
-  const origin = req.headers.get("origin") ?? "";
-  if (/^https?:\/\/[a-z0-9.-]+(:\d+)?$/i.test(origin)) return origin;
-  return "https://isexy.ca";
 }
 
 /** The period fields of a Stripe subscription, wherever the API version puts them. */

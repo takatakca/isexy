@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { X, Check, Loader2, Crown, Sparkles, ShieldCheck } from "lucide-react";
 import { subscriptionTiers, SubscriptionTier, Duration } from "@/lib/subscriptionTiers";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
-import { PromoCountdownBanner } from "@/components/PromoCountdownBanner";
 import { PaymentsNotice } from "@/components/PaymentsNotice";
 import { usePaymentsGate, blockedLabel } from "@/hooks/usePaymentsGate";
 import { useWallet } from "@/hooks/useWallet";
@@ -33,7 +31,6 @@ const tierMeta: Record<SubscriptionTier, { label: string; headline: string; icon
 
 export default function Premium() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
   const gate = usePaymentsGate();
   const { wallet } = useWallet();
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
@@ -42,12 +39,12 @@ export default function Premium() {
 
   useCheckoutReturn();
 
-  // The first-week offer only exists when the owner created the Stripe coupon
-  // (the server checks eligibility again before applying it).
-  const showPromo = !!gate?.firstWeekPromo && !gate.blocked && !profile?.first_purchase_promo_used && !profile?.is_premium;
+  // No countdown or discount banner (main 62ca7c1, decision 19): an offer the
+  // payment server does not enforce is never shown.
   // A member who already pays through Stripe changes plan in Stripe's billing
   // page: a second checkout would start a second subscription.
   const paysWithStripe = wallet?.plan_source === "stripe";
+  // Fail closed: null (still checking) or an unreadable status blocks checkout.
   const blocked = blockedLabel(gate);
 
   const tierData = subscriptionTiers[activeTier];
@@ -55,17 +52,20 @@ export default function Premium() {
   const features = tierData.features;
   const selectedPlan = plans.find((p) => p.duration === selectedDuration)!;
 
-  const handleSubscribe = async (promo = false) => {
+  const handleSubscribe = async () => {
     if (paysWithStripe) {
       navigate("/my-subscription");
+      return;
+    }
+    if (blocked) {
+      toast.error("Subscription availability could not be confirmed. Please retry later.");
       return;
     }
     setLoading(true);
     track("checkout_started", { product: "Premium" });
     const result = await startCheckout("isexy-create-checkout", {
       tier: activeTier,
-      duration: promo ? "week" : selectedDuration,
-      ...(promo ? { promo: true } : {}),
+      duration: selectedDuration,
     });
     if (!result.ok) {
       toast.error(result.message);
@@ -112,17 +112,6 @@ export default function Premium() {
           </div>
         </div>
       </div>
-
-      {showPromo && (
-        <PromoCountdownBanner
-          onCtaClick={() => {
-            setSelectedDuration("week");
-            handleSubscribe(true);
-          }}
-          discountPercent={50}
-          durationMinutes={30}
-        />
-      )}
 
       {/* Duration selector */}
       <div className="px-4 -mt-2">

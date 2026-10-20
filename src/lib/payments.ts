@@ -41,6 +41,9 @@ export function checkoutErrorMessage(failure: InvokeFailure): string {
   return "Could not start the payment. Nothing was charged. Please try again.";
 }
 
+/** Stripe Checkout and the Stripe billing portal: the only pages a payment function may send members to. */
+const STRIPE_HOSTS = ["checkout.stripe.com", "billing.stripe.com"];
+
 /** ok: the browser is on its way to Stripe; otherwise `message` says why not. */
 export interface CheckoutResult {
   ok: boolean;
@@ -60,7 +63,17 @@ export async function startCheckout(fn: string, body?: Record<string, unknown>):
       const message = (data as { error?: string } | null)?.error;
       return { ok: false, message: message ?? "Could not start the payment. Nothing was charged." };
     }
-    window.location.assign(url);
+    // Leave the site only for Stripe's own pages (main 705cc26): checkout and the billing portal.
+    let target: URL;
+    try {
+      target = new URL(url);
+    } catch {
+      return { ok: false, message: "Could not start the payment. Nothing was charged." };
+    }
+    if (target.protocol !== "https:" || !STRIPE_HOSTS.includes(target.hostname)) {
+      return { ok: false, message: "Unexpected payment page. Nothing was charged." };
+    }
+    window.location.assign(target.toString());
     return { ok: true };
   } catch (e) {
     return { ok: false, message: checkoutErrorMessage({ message: e instanceof Error ? e.message : undefined }) };

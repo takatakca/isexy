@@ -277,7 +277,7 @@ export default function CubanSignup() {
     try {
       const userId = user.id;
 
-      // First ensure we have a profile - create one if needed
+      // A profile with the member's real birth date must exist (made in profile setup).
       let currentProfile = profile;
       if (!currentProfile) {
         const { data: profileData, error: profileError } = await supabase
@@ -288,29 +288,17 @@ export default function CubanSignup() {
 
         if (profileError) throw profileError;
 
-        if (!profileData) {
-          // Create a minimal profile
-          const { data: newProfile, error: createError } = await supabase
-            .from("profiles")
-            .insert({
-              user_id: userId,
-              // Placeholder until /profile-setup; Google gives a name, email/phone do not.
-              first_name: (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] || user?.email?.split("@")[0] || "Member",
-              birth_date: "2000-01-01",
-              gender: "other",
-              country: "CU",
-            } as any)
-            .select()
-            .single();
-          
-          if (createError) throw createError;
-          // is_cuban is not member-writable: set server-side.
-          await supabase.rpc("set_my_cuban_flag", { p_is_cuban: true });
-          currentProfile = newProfile as any;
-          await refreshProfile();
-        } else {
-          currentProfile = profileData as any;
-        }
+        // Verification must never manufacture an adult profile with a fake
+        // birth date. The normal setup collects the member's actual declared
+        // birth date, and the database enforces the 18+ requirement.
+        currentProfile = profileData;
+      }
+
+      if (!currentProfile) {
+        toast.error("Complete your profile, including your birth date, before submitting verification.");
+        setIsSubmitting(false);
+        navigate("/profile-setup");
+        return;
       }
 
       if (!currentProfile) throw new Error("Could not create profile");
@@ -338,15 +326,20 @@ export default function CubanSignup() {
         audioUrl = await uploadFile(audioFile, `${userId}/verification-audio.webm`);
       }
 
-      // uploadFile already showed the error: don't submit a request with missing files.
-      if ((carnetFront && !carnetFrontUrl) || (carnetBack && !carnetBackUrl) || (videoFile && !videoUrl) || (audioFile && !audioUrl)) {
-        throw new Error("Some files could not be uploaded. Please try again.");
+      // A failed upload must never produce a seemingly complete verification.
+      // Keep the case unsubmitted until every selected piece of evidence is stored.
+      if ((carnetFront && !carnetFrontUrl) ||
+          (carnetBack && !carnetBackUrl) ||
+          (videoFile && !videoUrl) ||
+          (audioFile && !audioUrl)) {
+        throw new Error("One or more verification files could not be uploaded. Please retry.");
       }
 
       setUploadProgress(85);
 
       // Mark the profile as Cuban (server-side: is_cuban is not member-writable).
-      await supabase.rpc("set_my_cuban_flag", { p_is_cuban: true });
+      const { error: countryUpdateError } = await supabase.rpc("set_my_cuban_flag", { p_is_cuban: true });
+      if (countryUpdateError) throw countryUpdateError;
 
       // Submit verification
       const { error } = await supabase.from("cuban_verifications" as any).insert({
