@@ -111,10 +111,10 @@
 --          PUBLIC/anon/authenticated (triggers do not need it; hygiene).
 --        Checked and left as they are: every SECURITY DEFINER function pins
 --        search_path; every other member RPC checks auth.uid() (directly or
---        through assert_profile_owner); anon RPCs by design (verify_otp,
---        kb_record_view, kb_record_feedback, track_events,
---        report_client_error) and has_role (policies evaluated for anon
---        need it); service-only RPCs are already service_role only.
+--        through assert_profile_owner); anon RPCs by design (kb_record_view,
+--        kb_record_feedback, track_events, report_client_error) and has_role
+--        (policies evaluated for anon need it); service-only RPCs are already
+--        service_role only. (verify_otp was left anon here: D1 closes it.)
 --    B4. Grants: TRUNCATE (bypasses RLS), TRIGGER and REFERENCES revoked from
 --        anon/authenticated on every isexy table, UPDATE (setval) on every
 --        isexy sequence (USAGE keeps nextval); same for future objects
@@ -143,6 +143,28 @@
 --        UNIQUE pairs on matches (matches_profile1_id_profile2_id_key /
 --        matches_pair_unique) and swipes (swipes_swiper_id_swiped_id_key /
 --        swipes_swiper_swiped_unique) both back constraints: kept.
+--
+-- D. Merge review (2026-10-20): holes found by attacking 0001-0014 as a
+--    signed-in member / anonymous caller (docs/handoff/merge-main.md › 7 C)
+--    D1. verify_otp(text,text,text): service_role only. Its only caller is
+--        isexy-send-whatsapp-otp (service role); anon could burn anyone's
+--        live code (5 guesses) and learn whether a number had one.
+--    D2. support_tickets INSERT: members and anonymous senders cannot set
+--        the staff fields (status other than open, assigned_to, admin_notes,
+--        response, responded_at). Main's 0009 guard covers UPDATE only; a
+--        ticket could be planted under a victim's email, already "resolved"
+--        with a forged staff response.
+--    D3. Voice replies: not to a member who blocked you (or whom you
+--        blocked): the insert policy only checked the sender.
+--    D4. Voice greetings and replies: the audio path must be in the
+--        member's own storage folder. The signing functions run as the
+--        service role and trusted the stored path, so a row pointing at
+--        another member's file handed out that file.
+--    D5. Live chat: a member cannot open a session with themselves (or
+--        anyone) as the agent, and only the session's agent may post as
+--        "agent" (members could impersonate ISEXY support).
+--    D6. Forum: author_name comes from the author's profile (any name, e.g.
+--        "ISEXY Team" or another member's, could be posted).
 
 -- =====================================================================
 -- A1. Protected profile columns
@@ -940,3 +962,198 @@ $c2$;
 -- C4. Redundant plain index on swipes
 -- =====================================================================
 DROP INDEX IF EXISTS isexy.swipes_swiper_idx;
+
+-- =====================================================================
+-- D1. verify_otp: service role only
+-- =====================================================================
+REVOKE ALL ON FUNCTION isexy.verify_otp(text, text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION isexy.verify_otp(text, text, text) TO service_role;
+
+-- =====================================================================
+-- D2. Support tickets: staff fields at INSERT (main's 0009 rule for UPDATE)
+-- =====================================================================
+CREATE OR REPLACE FUNCTION isexy.protect_support_ticket_staff_fields_on_insert()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF auth.role() = 'service_role'
+     OR isexy.has_role(auth.uid(), 'admin'::isexy.app_role) THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.status IS DISTINCT FROM 'open'
+     OR NEW.assigned_to IS NOT NULL
+     OR NEW.admin_notes IS NOT NULL
+     OR NEW.response IS NOT NULL
+     OR NEW.responded_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Only ISEXY staff can set ticket administrative fields'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.protect_support_ticket_staff_fields_on_insert() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS isexy_support_ticket_staff_fields_insert_guard ON isexy.support_tickets;
+CREATE TRIGGER isexy_support_ticket_staff_fields_insert_guard
+  BEFORE INSERT ON isexy.support_tickets
+  FOR EACH ROW EXECUTE FUNCTION isexy.protect_support_ticket_staff_fields_on_insert();
+
+-- =====================================================================
+-- D3 + D4. Voice replies and greetings
+-- =====================================================================
+-- Is there a block between the caller's profile and p_other (either way)?
+-- Answers only about the caller (the member guards below run as the member,
+-- whose RLS shows only the blocks they made).
+CREATE OR REPLACE FUNCTION isexy.blocked_with_me(p_other uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+      FROM isexy.blocks b
+      JOIN isexy.profiles me ON me.user_id = auth.uid()
+     WHERE (b.blocker_id = me.id AND b.blocked_id = p_other)
+        OR (b.blocker_id = p_other AND b.blocked_id = me.id));
+$$;
+REVOKE ALL ON FUNCTION isexy.blocked_with_me(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.blocked_with_me(uuid) TO authenticated, service_role;
+
+-- The storage path a member may store: their own folder, no "..".
+CREATE OR REPLACE FUNCTION isexy.is_my_storage_path(p_path text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = ''
+AS $$
+  SELECT p_path IS NOT NULL
+     AND auth.uid() IS NOT NULL
+     AND split_part(p_path, '/', 1) = auth.uid()::text
+     AND length(p_path) > length(auth.uid()::text) + 1
+     AND position('..' IN p_path) = 0;
+$$;
+REVOKE ALL ON FUNCTION isexy.is_my_storage_path(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.is_my_storage_path(text) TO authenticated, service_role;
+
+-- 0013's guard + D4 (own audio path).
+CREATE OR REPLACE FUNCTION isexy.voice_greetings_member_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  IF current_user IN ('authenticated', 'anon') THEN
+    IF (TG_OP = 'INSERT' OR NEW.audio_url IS DISTINCT FROM OLD.audio_url)
+       AND NOT isexy.is_my_storage_path(NEW.audio_url) THEN
+      RAISE EXCEPTION 'A greeting''s audio must be your own upload' USING ERRCODE = '42501';
+    END IF;
+    IF TG_OP = 'INSERT' THEN
+      -- The insert policy only checks profile_id: the greeting must also go
+      -- on the member's own voice profile (not on someone else's, where it
+      -- would become that person's newest greeting once approved).
+      IF NOT EXISTS (SELECT 1 FROM phone_line_profiles plp
+                      WHERE plp.id = NEW.phone_line_profile_id AND plp.profile_id = NEW.profile_id) THEN
+        RAISE EXCEPTION 'A greeting goes on your own voice profile' USING ERRCODE = '42501';
+      END IF;
+      NEW.moderation_status := 'pending';
+      NEW.rejected_reason := NULL;
+      NEW.report_count := 0;
+      NEW.is_hidden := false;
+    ELSE
+      NEW.report_count := OLD.report_count;
+      NEW.is_hidden := OLD.is_hidden;
+      NEW.profile_id := OLD.profile_id;
+      NEW.phone_line_profile_id := OLD.phone_line_profile_id;
+      IF NEW.audio_url IS DISTINCT FROM OLD.audio_url THEN
+        NEW.moderation_status := 'pending';   -- new audio: reviewed again
+        NEW.rejected_reason := NULL;
+      ELSE
+        NEW.moderation_status := OLD.moderation_status;
+        NEW.rejected_reason := OLD.rejected_reason;
+      END IF;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- 0013's guard + D3 (no reply across a block) + D4 (own audio path).
+CREATE OR REPLACE FUNCTION isexy.voice_replies_member_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  IF current_user IN ('authenticated', 'anon') THEN
+    IF (TG_OP = 'INSERT' OR NEW.audio_url IS DISTINCT FROM OLD.audio_url)
+       AND NOT isexy.is_my_storage_path(NEW.audio_url) THEN
+      RAISE EXCEPTION 'A voice reply''s audio must be your own upload' USING ERRCODE = '42501';
+    END IF;
+    IF TG_OP = 'INSERT' THEN
+      IF isexy.blocked_with_me(NEW.to_profile_id) THEN
+        RAISE EXCEPTION 'You cannot send a voice reply to this member' USING ERRCODE = '42501';
+      END IF;
+      NEW.moderation_status := 'pending';
+      NEW.rejected_reason := NULL;
+      NEW.report_count := 0;
+      NEW.is_hidden := false;
+      NEW.is_read := false;
+    ELSE
+      NEW.moderation_status := OLD.moderation_status;
+      NEW.rejected_reason := OLD.rejected_reason;
+      NEW.report_count := OLD.report_count;
+      NEW.is_hidden := OLD.is_hidden;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- =====================================================================
+-- D5. Live chat: no self-appointed agents, no forged agent messages
+-- =====================================================================
+ALTER POLICY "Admins can manage chat sessions" ON isexy.live_chat_sessions
+  WITH CHECK ((SELECT isexy.has_role((SELECT auth.uid()), 'admin'::isexy.app_role))
+              OR (agent_id = (SELECT auth.uid())
+                  AND (SELECT isexy.has_role((SELECT auth.uid()), 'moderator'::isexy.app_role))));
+ALTER POLICY "Users can create own chat sessions" ON isexy.live_chat_sessions
+  WITH CHECK (user_id = (SELECT auth.uid()) AND agent_id IS NULL);
+ALTER POLICY "Users can insert messages in their sessions" ON isexy.live_chat_messages
+  WITH CHECK (
+    (sender_id IS NULL OR sender_id = (SELECT auth.uid()))
+    AND (session_id IN (SELECT s.id FROM isexy.live_chat_sessions s
+                         WHERE s.user_id = (SELECT auth.uid()) OR s.agent_id = (SELECT auth.uid())))
+    AND (sender_type IS DISTINCT FROM 'agent'
+         OR session_id IN (SELECT s.id FROM isexy.live_chat_sessions s
+                            WHERE s.agent_id = (SELECT auth.uid()))));
+
+-- =====================================================================
+-- D6. Forum: the author's name is the author's profile name
+-- =====================================================================
+CREATE OR REPLACE FUNCTION isexy.forum_author_name_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  IF current_user IN ('authenticated', 'anon') THEN
+    NEW.author_name := coalesce(
+      (SELECT p.first_name FROM isexy.profiles p WHERE p.id = NEW.author_id),
+      CASE WHEN TG_OP = 'UPDATE' THEN OLD.author_name END,
+      'Member');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS forum_posts_author_name_guard ON isexy.forum_posts;
+CREATE TRIGGER forum_posts_author_name_guard
+  BEFORE INSERT OR UPDATE OF author_id, author_name ON isexy.forum_posts
+  FOR EACH ROW EXECUTE FUNCTION isexy.forum_author_name_guard();
+DROP TRIGGER IF EXISTS forum_replies_author_name_guard ON isexy.forum_replies;
+CREATE TRIGGER forum_replies_author_name_guard
+  BEFORE INSERT OR UPDATE OF author_id, author_name ON isexy.forum_replies
+  FOR EACH ROW EXECUTE FUNCTION isexy.forum_author_name_guard();

@@ -233,7 +233,7 @@ Reviewer run on top of `c6162b6`. Running notes, updated with every commit.
 
 - [x] A. Every main commit 0a0c6be..a188694: fix still present (kept / changed on purpose)
 - [x] B. 0013/0014 on top of production (0001-0012): apply, no weaker redefinition of main's functions/policies/grants, main's deployed RPC calls still work
-- [ ] C. Malicious signed-in member against the final schema: findings proven locally, fixed in 0014, smoke cases
+- [x] C. Malicious signed-in member against the final schema: findings proven locally, fixed in 0014, smoke cases
 - [ ] D. Both migration tests, all SQL tests, typecheck, build, lint, e2e; HANDOFF + deploy plan; push
 
 ### A. Main's 47 commits against the merged tree
@@ -324,3 +324,37 @@ what production does **today**: the v6 `subscriptions` upsert fails (42P10, no
 unique `profile_id`), so a subscription checkout is never recorded until 0013
 is applied; and a boost purchase for a missing profile hits a foreign-key
 error instead of a clean 22023.
+
+### C. Malicious member / anonymous caller against the final schema
+
+Probed on the production stand-in (0001-0014) as `authenticated` and `anon`
+with JWT claims set, every statement in a rolled-back transaction
+(`scratchpad/review/probe.sql`, `probe2.sql`). Classes tried and the result:
+
+| Class | Tried | Result |
+|---|---|---|
+| Self-granting plan / verified / limits | profile protected columns (security-smoke A), `subscriptions`, `plan_grants`, `entitlements_cache`, `loyalty_accounts`, `chat_subscriptions`, `user_roles` admin, approved `photo_verifications`, verified `phone_line_numbers` | refused (RLS/grant), phone number stored unverified |
+| Credits, boosts, stars, missed calls | direct inserts into `user_stars`, `missed_calls`, ledgers (security-smoke B1) | refused |
+| Others' messages | no member UPDATE/DELETE policy on `messages`, `group_messages`, `live_chat_messages`; inserting into an inactive or blocked match stopped by `validate_message_allowed` | refused |
+| SECURITY DEFINER impersonation | 22 member RPCs called with another member's profile, match, call session or coupon (`deduct_call_minute`, `use_boost`, `redeem_coupon`, `perform_like`, `sync_entitlements`, `unlock_conversation`, `charge_call_session_minute`, `end_call_session`, `record_missed_call`, `start_call`, `start_phone_line_call_session` across a block, negative `convert_credits_to_minutes` / `request_star_cashout`, staff RPCs) | all refused or `not_authorized`; balances unchanged |
+| EXECUTE to anon / PUBLIC | catalog: anon can run only trigger functions, `tier_rank`, `has_role`, `kb_record_*`, `track_events`, `report_client_error`, `normalize_gender`, `generate_referral_code`, `profiles_id_from_user`, **`verify_otp`** | **finding D1** |
+| Forged Stripe webhook | `constructEventAsync` with `ISEXY_STRIPE_WEBHOOK_SECRET` (no secret: 500, nothing processed); identity only from server-written metadata + customer tag | refused |
+| Forged Twilio webhook | `readTwilioRequest`: HMAC-SHA1 over the public URL + sorted params, constant-time, AccountSid check; 403 otherwise (`ISEXY_TWILIO_SIGNATURE_BYPASS` must never be set on V1) | refused |
+
+Findings (each proven locally first, then fixed in **0014 part D**, smoke
+cases in `security-smoke.sql` part D, 29 checks):
+
+| # | Hole (proven) | Fix |
+|---|---|---|
+| D1 | `verify_otp` executable by anon/authenticated: anyone could burn a member's live WhatsApp code (5 guesses) and learn whether a number has one (`attempts_left` oracle) | EXECUTE service_role only (its only caller, `isexy-send-whatsapp-otp`, uses the service role; live main function too) |
+| D2 | `support_tickets` INSERT: anon planted a ticket under a victim's email, `status = resolved`, forged staff `response`; members could create tickets pre-assigned / answered / with admin notes (main's 0009 guard covers UPDATE only) | BEFORE INSERT trigger `isexy_support_ticket_staff_fields_insert_guard` (same rule as 0009: service role or admin, else status `open` and no staff fields) |
+| D3 | voice reply sent to a member who blocked the sender | `voice_replies_member_guard` refuses across a block (`blocked_with_me`, SECURITY DEFINER, answers only about the caller) |
+| D4 | voice greeting / reply rows could point at another member's private file; the signing functions (service role) then hand it out | both member guards require the member's own storage folder, no `..` (`is_my_storage_path`) |
+| D5 | a member could open a support chat for a victim with themselves as "agent", and post `agent` messages | live chat policies: sessions opened by members have no agent; agent sessions only for admins or the assigned moderator; `agent` messages only from the session's agent; `sender_id` is the caller |
+| D6 | forum posts/replies with any `author_name` ("ISEXY Team", another member) | trigger sets `author_name` from the author's profile |
+
+Left as they are (low impact, noted): `has_role(uuid, role)` lets a member ask
+whether a given user is staff (policies need it for anon); `user_aliases` free
+text (unused by the app); a member can backdate `created_at` on their own
+ticket; moderators cannot pick up a waiting live chat (0001 UPDATE policy is
+admin-or-assigned; owner decision whether moderators are agents).

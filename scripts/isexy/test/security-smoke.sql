@@ -397,6 +397,103 @@ SELECT pg_temp.ok('B4 PostgREST grants unchanged (SELECT/INSERT/UPDATE/DELETE, R
   AND has_table_privilege('authenticated', 'isexy._security_smoke_probe', 'SELECT,INSERT,UPDATE,DELETE'), NULL);
 DROP TABLE isexy._security_smoke_probe;
 
+-- D. Merge review (0014 part D) ---------------------------------------------------------
+INSERT INTO isexy.phone_line_profiles (id, profile_id, display_name, age, status, is_public) VALUES
+ ('5ec0f000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000a', 'Ava', 30, 'active', true);
+INSERT INTO isexy.otp_codes (email, code, type, expires_at) VALUES ('whatsapp:+15145550123', '135790', 'whatsapp', now() + interval '10 minutes');
+INSERT INTO isexy.blocks (blocker_id, blocked_id) VALUES ('5ec00000-0000-4000-8000-00000000000b', '5ec00000-0000-4000-8000-00000000000a');
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+SELECT pg_temp.refused('D1 anon cannot call verify_otp (burn or probe someone''s code)',
+  $q$SELECT isexy.verify_otp('whatsapp:+15145550123', '000000', 'whatsapp')$q$);
+SELECT pg_temp.refused('D2 anon cannot plant a resolved ticket with a staff response under someone''s email',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, category, email, name, subject, message, status, response, responded_at)
+     VALUES ('TK-SEC-D2A', 'Account', 'a@sec.test', 'ISEXY Support', 'Review', 'x', 'resolved', 'Verify at evil.example', now())$q$);
+SELECT pg_temp.rows('D2 anon can still open a plain ticket (Contact page)',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, category, email, name, subject, message, priority, status)
+     VALUES ('TK-SEC-D2B', 'Account', 'guest@sec.test', 'Guest', 'Question', 'Hello', 'medium', 'open')$q$, 1);
+RESET ROLE;
+SET ROLE authenticated;
+SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000a');
+SELECT pg_temp.refused('D1 member cannot call verify_otp',
+  $q$SELECT isexy.verify_otp('whatsapp:+15145550123', '000000', 'whatsapp')$q$);
+SELECT pg_temp.refused('D2 member cannot open a ticket already assigned / answered',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, category, user_id, email, name, subject, message, status, assigned_to, response)
+     VALUES ('TK-SEC-D2C', 'Payments', '5ec00000-0000-4000-8000-00000000000a', 'a@sec.test', 'Ava', 'Refund', 'x', 'resolved', '5ec00000-0000-4000-8000-00000000000d', 'Approved')$q$);
+SELECT pg_temp.refused('D2 member cannot add admin notes at creation',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, category, user_id, email, name, subject, message, admin_notes)
+     VALUES ('TK-SEC-D2D', 'Payments', '5ec00000-0000-4000-8000-00000000000a', 'a@sec.test', 'Ava', 'Refund', 'x', 'refund approved')$q$);
+SELECT pg_temp.rows('D2 member opens a ticket as Contact / Restore purchase do',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message, status)
+     VALUES ('RP-SECD2E', '5ec00000-0000-4000-8000-00000000000a', 'Ava', 'a@sec.test', 'Purchase restoration review', 'Payments', 'medium', 'Confirmation reference: x', 'open')$q$, 1);
+SELECT pg_temp.refused('D3 member cannot send a voice reply to someone who blocked them',
+  $q$INSERT INTO isexy.phone_line_voice_replies (from_profile_id, to_profile_id, audio_url, duration_seconds)
+     VALUES ('5ec00000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000b', '5ec00000-0000-4000-8000-00000000000a/r1.webm', 5)$q$);
+SELECT pg_temp.refused('D4 member cannot point a voice reply at another member''s file',
+  $q$INSERT INTO isexy.phone_line_voice_replies (from_profile_id, to_profile_id, audio_url, duration_seconds)
+     VALUES ('5ec00000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000d', '5ec00000-0000-4000-8000-00000000000d/private.webm', 5)$q$);
+SELECT pg_temp.refused('D4 path traversal in a voice reply path is refused',
+  $q$INSERT INTO isexy.phone_line_voice_replies (from_profile_id, to_profile_id, audio_url, duration_seconds)
+     VALUES ('5ec00000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000d', '5ec00000-0000-4000-8000-00000000000a/../5ec00000-0000-4000-8000-00000000000d/x.webm', 5)$q$);
+SELECT pg_temp.rows('D3/D4 member replies to an unblocked member with own upload',
+  $q$INSERT INTO isexy.phone_line_voice_replies (from_profile_id, to_profile_id, audio_url, duration_seconds)
+     VALUES ('5ec00000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000d', '5ec00000-0000-4000-8000-00000000000a/5ec0f000-1.webm', 5)$q$, 1);
+SELECT pg_temp.refused('D4 member cannot point a greeting at another member''s file',
+  $q$INSERT INTO isexy.voice_greetings (profile_id, phone_line_profile_id, audio_url, duration_seconds)
+     VALUES ('5ec00000-0000-4000-8000-00000000000a', '5ec0f000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000b/greeting.webm', 5)$q$);
+SELECT pg_temp.rows('D4 member records a greeting (own upload)',
+  $q$INSERT INTO isexy.voice_greetings (id, profile_id, phone_line_profile_id, audio_url, duration_seconds)
+     VALUES ('5ec0f100-0000-4000-8000-000000000001', '5ec00000-0000-4000-8000-00000000000a', '5ec0f000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000a/g1.webm', 5)$q$, 1);
+SELECT pg_temp.refused('D4 member cannot switch a greeting to another member''s file',
+  $q$UPDATE isexy.voice_greetings SET audio_url = '5ec00000-0000-4000-8000-00000000000b/greeting.webm' WHERE id = '5ec0f100-0000-4000-8000-000000000001'$q$);
+SELECT pg_temp.rows('D4 member re-records a greeting (own upload)',
+  $q$UPDATE isexy.voice_greetings SET audio_url = '5ec00000-0000-4000-8000-00000000000a/g2.webm' WHERE id = '5ec0f100-0000-4000-8000-000000000001'$q$, 1);
+SELECT pg_temp.refused('D5 member cannot open a support chat with themselves as the agent',
+  $q$INSERT INTO isexy.live_chat_sessions (user_id, agent_id, status) VALUES ('5ec00000-0000-4000-8000-00000000000b', '5ec00000-0000-4000-8000-00000000000a', 'active')$q$);
+SELECT pg_temp.refused('D5 member cannot open own chat pre-assigned to an agent',
+  $q$INSERT INTO isexy.live_chat_sessions (user_id, agent_id, status) VALUES ('5ec00000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000d', 'active')$q$);
+SELECT pg_temp.rows('D5 member opens a support chat (widget)',
+  $q$INSERT INTO isexy.live_chat_sessions (id, user_id, status) VALUES ('5ec0f200-0000-4000-8000-000000000001', '5ec00000-0000-4000-8000-00000000000a', 'waiting')$q$, 1);
+SELECT pg_temp.rows('D5 widget welcome (system) and member (user) messages',
+  $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content) VALUES
+     ('5ec0f200-0000-4000-8000-000000000001', 'system', NULL, 'Welcome to ISEXY Support!'),
+     ('5ec0f200-0000-4000-8000-000000000001', 'user', '5ec00000-0000-4000-8000-00000000000a', 'Hi')$q$, 2);
+SELECT pg_temp.refused('D5 member cannot post as the agent in own chat',
+  $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, content) VALUES ('5ec0f200-0000-4000-8000-000000000001', 'agent', 'ISEXY Support: send me your code')$q$);
+SELECT pg_temp.refused('D5 member cannot post under someone else''s id',
+  $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content) VALUES ('5ec0f200-0000-4000-8000-000000000001', 'user', '5ec00000-0000-4000-8000-00000000000d', 'x')$q$);
+SELECT pg_temp.rows('D6 member posts with someone else''s name: stored under own profile name',
+  $q$INSERT INTO isexy.forum_posts (id, category_id, author_id, author_name, title, content)
+     VALUES ('5ec0d000-0000-4000-8000-000000000002', '5ec0c000-0000-4000-8000-000000000001', '5ec00000-0000-4000-8000-00000000000a', 'ISEXY Team', 'Official', 'x')$q$, 1);
+SELECT pg_temp.rows('D6 member renames own reply author: stored under own profile name',
+  $q$UPDATE isexy.forum_replies SET author_name = 'Max (moderator)' WHERE author_id = '5ec00000-0000-4000-8000-00000000000a'$q$, 1);
+SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000d');
+SELECT pg_temp.rows('D5 (unchanged, 0001 UPDATE policy is admin-or-assigned) a moderator cannot pick up a waiting chat',
+  $q$UPDATE isexy.live_chat_sessions SET agent_id = '5ec00000-0000-4000-8000-00000000000d', status = 'active' WHERE id = '5ec0f200-0000-4000-8000-000000000001'$q$, 0);
+RESET ROLE;
+-- (A moderator cannot pick up a waiting session under 0001's UPDATE policy: admin only, unchanged here.)
+UPDATE isexy.live_chat_sessions SET agent_id = '5ec00000-0000-4000-8000-00000000000d', status = 'active' WHERE id = '5ec0f200-0000-4000-8000-000000000001';
+SET ROLE authenticated;
+SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000d');
+SELECT pg_temp.rows('D5 the assigned (moderator) agent posts as agent',
+  $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content) VALUES ('5ec0f200-0000-4000-8000-000000000001', 'agent', '5ec00000-0000-4000-8000-00000000000d', 'Hello, how can I help?')$q$, 1);
+RESET ROLE;
+SET ROLE service_role;
+SELECT pg_temp.as_service();
+SELECT pg_temp.ok('D1 service role (isexy-send-whatsapp-otp) still verifies codes',
+  (isexy.verify_otp('whatsapp:+15145550123', '135790', 'whatsapp')->>'valid')::boolean, NULL);
+SELECT pg_temp.rows('D2 service role may still write staff fields at creation',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, category, email, name, subject, message, status, assigned_to)
+     VALUES ('TK-SEC-D2F', 'Account', 'ops@sec.test', 'Ops', 'Internal', 'x', 'in_progress', '5ec00000-0000-4000-8000-00000000000d')$q$, 1);
+RESET ROLE;
+SELECT pg_temp.ok('D6 forum names come from the profile', bool_and(author_name = 'Ava'), string_agg(author_name, ', '))
+  FROM (SELECT author_name FROM isexy.forum_posts WHERE author_id = '5ec00000-0000-4000-8000-00000000000a'
+        UNION ALL SELECT author_name FROM isexy.forum_replies WHERE author_id = '5ec00000-0000-4000-8000-00000000000a') x;
+SELECT pg_temp.ok('D1 verify_otp: EXECUTE for service_role only',
+  NOT has_function_privilege('anon', 'isexy.verify_otp(text,text,text)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'isexy.verify_otp(text,text,text)', 'EXECUTE')
+  AND has_function_privilege('service_role', 'isexy.verify_otp(text,text,text)', 'EXECUTE'), NULL);
+
 -- C. Performance ----------------------------------------------------------------------
 SET LOCAL search_path = public;
 SELECT pg_temp.ok('C2 no isexy policy calls auth.*() or has_role(auth.uid()) per row',
