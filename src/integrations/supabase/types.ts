@@ -3543,6 +3543,22 @@ export type Database = {
       }
       ensure_user_credits: { Args: never; Returns: Json }
       expire_member_plans: { Args: never; Returns: number }
+      fulfill_stripe_boost_purchase: {
+        Args: {
+          p_product_id: string
+          p_profile_id: string
+          p_stripe_session_id: string
+        }
+        Returns: boolean
+      }
+      fulfill_stripe_credit_purchase: {
+        Args: {
+          p_package_id: string
+          p_profile_id: string
+          p_stripe_session_id: string
+        }
+        Returns: boolean
+      }
       fulfill_stripe_payment: {
         Args: {
           p_amount_cents?: number

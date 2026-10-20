@@ -1,8 +1,8 @@
--- Smoke tests for supabase/isexy-migrations/0005_security_and_performance.sql
+-- Smoke tests for supabase/isexy-migrations/0014_security_and_performance.sql
 -- (security + DB performance pass). Run on a THROWAWAY local Postgres only
 -- (never on V1), after:
 --   psql "$ISEXY_DB_URL" -f scripts/isexy/test/v1-mock.sql
---   scripts/isexy/migrate.sh --apply        (0001-0005)
+--   scripts/isexy/migrate.sh --apply        (0001-0014)
 -- then (everything is rolled back):
 --   printf 'BEGIN;\n\\i scripts/isexy/test/security-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
 -- Each closed hole is tried as a member (authenticated with request.jwt.claim(s)
@@ -42,7 +42,7 @@ CREATE OR REPLACE FUNCTION pg_temp.r(p_k text) RETURNS jsonb LANGUAGE sql AS $$
   SELECT v FROM kept WHERE k = p_k;
 $$;
 -- The statement must be refused with insufficient_privilege (42501: RLS,
--- missing grant, or the 0005 guards); its effects are rolled back.
+-- missing grant, or the 0014 guards); its effects are rolled back.
 CREATE OR REPLACE FUNCTION pg_temp.refused(p_name text, p_sql text) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
   EXECUTE p_sql;
@@ -403,7 +403,7 @@ SELECT pg_temp.ok('C2 no isexy policy calls auth.*() or has_role(auth.uid()) per
   count(*) = 0, string_agg(tablename || '.' || policyname, ', '))
   FROM pg_policies
  WHERE (schemaname = 'isexy' OR (schemaname = 'storage' AND policyname LIKE 'isexy: %'))
-   AND (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ~ '(?<!SELECT )(auth\.(uid|jwt|role)\(\)|isexy\.has_role\()';
+   AND (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ~ '(?<!SELECT )(?<!SELECT \()(auth\.(uid|jwt|role)\(\)|isexy\.has_role\()';
 RESET search_path;
 SELECT pg_temp.ok('C1 every isexy foreign key has a covering index', count(*) = 0, string_agg(fk.conrelid::regclass || '.' || fk.conname, ', '))
   FROM pg_constraint fk
@@ -414,7 +414,7 @@ SELECT pg_temp.ok('C1 every isexy foreign key has a covering index', count(*) = 
         AND (i.indkey::int2[])[0:cardinality(fk.conkey) - 1] @> fk.conkey
         AND (i.indkey::int2[])[0:cardinality(fk.conkey) - 1] <@ fk.conkey
         AND (i.indpred IS NULL OR pg_get_expr(i.indpred, i.indrelid) ~ 'IS NOT NULL'));
-SELECT pg_temp.ok('C3 normalize_gender has a fixed search_path', proconfig @> ARRAY['search_path=isexy, extensions'], array_to_string(proconfig, ','))
+SELECT pg_temp.ok('C3 normalize_gender has a fixed search_path (main''s 0004)', EXISTS (SELECT 1 FROM unnest(proconfig) c WHERE c LIKE 'search_path=%'), array_to_string(proconfig, ','))
   FROM pg_proc WHERE oid = 'isexy.normalize_gender(text)'::regprocedure;
 SELECT pg_temp.ok('C4 swipes_swiper_idx dropped, unique constraints on swipes and matches kept',
   to_regclass('isexy.swipes_swiper_idx') IS NULL

@@ -42,7 +42,7 @@ interface Loyalty {
   earned: string[];
 }
 
-// What the server pays for (0004_app_completion.sql part R9).
+// What the server pays for (0013_app_completion.sql part R9).
 const waysToEarn = [
   { icon: Flame, label: "Open ISEXY each day", note: "once a day", points: 5, color: "text-orange-500", once: null },
   { icon: Star, label: "Complete your profile", note: "3 photos, a bio, 3 interests", points: 50, color: "text-primary", once: "profile_complete" },

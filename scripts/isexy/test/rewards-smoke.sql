@@ -1,7 +1,7 @@
--- Smoke tests for part R of supabase/isexy-migrations/0004_app_completion.sql
+-- Smoke tests for part R of supabase/isexy-migrations/0013_app_completion.sql
 -- (wf/rewards: points, credits, loyalty, boosts, payments). Run on a
 -- THROWAWAY local Postgres only (never on V1), after v1-mock.sql and
--- migrate.sh --apply (0001-0004, part R included):
+-- migrate.sh --apply (0001-0013, part R included):
 --   printf 'BEGIN;\n\\i scripts/isexy/test/rewards-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
 -- Fake members call each RPC as authenticated / anon / service_role with
 -- request.jwt.claim(s) set: at least one allowed and one forbidden call each.
@@ -153,16 +153,16 @@ INSERT INTO r_results SELECT 'R3 platinum balance untouched', super_likes_remain
 SET ROLE service_role;
 SELECT pg_temp.as_service();
 INSERT INTO r_results SELECT 'R4 credits_25 adds 30 credits', (r->>'quantity')::int = 30, r::text
-  FROM (SELECT isexy.fulfill_stripe_payment('cs_1', :A, 'credits_25', 1999, 'cad') AS r) x;
+  FROM (SELECT isexy.fulfill_stripe_payment('cs_test_r1', :A, 'credits_25', 1999, 'cad') AS r) x;
 INSERT INTO r_results SELECT 'R4 same session again changes nothing', (r->>'already_fulfilled')::boolean, r::text
-  FROM (SELECT isexy.fulfill_stripe_payment('cs_1', :A, 'credits_100', 5999, 'cad') AS r) x;
-SELECT isexy.fulfill_stripe_payment('cs_2', :A, 'video_20', 1500, 'cad');
-SELECT isexy.fulfill_stripe_payment('cs_3', :A, 'super_likes_15', 4890, 'cad');
-SELECT isexy.fulfill_stripe_payment('cs_4', :A, 'boost_10', 3290, 'cad');
-SELECT isexy.fulfill_stripe_payment('cs_5', :A, 'superboost_6h', 9299, 'cad');
-SELECT isexy.fulfill_stripe_payment('cs_6', :A, 'primetime_3', 2799, 'cad');
+  FROM (SELECT isexy.fulfill_stripe_payment('cs_test_r1', :A, 'credits_100', 5999, 'cad') AS r) x;
+SELECT isexy.fulfill_stripe_payment('cs_test_r2', :A, 'video_20', 1500, 'cad');
+SELECT isexy.fulfill_stripe_payment('cs_test_r3', :A, 'super_likes_15', 4890, 'cad');
+SELECT isexy.fulfill_stripe_payment('cs_test_r4', :A, 'boost_10', 3290, 'cad');
+SELECT isexy.fulfill_stripe_payment('cs_test_r5', :A, 'superboost_6h', 9299, 'cad');
+SELECT isexy.fulfill_stripe_payment('cs_test_r6', :A, 'primetime_3', 2799, 'cad');
 INSERT INTO r_results SELECT 'R4 unknown product refused', r->>'error' = 'unknown_product', r::text
-  FROM (SELECT isexy.fulfill_stripe_payment('cs_7', :A, 'credits_9999', 1, 'cad') AS r) x;
+  FROM (SELECT isexy.fulfill_stripe_payment('cs_test_r7', :A, 'credits_9999', 1, 'cad') AS r) x;
 INSERT INTO r_results SELECT 'R4 chat subscription created',
   (r->>'status') = 'active', r::text
   FROM (SELECT isexy.apply_chat_subscription(:B, 'sub_chat_b', 'cs_chat_b', 'active', now() + interval '30 days') AS r) x;
@@ -175,7 +175,7 @@ INSERT INTO r_results SELECT 'R4 balances: 30 credits, 20 video min, 15 Super Li
   FROM isexy.profiles p JOIN isexy.user_credits c ON c.profile_id = p.id JOIN isexy.boost_wallets w ON w.profile_id = p.id
   WHERE p.id = :A;
 INSERT INTO r_results SELECT 'R4 one ledger row per session', count(*) = 1, count(*)::text
-  FROM isexy.credit_transactions WHERE stripe_session_id = 'cs_1';
+  FROM isexy.credit_transactions WHERE stripe_session_id = 'cs_test_r1';
 INSERT INTO r_results SELECT 'R4 chat renewal extends the same row',
   count(*) = 1 AND max(expires_at) > now() + interval '50 days', count(*)::text
   FROM isexy.chat_subscriptions WHERE profile_id = :B;
@@ -183,9 +183,9 @@ INSERT INTO r_results SELECT 'R4 chat renewal extends the same row',
 -- Gift of Stars (Cuba on hold: bug fix) credits the receiver.
 SET ROLE service_role;
 SELECT pg_temp.as_service();
-SELECT isexy.fulfill_stripe_payment('cs_gift', :A, 'gift_' || (SELECT id FROM isexy.gift_packages WHERE name = '500 Stars'),
+SELECT isexy.fulfill_stripe_payment('cs_test_gift', :A, 'gift_' || (SELECT id FROM isexy.gift_packages WHERE name = '500 Stars'),
   650, 'usd', jsonb_build_object('recipient_profile_id', :H, 'message', 'hi'));
-SELECT isexy.fulfill_stripe_payment('cs_gift', :A, 'gift_' || (SELECT id FROM isexy.gift_packages WHERE name = '500 Stars'),
+SELECT isexy.fulfill_stripe_payment('cs_test_gift', :A, 'gift_' || (SELECT id FROM isexy.gift_packages WHERE name = '500 Stars'),
   650, 'usd', jsonb_build_object('recipient_profile_id', :H, 'message', 'hi'));
 RESET ROLE;
 INSERT INTO r_results SELECT 'R4 Stars gift credits 500 stars once', stars_balance = 500, stars_balance::text
@@ -421,6 +421,40 @@ RESET ROLE;
 INSERT INTO r_results SELECT 'R11 moderator marks a member verified', is_verified, NULL FROM isexy.profiles WHERE id = :A;
 INSERT INTO r_results SELECT 'R11 cash-out row has the server amount', usd_amount = 10.00, usd_amount::text
   FROM isexy.star_cashout_requests WHERE profile_id = :H;
+
+-- R4b main's 0011/0012 RPCs (the live webhook v6 calls them) share
+-- fulfill_stripe_payment's crediting and its one-ledger-row-per-session rule.
+RESET ROLE;
+SELECT coalesce(p.super_likes_remaining, 0) AS sl_before, coalesce(a.weekly_super_likes_max, 0) AS max_before
+  FROM isexy.profiles p LEFT JOIN isexy.allowances a ON a.profile_id = p.id WHERE p.id = :A \gset
+SET ROLE service_role;
+SELECT pg_temp.as_service();
+INSERT INTO r_results SELECT 'R4b main credit RPC: a session fulfill_stripe_payment credited is a replay',
+  NOT isexy.fulfill_stripe_credit_purchase(:A, 'cs_test_r1', 'credits_25'), NULL;
+INSERT INTO r_results SELECT 'R4b main boost RPC credits a new session',
+  isexy.fulfill_stripe_boost_purchase(:A, 'cs_test_r8', 'super_likes_3'), NULL;
+INSERT INTO r_results SELECT 'R4b fulfill_stripe_payment: a session main''s boost RPC credited is a replay',
+  (r->>'already_fulfilled')::boolean, r::text
+  FROM (SELECT isexy.fulfill_stripe_payment('cs_test_r8', :A, 'super_likes_3') AS r) x;
+DO $$ BEGIN
+  PERFORM isexy.fulfill_stripe_payment('not_a_session', 'dddddddd-0000-0000-0000-000000000001', 'credits_10');
+  INSERT INTO r_results VALUES ('R4b malformed Stripe session id refused', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO r_results VALUES ('R4b malformed Stripe session id refused', true, SQLERRM);
+END $$;
+RESET ROLE;
+INSERT INTO r_results SELECT 'R4b Super Likes from main''s RPC land in the balance (+3), not the weekly maximum',
+  p.super_likes_remaining = :sl_before + 3 AND coalesce(a.weekly_super_likes_max, 0) = :max_before,
+  format('%s -> %s, max %s -> %s', :sl_before, p.super_likes_remaining, :max_before, a.weekly_super_likes_max)
+  FROM isexy.profiles p LEFT JOIN isexy.allowances a ON a.profile_id = p.id WHERE p.id = :A;
+INSERT INTO r_results SELECT 'R4b one boost ledger row for that session', count(*) = 1, count(*)::text
+  FROM isexy.boost_transactions WHERE stripe_session_id = 'cs_test_r8';
+-- Even with a matching claim, a non-service role cannot reach them (grant).
+SET ROLE authenticated;
+SELECT pg_temp.as_service();
+SELECT pg_temp.refused('R4b member role cannot call fulfill_stripe_credit_purchase',
+  $q$SELECT isexy.fulfill_stripe_credit_purchase('dddddddd-0000-0000-0000-000000000001', 'cs_test_r9', 'credits_10')$q$);
+RESET ROLE;
 
 \o
 -- Report ---------------------------------------------------------------------------------------

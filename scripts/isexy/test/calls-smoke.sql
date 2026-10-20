@@ -1,9 +1,9 @@
--- Smoke tests for part D of supabase/isexy-migrations/0004_app_completion.sql
+-- Smoke tests for part D of supabase/isexy-migrations/0013_app_completion.sql
 -- (calls area: in-app calls, missed calls, Phone Line calls, Twilio statuses,
 -- phone numbers, moderation state).
 -- Run on a THROWAWAY local Postgres only (never on V1), after:
 --   psql "$ISEXY_DB_URL" -f scripts/isexy/test/v1-mock.sql
---   scripts/isexy/migrate.sh --apply        (0001-0004, part D included)
+--   scripts/isexy/migrate.sh --apply        (0001-0013, part D included)
 -- then (everything is rolled back):
 --   printf 'BEGIN;\n\\i scripts/isexy/test/calls-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
 -- Fake members call each RPC as the authenticated / anon / service_role roles
@@ -56,8 +56,14 @@ INSERT INTO isexy.profiles (user_id, first_name, birth_date, gender, interested_
  ('ca110000-0000-4000-8000-00000000000b', 'Bea',  '1991-05-01', 'woman', ARRAY['everyone'], true),
  ('ca110000-0000-4000-8000-00000000000c', 'Cleo', '1992-01-01', 'woman', ARRAY['everyone'], true),
  ('ca110000-0000-4000-8000-00000000000d', 'Dan',  '1993-01-01', 'man',   ARRAY['everyone'], true),
- ('ca110000-0000-4000-8000-00000000000e', 'Eve',  '1985-01-01', 'woman', ARRAY['everyone'], true),
+ ('ca110000-0000-4000-8000-00000000000e', 'Eve',  '1985-01-01', 'woman', ARRAY['everyone'], true);
+-- K: an under-18 row can no longer be written (main's 0006 trigger), but rows
+-- from before 0006 were left as they were: K stands for such a legacy row, to
+-- check the call RPCs still refuse minors themselves (rolled back).
+ALTER TABLE isexy.profiles DISABLE TRIGGER isexy_require_adult_profile;
+INSERT INTO isexy.profiles (user_id, first_name, birth_date, gender, interested_in, is_active) VALUES
  ('ca110000-0000-4000-8000-00000000000f', 'Kid',  (current_date - interval '17 years')::date, 'man', ARRAY['everyone'], true);
+ALTER TABLE isexy.profiles ENABLE TRIGGER isexy_require_adult_profile;
 INSERT INTO isexy.user_roles (user_id, role) VALUES ('ca110000-0000-4000-8000-00000000000e', 'admin');
 INSERT INTO isexy.matches (id, profile1_id, profile2_id, is_active)
 VALUES ('ca11a000-0000-4000-8000-000000000001', 'ca110000-0000-4000-8000-00000000000a', 'ca110000-0000-4000-8000-00000000000b', true);

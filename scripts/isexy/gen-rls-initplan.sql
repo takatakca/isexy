@@ -1,12 +1,13 @@
--- Emits part C2 of supabase/isexy-migrations/0005_security_and_performance.sql
+-- Emits part C2 of supabase/isexy-migrations/0014_security_and_performance.sql
 -- (run by scripts/isexy/gen-rls-initplan.sh inside a rolled-back transaction,
--- after parts A-C1 of 0005). For every isexy policy and every "isexy: "
+-- after parts A-C1 of 0014). For every isexy policy and every "isexy: "
 -- storage policy that calls auth.uid() / auth.jwt() / auth.role() per row:
 -- one ALTER POLICY with the same expression where
 --   auth.uid()                              -> ( SELECT auth.uid() AS uid)
 --   isexy.has_role(auth.uid(), '<role>')    -> ( SELECT isexy.has_role(( SELECT auth.uid() AS uid), '<role>') AS has_role)
 -- (an uncorrelated scalar subquery is evaluated once per statement: same
--- result, no per-row call), plus a guard that refuses to run the statements
+-- result, no per-row call; a call already inside one, e.g. main's 0010
+-- "( SELECT (auth.jwt() ->> 'email'))", is left as it is), plus a guard that refuses to run the statements
 -- when the live policies are not the ones they were generated from.
 -- Expressions are read with search_path = public, as pg_policies prints them
 -- (isexy names schema-qualified, built-ins bare).
@@ -14,7 +15,7 @@ SET LOCAL search_path = public;
 WITH re AS (
   SELECT '(?<!SELECT )isexy\.has_role\((auth\.uid\(\)|\( SELECT auth\.uid\(\) AS uid\)), (''[a-z_]+''::isexy\.app_role)\)'::text AS hr_pat,
          '( SELECT isexy.has_role(( SELECT auth.uid() AS uid), \2) AS has_role)'::text AS hr_to,
-         '(?<!SELECT )auth\.(uid|jwt|role)\(\)'::text AS au_pat,
+         '(?<!SELECT )(?<!SELECT \()auth\.(uid|jwt|role)\(\)'::text AS au_pat,
          '( SELECT auth.\1() AS \1)'::text AS au_to
 ), rw AS (
   SELECT p.schemaname, p.tablename, p.policyname, p.qual, p.with_check,
@@ -64,7 +65,7 @@ BEGIN
   IF v_fp IS DISTINCT FROM c_expected THEN
     RAISE EXCEPTION 'C2: %% policies call auth.*() per row, not the %% this block was generated from (fingerprint %% <> %%)',
       v_n, c_count, v_fp, c_expected
-      USING HINT = 'A policy changed after 0005 was generated: run scripts/isexy/gen-rls-initplan.sh on a throwaway 0001-0004 copy, review the diff, commit.';
+      USING HINT = 'A policy changed after 0014 was generated: run scripts/isexy/gen-rls-initplan.sh on a throwaway 0001-0013 copy, review the diff, commit.';
   END IF;
   FOREACH v_sql IN ARRAY ARRAY[
 %7$s

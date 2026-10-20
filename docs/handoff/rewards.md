@@ -2,7 +2,7 @@
 
 Running notes, updated with every commit so nothing is lost if the run stops.
 New SQL is in `docs/handoff/rewards.sql` (idempotent, isexy schema only, not a
-migration file: the integrator appends it to `0004_app_completion.sql`).
+migration file: the integrator appends it to `0013_app_completion.sql`).
 Nothing here is deployed.
 
 Status: [ ] open · [~] code written, type-checked only (Edge Functions are
@@ -98,7 +98,7 @@ typecheck, e2e on a mocked backend).
 - SQL (`docs/handoff/rewards.sql`, R1-R11) for items 2-9, 13 (server side),
   18, 20, 21, 23 and the protected writes of item 7. Verified on a throwaway
   Postgres 16 the CI way with the file folded into 0004 (v1-mock, migrate.sh
-  dry run, `--apply`, re-run "up to date", guard silent): `0004-smoke.sql`
+  dry run, `--apply`, re-run "up to date", guard silent): `0013-smoke.sql`
   34/34, `scripts/isexy/test/rewards-smoke.sql` 88/88 (allowed + forbidden
   call per RPC), rewards.sql re-applied on itself: no change.
   Extra holes closed on the way: any member could call
@@ -173,7 +173,7 @@ they refuse without auth.uid()), the Security stage may revoke it.
 - SQL: rewards.sql folded into 0004 and run the CI way on Postgres 16
   (`/var/tmp/isexy-rewards-pg2`, port 55452: the postgres user cannot enter the
   scratchpad, as integrator A noted): v1-mock, `migrate.sh` dry run,
-  `--apply`, re-run "up to date", guard silent; `0004-smoke.sql` 34/34,
+  `--apply`, re-run "up to date", guard silent; `0013-smoke.sql` 34/34,
   `rewards-smoke.sql` 88/88; rewards.sql re-applied on top: no change.
 - e2e (mocked backend, 390x844, `vite preview` on 4305):
   `e2e/rewards-e2e.mjs` 86/86 (see the file header for what it covers; the
@@ -196,7 +196,7 @@ E2E_BASE=http://127.0.0.1:4305 node --import ./e2e/offline-browser.mjs e2e/rewar
 ## Left to do
 
 1. **Integrator**: append `docs/handoff/rewards.sql` to
-   `supabase/isexy-migrations/0004_app_completion.sql` as part R (it is
+   `supabase/isexy-migrations/0013_app_completion.sql` as part R (it is
    idempotent and was tested folded in exactly that way), add R to the 0004
    header, then run `rewards-smoke.sql` without the first `\i` (see its
    header). Merge `src/integrations/supabase/types.ts` (new RPCs/tables are

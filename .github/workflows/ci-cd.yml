@@ -149,7 +149,7 @@ jobs:
 
       - name: Smoke tests (each in a rolled-back transaction)
         run: |
-          for t in 0004-smoke calls-smoke rewards-smoke security-smoke; do
+          for t in 0013-smoke calls-smoke rewards-smoke security-smoke; do
             echo "::group::$t"
             printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' "$t" | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
             echo "::endgroup::"

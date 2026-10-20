@@ -4,6 +4,17 @@
 -- applied anywhere yet; later passes may append parts below before it is
 -- applied.
 --
+-- Written as 0004 on the branch, renumbered 0013 when main's 0004-0012
+-- (applied on V1) were merged; it runs after them and keeps their fixes
+-- (docs/handoff/merge-main.md): 0006 adult profiles (untouched), 0007
+-- reset_monthly_allowances (R8 replaces the body with the same "only when
+-- due" rule, service role only), 0008 (untouched), 0009/0010 tickets
+-- (untouched), 0011/0012 Stripe RPCs (R4: fulfill_stripe_payment has their
+-- service-role and session checks and locks; fulfill_stripe_credit_purchase
+-- and fulfill_stripe_boost_purchase keep their signatures and answers and
+-- credit through fulfill_stripe_payment). R3's unique subscriptions
+-- (profile_id) index also makes the live webhook v6 upsert on profile_id work.
+--
 -- isexy schema only (plus the isexy-photo-verifications bucket and its
 -- "isexy: " storage policies, and isexy.call_sessions on the Realtime
 -- publication through isexy._realtime_add, which the migrate.sh guard
@@ -92,14 +103,17 @@
 --        perform_like_unchecked() spends weekly then purchased Super Likes.
 --    R4. Stripe fulfilment: fulfill_stripe_payment(),
 --        apply_stripe_subscription(), apply_chat_subscription() (atomic,
---        idempotent per Stripe session).
+--        idempotent per Stripe session); main's
+--        fulfill_stripe_credit_purchase() / fulfill_stripe_boost_purchase()
+--        credit through fulfill_stripe_payment() (Super Likes to the balance).
 --    R5. get_my_wallet(): every balance in one read.
 --    R6. use_boost_unchecked(): Boost, Primetime, monthly and Super Boost.
 --    R7. redeem_coupon_unchecked(): locked, never downgrades, no fake
 --        "discount".
---    R8. Scheduler: reset_monthly_allowances() only when due,
+--    R8. Scheduler: reset_monthly_allowances() only when due (main's 0007
+--        rule, plus permanent plans and missing wallets),
 --        expire_member_plans(), reset_daily_likes(); the weekly/monthly
---        resets are service_role only.
+--        resets are service_role only (main's 0007).
 --    R9. Loyalty points and streaks earned for real actions, rewards
 --        redeemed server-side; award_streak_badge() uses the server streak.
 --    R10. convert_credits_to_minutes(): credits are spendable (1 credit =
@@ -2477,8 +2491,16 @@ DECLARE
   v_stars integer;
   v_amount numeric := round(coalesce(p_amount_cents, 0) / 100.0, 2);
 BEGIN
+  -- main's 0011/0012 rules: service role only (also checked here, not only
+  -- by the grant) and a well-formed Stripe Checkout session id.
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'Stripe fulfillment is service-only' USING ERRCODE = '42501';
+  END IF;
   IF coalesce(p_session_id, '') = '' OR p_profile_id IS NULL OR coalesce(p_product, '') = '' THEN
     RAISE EXCEPTION 'session, profile and product are required' USING ERRCODE = '22023';
+  END IF;
+  IF length(p_session_id) < 8 OR length(p_session_id) > 255 OR p_session_id NOT LIKE 'cs\_%' THEN
+    RAISE EXCEPTION 'Invalid Stripe session reference' USING ERRCODE = '22023';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = p_profile_id) THEN
     RAISE EXCEPTION 'unknown profile %', p_profile_id USING ERRCODE = '22023';
@@ -2496,6 +2518,13 @@ BEGIN
     ('superboost_3h', 'super_boost', 3), ('superboost_6h', 'super_boost', 6), ('superboost_12h', 'super_boost', 12)
   ) AS c(product, k, q)
   WHERE c.product = p_product;
+
+  -- Serialize deliveries of one session with the same locks as main's
+  -- fulfill_stripe_credit_purchase / fulfill_stripe_boost_purchase (the
+  -- unique session ledgers below make a replay change nothing anyway).
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
+    CASE WHEN v_kind IN ('super_like', 'boost', 'primetime_boost', 'super_boost')
+         THEN 'isexy:boost:' ELSE 'isexy:' END || p_session_id, 0));
 
   IF v_kind IN ('credits', 'phone', 'video') THEN
     INSERT INTO credit_transactions (profile_id, amount, type, category, description, stripe_session_id)
@@ -2628,6 +2657,92 @@ END;
 $$;
 REVOKE ALL ON FUNCTION isexy.fulfill_stripe_payment(text, uuid, text, integer, text, jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION isexy.fulfill_stripe_payment(text, uuid, text, integer, text, jsonb) TO service_role;
+
+-- main's 0011 fulfill_stripe_credit_purchase and 0012
+-- fulfill_stripe_boost_purchase (called by the live webhook v6 until this
+-- branch's webhook is deployed): same signatures, same boolean answer (true:
+-- credited now, false: this session was already credited), same service-role
+-- check, session check, product lists and 22023 for an unknown product; the
+-- crediting itself is fulfill_stripe_payment's, so there is one definition of
+-- what a product gives and one idempotency rule per Stripe session whichever
+-- function a delivery reaches. Difference from the 0012 body: purchased Super
+-- Likes go to the spendable balance (profiles.super_likes_remaining, spent by
+-- perform_like after the weekly allowance) instead of raising
+-- allowances.weekly_super_likes_max, which refilled them every week and which
+-- sync_entitlements resets to the plan's value.
+CREATE OR REPLACE FUNCTION isexy.fulfill_stripe_credit_purchase(
+  p_profile_id uuid,
+  p_stripe_session_id text,
+  p_package_id text
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+DECLARE
+  v_result jsonb;
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'Stripe fulfillment is service-only' USING ERRCODE='42501';
+  END IF;
+  IF p_profile_id IS NULL OR p_stripe_session_id IS NULL
+     OR length(p_stripe_session_id) < 8 OR length(p_stripe_session_id) > 255
+     OR p_stripe_session_id NOT LIKE 'cs_%' THEN
+    RAISE EXCEPTION 'Invalid Stripe session reference' USING ERRCODE='22023';
+  END IF;
+  IF p_package_id IS NULL OR p_package_id NOT IN (
+       'credits_10', 'credits_25', 'credits_50', 'credits_100',
+       'phone_20', 'phone_150', 'phone_450', 'video_20', 'video_150', 'video_450') THEN
+    RAISE EXCEPTION 'Unknown ISEXY package' USING ERRCODE='22023';
+  END IF;
+  v_result := isexy.fulfill_stripe_payment(p_stripe_session_id, p_profile_id, p_package_id);
+  IF NOT coalesce((v_result->>'success')::boolean, false) THEN
+    RAISE EXCEPTION 'ISEXY package not fulfilled: %', coalesce(v_result->>'error', 'unknown') USING ERRCODE='22023';
+  END IF;
+  RETURN NOT coalesce((v_result->>'already_fulfilled')::boolean, false);
+END;
+$function$;
+REVOKE ALL ON FUNCTION isexy.fulfill_stripe_credit_purchase(uuid,text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION isexy.fulfill_stripe_credit_purchase(uuid,text,text) TO service_role;
+
+CREATE OR REPLACE FUNCTION isexy.fulfill_stripe_boost_purchase(
+  p_profile_id uuid,
+  p_stripe_session_id text,
+  p_product_id text
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+DECLARE
+  v_result jsonb;
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'ISEXY Stripe boost fulfillment is service-only' USING ERRCODE='42501';
+  END IF;
+  IF p_profile_id IS NULL OR p_stripe_session_id IS NULL
+     OR length(p_stripe_session_id) < 8 OR length(p_stripe_session_id) > 255
+     OR p_stripe_session_id NOT LIKE 'cs_%' THEN
+    RAISE EXCEPTION 'Invalid Stripe session reference' USING ERRCODE='22023';
+  END IF;
+  IF p_product_id IS NULL OR p_product_id NOT IN (
+       'super_likes_3', 'super_likes_15', 'super_likes_30',
+       'boost_1', 'boost_10', 'boost_20',
+       'primetime_1', 'primetime_3', 'primetime_5',
+       'superboost_3h', 'superboost_6h', 'superboost_12h') THEN
+    RAISE EXCEPTION 'Unknown ISEXY boost product' USING ERRCODE='22023';
+  END IF;
+  v_result := isexy.fulfill_stripe_payment(p_stripe_session_id, p_profile_id, p_product_id);
+  IF NOT coalesce((v_result->>'success')::boolean, false) THEN
+    RAISE EXCEPTION 'ISEXY boost product not fulfilled: %', coalesce(v_result->>'error', 'unknown') USING ERRCODE='22023';
+  END IF;
+  RETURN NOT coalesce((v_result->>'already_fulfilled')::boolean, false);
+END;
+$function$;
+REVOKE ALL ON FUNCTION isexy.fulfill_stripe_boost_purchase(uuid,text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION isexy.fulfill_stripe_boost_purchase(uuid,text,text) TO service_role;
 
 -- A plan subscription's state from Stripe (checkout completed, updated,
 -- deleted, or a member's "Restore purchases"). The row of that Stripe
@@ -2997,8 +3112,10 @@ GRANT EXECUTE ON FUNCTION isexy.redeem_coupon_unchecked(text, uuid) TO service_r
 -- ===========================================================================
 -- R8. Scheduler (isexy-reset-allowances, isexy-subscription-resets)
 -- ===========================================================================
--- Monthly Boost every 30 days for Gold/Platinum (before: on every run, and
--- never for plans without an end date).
+-- Monthly Boost every 30 days for Gold/Platinum. Replaces main's 0007 body
+-- (same rule: only when the wallet is due, service role only) and adds: the
+-- plan must be active (is_premium), permanent plans (no end date) get it too,
+-- and a Gold/Platinum member without a wallet row gets one.
 CREATE OR REPLACE FUNCTION isexy.reset_monthly_allowances()
 RETURNS integer
 LANGUAGE plpgsql
@@ -3033,10 +3150,10 @@ BEGIN
   RETURN v_count;
 END;
 $$;
+-- Service role only, as main's 0007 (which also made reset_weekly_allowances
+-- service-only); repeated after the CREATE OR REPLACE for the reader.
 REVOKE ALL ON FUNCTION isexy.reset_monthly_allowances() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION isexy.reset_monthly_allowances() TO service_role;
-REVOKE ALL ON FUNCTION isexy.reset_weekly_allowances() FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION isexy.reset_weekly_allowances() TO service_role;
 
 -- Plans whose end date passed: recompute (another source may still be
 -- active) so the plan, entitlements and allowances follow.

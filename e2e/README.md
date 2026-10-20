@@ -61,8 +61,8 @@ every other network import).
 
 SQL is checked separately on a throwaway local Postgres 16, like the CI
 `migrations` job: `scripts/isexy/test/v1-mock.sql`, `scripts/isexy/migrate.sh`
-(dry run, `--apply`, re-run), then `scripts/isexy/test/0004-smoke.sql`,
+(dry run, `--apply`, re-run), then `scripts/isexy/test/0013-smoke.sql`,
 `calls-smoke.sql` (part D), `rewards-smoke.sql` (part R) and
-`security-smoke.sql` (0005), each inside BEGIN/ROLLBACK with
+`security-smoke.sql` (0014), each inside BEGIN/ROLLBACK with
 `psql -v ON_ERROR_STOP=1` (instructions at the top of each file; CI runs the
 same loop). Never point these at V1.

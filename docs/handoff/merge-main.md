@@ -12,7 +12,7 @@ on top of it.
 
 - [x] 1. Map of main's changes (this file)
 - [x] 2. `git merge origin/main`, conflicts resolved, decisions below (typecheck clean; `deno check` of every function and main's 5 Deno tests pass: Deno 2.5.6 from npm in the scratchpad)
-- [ ] 3. Our migrations renumbered 0013/0014 and reconciled with main's 0004-0012
+- [x] 3. Our migrations renumbered 0013/0014 and reconciled with main's 0004-0012
 - [ ] 4. Migration tests (from scratch + production simulation), every smoke test, typecheck, build, lint, e2e
 - [ ] 5. Functions to deploy (content differs from main, or new)
 - [ ] 6. HANDOFF.md, WORKLOG.md, push
@@ -112,3 +112,47 @@ quarantine, live checks + our smoke step and TURN/phone build vars),
 | `RestorePurchase.tsx` | ticket for a purchase made on another account (`RP-…`, staff review) | automatic restore on the same account | both on one page |
 | `CubanSignup.tsx` (Cuba on hold, bug fixes only) | no profile with a fake birth date (go to profile setup); refuse when an upload failed | `set_my_cuban_flag` RPC (is_cuban is protected) | RPC, with main's error check |
 | WORKLOG | main's lines | ours | both, newest first; main's three 2026-10-09 lines are older statuses of our PR #1 lines (kept ours) |
+
+## 3. Migrations: renumbered and reconciled
+
+`git mv` 0004_app_completion → **0013_app_completion**, 0005_security_and_performance
+→ **0014_security_and_performance**, `scripts/isexy/test/0004-smoke.sql` →
+`0013-smoke.sql`; references updated in CI, `gen-rls-initplan.*`, the smoke
+files, e2e/README, src comments, docs/handoff notes (WORKLOG history lines left
+as written). Main's 0001-0012 are byte-identical to main (sha256 = the
+checksums recorded on V1).
+
+| Overlap with main | Decision |
+|---|---|
+| 0004 `normalize_gender` search_path | ours (0014 C3, `isexy, extensions`) removed: main's `''` stays |
+| 0005 FK indexes | 10 of our 51 C1 indexes are the same columns as main's `idx_isexy_*`: removed (41 left). Main's `idx_isexy_swipes_swiped_id` and `idx_isexy_message_translations_message_id` are covered by our composite `swipes_swiped_created_idx` / `message_translations_lookup_idx`: left in place (dropping a live index is the owner's call) |
+| 0006 adult trigger | untouched; nothing of ours writes `birth_date` around it. `calls-smoke` inserts its under-18 member with the trigger disabled inside the rolled-back test (a pre-0006 legacy row), so the call RPCs' own minor check stays tested |
+| 0007 allowance resets | 0013 R8 replaces the `reset_monthly_allowances` body (same "only when due" rule, service role only) and adds active plan required, permanent plans, missing wallets; our duplicate weekly REVOKE/GRANT removed (0007 has it) |
+| 0008 maintenance RPCs, `get_admin_users` | our 0014 B3 copies removed: main's definition (staff **or service_role**, EXECUTE authenticated) is the one |
+| 0009/0010 tickets | untouched by ours. **C2 regenerated** on a 0001-0013 database: 131 policies (was 133); the old C2 would have rewritten main's two 0010 ticket policies back to `auth.users` reads (its guard would have stopped it). The generator and the security-smoke C2 check now also skip `auth.*()` already inside a scalar subquery (`( SELECT (auth.jwt() ->> 'email'))`) |
+| 0011/0012 Stripe RPCs | `fulfill_stripe_payment` gets their protections: `auth.role()` must be service_role, session id `cs_…` 8-255 chars, same advisory locks. `fulfill_stripe_credit_purchase` / `fulfill_stripe_boost_purchase` (live webhook v6) keep signature, boolean answer, checks, product lists and 22023 errors, and credit through `fulfill_stripe_payment`: one crediting rule and one idempotency ledger per session whichever function a delivery reaches. Deliberate change: Super Likes bought through them go to `profiles.super_likes_remaining` (spendable), not `allowances.weekly_super_likes_max` (refilled every week, reset by `sync_entitlements`); main's `atomic-boost-checkout.sql` assertion updated to the balance. Main's duplicate unique session indexes (same columns as the baseline's) left in place |
+| subscriptions | our unique `subscriptions (profile_id)` index (0013 R3) makes the live v6 webhook's `upsert(..., onConflict: profile_id)` work (it fails today without it) |
+
+Main's functions against the final schema (checked on the migrated database):
+every RPC they call exists with the same signature and privileges:
+`sync_entitlements(uuid)` (service role passes `assert_profile_owner`),
+`fulfill_stripe_credit_purchase` / `fulfill_stripe_boost_purchase(uuid,text,text) → boolean`,
+`reset_weekly_allowances()` / `reset_monthly_allowances() → integer`,
+`verify_otp`, `has_role`; no table or column they use was dropped; the new
+member-write closures (0014 B) do not affect them (service-role clients).
+`src/integrations/supabase/types.ts`: + the two 0011/0012 RPCs.
+
+Tests (local PostgreSQL 16, throwaway cluster `/var/tmp/isexy-merge-pg`, port
+55613: the postgres user cannot enter the scratchpad, `/tmp/claude-0` is
+forced back to mode 700):
+
+1. From scratch (as CI): v1-mock, dry run (14 pending, OK), `--apply` (guard
+   "V1 objects unchanged" for each), main's six SQL assertions pass, re-run
+   "up to date"; smoke 0013-smoke 34, calls-smoke 101, rewards-smoke 95
+   (+7 R4b: main's RPCs share the ledger, session id check), security-smoke
+   105: all PASS. 0013 and 0014 each re-applied on themselves: no error (C2
+   "already applied").
+2. Production simulation: fresh database with v1-mock + 0001-0012 only (our
+   files moved aside; main's six assertions pass there except the updated
+   boost one, which describes 0013), files put back: dry run lists **only
+   0013 and 0014**, `--apply` OK, re-run "up to date", all SQL tests above pass.

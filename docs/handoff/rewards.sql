@@ -1,7 +1,7 @@
--- FOLDED INTO supabase/isexy-migrations/0004_app_completion.sql (part R). Kept as the branch notes; do not apply this file.
+-- FOLDED INTO supabase/isexy-migrations/0013_app_completion.sql (part R). Kept as the branch notes; do not apply this file.
 -- ISEXY rewards area (branch wf/rewards): points, credits, loyalty, boosts and
 -- payments. NOT a migration file: the integrator appends it to
--- supabase/isexy-migrations/0004_app_completion.sql (part R) before 0004 is
+-- supabase/isexy-migrations/0013_app_completion.sql (part R) before 0004 is
 -- applied. isexy schema only. Idempotent (re-running changes nothing). Deletes
 -- no data. Every SECURITY DEFINER function pins search_path = isexy,
 -- extensions and checks auth.uid() itself; EXECUTE is revoked from PUBLIC and

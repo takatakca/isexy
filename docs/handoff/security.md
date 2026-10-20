@@ -1,7 +1,7 @@
 # Security + DB performance stage (0005)
 
 Branch `claude/zealous-brown-kv2hmx`. Migration
-`supabase/isexy-migrations/0005_security_and_performance.sql` runs after 0004
+`supabase/isexy-migrations/0014_security_and_performance.sql` runs after 0004
 (neither is applied anywhere). The file header lists every part and why.
 Tests: `scripts/isexy/test/security-smoke.sql` (105 checks), wired into the CI
 `migrations` job with the three older smoke files.
@@ -27,7 +27,7 @@ directory lives under `/var/tmp`, as for the earlier stages). Database
 `postgres`: `v1-mock.sql`, `migrate.sh` dry run (5 pending, guard "V1 objects
 unchanged"), `--apply`, re-run "up to date"; smoke tests with
 `-v ON_ERROR_STOP=1` (without it psql exits 0 even when a smoke file fails):
-0004-smoke 34, calls-smoke 101, rewards-smoke 88, security-smoke 105, all PASS.
+0013-smoke 34, calls-smoke 101, rewards-smoke 88, security-smoke 105, all PASS.
 0005 applied twice in a row is a no-op (C2 says "already applied").
 
 ## Audit: client writes (proof that closing the policies breaks nothing)
