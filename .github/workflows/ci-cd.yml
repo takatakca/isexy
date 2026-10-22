@@ -3,7 +3,8 @@
 # Every push / PR:
 #   verify      install → typecheck → build → type-check every isexy-* edge function → lint report
 #   migrations  apply supabase/isexy-migrations to a Postgres stand-in of V1 (dry run, apply,
-#               re-run) with the guard that proves V1's public/auth/storage objects never change
+#               re-run) with the guard that proves V1's public/auth/storage objects never change,
+#               then every SQL smoke test in scripts/isexy/test (each rolled back)
 #   rules       fail if anything could touch V1 outside ISEXY's lane (db push, bare functions deploy)
 # Every push to main (after the above are green), each stage switching itself on once its
 # secrets exist (GitHub → Settings → Secrets and variables → Actions):
@@ -77,6 +78,21 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Isolated Stripe customer ownership tests
+        run: deno test scripts/isexy/test/stripe-customer.test.ts
+
+      - name: Checkout metadata isolation tests
+        run: deno test scripts/isexy/test/checkout-metadata.test.ts
+
+      - name: Stripe checkout identity isolation tests
+        run: deno test scripts/isexy/test/stripe-identity.test.ts
+
+      - name: Ticket email permission assertions
+        run: deno test scripts/isexy/test/ticket-confirmation-auth.test.ts
+
+      - name: Subscription entitlement safety tests
+        run: deno test scripts/isexy/test/subscription-entitlement.test.ts
+
       - name: Type-check every edge function
         # Functions are bundled without the web app's package.json (as on
         # Supabase), so npm: specifiers resolve from the registry, not node_modules.
@@ -110,8 +126,34 @@ jobs:
       - name: Apply
         run: scripts/isexy/migrate.sh --apply
 
+      - name: Adult-only profile database assertions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/adult-profiles.sql
+
+      - name: Service-only allowance reset RPC assertions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/allowance-rpc-permissions.sql
+
+      - name: Privileged RPC permissions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/privileged-rpc-permissions.sql
+
+      - name: Support ticket administrative fields guard
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/support-ticket-staff-fields.sql
+
+      - name: Atomic Stripe credits and minutes assertions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/atomic-credit-checkout.sql
+
+      - name: Atomic Stripe boost assertions
+        run: psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/atomic-boost-checkout.sql
+
       - name: Re-run is a no-op
         run: scripts/isexy/migrate.sh | tee /tmp/rerun.txt && grep -q "up to date" /tmp/rerun.txt
+
+      - name: Smoke tests (each in a rolled-back transaction)
+        run: |
+          for t in 0013-smoke calls-smoke rewards-smoke security-smoke live-functions-compat; do
+            echo "::group::$t"
+            printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' "$t" | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
+            echo "::endgroup::"
+          done
 
   rules:
     name: V1 safety rules
@@ -194,6 +236,14 @@ jobs:
           for dir in supabase/functions/isexy-*/; do
             name="$(basename "$dir")"
             case "$name" in isexy-*) ;; *) echo "refusing to deploy $name"; exit 1 ;; esac
+            # Explicit quarantine: never create fictitious members in V1,
+            # and do not enable the unreviewed global subscription reset job.
+            case "$name" in
+              isexy-seed-profiles|isexy-subscription-resets)
+                echo "::notice::Skipping quarantined function $name"
+                continue
+                ;;
+            esac
             echo "::group::$name"
             supabase functions deploy "$name" --project-ref "$SUPABASE_PROJECT_REF"
             echo "::endgroup::"
@@ -265,6 +315,7 @@ jobs:
     timeout-minutes: 5
     env:
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://pcjfahhlozsseqqevimi.supabase.co' }}
+      ISEXY_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjamZhaGhsb3pzc2VxcWV2aW1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDA0NzQsImV4cCI6MjEwMDY3NjQ3NH0.jhy7N0I7uRjDt0Frzsu_F00lDL6cGr2ZxHPKsnoWY3Q' }}
     steps:
       - name: Site and SPA routes respond
         run: |
@@ -274,6 +325,54 @@ jobs:
             echo "$path → $code"
             [ "$code" = "200" ] || { echo "::error::$SITE_URL$path returned $code"; exit 1; }
           done
+
+      - name: Verify published commit on the live website
+        env:
+          EXPECTED_COMMIT: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current_main=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')
+          if [ "$current_main" != "$EXPECTED_COMMIT" ]; then
+            echo "::notice::This smoke test was superseded by $current_main. The newer main run will verify its release."
+            exit 0
+          fi
+          current=""
+          for attempt in $(seq 1 12); do
+            current=$(curl -fsS --max-time 10 --retry 1 "$SITE_URL/release.json?version=$EXPECTED_COMMIT" |
+              node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{process.stdout.write(JSON.parse(s).commit||"")}catch{process.stdout.write("")}})' || true)
+            if [ "$current" = "$EXPECTED_COMMIT" ]; then
+              echo "Published commit matches GitHub: ${EXPECTED_COMMIT:0:12}"
+              exit 0
+            fi
+            echo "Deployment not yet at current commit (attempt $attempt/12, active=${current:-unknown})"
+            sleep 10
+          done
+          current_main=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')
+          if [ "$current_main" != "$EXPECTED_COMMIT" ]; then
+            echo "::notice::Release was superseded by $current_main during this test; checking belongs to the new run."
+            exit 0
+          fi
+          if [ "$SITE_URL" = "https://isexy.onrender.com" ]; then
+            echo "::error::Render did not publish commit $EXPECTED_COMMIT within the smoke test window (active=${current:-unknown})."
+            exit 1
+          fi
+          echo "::warning::Custom hosting SHA unverified: configure build-time RENDER_GIT_COMMIT, GITHUB_SHA or SOURCE_COMMIT."
+
+      - name: Verify TAKATAK V1 ISEXY Data API is exposed
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/isexy-api-check.json -w '%{http_code}' --retry 2 --max-time 20 \
+            "$SUPABASE_URL/rest/v1/ticket_categories?select=id&limit=1" \
+            -H "apikey: $ISEXY_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $ISEXY_PUBLISHABLE_KEY" \
+            -H "Accept-Profile: isexy")
+          echo "ISEXY schema Data API → HTTP $code"
+          if [ "$code" != "200" ]; then
+            # Do not print provider configuration or token in logs.
+            echo "::error::ISEXY database schema unavailable to the expected Data API client (HTTP $code)"
+            exit 1
+          fi
 
       - name: ISEXY edge functions reachable
         run: |

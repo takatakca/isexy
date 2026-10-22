@@ -1,9 +1,9 @@
--- Smoke tests for supabase/isexy-migrations/0004_app_completion.sql.
+-- Smoke tests for supabase/isexy-migrations/0013_app_completion.sql.
 -- Run on a THROWAWAY local Postgres only (never on V1), after:
 --   psql "$ISEXY_DB_URL" -f scripts/isexy/test/v1-mock.sql
 --   scripts/isexy/migrate.sh --apply
 -- then (everything is rolled back):
---   printf 'BEGIN;\n\\i scripts/isexy/test/0004-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
+--   printf 'BEGIN;\n\\i scripts/isexy/test/0013-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
 -- Fake members call each RPC as the authenticated / anon roles with
 -- request.jwt.claim(s) set; at least one allowed and one forbidden call each.
 \set ON_ERROR_STOP on

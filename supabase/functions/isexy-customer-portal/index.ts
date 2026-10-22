@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { isexyEnv } from "../_shared/env.ts";
 import { findStripeCustomerId } from "../_shared/stripe-customer.ts";
-import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 // Stripe's billing page (cancel, change card, invoices) for members who paid
 // with Stripe.
@@ -25,9 +26,10 @@ serve(async (req) => {
       return json({ error: "No payment account yet: nothing was bought with this account.", code: "no_customer" }, 404);
     }
 
+    // Return URL from ISEXY_APP_URL only, never the request Origin (main d713375).
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${appBaseUrl(req)}/my-subscription`,
+      return_url: isexyAppUrl("/my-subscription"),
     });
     return json({ url: portalSession.url });
   } catch (error) {

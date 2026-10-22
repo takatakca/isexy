@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
-import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 // Credit packs, charged in CAD. The client only sends packageId; what a pack
 // gives is decided again by isexy.fulfill_stripe_payment when Stripe confirms.
@@ -30,7 +31,6 @@ serve(async (req) => {
 
     const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
     const customerId = await ensureStripeCustomerId(stripe, member);
-    const base = appBaseUrl(req);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -39,8 +39,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: "payment",
-      success_url: `${base}/buy-credits?checkout=success`,
-      cancel_url: `${base}/buy-credits?checkout=cancelled`,
+      success_url: isexyAppUrl("/buy-credits?checkout=success"),
+      cancel_url: isexyAppUrl("/buy-credits?checkout=cancelled"),
       metadata: { user_id: member.id, profile_id: member.id, product_id: packageId, package_id: packageId },
     });
 

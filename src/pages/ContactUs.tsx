@@ -134,10 +134,10 @@ const ContactUs = () => {
         throw new Error("Failed to create support ticket");
       }
 
-      // Send confirmation email via edge function (it reads the ticket back by number).
+      // Confirmation is optional; ticket persistence is the source of truth.
       let emailed = false;
       try {
-        const { error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
           body: {
             name: formData.name.trim(),
             email: formData.email.trim().toLowerCase(),
@@ -149,9 +149,8 @@ const ContactUs = () => {
           }
         });
 
-        if (emailError) {
-          console.error("Email sending error:", emailError);
-          // Don't throw - ticket was created, just log email failure
+        if (emailError || !emailResult?.success) {
+          console.error("Email confirmation not sent:", emailError ?? emailResult?.error);
         } else {
           emailed = true;
         }
@@ -161,7 +160,7 @@ const ContactUs = () => {
       }
       
       const sentTo = formData.email.trim().toLowerCase();
-      toast.success(`Ticket #${ticketNumber} sent.`, { duration: 6000 });
+      toast.success(`Ticket #${ticketNumber} created.`, { duration: 6000 });
       setSent({ number: ticketNumber, email: sentTo, emailed });
       window.scrollTo({ top: 0, behavior: "smooth" });
 

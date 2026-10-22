@@ -3,7 +3,9 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
-import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { safeCheckoutMetadata } from "../_shared/checkout-metadata.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 // Server-side authoritative catalog. Client sends only `productId` (+ gift or
 // donation details). What a product gives is decided by
@@ -44,14 +46,8 @@ const CATALOG: Record<string, CatalogItem> = {
 };
 
 // The only details a member may attach (gift recipient and note, donation
-// recipient). Anything else in the request body is ignored: the webhook
-// used to trust e.g. a client-sent package_id or profile_id.
-const ALLOWED_META: Record<string, number> = {
-  recipient_profile_id: 36,
-  message: 200,
-  phone_number: 40,
-  recipient_name: 120,
-};
+// recipient) are picked by _shared/checkout-metadata.ts safeCheckoutMetadata
+// (main 830c106): payer, product and package always come from the server.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function defaultReturnPath(productId: string): string {
@@ -79,21 +75,23 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const productId: string = typeof body?.productId === "string" ? body.productId : "";
-    const clientMeta = (body?.metadata && typeof body.metadata === "object" ? body.metadata : {}) as Record<string, unknown>;
+    const isGift = productId.startsWith("gift_");
+    if (!isGift && !CATALOG[productId]) return json({ error: "Invalid productId" }, 400);
 
-    const meta: Record<string, string> = {};
-    for (const [key, max] of Object.entries(ALLOWED_META)) {
-      const v = clientMeta[key];
-      if (typeof v === "string" && v.trim() !== "") meta[key] = v.trim().slice(0, max);
+    // Untrusted client metadata never selects a different payer, product,
+    // account, entitlement or fulfilment branch.
+    let meta: Record<string, string>;
+    try {
+      meta = safeCheckoutMetadata(productId, body?.metadata, member.id, isGift ? productId.slice(5) : undefined);
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : "Invalid checkout metadata" }, 400);
     }
-    if (meta.recipient_profile_id && !UUID.test(meta.recipient_profile_id)) delete meta.recipient_profile_id;
 
-    let item: CatalogItem | null = null;
-
-    // Gifts: priced from the gift_packages row (server-trusted).
-    if (productId.startsWith("gift_")) {
+    let item: CatalogItem;
+    if (isGift) {
+      // Gifts: priced from the gift_packages row (server-trusted), to an active member other than the sender.
       const giftPackageId = productId.slice(5);
-      if (!UUID.test(giftPackageId) || !meta.recipient_profile_id || meta.recipient_profile_id === member.id) {
+      if (!UUID.test(giftPackageId) || meta.recipient_profile_id === member.id) {
         return json({ error: "Invalid gift" }, 400);
       }
       const [{ data: pkg }, { data: recipient }] = await Promise.all([
@@ -102,28 +100,17 @@ serve(async (req) => {
       ]);
       if (!pkg || !recipient) return json({ error: "Invalid gift package" }, 400);
       item = { name: `Gift: ${pkg.name}`, amountCents: Math.round(Number(pkg.price_usd) * 100), currency: "usd" };
-      meta.type = "gift";
-      meta.gift_package_id = pkg.id;
-    } else if (CATALOG[productId]) {
+    } else {
       item = CATALOG[productId];
-      if (/^(donation|topup|food)_/.test(productId)) {
-        meta.type = productId.startsWith("topup_") ? "topup" : productId.startsWith("food_") ? "food" : "donation";
-      }
     }
-    if (!item) return json({ error: "Invalid productId" }, 400);
-
-    // Server-set keys last, so nothing above can override them.
-    meta.user_id = member.id;
-    meta.profile_id = member.id;
-    meta.product_id = productId;
 
     const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
     const customerId = await ensureStripeCustomerId(stripe, member);
 
+    // An internal path of this site only; the host comes from ISEXY_APP_URL
+    // (isexyAppUrl), never from the request.
     const requested = typeof body?.returnPath === "string" ? body.returnPath : "";
-    const returnPath = /^\/[A-Za-z0-9/_-]{0,120}$/.test(requested) ? requested : defaultReturnPath(productId);
-    const base = appBaseUrl(req);
-    const sep = returnPath.includes("?") ? "&" : "?";
+    const returnPath = /^\/(?!\/)[A-Za-z0-9/_-]{0,120}$/.test(requested) ? requested : defaultReturnPath(productId);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -132,8 +119,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: "payment",
-      success_url: `${base}${returnPath}${sep}checkout=success`,
-      cancel_url: `${base}${returnPath}${sep}checkout=cancelled`,
+      success_url: isexyAppUrl(`${returnPath}?checkout=success`),
+      cancel_url: isexyAppUrl(`${returnPath}?checkout=cancelled`),
       metadata: meta,
     });
 

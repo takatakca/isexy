@@ -1,18 +1,121 @@
-# ISEXY handoff (2026-10-16)
+# ISEXY handoff (2026-10-20, after merging main)
 
 Branch `claude/zealous-brown-kv2hmx`: wf/discover, wf/accounts, wf/chat,
-wf/calls and wf/rewards are merged and pushed. **The trust area (wf/trust:
-moderation, reports, staff tools) is still to do.** **Nothing from this pass is
-deployed**: the app on V1 still runs `main` 0a0c6be. Details per area: the
-tables below, [docs/handoff/accounts.md](handoff/accounts.md),
+wf/calls and wf/rewards are merged, the security + DB performance pass added
+`0014_security_and_performance.sql`, and **origin/main (ChatGPT's 47 commits,
+what production runs) is merged in** (`docs/handoff/merge-main.md`: map of
+main's changes and every merge decision). Our migrations were renumbered
+**0013_app_completion** and **0014_security_and_performance** (they were 0004
+and 0005 on this branch; main's 0004-0012 are applied on V1). **The trust
+area is still to do** (`wf/trust` is a local, unverified WIP branch, see
+[Still to do](#still-to-do-trust-area)). **Nothing of this branch is
+deployed**: see [Production state and deploy plan](#production-state-and-deploy-plan).
+Details per area: the tables below, [docs/handoff/accounts.md](handoff/accounts.md),
 [docs/handoff/chat.md](handoff/chat.md), [docs/handoff/calls.md](handoff/calls.md),
-[docs/handoff/rewards.md](handoff/rewards.md), integration notes
-[docs/handoff/integration-a.md](handoff/integration-a.md) and
-[docs/handoff/integration-b.md](handoff/integration-b.md).
+[docs/handoff/rewards.md](handoff/rewards.md), [docs/handoff/security.md](handoff/security.md),
+integration notes [docs/handoff/integration-a.md](handoff/integration-a.md),
+[docs/handoff/integration-b.md](handoff/integration-b.md),
+[docs/handoff/merge-main.md](handoff/merge-main.md). Main's own records (French):
+`docs/AGENT_HANDOFF.md`, `docs/PROJECT_STATUS.md`, `docs/TASK_QUEUE.md`,
+`docs/DECISIONS.md` (permanent decisions: they apply to this branch too).
 
-Contents: [Done](#done) · [Still to do](#still-to-do-trust-area) · [Left](#left-ordered-by-member-impact) ·
+Contents: [Production state and deploy plan](#production-state-and-deploy-plan) ·
+[Done](#done) · [Still to do](#still-to-do-trust-area) · [Left](#left-ordered-by-member-impact) ·
 [Needs the owner](#needs-the-owner) · [How to run](#how-to-run-the-checks) ·
-[Production state](#production-state) · [Next pass](#next-pass-security-and-db-performance)
+[Security and DB performance (0014)](#security-and-db-performance-0014)
+
+## Production state and deploy plan
+
+**Production = main** (baseline; everything below is checked against it):
+
+- Render serves `main` (main's docs: `445fc829` live, CI run 38951304397
+  green; main head `a188694` is a docs commit). Coolify / isexy.ca not verified.
+- TAKATAK V1 (`pcjfahhlozsseqqevimi`), schema `isexy`: migrations
+  **0001-0012 applied with checksums** (0004 normalize_gender search_path,
+  0005 FK indexes, 0006 adult profiles, 0007 allowance resets, 0008
+  privileged RPCs, 0009/0010 support tickets, 0011/0012 atomic Stripe
+  credits/boosts). Never edit those files (their sha256 in this branch equal
+  the recorded checksums).
+- Edge functions deployed from main: 25 of 27 `isexy-*` (webhook v6,
+  one-time payment v3, gate v2, checkouts/portal/check-subscription v2,
+  ticket confirmation v2, reset-allowances v3 with verify_jwt=true, IAP 501
+  v2). `isexy-seed-profiles` and `isexy-subscription-resets` are
+  **quarantined** (never deployed; CI skips them): keep it that way.
+
+**What this branch adds on top** (none of it deployed): the Done tables below
+(Discover, Accounts, Chat, Calls + Phone Line + Twilio, Rewards/payments
+economy) in `0013_app_completion.sql`, the security + DB performance pass in
+`0014_security_and_performance.sql`, and the functions listed in step 2.
+Main's live fixes are all kept (merge-main.md §2, §3): identity of Stripe
+payers from server metadata only, paid-only fulfilment, 503 for in-flight
+duplicates, ISEXY_APP_URL return URLs, safe checkout metadata, fail-closed
+gate (server and client), POST + strong secret for the scheduler, ticket
+confirmation owner/staff only, IAP 501, adult-only profiles, ticket staff
+fields, service-only maintenance RPCs.
+
+**Deploy plan** (main session / owner, in this order; nothing here was run
+against V1):
+
+1. **Migrations.** `ISEXY_DB_URL=<V1 session pooler> scripts/isexy/migrate.sh`
+   (dry run): it must list exactly `0013_app_completion.sql` then
+   `0014_security_and_performance.sql`, end with "isexy guard: V1 objects
+   unchanged" and "Dry run OK: 2 migration(s)". Anything else (a checksum
+   error, more pending files, a "C2: ... fingerprint" error) = stop and
+   investigate. Then `scripts/isexy/migrate.sh --apply` (one transaction per
+   file, both in one run), then `scripts/isexy/migrate.sh` → "up to date".
+   Checks: `isexy.schema_migrations` has 14 rows;
+   `has_function_privilege('anon'|'authenticated', 'isexy.fulfill_stripe_payment(text,uuid,text,integer,text,jsonb)', 'EXECUTE')`
+   false, `service_role` true; the live webhook v6 keeps working in the gap
+   (its two RPCs keep their signatures; see merge-main.md §3).
+2. **Functions** (after step 1: the new webhook and checkouts need 0013's
+   SQL). `supabase functions deploy <name> --project-ref pcjfahhlozsseqqevimi`
+   one by one, `verify_jwt` as in `supabase/config.toml`:
+
+   | Function | verify_jwt | Why (differs from main) |
+   |---|---|---|
+   | `isexy-stripe-webhook` | false | atomic SQL fulfilment + main's identity/503 rules (merge-main.md §2) |
+   | `isexy-create-checkout` | false | gate, wallet plan, coupon path, ISEXY_APP_URL |
+   | `isexy-create-credit-purchase` | false | CAD catalog, gate |
+   | `isexy-create-minute-purchase` | false | CAD catalog, chat subscription, gate |
+   | `isexy-create-one-time-payment` | false | CAD catalog, gift checks + safeCheckoutMetadata |
+   | `isexy-check-subscription` | false | restore through SQL, identity-checked |
+   | `isexy-customer-portal` | false | gate, return to /my-subscription |
+   | `isexy-payments-gate-status` | false | `configured`/`reason`/`firstWeekPromo`, webhook secret required |
+   | `isexy-reset-allowances` | **true** (default) | + `expire_member_plans`; keep POST + secret |
+   | `isexy-translate-message` | false | translation cache, caller checks |
+   | `isexy-send-push-notification` | false | real web-push, settings honoured |
+   | `isexy-send-notification-email` | false | settings honoured, throttle |
+   | `isexy-send-missed-call-notification` | false | only after `record_missed_call` |
+   | `isexy-send-whatsapp-call-notification` | false | caller/match checks |
+   | `isexy-twilio-inbound-phone-line` | false | signature, one session per CallSid |
+   | `isexy-twilio-phone-line-menu` | false | signature, escaped TwiML, menu |
+   | `isexy-twilio-call-status` | false | `apply_twilio_call_status` |
+   | `isexy-get-voice-greeting-url` | **true** (default) | staff review queue access |
+   | `isexy-ai-chat`, `isexy-send-ticket-confirmation`, `isexy-send-ticket-status-update`, `isexy-send-verification-notification`, `isexy-send-whatsapp-otp` | false | only `_shared/env.ts` differs (`ISEXY_TWILIO_WEBHOOK_BASE` is ISEXY-only): no behaviour change, redeploy to keep the bundle equal to the repo |
+
+   Not to deploy: `isexy-seed-profiles`, `isexy-subscription-resets`
+   (quarantined by main; our edits to the latter stay in the repo for a later
+   review). Unchanged from main: `isexy-get-voice-reply-url`,
+   `isexy-verify-iap-receipt`.
+3. **Client, right after 1-2**: open a PR `claude/zealous-brown-kv2hmx` →
+   `main` and merge it (Render publishes `main`; check `/release.json`
+   shows the merge SHA). Do 1-3 in one window: once 0013/0014 are applied,
+   the client still served from main loses the writes they close (checked
+   by a scan of main's `src/`): in-app video calls (`video_call_sessions`
+   insert/update), chat read state and `matches` update after a send,
+   "Who liked you" like-back (`swipes` insert) and the First Impression
+   update, Referrals code, My Stars cash-out, Cuban signup flag, staff
+   verified flag / Cuban review, scheduled calls, Double Hangout, forum
+   posts. V1 has 0 member profiles (main's last count), so nobody is hit
+   if the three steps follow each other.
+4. **Owner secrets** (see [Needs the owner](#needs-the-owner)): Stripe
+   (test mode first) + `ISEXY_STRIPE_PRICE_CHAT_1MO`, `ISEXY_APP_URL`,
+   VAPID, Resend, Anthropic, Twilio, `ISEXY_CRON_SECRET` (≥ 16 characters,
+   the same value as the GitHub secret of `isexy-allowance-cron.yml`).
+5. **After deploying**: one Stripe test purchase per kind (plan, Boost, Super
+   Likes, credits, minutes), resend one event (`stripe events resend`) and
+   check nothing changes; a call between two members; a push; the scheduler
+   run answering 200.
 
 ## Done
 
@@ -26,7 +129,7 @@ first pass), every e2e below passes.
 | Fix | Verified by |
 |---|---|
 | "Show me" filter no longer empties the deck (`women`/`men`/`everyone` values) | `e2e/discover-e2e.mjs` A9, A10 |
-| Who liked you + Likes tab list real likers (new RPC `get_likes_received`); Gold/Platinum see who, others see a count and locked tiles (no identity sent) | discover-e2e C3-C5, D1, D2; `0004-smoke.sql` A1 |
+| Who liked you + Likes tab list real likers (new RPC `get_likes_received`); Gold/Platinum see who, others see a count and locked tiles (no identity sent) | discover-e2e C3-C5, D1, D2; `0013-smoke.sql` A1 |
 | Platinum First Impression is really delivered (RPC `set_first_impression`, weekly allowance) | discover-e2e B1, B2; smoke A2 |
 | Top Picks come from the member's own ranked feed (no liked/blocked people), Gold tap opens the profile | discover-e2e C1, C2, C2b |
 | Phone layout of Discover (card no longer squeezed, sheets above the nav) | screenshots, discover-e2e |
@@ -92,14 +195,14 @@ first pass), every e2e below passes.
 
 ### Integration
 
-- `supabase/isexy-migrations/0004_app_completion.sql`: all SQL of the five
+- `supabase/isexy-migrations/0013_app_completion.sql` (0004 on this branch before the main merge): all SQL of the five
   branches in one idempotent isexy migration (parts A discover, B accounts,
   C chat, D calls, R rewards; the header lists each part and why; one CHECK
   widening block for `spend` + `referral_bonus`; one definition per function).
   Tested exactly like the CI `migrations` job: `v1-mock.sql`, `migrate.sh`
-  dry run, `--apply`, re-run "up to date", guard silent; 0004 re-applied on
+  dry run, `--apply`, re-run "up to date", guard silent; 0013 re-applied on
   top of itself. Smoke tests (allowed and forbidden calls per RPC/policy):
-  `0004-smoke.sql` 34, `calls-smoke.sql` 101, `rewards-smoke.sql` 88, all
+  `0013-smoke.sql` 34, `calls-smoke.sql` 101, `rewards-smoke.sql` 88 (95 after the main merge), all
   pass. **Not applied anywhere.** `docs/handoff/{accounts,chat,calls,rewards}.sql`
   are kept as branch notes only (marked FOLDED).
 - Pass B (calls + rewards): merges conflicted only in `WORKLOG.md` and
@@ -112,14 +215,24 @@ first pass), every e2e below passes.
 
 ## Still to do: trust area
 
-`wf/trust` (moderation, reports, blocks, staff tools) has not been merged; its
-worktree is still at 336099c. Its agent should start from this branch and
-append to `0004_app_completion.sql` (not applied yet) rather than add 0005;
-keep SECURITY DEFINER + `SET search_path = isexy, extensions` + REVOKE/GRANT
-and re-run the three smoke files. Waiting for it:
+`wf/trust` (moderation, reports, blocks, staff tools, tickets) exists only as
+a local branch/worktree (`.claude/worktrees/trust`, head `d590d26` "WIP trust
+area (agent stopped at weekly limit; unverified)"): not pushed, not merged,
+not verified. Whoever finishes it must start from this branch (after the
+main merge): its SQL goes into `0013_app_completion.sql` while 0013 is
+unapplied (or a new `0015_*.sql` once 0013 is on V1); its support-ticket
+changes must keep main's 0009 trigger (members change only `message`,
+`attachments`) and 0010 policies (no `auth.users` reads). Keep SECURITY
+DEFINER + pinned search_path + REVOKE/GRANT, write new policies with
+`(select auth.uid())`, and re-run every SQL test. **If it changes or adds
+any isexy policy, 0014 part C2 stops on purpose** ("C2: ... fingerprint"):
+regenerate it with `ISEXY_DB_URL=<throwaway 0001-0013 db> scripts/isexy/gen-rls-initplan.sh`,
+review the diff, re-run the migration test (`docs/handoff/security.md` › C2).
+0014 B2 also alters the `content_violations` INSERT policy and adds guards on
+`scheduled_calls`/`double_date_pairs`: reconcile if trust touches those. Waiting for it:
 
 - Photo verification requests wait forever (no staff screen). The RPC
-  `review_photo_verification` and the staff RLS are in 0004: list
+  `review_photo_verification` and the staff RLS are in 0013: list
   `photo_verifications` where `status='pending'`, selfie via
   `storage.from("isexy-photo-verifications").createSignedUrl(path, 600)`,
   approve/reject with `rpc("review_photo_verification", { p_request_id, p_approve, p_reason })`.
@@ -135,8 +248,8 @@ and re-run the three smoke files. Waiting for it:
 
 | # | What | Exact next step |
 |---|---|---|
-| 1 | Nothing new works on V1 until 0004 and the functions are deployed (Who liked you "on their way", unread never clears, settings "saved on this device", translation "unavailable", calls cannot start, wallet falls back to table reads, Loyalty "not switched on yet") | Main session: `ISEXY_DB_URL=... scripts/isexy/migrate.sh` (dry run) then `--apply`; then deploy by name: chat `isexy-translate-message`, `isexy-send-push-notification`, `isexy-send-notification-email`, `isexy-send-missed-call-notification`, `isexy-send-whatsapp-call-notification`; calls `isexy-twilio-inbound-phone-line`, `isexy-twilio-phone-line-menu`, `isexy-twilio-call-status`, `isexy-get-voice-greeting-url`; rewards `isexy-stripe-webhook`, `isexy-create-checkout`, `isexy-create-credit-purchase`, `isexy-create-minute-purchase`, `isexy-create-one-time-payment`, `isexy-check-subscription`, `isexy-customer-portal`, `isexy-payments-gate-status` (redeploy: the live one is old), `isexy-reset-allowances`, `isexy-subscription-resets` |
-| 2 | `deno check` has not run on the changed functions (no Deno here; tsc + Deno shims + Stripe 18.5 types are clean) | Let CI run `deno check supabase/functions/isexy-*/index.ts` on this push; fix what it reports (most likely `_shared/twilio.ts`: `node:crypto`, type-only import) |
+| 1 | Nothing new works on V1 until 0013 + 0014 and the functions are deployed (Who liked you "on their way", unread never clears, settings "saved on this device", translation "unavailable", calls cannot start, wallet falls back to table reads, Loyalty "not switched on yet") | [Deploy plan](#production-state-and-deploy-plan) steps 1-2 |
+| 2 | `deno check` ran locally for the first time in the merge stage (Deno 2.5.6 from npm, scratchpad): every `isexy-*` function and main's five Deno tests pass | Confirm on CI for this push |
 | 3 | Calls between two phones on mobile data often never connect without TURN | Owner: TURN server + `VITE_TURN_URL`/`VITE_TURN_USERNAME`/`VITE_TURN_CREDENTIAL` (see Needs the owner) |
 | 4 | Push cannot be signed (no VAPID private key) | Owner: see Needs the owner; then a real-device test push (if `crypto.createECDH` fails on the edge runtime, switch to `jsr:@negrel/webpush`) |
 | 5 | Payments say "not open yet" until Stripe is configured | Owner: Stripe secrets, prices, webhook (see Needs the owner); one test purchase per kind, resend one event and confirm nothing changes, then `ISEXY_PAYMENTS_LIVE_ENABLED=true` |
@@ -144,7 +257,7 @@ and re-run the three smoke files. Waiting for it:
 | 7 | Theme is still coral pink, BRAND.md says electric blue on deep navy | Change `--primary`/`--secondary` (and the `to-pink-500` gradients, e.g. `AIChatWidget.tsx`) in `src/index.css` per BRAND.md, then re-run `accounts-layout.mjs` |
 | 8 | Greetings and replies recorded before wf/calls are WebM/MP4: Twilio cannot play them (browse by phone reads name + headline) and Safari cannot play WebM | Owner: ask those members to re-record, or add a server-side transcode to WAV |
 | 9 | No push/email when a match forms | Call the push/email functions with `type: "new_match"` from a DB webhook on `matches` INSERT (service role) |
-| 10 | Distance slider and Go Global do nothing | After the owner picks a default: add `AND (me.distance_preference IS NULL OR dist IS NULL OR dist <= me.distance_preference)` to `get_discover_feed` (append to 0004); save Go Global as `distance_preference = NULL` in `DiscoverFilters.handleApply` |
+| 10 | Distance slider and Go Global do nothing | After the owner picks a default: add `AND (me.distance_preference IS NULL OR dist IS NULL OR dist <= me.distance_preference)` to `get_discover_feed` (in 0013 while unapplied, else a new migration); save Go Global as `distance_preference = NULL` in `DiscoverFilters.handleApply` |
 | 11 | First Impression text skips moderation | Run `useContentModeration` in Discover before `sendFirstImpression` (or check in `set_first_impression`) |
 | 12 | Saved but not honoured: Active Status, Send Read Receipts, distance unit, "who I'd like to see" filters | Active Status: SECURITY DEFINER RPC returning `last_active_at` NULL for members with `showActive = false`, used by `src/lib/inbox.ts`; read receipts: hide ticks for readers who turned them off |
 | 13 | Double Hangout half-built; group chats are never created | Pair deck + RPC writing `double_date_swipes`, creating `double_date_matches`, `group_chats` and 4 `group_chat_members` on a mutual like; or hide the entry |
@@ -152,7 +265,7 @@ and re-run the three smoke files. Waiting for it:
 | 15 | The phone menu (IVR) speaks English only | Owner's French wording, then a language choice in `mainMenu` (`supabase/functions/_shared/twilio.ts`) with a fr-CA Polly voice (e.g. `Polly.Chantal`) |
 | 16 | The floating assistant button (`AIChatWidget`, right-4 bottom-20) covers the right end of sticky bottom bars on phones | Phone Line and buy pages are handled (`pb-40`/`pr-20`, `HIDDEN_ON`); check other pages with a sticky action bar the same way |
 | 17 | An error toast sits over the Discover action row for ~4 s (toasts are lifted 96 px above the nav) | Use `position="top-center"` on phones for `<Sonner>` in `App.tsx`, or a smaller offset on `/discover` |
-| 18 | Premium 30-minute promo countdown lives only on the device (sessionStorage); the server applies the coupon whenever the member is eligible | Owner keeps it or drops the timer; delete the dead `src/components/PromoOfferBanner.tsx` (nothing imports it; it calls the now service_role-only `check_promo_eligibility`) |
+| 18 | Main removed the Premium countdown (decision 19: no offer the payment server does not enforce); create-checkout still applies `ISEXY_STRIPE_COUPON_FIRST_WEEK` when asked with `promo: true`, but no page asks any more | Owner: show the first-week offer without a timer (the coupon is real in Stripe), or drop the coupon path; delete the dead `PromoOfferBanner.tsx` / `PromoCountdownBanner.tsx` |
 | 19 | Settings screens with no backend (Top Picks visibility, Q&A Events, Friends in Common, Introductions, Swipe Surge) | Owner keeps or removes them; if kept, a jsonb column in `user_preferences` replaces `useDeviceSetting` |
 | 20 | Undo is free on every plan and does not refund the like | Owner decision; if gated, check `entitlements_cache.unlimited_rewinds` before `deck.undo()` and refund through an RPC |
 | 21 | Web profile links need sign-in; direct `/web-profile/:id` links ignore Incognito/Discovery off | If the owner wants public links: `profiles.web_profile_enabled` + SECURITY DEFINER `get_web_profile(id)`; apply the privacy settings there |
@@ -175,13 +288,26 @@ and re-run the three smoke files. Waiting for it:
 | `ISEXY_VAPID_SUBJECT` | push | optional, `mailto:` address or site URL |
 | `ISEXY_RESEND_API_KEY` | message / missed-call emails | |
 | `ISEXY_RESEND_FROM` | emails | optional, default `notifications@isexy.ca` (verify the domain in Resend) |
-| `ISEXY_APP_URL` | links in emails/pushes, Stripe return URLs | set it (emails default to isexy.ca, missed-call emails to isexy.onrender.com) |
+| `ISEXY_APP_URL` | links in emails/pushes, Stripe return URLs | set it: HTTPS, no credentials (`_shared/app-url.ts` refuses others); Stripe return URLs default to `https://isexy.onrender.com`, emails to isexy.ca |
 | `ISEXY_ANTHROPIC_API_KEY` | chat translation, assistant | |
 | `ISEXY_STRIPE_SECRET_KEY`, `ISEXY_STRIPE_WEBHOOK_SECRET` | payments | test mode first; without both the pages say "Payments are not open yet" |
 | `ISEXY_STRIPE_PRICE_{PLUS,GOLD,PLATINUM}_{WEEK,MONTH,SIX_MONTHS}` | plans | 9 recurring prices in CAD |
-| `ISEXY_STRIPE_COUPON_FIRST_WEEK` | first-week offer | optional 50 % "once" coupon; no coupon = no banner |
+| `ISEXY_STRIPE_PRICE_CHAT_1MO` | chat subscription | recurring CAD price; without it "not available yet" |
+| `ISEXY_STRIPE_COUPON_FIRST_WEEK` | first-week offer | optional 50 % "once" coupon; no page offers it since the main merge (Left #18) |
 | `ISEXY_PAYMENTS_LIVE_ENABLED` | payments | `true` only after the test purchases |
 | `ISEXY_TWILIO_ACCOUNT_SID`, `ISEXY_TWILIO_AUTH_TOKEN` | phone line by phone | `ISEXY_TWILIO_WEBHOOK_BASE` only behind a custom domain |
+| `ISEXY_CRON_SECRET` | `isexy-reset-allowances` | at least 16 characters; the same value as the GitHub Actions secret `ISEXY_CRON_SECRET` used by `.github/workflows/isexy-allowance-cron.yml` (daily POST with the anon JWT: the function keeps verify_jwt=true) |
+
+**GitHub Actions** (from main's task queue, still open): secrets
+`ISEXY_DB_URL` and `SUPABASE_ACCESS_TOKEN` are missing, so the deploy jobs
+skip themselves (migrations and functions were deployed by hand so far);
+`ISEXY_CRON_SECRET` for the daily allowance workflow.
+
+**Stripe account shared with other TAKATAK products?** The webhook fails
+(500, retried by Stripe) any checkout without ISEXY's server-written
+`metadata.user_id`, as main's v6 does; a shared account would then keep
+failing other products' events on the ISEXY endpoint. If the account is
+shared, give ISEXY its own endpoint scope or account before going live.
 
 Stripe webhook endpoint `.../functions/v1/isexy-stripe-webhook` with events
 `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
@@ -197,7 +323,7 @@ optional `VITE_STUN_URL`, `VITE_PHONE_LINE_NUMBER` (the Twilio number shown in
 the app). Existing: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
 `VITE_SITE_URL`. See `docs/DEPLOYMENT.md` › Variables.
 
-**Dashboard**: none new for 0004 (the `isexy-photo-verifications` bucket and its
+**Dashboard**: none new for 0013 (the `isexy-photo-verifications` bucket and its
 policies come with the migration; `call_sessions` joins Realtime through the
 migration; the `isexy` schema is already exposed). Resend: verify the sending
 domain for `ISEXY_RESEND_FROM`.
@@ -220,7 +346,7 @@ domain for `ISEXY_RESEND_FROM`.
 ```bash
 npm run typecheck
 NODE_OPTIONS="--import=./e2e/no-network.mjs" npm run build   # add VITE_PHONE_LINE_NUMBER="+1 514 555 0100" for calls-phone-line-pages
-npm run lint                          # 120 errors, all pre-existing (148 at 336099c)
+npm run lint                          # 119 errors, all pre-existing (148 at 336099c)
 npx vite preview --port 4173 --strictPort --host 127.0.0.1 &
 node --import ./e2e/offline-browser.mjs e2e/<file>.mjs [args]   # see e2e/README.md
 node --experimental-strip-types --no-warnings --import ./e2e/calls-twilio-loader.mjs e2e/calls-twilio-test.mjs
@@ -232,65 +358,61 @@ Database, on a throwaway local Postgres 16 only (never V1), as CI does:
 export ISEXY_DB_URL=postgresql://postgres@localhost:<port>/postgres
 psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1 -f scripts/isexy/test/v1-mock.sql
 scripts/isexy/migrate.sh && scripts/isexy/migrate.sh --apply && scripts/isexy/migrate.sh   # last one: "up to date"
-for t in 0004-smoke calls-smoke rewards-smoke; do
-  printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' $t | psql "$ISEXY_DB_URL" -X -q
+for t in adult-profiles allowance-rpc-permissions privileged-rpc-permissions support-ticket-staff-fields atomic-credit-checkout atomic-boost-checkout; do
+  psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/$t.sql   # main's assertions (each rolls back)
 done
+for t in 0013-smoke calls-smoke rewards-smoke security-smoke; do
+  printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' $t | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
+done   # -v ON_ERROR_STOP=1: without it psql exits 0 even when a smoke file fails (CI runs the same loop)
 ```
+
+Production simulation (what V1 will see): a fresh database with v1-mock and
+only 0001-0012 applied (move 0013/0014 aside, `--apply`, put them back), then
+the dry run must list only 0013 and 0014; `--apply`, re-run, all SQL tests
+(see merge-main.md §3).
 
 The sandbox does not let the `postgres` user into the scratchpad: the data
 directory has to live elsewhere (e.g. a new folder under `/var/tmp`).
 
-Edge functions: CI runs `deno check` (Deno is not installed here; the changed
-functions were type-checked with tsc, Deno shims and Stripe 18.5 types).
+Edge functions: CI runs `deno check` and main's Deno tests. Deno is not
+installed here, but `npm install deno@2.5.6` in a scratch folder gives a
+working binary (`DENO_CERT=/root/.ccr/ca-bundle.crt DENO_NO_PACKAGE_JSON=1`,
+`deno check supabase/functions/isexy-*/index.ts`, `deno test scripts/isexy/test/<name>.test.ts`).
 
-## Production state
+## Security and DB performance (0014)
 
-- TAKATAK V1 (Supabase, shared): migrations 0001-0003 applied and checksummed,
-  schema `isexy` exposed, 0 ISEXY member profiles (pre-launch).
-- Only `isexy-payments-gate-status` is deployed (an older version).
-- **0004 and every other isexy-* function are NOT deployed.**
-- Render serves `main` at 0a0c6be. This branch is not merged to `main`.
-- The client degrades without 0004 (quiet fallbacks listed in Left #1), but
-  calls and payments need 0004 and their functions to work at all: ship them
-  together.
+`supabase/isexy-migrations/0014_security_and_performance.sql` (0005 on this
+branch before the main merge; not applied anywhere; the header lists each
+part and what main's 0004/0005/0008 already did). Audit, reasons and what was left alone:
+[docs/handoff/security.md](handoff/security.md).
 
-## Next pass: security and DB performance
+| Closed | How | Verified by |
+|---|---|---|
+| Members could UPDATE their own plan, limits, verified flag, shadow ban, promo, `is_cuban`, `referral_code`, ids, `created_at`, `is_active` (ban) on `profiles`, or INSERT a profile with them | BEFORE INSERT OR UPDATE trigger `profiles_protect_columns`: refused (42501) for `authenticated`/`anon` unless staff; RPCs (SECURITY DEFINER) and the service role unaffected. grep of src/: no member write sets one | `security-smoke.sql` A (refused writes, plus profile edit, settings save, signup insert, `set_my_cuban_flag`, `get_my_referral_code`, staff, service role) |
+| Member INSERT/UPDATE on `credit_transactions`, `boost_transactions`, `boost_wallets`, `allowances`, `star_transactions`, `gift_transactions`, `coupon_redemptions`; INSERT `missed_calls` for anyone; UPDATE of any message column in own matches | Policies dropped (SELECT kept); writes go through the RPCs/functions | security-smoke B1 (+ wallet, boost, credits, mark_messages_read, call RPCs, record_missed_call still work) |
+| Same class found by the audit: swap the other member of a match; direct swipes (skip like limits); fake completed referrals; star cash-out with any amount; planted translations; violations filed against others; forum posts as someone else / self-pinned; scheduled calls with strangers; Double Hangout pairs forced active or swapped; self-approved Cuban verification; photo uploads into another member's folder | Policies dropped or tightened, guard triggers on `scheduled_calls` and `double_date_pairs` | security-smoke B2 |
+| `get_admin_users` listed every staff member to anyone; anyone could run `purge_old_telemetry`/`cleanup_expired_otps`/`calculate_profile_score`; anon EXECUTE on member RPCs; TRUNCATE/TRIGGER/REFERENCES and `setval` for anon/authenticated | Staff only / service_role only (the first three by main's 0008, live) / anon revoked / grants revoked (also for future isexy tables) | security-smoke B3, B4 |
+| 51 unindexed foreign keys; 133 policies calling `auth.uid()`/`has_role(auth.uid())` per row; `normalize_gender` without search_path; redundant `swipes_swiper_idx` | 41 covering indexes (10 more are main's 0005); static ALTER POLICY to `(select auth.uid())` / `(select isexy.has_role(...))` (same logic, checked policy by policy) behind a fingerprint guard, generated by `scripts/isexy/gen-rls-initplan.sh`: 131 policies after the main merge (main's 0010 ticket policies already evaluate once); search_path: main's 0004; index dropped (duplicate UNIQUE constraints kept) | security-smoke C; migration test |
 
-Close the known holes (SECURITY DEFINER RPCs with `SET search_path = isexy, extensions`
-that check `auth.uid()`, or edge functions). After this pass no client code
-writes any of the tables or columns below (see `docs/handoff/rewards.md` ›
-Switched call sites), so the policies can simply go:
+Migration test (as CI, local Postgres 16): mock, dry run, `--apply`, re-run "up
+to date", guard silent; 0014 re-applied on itself is a no-op. After the main
+merge (0001-0014, and the production simulation 0001-0012 → 0013, 0014): main's
+six SQL assertions pass, smoke 0013 34, calls 101, rewards 95, security 105,
+all PASS. CI's `migrations` job runs main's assertions after the apply and the
+four smoke files after the re-run. Before this pass the security smoke file
+failed 60 checks on 0001-0004 (the holes were real).
 
-- Members can UPDATE any column of their own `profiles` row (plan, limits,
-  `is_verified`, shadow ban, promo, `is_cuban`, `referral_code`...): add a
-  BEFORE INSERT OR UPDATE trigger on `isexy.profiles` that puts back OLD
-  values (UPDATE) or defaults (INSERT) for the protected columns when
-  `current_user` is `authenticated` or `anon` (the SECURITY DEFINER RPCs run
-  as the owner and are not affected). Until fixed, `get_likes_received` /
-  `set_first_impression` trust a member-writable `subscription_tier`.
-- Drop the member INSERT/UPDATE policies on `credit_transactions`,
-  `boost_transactions`, `boost_wallets`, `star_transactions`,
-  `gift_transactions`, `coupon_redemptions` and `allowances`.
-- `user_credits` policy "Users can update own credits" lets a member set
-  their own `video_minutes` / `phone_minutes`: drop it (every balance change
-  goes through RPCs).
-- Revoke anon EXECUTE on `deduct_call_minute` (no client calls it any more)
-  and `deduct_video_credit` (both check that the caller owns the wallet, so
-  this is hygiene, not a hole).
-- Any signed-in member can INSERT `missed_calls` for anyone: limit INSERT to
-  service_role (`record_missed_call` and `isexy-send-missed-call-notification`
-  insert).
-- "Users can update message read status" lets a member UPDATE any column of any
-  message in their matches: drop it once 0004 is live (no client code updates
-  `messages`).
-- "Users can update own matches" lets a member change any column (e.g.
-  `is_active`); the client no longer needs it.
-- Chat unlock is enforced only in the UI: add a `messages` INSERT check
-  (premium, chat unlock or chat subscription).
-- Default privileges grant ALL (including TRUNCATE) on isexy tables to `anon`
-  and `authenticated`: revoke what PostgREST does not need.
+Left (not changed here; details in security.md › Looked at and left alone):
 
-DB performance: 58 missing FK indexes; 138 policies to rewrite with
-`(select auth.uid())`; `isexy.normalize_gender` needs a fixed `search_path`;
-duplicate unique indexes on `matches` and `swipes` (`swipes` has both
-`UNIQUE(swiper_id, swiped_id)` and `swipes_swiper_swiped_unique`).
+| What | Next step |
+|---|---|
+| Staff ban button (`AdminDashboardFull` → `profiles.is_active`) changes nothing: no staff UPDATE policy on `profiles` | Trust stage: staff RPC (the trigger already lets staff change protected columns) |
+| `useContentModeration` inserts `user_warnings` as the member (staff-only policy): progressive bans never record | Trust stage: move the warning/ban to an RPC or the server |
+| Reporter can set `reports.status` on INSERT | Trust stage: `AND coalesce(status, 'pending') = 'pending'` in the INSERT check |
+| Every member reads every column of every active profile (`blocked_contacts`, coarse location, plan, shadow ban) | Owner/next pass: a member-facing view or RPC with the public columns |
+| Chat unlock and Plus-only settings (Incognito, Recently Active) enforced in the UI only | After owner decision #1: `messages` INSERT check / settings RPC |
+| A policy added or changed later (trust work) makes 0014 C2 stop | Regenerate C2 (`scripts/isexy/gen-rls-initplan.sh` on a 0001-0013 copy), review, re-test |
+
+(Fixed by main meanwhile, live: members could change `status`/`priority`/
+`assigned_to`/`response` of their own ticket, and the ticket policies read
+`auth.users`: main's 0009 trigger and 0010 policies.)

@@ -1,4 +1,4 @@
--- FOLDED INTO supabase/isexy-migrations/0004_app_completion.sql (part D). Kept as the branch notes; do not apply this file.
+-- FOLDED INTO supabase/isexy-migrations/0013_app_completion.sql (part D). Kept as the branch notes; do not apply this file.
 -- ISEXY calls area (branch wf/calls). Apply after 0001-0003 as part of the next
 -- isexy migration. Idempotent: running it twice changes nothing. Deletes no
 -- data. Every function: SECURITY DEFINER, SET search_path = isexy, extensions,

@@ -9,7 +9,7 @@ isexy-twilio-call-status, isexy-get-voice-greeting-url,
 isexy-get-voice-reply-url).
 
 New SQL lives in `docs/handoff/calls.sql` (idempotent, never edits 0001-0004;
-the integrator appends it to `0004_app_completion.sql` or the next migration).
+the integrator appends it to `0013_app_completion.sql` or the next migration).
 The client in this branch needs that SQL: deploy them together.
 
 Branch history: 4 commits on df87113 (audit, SQL part 1, WIP client rewrite,
@@ -172,7 +172,7 @@ Status: [ ] open · [~] code written, not verified yet · [x] fixed and verified
   `v1-mock.sql`, `migrate.sh` dry run / `--apply` / re-run "up to date"
   (0001-0004), then calls.sql as a 0005 through `migrate.sh` (dry run,
   apply, re-run; V1 guard silent), calls.sql applied a third time
-  (idempotent), `0004-smoke.sql` 34/34 PASS, new
+  (idempotent), `0013-smoke.sql` 34/34 PASS, new
   `scripts/isexy/test/calls-smoke.sql` 98/98 PASS (allowed and forbidden
   call for every RPC, policy and trigger). The PGlite scripts
   (`e2e/calls-sql-*.mjs`) are replaced by calls-smoke.sql.
@@ -260,12 +260,12 @@ Last full run (2026-10-16, HEAD of wf/calls), all local, nothing deployed:
   `migrate.sh` dry run / `--apply` / re-run "up to date" (0001-0004), then
   calls.sql as `0005_calls_test.sql` through `migrate.sh` (dry run, apply,
   re-run; guard silent), calls.sql applied once more (idempotent),
-  `0004-smoke.sql` 34/34, `calls-smoke.sql` 101/101.
+  `0013-smoke.sql` 34/34, `calls-smoke.sql` 101/101.
 
 ## Left to do
 
 1. Integrator: fold `docs/handoff/calls.sql` into the next isexy migration
-   (append to the unapplied `0004_app_completion.sql`, or a new
+   (append to the unapplied `0013_app_completion.sql`, or a new
    `0005_calls.sql`), re-run the SQL checks above, regenerate
    `src/integrations/supabase/types.ts` if needed (the RPCs used here are
    already in it). The client in this branch needs that SQL: ship together.

@@ -11,15 +11,15 @@ export async function findStripeCustomerId(stripe: StripeLike, member: Member): 
   const byId = await stripe.customers.search({ query: `metadata['isexy_user_id']:'${member.id}'`, limit: 1 });
   if (byId.data[0]?.id) return byId.data[0].id;
   if (member.email) {
-    const byEmail = await stripe.customers.list({ email: member.email, limit: 1 });
-    const found = byEmail.data[0];
-    if (found?.id) {
-      // Tag it so the next lookup works even if the member's email changes.
-      if (found.metadata?.isexy_user_id !== member.id) {
-        await stripe.customers.update(found.id, { metadata: { ...found.metadata, isexy_user_id: member.id } });
-      }
-      return found.id;
-    }
+    const byEmail = await stripe.customers.list({ email: member.email, limit: 100 });
+    // Other TAKATAK products may share a Stripe account. Email alone is
+    // never proof of customer ownership; do not claim or relabel customers
+    // belonging to other identities or products.
+    const owned = byEmail.data.find(
+      (candidate: { id?: string; metadata?: Record<string, string> }) =>
+        candidate.id && candidate.metadata?.isexy_user_id === member.id,
+    );
+    if (owned?.id) return owned.id;
   }
   return null;
 }

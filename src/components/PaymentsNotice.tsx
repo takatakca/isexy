@@ -3,7 +3,8 @@ import type { GateStatus } from "@/hooks/usePaymentsGate";
 
 /**
  * Says clearly, above a buy button, why it is disabled (payments not set up,
- * or live payments paused) or that this is Stripe test mode.
+ * live payments paused, or the status could not be read) or that this is
+ * Stripe test mode.
  */
 export function PaymentsNotice({ gate }: { gate: GateStatus | null }) {
   if (!gate) return null;
@@ -14,7 +15,9 @@ export function PaymentsNotice({ gate }: { gate: GateStatus | null }) {
         <span>
           {gate.reason === "live_disabled"
             ? "Purchases are paused while we finish testing payments. Nothing can be charged right now."
-            : "Payments are not open yet. Nothing can be charged right now; your balances and plan stay as they are."}
+            : gate.reason === "unavailable"
+              ? "We could not check whether payments are open, so nothing can be bought right now. Please try again later."
+              : "Payments are not open yet. Nothing can be charged right now; your balances and plan stay as they are."}
         </span>
       </div>
     );

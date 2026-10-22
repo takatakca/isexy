@@ -14,7 +14,7 @@ survives a stop.
       the postgres user cannot enter the scratchpad): v1-mock.sql, migrate.sh dry run,
       --apply, re-run "up to date", guard silent; 0004 re-applied on itself (rolled
       back): OK; one definition per function (no overloads in isexy).
-      Smoke: 0004-smoke 34/34, calls-smoke 101/101, rewards-smoke 88/88.
+      Smoke: 0013-smoke 34/34, calls-smoke 101/101, rewards-smoke 88/88.
 - [x] types.ts: member RPCs already matched the DB (args compared); + service_role RPCs the
       edge functions call (apply_chat_subscription, apply_stripe_subscription,
       apply_twilio_call_status, fulfill_stripe_payment, expire_member_plans, reset_daily_likes)

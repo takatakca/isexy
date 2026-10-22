@@ -1,4 +1,4 @@
--- FOLDED INTO supabase/isexy-migrations/0004_app_completion.sql (part C). Kept as the branch notes; do not apply this file.
+-- FOLDED INTO supabase/isexy-migrations/0013_app_completion.sql (part C). Kept as the branch notes; do not apply this file.
 -- ISEXY chat, messages and notifications (branch wf/chat).
 -- Not a migration file: the integrator folds this into the next isexy migration.
 -- Idempotent, isexy schema only, no data is deleted. Safe to run more than once.

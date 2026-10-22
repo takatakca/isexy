@@ -109,22 +109,30 @@ function planLine(w: Wallet): string {
 
 export default function MySubscription() {
   const navigate = useNavigate();
-  const { wallet, loading: walletLoading, refresh } = useWallet();
+  const { wallet, loading: walletLoading, error: walletError, refresh } = useWallet();
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
   const [portalLoading, setPortalLoading] = useState(false);
   const [syncing, setSyncing] = useState(true);
+  // The Stripe catch-up failed (main 6c90acc): never present "Free plan" as
+  // certain then; say the status is unavailable and offer a retry.
+  const [syncFailed, setSyncFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useCheckoutReturn(refresh, "Payment received. Your plan starts in a few seconds.");
 
   // Catch up with Stripe (a missed webhook), then show the plan from the database.
   useEffect(() => {
     let cancelled = false;
+    setSyncing(true);
+    setSyncFailed(false);
     (async () => {
       try {
-        const { data } = await supabase.functions.invoke("isexy-check-subscription");
+        const { data, error } = await supabase.functions.invoke("isexy-check-subscription");
+        if (error || (data as { error?: string } | null)?.error) throw error ?? new Error("Subscription check failed");
         if (!cancelled && (data as { restored?: number } | null)?.restored) await refresh();
       } catch {
-        /* the database plan is still shown */
+        // The database plan is still shown when there is one.
+        if (!cancelled) setSyncFailed(true);
       } finally {
         if (!cancelled) setSyncing(false);
       }
@@ -133,7 +141,7 @@ export default function MySubscription() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [retryKey]);
 
   const currentTier = wallet && wallet.tier !== "free" ? (wallet.tier as SubscriptionTier) : null;
   useEffect(() => {
@@ -174,6 +182,23 @@ export default function MySubscription() {
           <div className="px-4 pb-4">
             {loading ? (
               <div className="glass-card rounded-2xl p-5 animate-pulse h-24" />
+            ) : (walletError && !wallet) || (syncFailed && !currentTier) ? (
+              <div className="glass-card rounded-2xl p-5" role="alert">
+                <p className="font-bold text-foreground">Subscription status unavailable</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  We could not verify your current plan. This does not mean your subscription has expired.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRetryKey((value) => value + 1);
+                    void refresh();
+                  }}
+                  className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                >
+                  Try again
+                </button>
+              </div>
             ) : currentTier && wallet ? (
               <div className="glass-card rounded-2xl p-5 ring-coral">
                 <div className="flex items-center justify-between mb-2">

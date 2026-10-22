@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
-import { appBaseUrl, corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
 // Phone / video minute packs, charged in CAD at the prices Buy Minutes shows
 // (the hard-coded Lovable-era Stripe price ids are gone). Minutes are added
@@ -30,7 +31,6 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const packageId: string = typeof body?.packageId === "string" ? body.packageId : "";
-    const base = appBaseUrl(req);
     const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
 
     // Monthly chat subscription: a recurring Stripe price set by the owner.
@@ -45,8 +45,8 @@ serve(async (req) => {
         mode: "subscription",
         metadata,
         subscription_data: { metadata },
-        success_url: `${base}/messages?checkout=success`,
-        cancel_url: `${base}/messages?checkout=cancelled`,
+        success_url: isexyAppUrl("/messages?checkout=success"),
+        cancel_url: isexyAppUrl("/messages?checkout=cancelled"),
       });
       return json({ url: session.url });
     }
@@ -62,8 +62,8 @@ serve(async (req) => {
         quantity: 1,
       }],
       mode: "payment",
-      success_url: `${base}/buy-minutes?checkout=success&package=${packageId}`,
-      cancel_url: `${base}/buy-minutes?checkout=cancelled`,
+      success_url: isexyAppUrl(`/buy-minutes?checkout=success&package=${encodeURIComponent(packageId)}`),
+      cancel_url: isexyAppUrl("/buy-minutes?checkout=cancelled"),
       metadata: { user_id: member.id, profile_id: member.id, product_id: packageId, package_id: packageId },
     });
 
