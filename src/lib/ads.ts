@@ -292,7 +292,11 @@ export async function fetchTakatakAd(placement: AdPlacement, context: AdsContext
   }
 }
 
-/** Impression or click event for a served ad (only when TAKATAK enabled tracking for it). */
+/**
+ * Impression or click event for a served ad (only when TAKATAK enabled tracking for it).
+ * No `keepalive`: the JSON body needs a CORS preflight, which some browsers refuse
+ * for keepalive requests; the page stays open anyway (ads open in a new tab).
+ */
 export function sendTakatakEvent(ad: TakatakAd, eventType: "impression" | "click", context: AdsContext): void {
   if (!ADS_CONFIG.takatak.enabled || !ad.trackingEnabled || !ad.trackingToken) return;
   try {
@@ -301,7 +305,7 @@ export function sendTakatakEvent(ad: TakatakAd, eventType: "impression" | "click
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ trackingToken: ad.trackingToken, eventType, context }),
       credentials: "omit",
-      keepalive: true,
+      cache: "no-store",
     }).catch(() => undefined);
   } catch {
     /* never let ad tracking break the page */

@@ -613,6 +613,56 @@ if (MODE === "configured") {
     check("I1 built index.html carries <meta name=google-adsense-account> with the client id", html.includes(`<meta name="google-adsense-account" content="${CLIENT}" />`));
     check("I2 /ads.txt authorizes the publisher id", adsTxt.trim() === "google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0", adsTxt.slice(0, 80));
   }
+
+  // ---- J. Privacy and Cookie policies: Advertising section (EN + FR), real consent toggles
+  const GOOGLE_LINKS = ["https://policies.google.com/technologies/partner-sites", "https://adssettings.google.com"];
+  const sectionInfo = (page) => page.$eval("section#advertising", (el) => ({
+    lang: el.getAttribute("data-advertising-policy"), heading: el.querySelector("h2")?.textContent ?? "",
+    text: el.textContent ?? "", links: [...el.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")),
+  })).catch(() => null);
+  {
+    const { page, s, ctx, errors } = await session();
+    await visit(page, "/privacy", 900);
+    const en = await sectionInfo(page);
+    check("J1 Privacy Policy: '12. Advertising' (TAKATAK ads, AdSense, both Google links, consent, ad-free for paying members), no ad on the page",
+      en?.lang === "en" && en.heading === "12. Advertising" && GOOGLE_LINKS.every((l) => en.links.includes(l))
+        && /TAKATAK ads/.test(en.text) && /Google AdSense/.test(en.text) && /"Advertising" choice/.test(en.text)
+        && /Members who pay for anything see no ads/.test(en.text) && /last 30 days/.test(en.text)
+        && (await slots(page).count()) === 0 && s.serves.length === 0, JSON.stringify(en)?.slice(0, 200));
+    await page.locator("section#advertising button", { hasText: "Français" }).click();
+    const switched = await sectionInfo(page);
+    check("J2 the section switches to French on request", switched?.lang === "fr" && switched.heading === "12. Publicité", switched?.heading);
+    await page.locator("section#advertising button", { hasText: "Gérer mes choix de témoins" }).click();
+    const dialog = page.locator('[role="dialog"][aria-labelledby="consent-title"]');
+    await dialog.waitFor({ timeout: 3000 }).catch(() => undefined);
+    check("J3 'Gérer mes choix de témoins' opens the consent settings with the Advertising choice",
+      (await dialog.count()) === 1 && (await dialog.getByRole("switch", { name: "Advertising" }).count()) === 1);
+    await page.screenshot({ path: `${out}/J1_privacy_advertising.png` });
+    check("J4 no page errors on the Privacy Policy", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
+  {
+    const { page, ctx, errors } = await session({ language: "fr", signedIn: true });
+    await visit(page, "/cookie-policy", 1200);
+    const fr = await sectionInfo(page);
+    check("J5 French member, Cookie Policy: 'Publicité' section in French with both Google links and the 30 days",
+      fr?.lang === "fr" && fr.heading === "Publicité" && GOOGLE_LINKS.every((l) => fr.links.includes(l))
+        && /Google AdSense/.test(fr.text) && /choix « Publicité »/.test(fr.text) && /30 derniers jours/.test(fr.text)
+        && /ne voient aucune publicité/.test(fr.text), JSON.stringify(fr)?.slice(0, 200));
+    const toggle = page.getByRole("switch", { name: "Personalized ads" });
+    const before = await toggle.getAttribute("aria-checked");
+    await toggle.click();
+    await page.getByRole("button", { name: "Save Cookie Preferences" }).click();
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("isexy_consent") || "{}"));
+    check("J6 Cookie Policy toggles are the real consent: Advertising off → on, saved like the banner",
+      before === "false" && saved.advertising === true && saved.analytics === false && saved.marketing === false && saved.version === 1 && !!saved.decidedAt,
+      JSON.stringify(saved));
+    const cookieTable = await page.locator("table").innerText();
+    check("J7 Cookie table lists the AdSense cookies and the consent record", /__gads, __gpi/.test(cookieTable) && /IDE/.test(cookieTable) && /isexy_consent/.test(cookieTable));
+    await page.screenshot({ path: `${out}/J5_cookie_policy_fr.png`, fullPage: false });
+    check("J8 no page errors on the Cookie Policy", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
 } else {
   // ---- P. Nothing configured: TAKATAK default only, no Google request, house banner
   const allowed = (s) => [...s.hosts].filter((h) => !["127.0.0.1:4410", new URL(base).host, "pcjfahhlozsseqqevimi.supabase.co", "takatak.ca", "img.test", "images.unsplash.com"].includes(h));

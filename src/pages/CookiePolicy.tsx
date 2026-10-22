@@ -2,24 +2,28 @@ import { AuthLayout } from "@/components/AuthLayout";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
-import { Cookie, Shield, BarChart3, Target, Settings, Info, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Cookie, Shield, BarChart3, Target, Settings, Info, CheckCircle2, Megaphone } from "lucide-react";
 import { toast } from "sonner";
-import { openConsentSettings } from "@/lib/consent";
+import { getConsent, onConsentChange, openConsentSettings, setConsent } from "@/lib/consent";
+import { AdvertisingPolicy } from "@/components/AdvertisingPolicy";
 
 export default function CookiePolicy() {
   const [essentialCookies] = useState(true);
-  const [analyticsCookies, setAnalyticsCookies] = useState(true);
-  const [marketingCookies, setMarketingCookies] = useState(false);
+  // The toggles below are the visitor's real consent (src/lib/consent.ts, same as the banner).
+  const [analyticsCookies, setAnalyticsCookies] = useState(() => getConsent().analytics);
+  const [marketingCookies, setMarketingCookies] = useState(() => getConsent().marketing);
+  const [advertisingCookies, setAdvertisingCookies] = useState(() => getConsent().advertising);
   const [functionalCookies, setFunctionalCookies] = useState(true);
 
+  useEffect(() => onConsentChange((next) => {
+    setAnalyticsCookies(next.analytics);
+    setMarketingCookies(next.marketing);
+    setAdvertisingCookies(next.advertising);
+  }), []);
+
   const handleSavePreferences = () => {
-    localStorage.setItem('cookiePreferences', JSON.stringify({
-      essential: essentialCookies,
-      analytics: analyticsCookies,
-      marketing: marketingCookies,
-      functional: functionalCookies,
-    }));
+    setConsent({ analytics: analyticsCookies, marketing: marketingCookies, advertising: advertisingCookies });
     toast.success("Cookie preferences saved!");
   };
 
@@ -27,7 +31,7 @@ export default function CookiePolicy() {
     <AuthLayout showBack variant="white">
       <div className="flex-1">
         <h1 className="text-3xl font-extrabold text-foreground mb-2">Cookie Policy</h1>
-        <p className="text-muted-foreground mb-4">Last updated: December 24, 2024</p>
+        <p className="text-muted-foreground mb-4">Last updated: October 22, 2026 (Advertising)</p>
         <button
           onClick={openConsentSettings}
           className="mb-6 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm"
@@ -36,7 +40,7 @@ export default function CookiePolicy() {
         </button>
 
         <ScrollArea className="h-[calc(100vh-200px)]">
-          <div className="prose prose-sm max-w-none text-foreground pr-4">
+          <div className="prose prose-sm max-w-none text-foreground pr-4 prose-headings:text-foreground prose-strong:text-foreground">
             
             {/* Introduction */}
             <section className="mb-8">
@@ -89,7 +93,7 @@ export default function CookiePolicy() {
                     <h3 className="font-semibold text-foreground m-0">Essential Cookies</h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Required</span>
+                    <span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Required</span>
                     <Switch checked={essentialCookies} disabled />
                   </div>
                 </div>
@@ -188,7 +192,39 @@ export default function CookiePolicy() {
                   </ul>
                 </div>
               </div>
+
+              {/* Advertising Cookies (free members' ads; details in the Advertising section below) */}
+              <div className="bg-muted p-4 rounded-xl mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Megaphone className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-foreground m-0">Advertising Cookies</h3>
+                  </div>
+                  <Switch
+                    checked={advertisingCookies}
+                    onCheckedChange={setAdvertisingCookies}
+                    aria-label="Personalized ads"
+                  />
+                </div>
+                <p className="text-muted-foreground text-sm mb-3">
+                  Free members see small ads (paying members see none). With this choice on, ads may be
+                  personalized: Google AdSense may use its advertising cookies, and TAKATAK ads may use the city
+                  and country on your profile. Off (the default): ads are not personalized.
+                </p>
+                <div className="bg-background p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground font-medium mb-2">Examples:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• Google AdSense (__gads, __gpi, IDE)</li>
+                    <li>• TAKATAK ads (no cookie; city and country only with this choice)</li>
+                  </ul>
+                </div>
+              </div>
             </section>
+
+            <Separator className="my-6" />
+
+            {/* Advertising (EN + FR) */}
+            <AdvertisingPolicy variant="cookies" heading={{ en: "Advertising", fr: "Publicité" }} />
 
             <Separator className="my-6" />
 
@@ -196,58 +232,76 @@ export default function CookiePolicy() {
             <section className="mb-8">
               <h2 className="text-xl font-bold mb-4">Specific Cookies We Use</h2>
               
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto w-0 min-w-full">
+                <table className="w-full min-w-[30rem] text-xs sm:text-sm border border-border rounded-lg overflow-hidden">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="text-left p-3 font-semibold text-foreground">Cookie Name</th>
-                      <th className="text-left p-3 font-semibold text-foreground">Purpose</th>
-                      <th className="text-left p-3 font-semibold text-foreground">Duration</th>
-                      <th className="text-left p-3 font-semibold text-foreground">Type</th>
+                      <th className="text-left p-2 sm:p-3 font-semibold text-foreground">Cookie Name</th>
+                      <th className="text-left p-2 sm:p-3 font-semibold text-foreground">Purpose</th>
+                      <th className="text-left p-2 sm:p-3 font-semibold text-foreground">Duration</th>
+                      <th className="text-left p-2 sm:p-3 font-semibold text-foreground">Type</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     <tr>
-                      <td className="p-3 text-muted-foreground">sb-access-token</td>
-                      <td className="p-3 text-muted-foreground">Authentication session</td>
-                      <td className="p-3 text-muted-foreground">Session</td>
-                      <td className="p-3"><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">sb-access-token</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Authentication session</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Session</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
                     </tr>
                     <tr>
-                      <td className="p-3 text-muted-foreground">sb-refresh-token</td>
-                      <td className="p-3 text-muted-foreground">Token refresh</td>
-                      <td className="p-3 text-muted-foreground">7 days</td>
-                      <td className="p-3"><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">sb-refresh-token</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Token refresh</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">7 days</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
                     </tr>
                     <tr>
-                      <td className="p-3 text-muted-foreground">_ga</td>
-                      <td className="p-3 text-muted-foreground">Google Analytics ID</td>
-                      <td className="p-3 text-muted-foreground">2 years</td>
-                      <td className="p-3"><span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Analytics</span></td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">_ga</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Google Analytics ID</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">2 years</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Analytics</span></td>
                     </tr>
                     <tr>
-                      <td className="p-3 text-muted-foreground">_gid</td>
-                      <td className="p-3 text-muted-foreground">Google Analytics session</td>
-                      <td className="p-3 text-muted-foreground">24 hours</td>
-                      <td className="p-3"><span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Analytics</span></td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">_gid</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Google Analytics session</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">24 hours</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Analytics</span></td>
                     </tr>
                     <tr>
-                      <td className="p-3 text-muted-foreground">theme</td>
-                      <td className="p-3 text-muted-foreground">Dark/light mode preference</td>
-                      <td className="p-3 text-muted-foreground">1 year</td>
-                      <td className="p-3"><span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Functional</span></td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">theme</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Dark/light mode preference</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">1 year</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Functional</span></td>
                     </tr>
                     <tr>
-                      <td className="p-3 text-muted-foreground">locale</td>
-                      <td className="p-3 text-muted-foreground">Language preference</td>
-                      <td className="p-3 text-muted-foreground">1 year</td>
-                      <td className="p-3"><span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Functional</span></td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">locale</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Language preference</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">1 year</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Functional</span></td>
                     </tr>
                     <tr>
-                      <td className="p-3 text-muted-foreground">_fbp</td>
-                      <td className="p-3 text-muted-foreground">Facebook tracking</td>
-                      <td className="p-3 text-muted-foreground">90 days</td>
-                      <td className="p-3"><span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Marketing</span></td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">_fbp</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Facebook tracking</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">90 days</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Marketing</span></td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 sm:p-3 text-muted-foreground">isexy_consent</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Your cookie choices (local storage)</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Until changed</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 sm:p-3 text-muted-foreground">__gads, __gpi</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Google AdSense: ad serving, frequency capping, measurement (free members, pages with a Google ad)</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Up to 13 months</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Advertising</span></td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 sm:p-3 text-muted-foreground">IDE (doubleclick.net)</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Google: personalized ads, only with the Advertising choice</td>
+                      <td className="p-2 sm:p-3 text-muted-foreground">Set by Google (up to 13 months in Europe, longer elsewhere)</td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Advertising</span></td>
                     </tr>
                   </tbody>
                 </table>
@@ -267,13 +321,24 @@ export default function CookiePolicy() {
                 <div className="border border-border p-4 rounded-xl">
                   <h4 className="font-semibold text-foreground mb-2">Google</h4>
                   <p className="text-muted-foreground text-sm">
-                    Analytics, Ads, Firebase - Used for analytics, advertising, and app functionality.
+                    Analytics, AdSense, Firebase - Used for analytics, ads shown to free members (personalized
+                    only with the Advertising choice), and app functionality. See{" "}
+                    <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                      How Google uses information from sites that use its services
+                    </a>.
                   </p>
                 </div>
                 <div className="border border-border p-4 rounded-xl">
                   <h4 className="font-semibold text-foreground mb-2">Facebook/Meta</h4>
                   <p className="text-muted-foreground text-sm">
                     Pixel, SDK - Used for social login and advertising optimization.
+                  </p>
+                </div>
+                <div className="border border-border p-4 rounded-xl">
+                  <h4 className="font-semibold text-foreground mb-2">TAKATAK ads</h4>
+                  <p className="text-muted-foreground text-sm">
+                    Local ads from takatak.ca for free members. Requests carry no cookie; impressions and clicks
+                    are counted with a one-time code.
                   </p>
                 </div>
                 <div className="border border-border p-4 rounded-xl">
@@ -336,8 +401,9 @@ export default function CookiePolicy() {
             <section className="mb-8">
               <h2 className="text-xl font-bold mb-4">Your Cookie Preferences</h2>
               <p className="text-muted-foreground mb-4">
-                Use the toggles above to customize your cookie preferences. Your choices will be saved 
-                and applied to your browsing experience.
+                Use the toggles above to customize your cookie preferences (Analytics, Marketing and
+                Advertising are your real consent choices, the same as in the cookie banner). Your choices are
+                saved on this device and applied right away.
               </p>
               
               <button
