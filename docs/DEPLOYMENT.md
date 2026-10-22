@@ -254,6 +254,19 @@ on V1 itself as `ISEXY_*` names, not in GitHub: see `V1-MIGRATION.md` › 3.6.
 | `VITE_STUN_URL` | *(optional)* comma-separated STUN URLs; default Google public STUN |
 | `VITE_PHONE_LINE_NUMBER` | *(optional)* the Twilio number members call for the phone line by phone, as shown, e.g. `+1 514 555 0100`; without it the app hides the "Use the phone line by phone" card |
 | `VITE_TURN_RELAY_ONLY` | *(optional, testing)* `true` sends every call through TURN (proves TURN works); leave unset in production |
+| `VITE_TAKATAK_ADS_URL` | *(optional)* TAKATAK ad server origin, default `https://takatak.ca` (https only) |
+| `VITE_TAKATAK_ADS_PUBLISHER` | *(optional)* TAKATAK publisher code, default `isexy` |
+| `VITE_TAKATAK_ADS_ENABLED` | *(optional)* `false` turns TAKATAK ads off (AdSense, then the house banner, still show); default on |
+| `VITE_ADSENSE_CLIENT` | *(optional)* Google AdSense publisher id `ca-pub-…`; when set the build also writes `<meta name="google-adsense-account">` and `/ads.txt` (needed for the AdSense review). Unset: no Google script at all |
+| `VITE_ADSENSE_SLOT_DISCOVER` / `_LIST` / `_FEED` / `_PROFILE` / `_CONTENT` | *(optional, after AdSense approval)* the ad unit id (digits) of each placement; a placement without one never asks AdSense |
+
+**Ads** (free members only, `docs/ADS.md`): Coolify and Render build the site
+themselves, so the `VITE_TAKATAK_ADS_*` / `VITE_ADSENSE_*` values must be in
+**their** build environment (Coolify → ISEXY → Environment Variables, "Build
+variable" ticked; Render → Environment), not only in GitHub variables (those
+feed the CI build). Changing one needs a rebuild. No Content-Security-Policy is
+set anywhere (`index.html`, `vercel.json`, Coolify): if one is ever added, it
+must allow the AdSense hosts and the TAKATAK origin listed in `docs/ADS.md`.
 
 Calls without TURN still connect on most home Wi-Fi, but two phones on mobile
 data often never do. With TURN set, Phone Line calls (people who are not
