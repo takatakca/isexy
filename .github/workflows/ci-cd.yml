@@ -68,6 +68,16 @@ jobs:
           VITE_PHONE_LINE_NUMBER: ${{ vars.VITE_PHONE_LINE_NUMBER }}
           VITE_TURN_USERNAME: ${{ vars.VITE_TURN_USERNAME }}
           VITE_TURN_CREDENTIAL: ${{ secrets.VITE_TURN_CREDENTIAL }}
+          # Ads (docs/ADS.md): all optional; unset = TAKATAK defaults, no AdSense.
+          VITE_TAKATAK_ADS_URL: ${{ vars.VITE_TAKATAK_ADS_URL }}
+          VITE_TAKATAK_ADS_PUBLISHER: ${{ vars.VITE_TAKATAK_ADS_PUBLISHER }}
+          VITE_TAKATAK_ADS_ENABLED: ${{ vars.VITE_TAKATAK_ADS_ENABLED }}
+          VITE_ADSENSE_CLIENT: ${{ vars.VITE_ADSENSE_CLIENT }}
+          VITE_ADSENSE_SLOT_DISCOVER: ${{ vars.VITE_ADSENSE_SLOT_DISCOVER }}
+          VITE_ADSENSE_SLOT_LIST: ${{ vars.VITE_ADSENSE_SLOT_LIST }}
+          VITE_ADSENSE_SLOT_FEED: ${{ vars.VITE_ADSENSE_SLOT_FEED }}
+          VITE_ADSENSE_SLOT_PROFILE: ${{ vars.VITE_ADSENSE_SLOT_PROFILE }}
+          VITE_ADSENSE_SLOT_CONTENT: ${{ vars.VITE_ADSENSE_SLOT_CONTENT }}
         run: npm run build
 
       - name: Lint (report only — legacy findings are being paid down)
@@ -154,6 +164,9 @@ jobs:
             printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' "$t" | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
             echo "::endgroup::"
           done
+
+      - name: Ads smoke test (0016 get_my_ad_status, rolled back)
+        run: printf 'BEGIN;\n\\i scripts/isexy/test/ads-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
 
   rules:
     name: V1 safety rules
