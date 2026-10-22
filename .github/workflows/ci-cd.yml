@@ -31,7 +31,7 @@ permissions:
 
 env:
   SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'pcjfahhlozsseqqevimi' }}
-  SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.onrender.com' }}
+  SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.ca' }}
 
 jobs:
   verify:
@@ -299,8 +299,11 @@ jobs:
     needs: deploy-web
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     env:
+      # Always the public site. A GitHub variable left on the Render fallback
+      # must not make this job wait for https://isexy.onrender.com.
+      SITE_URL: https://isexy.ca
       SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://pcjfahhlozsseqqevimi.supabase.co' }}
       ISEXY_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBjamZhaGhsb3pzc2VxcWV2aW1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDA0NzQsImV4cCI6MjEwMDY3NjQ3NH0.jhy7N0I7uRjDt0Frzsu_F00lDL6cGr2ZxHPKsnoWY3Q' }}
     steps:
@@ -308,8 +311,16 @@ jobs:
         run: |
           set -euo pipefail
           for path in / /auth /discover /knowledge-base /faq; do
-            code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 "$SITE_URL$path")
-            echo "$path → $code"
+            # Pre-rendered directories answer 301 to their trailing-slash page.
+            # Follow that hop and require the final response to stay on this site.
+            line=$(curl -sS -o /dev/null -w '%{http_code} %{url_effective}' --retry 3 --retry-delay 5 -L --max-redirs 5 "$SITE_URL$path")
+            code=${line%% *}
+            final=${line#* }
+            echo "$path → $code ($final)"
+            case "$final" in
+              "$SITE_URL"|"$SITE_URL"/*) ;;
+              *) echo "::error::$SITE_URL$path redirected off site to $final"; exit 1 ;;
+            esac
             [ "$code" = "200" ] || { echo "::error::$SITE_URL$path returned $code"; exit 1; }
           done
 
@@ -325,26 +336,25 @@ jobs:
             exit 0
           fi
           current=""
-          for attempt in $(seq 1 12); do
+          # Coolify starts when main is pushed and often finishes during verify.
+          # Keep polling after that so a build still in progress is not a failure.
+          for attempt in $(seq 1 40); do
             current=$(curl -fsS --max-time 10 --retry 1 "$SITE_URL/release.json?version=$EXPECTED_COMMIT" |
               node -e 'let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{try{process.stdout.write(JSON.parse(s).commit||"")}catch{process.stdout.write("")}})' || true)
             if [ "$current" = "$EXPECTED_COMMIT" ]; then
               echo "Published commit matches GitHub: ${EXPECTED_COMMIT:0:12}"
               exit 0
             fi
-            echo "Deployment not yet at current commit (attempt $attempt/12, active=${current:-unknown})"
-            sleep 10
+            echo "Deployment not yet at current commit (attempt $attempt/40, active=${current:-unknown})"
+            sleep 15
           done
           current_main=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')
           if [ "$current_main" != "$EXPECTED_COMMIT" ]; then
             echo "::notice::Release was superseded by $current_main during this test; checking belongs to the new run."
             exit 0
           fi
-          if [ "$SITE_URL" = "https://isexy.onrender.com" ]; then
-            echo "::error::Render did not publish commit $EXPECTED_COMMIT within the smoke test window (active=${current:-unknown})."
-            exit 1
-          fi
-          echo "::warning::Custom hosting SHA unverified: configure build-time RENDER_GIT_COMMIT, GITHUB_SHA or SOURCE_COMMIT."
+          echo "::error::$SITE_URL did not publish commit $EXPECTED_COMMIT within the smoke test window (active=${current:-unknown})."
+          exit 1
 
       - name: Verify TAKATAK V1 ISEXY Data API is exposed
         run: |

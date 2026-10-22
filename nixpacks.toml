@@ -11,4 +11,9 @@ NIXPACKS_NODE_VERSION = "22"
 cmds = ["npm ci --no-audit --no-fund"]
 
 [phases.build]
-cmds = ["npm run build"]
+# Stamp the deployed SHA before the build. Coolify does not always inject
+# SOURCE_COMMIT, and release.json is what the live smoke test compares.
+cmds = [
+  "git rev-parse HEAD > .git-head-sha || true",
+  "npm run build",
+]
