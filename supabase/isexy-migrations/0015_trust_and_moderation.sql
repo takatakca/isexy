@@ -75,8 +75,9 @@
 --    (admin + moderator) read the queue and messages; staff_accept_live_chat,
 --    staff_close_live_chat, staff_get_live_chat_transcript; members end their
 --    chat with end_my_live_chat. 0014 D5's message policy tightened: a member
---    posts only as "user" in their own open chat, an agent only as "agent"
---    in an active chat assigned to them, nobody posts "system" messages
+--    posts only as "user" in their own open chat, an agent (staff, not
+--    suspended) only as "agent" in an active chat assigned to them, nobody
+--    posts "system" messages
 --    directly (the RPCs do), sender_id is always the caller. Direct session
 --    writes: admins only; members open a "waiting" chat with at most their
 --    own assistant chat.
@@ -1073,6 +1074,7 @@ ALTER POLICY "Users can insert messages in their sessions" ON isexy.live_chat_me
        AND session_id IN (SELECT s.id FROM isexy.live_chat_sessions s
                            WHERE s.user_id = (SELECT auth.uid()) AND s.status IN ('waiting', 'active')))
       OR (sender_type = 'agent'
+          AND (SELECT isexy.is_staff())
           AND session_id IN (SELECT s.id FROM isexy.live_chat_sessions s
                               WHERE s.agent_id = (SELECT auth.uid()) AND s.status = 'active'))
     )

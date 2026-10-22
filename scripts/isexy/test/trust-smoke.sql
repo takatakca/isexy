@@ -892,6 +892,8 @@ SELECT pg_temp.refused('T9e a suspended moderator loses the staff tools: ' || f,
   ('review_photo_verification', $q$SELECT isexy.review_photo_verification('9a9a9a9a-0000-0000-0000-000000000001', false, 'x')$q$),
   ('staff_set_profile_verified', $q$SELECT isexy.staff_set_profile_verified('dddddddd-0000-0000-0000-00000000000b', false)$q$)
 ) v(f, q);
+SELECT pg_temp.refused('T9e a suspended moderator cannot keep answering their open chat',
+  $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content) VALUES ('ffffffff-0000-0000-0000-0000000000a2', 'agent', 'dddddddd-0000-0000-0000-00000000000d', 'send me your code')$q$);
 INSERT INTO results SELECT 'T9e a suspended moderator is not staff and reads no member reports',
   NOT isexy.is_staff() AND (SELECT count(*) FROM isexy.reports WHERE id = 'abababab-0000-0000-0000-00000000000b') = 0, NULL;
 SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');
