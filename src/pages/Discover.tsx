@@ -12,6 +12,7 @@ import { ConsistencyChallengeModal, useStreakTracker } from "@/components/Consis
 import { MatchCelebration } from "@/components/MatchCelebration";
 import { FirstImpressionModal } from "@/components/FirstImpressionModal";
 import { SwipeDeck, type SwipeDeckHandle } from "@/components/SwipeDeck";
+import { AdSlot } from "@/components/AdSlot";
 import { useDiscoverDeck, type SwipeAction, type SwipeOutcome } from "@/hooks/useDiscoverDeck";
 import { useChatOpener } from "@/hooks/useChatOpener";
 import { toCardProfile, type FeedProfile } from "@/lib/discoverFeed";
@@ -335,6 +336,9 @@ export default function Discover() {
           </div>
         )}
       </main>
+
+      {/* Free members: a slim banner in the flow above the nav (the card area shrinks; never on top of it). */}
+      <AdSlot placement="isexy-discover-banner" className="shrink-0 mx-auto mt-2 mb-2 w-[calc(100%-1.5rem)] max-w-sm" />
 
       <BottomNav />
     </div>

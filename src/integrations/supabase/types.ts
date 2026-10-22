@@ -3593,6 +3593,8 @@ export type Database = {
         Args: { p_group_chat_id: string }
         Returns: boolean
       }
+      /** 0016_ads.sql: { ad_free, reason, until } for the caller. */
+      get_my_ad_status: { Args: Record<PropertyKey, never>; Returns: Json }
       analytics_overview: {
         Args: { p_days?: number }
         Returns: Json

@@ -10,6 +10,7 @@ import { useCheckoutReturn } from "@/hooks/useCheckoutReturn";
 import { cad, startCheckout } from "@/lib/payments";
 import { goBack } from "@/lib/navigation";
 import { track } from "@/lib/analytics";
+import { AD_FREE_DAYS_AFTER_PAYMENT } from "@/lib/ads";
 
 const tierMeta: Record<SubscriptionTier, { label: string; headline: string; icon: React.ReactNode }> = {
   plus: {
@@ -168,6 +169,9 @@ export default function Premium() {
               </div>
             ))}
           </div>
+          <p className="mt-4 text-xs text-muted-foreground text-center">
+            Any purchase, even one pack of Super Likes, also removes ads for {AD_FREE_DAYS_AFTER_PAYMENT} days.
+          </p>
         </div>
 
         {/* Trust strip */}

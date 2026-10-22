@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { openAssistant } from "@/lib/assistant";
 import { track } from "@/lib/analytics";
+import { AdSlot } from "@/components/AdSlot";
 
 interface Article {
   id: string;
@@ -265,6 +266,8 @@ export default function KnowledgeBase() {
               </div>
             </section>
           )}
+
+          <AdSlot placement="isexy-content-inline" className="mt-10" />
         </main>
       </div>
     );
@@ -347,6 +350,8 @@ export default function KnowledgeBase() {
             ))}
           </div>
         )}
+
+        <AdSlot placement="isexy-content-inline" className="mt-8" />
       </main>
     </div>
   );

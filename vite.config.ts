@@ -12,6 +12,30 @@ function siteUrlPlugin(env: Record<string, string>): Plugin {
   };
 }
 
+/**
+ * Google AdSense site verification, only when VITE_ADSENSE_CLIENT is set at
+ * build (docs/ADS.md): <meta name="google-adsense-account"> in index.html
+ * (every pre-rendered page copies it) and dist/ads.txt. Unset or malformed:
+ * nothing is written.
+ */
+function adsensePlugin(env: Record<string, string>): Plugin {
+  const raw = (env.VITE_ADSENSE_CLIENT || "").trim();
+  const client = /^ca-pub-\d{10,20}$/.test(raw) ? raw : null;
+  if (raw && !client) {
+    console.warn(`[adsense] VITE_ADSENSE_CLIENT must look like ca-pub-1234567890123456: no AdSense tag or ads.txt written.`);
+  }
+  return {
+    name: "isexy-adsense",
+    transformIndexHtml: (html) =>
+      client ? html.replace("</head>", `  <meta name="google-adsense-account" content="${client}" />\n  </head>`) : html,
+    generateBundle() {
+      if (!client) return;
+      // ads.txt names the publisher id without the "ca-" prefix; f08c47fec0942fa0 is Google's certification id.
+      this.emitFile({ type: "asset", fileName: "ads.txt", source: `google.com, ${client.slice(3)}, DIRECT, f08c47fec0942fa0\n` });
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -21,6 +45,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     siteUrlPlugin(loadEnv(mode, process.cwd(), "")),
+    adsensePlugin(loadEnv(mode, process.cwd(), "")),
   ],
   build: {
     chunkSizeWarningLimit: 700,

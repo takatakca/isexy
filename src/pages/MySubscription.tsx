@@ -33,7 +33,7 @@ const tierSections: Record<SubscriptionTier, TierSection[]> = {
       { title: "Control your profile", included: true },
       { title: "Control who sees you", included: true },
       { title: "Control who you see", included: true },
-      { title: "Hide ads", included: true },
+      { title: "No ads", description: "Paying members never see ads.", included: true },
     ]},
   ],
   gold: [
@@ -56,7 +56,7 @@ const tierSections: Record<SubscriptionTier, TierSection[]> = {
       { title: "Control your profile", included: true },
       { title: "Control who sees you", included: true },
       { title: "Control who you see", included: true },
-      { title: "Hide ads", included: true },
+      { title: "No ads", description: "Paying members never see ads.", included: true },
     ]},
   ],
   platinum: [
@@ -80,7 +80,7 @@ const tierSections: Record<SubscriptionTier, TierSection[]> = {
       { title: "Control your profile", included: true },
       { title: "Control who sees you", included: true },
       { title: "Control who you see", included: true },
-      { title: "Hide ads", included: true },
+      { title: "No ads", description: "Paying members never see ads.", included: true },
     ]},
   ],
 };

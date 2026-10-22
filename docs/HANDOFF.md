@@ -24,7 +24,8 @@ integration notes [docs/handoff/integration-a.md](handoff/integration-a.md),
 Contents: [Production state and deploy plan](#production-state-and-deploy-plan) ·
 [Done](#done) · [Trust area](#trust-area-wftrust) · [Left](#left-ordered-by-member-impact) ·
 [Needs the owner](#needs-the-owner) · [How to run](#how-to-run-the-checks) ·
-[Security and DB performance (0014)](#security-and-db-performance-0014)
+[Security and DB performance (0014)](#security-and-db-performance-0014) ·
+[Ads (0016)](#ads-0016)
 
 ## Production state and deploy plan
 
@@ -339,8 +340,10 @@ WhatsApp secrets: unchanged, see `docs/V1-MIGRATION.md` §3.
 `VITE_TURN_URL` (older name `VITE_TURN_URLS`), `VITE_TURN_USERNAME`,
 `VITE_TURN_CREDENTIAL` (a TURN server is needed for calls on mobile data);
 optional `VITE_STUN_URL`, `VITE_PHONE_LINE_NUMBER` (the Twilio number shown in
-the app). Existing: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
-`VITE_SITE_URL`. See `docs/DEPLOYMENT.md` › Variables.
+the app). Ads (optional, [Ads (0016)](#ads-0016)): `VITE_ADSENSE_CLIENT`, then
+`VITE_ADSENSE_SLOT_*` after AdSense approval; `VITE_TAKATAK_ADS_*` only to
+change the defaults. Existing: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
+`VITE_SITE_URL`. See `docs/DEPLOYMENT.md` › Variables and `.env.example`.
 
 **Dashboard**: none new for 0013 (the `isexy-photo-verifications` bucket and its
 policies come with the migration; `call_sessions` joins Realtime through the
@@ -435,3 +438,42 @@ Left (not changed here; details in security.md › Looked at and left alone):
 (Fixed by main meanwhile, live: members could change `status`/`priority`/
 `assigned_to`/`response` of their own ticket, and the ticket policies read
 `auth.users`: main's 0009 trigger and 0010 policies.)
+
+## Ads (0016)
+
+Branch `wf/ads` (owner guide: [docs/ADS.md](ADS.md)). Free members see small
+labelled banners, **anyone who pays for anything sees none**. Each slot asks
+TAKATAK ads first (`POST {VITE_TAKATAK_ADS_URL, default https://takatak.ca}/api/ads/serve`,
+publisher `isexy`), then Google AdSense (only when `VITE_ADSENSE_CLIENT` and the
+slot's `VITE_ADSENSE_SLOT_*` are set), then the house banner "Go ad-free with
+ISEXY Plus". Nothing is deployed.
+
+| Done | Where | Verified by |
+|---|---|---|
+| Who is ad-free, decided on the server: staff, any active plan (Stripe, code, reward, staff grant, profile plan), active chat subscription, any successful payment in the last 30 days (credits, minutes, Super Likes, Boosts, gifts sent, donations, a Stripe plan period started in the window); browser shows nothing until it knows, fails closed | `0016_ads.sql` `isexy.get_my_ad_status()` (SECURITY DEFINER, STABLE, pinned search_path, authenticated only), `src/hooks/useAdFree.ts` | `ads-smoke.sql` (32 checks, in CI), ads-e2e E1-E4 |
+| 5 spaces (Discover strip, lists after the 3rd row, feeds every 6 items, Profile/Settings, public content pages) with reserved height; never on chat, calls, purchase/checkout, sign-in/onboarding/setup, staff, legal, 404 | `src/lib/ads.ts`, `src/components/AdSlot.tsx`, 15 pages | ads-e2e L1-L4, A1-A7, B1-B6, F1-F2, H1-H2 |
+| TAKATAK contract (serve, impression after 1 s at 50 % visible, click through `clickUrl`), ad text never HTML, `javascript:` refused, no cookies sent | `src/lib/ads.ts` | ads-e2e L5-L6, A2-A6, D8-D11 |
+| AdSense fallback: one script, non-personalized (`requestNonPersonalizedAds = 1`) without the Advertising consent, unfilled/blocked → house banner; `ads.txt` + `<meta name="google-adsense-account">` written at build only with `VITE_ADSENSE_CLIENT` | `src/lib/ads.ts`, `vite.config.ts` | ads-e2e D1-D7, I1-I2, P1-P6 (plain build: no Google request) |
+| "Advertising" consent choice (banner + Cookie Policy toggles, which now save the real consent); Privacy Policy §12 and Cookie Policy "Advertising" sections in EN + FR (TAKATAK ads, AdSense and its cookies, partner-sites and adssettings links, personalized only with consent, ad-free for paying members) | `src/lib/consent.ts`, `ConsentBanner.tsx`, `AdvertisingPolicy.tsx`, `Privacy.tsx`, `CookiePolicy.tsx` | ads-e2e D3-D6, J1-J8 |
+| Ads go away right after a purchase (status re-read on the checkout return); plan pages say "No ads" | `useCheckoutReturn.ts`, `Premium.tsx`, `subscriptionTiers.ts` | review |
+| Content-Security-Policy: none exists (index.html, vercel.json, nixpacks/Coolify, Apache example), so none added; the hosts a future CSP must allow are in docs/ADS.md | — | grep |
+
+Owner steps (details in docs/ADS.md): **TAKATAK**: create publisher `isexy`
+(allowed origins `https://isexy.ca`, `https://www.isexy.ca`,
+`https://isexy.onrender.com`, category `social`) with placements
+`isexy-discover-banner`, `isexy-list-banner`, `isexy-feed-inline`,
+`isexy-profile-banner`, `isexy-content-inline`; link TAKATAK ADS Direct
+campaigns to them (network campaigns need no link); `ADS_EVENT_SIGNING_SECRET`
+on TAKATAK for counting. **AdSense**: apply with isexy.ca, set
+`VITE_ADSENSE_CLIENT=ca-pub-…` as a Coolify (and Render) build variable and
+redeploy (verification tag + `/ads.txt`), keep Auto ads off; after approval one
+responsive display unit per space → `VITE_ADSENSE_SLOT_*`, redeploy; Privacy &
+messaging consent message (European regulations; Canada if offered).
+The 30 days: `c_ad_free_after_payment` (0016, or a new migration once
+applied) + `AD_FREE_DAYS_AFTER_PAYMENT` (`src/lib/ads.ts`) + ads-smoke.
+
+Left: AdSense itself was only tested against a stub (no account yet); TAKATAK
+was tested against a mock of its contract (no request to takatak.ca); the
+Discover AdSense unit sits right above the bottom nav (start without
+`VITE_ADSENSE_SLOT_DISCOVER` if Google flags accidental clicks); the rest of
+the Privacy and Cookie policies is still English only (Left #26).

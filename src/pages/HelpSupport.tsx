@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
+import { AdSlot } from "@/components/AdSlot";
 import { Input } from "@/components/ui/input";
 import {
   Search, HelpCircle, MessageCircle, BookOpen, Shield, AlertTriangle,
@@ -117,6 +118,8 @@ const HelpSupport = () => {
             </a>
           </div>
         </div>
+
+        <AdSlot placement="isexy-content-inline" className="max-w-md mb-6" />
 
         {/* Ticket Tracking */}
         <Button variant="outline" className="w-full max-w-md" onClick={() => navigate("/ticket-tracking")}>

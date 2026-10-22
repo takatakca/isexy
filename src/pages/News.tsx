@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, ChevronRight, Search, Share2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { shareLink } from "@/lib/share";
+import { AdSlot } from "@/components/AdSlot";
+import { feedAdAfter } from "@/lib/ads";
 
 const newsArticles = [
   {
@@ -170,6 +172,7 @@ export default function News() {
               </div>
             </div>
           </button>
+          {feedAdAfter(0, filteredArticles.length) && <AdSlot placement="isexy-feed-inline" className="mt-4" />}
         </div>
       )}
 
@@ -177,9 +180,9 @@ export default function News() {
       <div className="px-4 pb-8">
         <h3 className="text-lg font-bold text-foreground mb-4">Recent News</h3>
         <div className="space-y-4">
-          {filteredArticles.slice(1).map((article) => (
+          {filteredArticles.slice(1).map((article, i) => (
+            <Fragment key={article.id}>
             <button
-              key={article.id}
               onClick={() => open(article)}
               className="w-full flex gap-4 p-3 bg-card rounded-xl border border-border text-left hover:bg-muted/50 transition-colors"
             >
@@ -206,6 +209,9 @@ export default function News() {
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 self-center" />
             </button>
+            {/* Free members and visitors: one inline card every 6 articles (the featured one counts). */}
+            {feedAdAfter(i + 1, filteredArticles.length) && <AdSlot placement="isexy-feed-inline" />}
+            </Fragment>
           ))}
         </div>
       </div>

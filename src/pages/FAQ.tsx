@@ -7,6 +7,7 @@ import {
   Star, Ban, Eye, Bell, Smartphone, Mail, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdSlot } from "@/components/AdSlot";
 
 interface FAQItem {
   question: string;
@@ -474,6 +475,8 @@ export default function FAQ() {
           </button>
         </div>
       </div>
+
+      <AdSlot placement="isexy-content-inline" className="mx-4 mb-6 w-auto" />
 
       {/* Quick Links */}
       <div className="px-4 py-6 border-t border-border">

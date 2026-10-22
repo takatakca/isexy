@@ -186,7 +186,7 @@ MochaHost still serves DNS and mailbox for `isexy.ca`; it no longer serves the s
 | Install / build | taken from `nixpacks.toml`: Node 22, `npm ci`, `npm run build` (no bun, no deno) |
 | Domains | `https://isexy.ca`, `https://www.isexy.ca` (Let’s Encrypt). Apex A is the Coolify server `31.220.96.134`. `www` is a CNAME to the apex. Mail stays on `mail.isexy.ca` → `209.42.24.127` |
 | Auto-deploy | GitHub App installation (private source), repository id `1147646156`, branch `main`. A push to `main` deploys |
-| Environment | `VITE_SITE_URL` = `https://isexy.ca` (also the `.env` default). `VITE_TURN_URL` (older name `VITE_TURN_URLS`), `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` for calls from strict mobile networks (see `DEPLOYMENT.md` › Variables) |
+| Environment | `VITE_SITE_URL` = `https://isexy.ca` (also the `.env` default). `VITE_TURN_URL` (older name `VITE_TURN_URLS`), `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` for calls from strict mobile networks (see `DEPLOYMENT.md` › Variables). Ads: `VITE_ADSENSE_CLIENT` (+ `VITE_ADSENSE_SLOT_*` after approval) as build variables, `docs/ADS.md` |
 
 Why `nixpacks.toml` exists: `package-lock.json` is the only lockfile, but
 Nixpacks auto-detection is unreliable for this repo. The Lovable-era `bun.lockb`

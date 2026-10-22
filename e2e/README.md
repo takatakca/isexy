@@ -42,6 +42,7 @@ Pass/fail checks (print `PASS`/`FAIL` lines, exit 1 on a failure):
 | `calls-twilio-test.mjs` | Calls (Phone Line by phone) | the three Twilio webhooks run in Node against an in-memory Supabase (no browser, no network): signature over the public URL (Twilio's test vector, wrong account, internal URL refused), well-formed escaped TwiML, caller by verified number + 18+ birth date, one session per CallSid, menu keys, silence -> hang up, browse (blocked / shadow-banned left out, WAV/MP3 played from a signed URL, other formats read by headline), status callback -> `apply_twilio_call_status`, 500 on a database error | `node --experimental-strip-types --no-warnings --import ./e2e/calls-twilio-loader.mjs e2e/calls-twilio-test.mjs` |
 | `trust-e2e.mjs` | Trust | block/report (RPCs, sign-in guard, own profile), 404 EN/FR, EN/FR button, Help search, guest ticket tracking, assistant (streamed answer, member handoff to a person, guest sign-in/ticket), moderator (staff home, member sheet: suspend/warn/shadow ban/verify, reports, photo and voice queues, live chat accept/send/close, support portal tabs), admin (revenue, ticket reply with a saved reply, audit log, roles); no direct write of profiles/reports/warnings/tickets/roles/blocks; HTML/script payloads from members render as text on staff pages, Cuban ID evidence opens only through signed URLs (D1-D5) | `E2E_BASE=http://127.0.0.1:4173 node --import ./e2e/offline-browser.mjs e2e/trust-e2e.mjs` |
 | `rewards-e2e.mjs` | Rewards | payments not configured / paused / test mode, checkout bodies (no amounts) and return, promo only with the coupon, My Subscription plan sources, Boosts use/buy, credits to minutes, Loyalty, referral link, Restore purchases, Redeem code, wallet balances, sign-in guards, no browser write of protected data | `E2E_BASE=http://127.0.0.1:4173 node --import ./e2e/offline-browser.mjs e2e/rewards-e2e.mjs` |
+| `ads-e2e.mjs` | Ads | logic of `src/lib/ads.ts` (pages per space, never on chat/calls/checkout/sign-in/staff/legal/404, list and feed positions, served-ad checks, URLs), TAKATAK serve/impression/click, AdSense fallback (non-personalized without the Advertising consent, unfilled/blocked → house banner), ad text never HTML, ad-free members (staff, plan, chat subscription, recent payment; no flash while loading; fail closed), visitors on public pages only, FR labels, desktop, `ads.txt` + verification tag, Privacy/Cookie policy Advertising sections (EN + FR) and the real consent toggles; plain build: house banner, no Google request | two builds, see the header of the script and `docs/ADS.md` › How to test (`E2E_ADS_MODE=configured` / `plain`, port 4410) |
 
 Broad smoke scripts (print a log to read; they stop with an error if a step cannot run):
 
@@ -64,7 +65,7 @@ SQL is checked separately on a throwaway local Postgres 16, like the CI
 `migrations` job: `scripts/isexy/test/v1-mock.sql`, `scripts/isexy/migrate.sh`
 (dry run, `--apply`, re-run), then `scripts/isexy/test/0013-smoke.sql`,
 `calls-smoke.sql` (part D), `rewards-smoke.sql` (part R),
-`security-smoke.sql` (0014), `live-functions-compat.sql` and
-`trust-smoke.sql` (0015), each inside BEGIN/ROLLBACK with
+`security-smoke.sql` (0014), `live-functions-compat.sql`,
+`trust-smoke.sql` (0015) and `ads-smoke.sql` (0016), each inside BEGIN/ROLLBACK with
 `psql -v ON_ERROR_STOP=1` (instructions at the top of each file; CI runs the
 same loop). Never point these at V1.

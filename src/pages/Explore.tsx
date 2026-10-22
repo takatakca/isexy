@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
+import { AdSlot } from "@/components/AdSlot";
+import { feedAdAfter } from "@/lib/ads";
 import Forum from "@/components/Forum";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -55,6 +57,10 @@ const categories: { section: string; description: string; items: ExploreCategory
   },
 ];
 
+// Free members: one inline ad card every 6 categories, counted across sections.
+const TOTAL_ITEMS = categories.reduce((n, s) => n + s.items.length, 0);
+const SECTION_OFFSETS = categories.map((_, i) => categories.slice(0, i).reduce((n, s) => n + s.items.length, 0));
+
 // Placeholder images for categories (using gradients as fallback)
 const categoryImages: Record<string, string> = {
   "long-term": "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&h=500&fit=crop",
@@ -97,15 +103,15 @@ export default function Explore() {
           </TabsList>
 
           <TabsContent value="discover" className="space-y-8">
-            {categories.map((section) => (
+            {categories.map((section, si) => (
               <div key={section.section}>
                 <h2 className="text-lg font-bold text-foreground mb-1">{section.section}</h2>
                 <p className="text-sm text-muted-foreground mb-4">{section.description}</p>
                 
                 <div className="grid grid-cols-2 gap-3">
-                  {section.items.map((item) => (
+                  {section.items.map((item, idx) => (
+                    <Fragment key={item.id}>
                     <button
-                      key={item.id}
                       onClick={() => handleCategoryClick(item)}
                       className={`relative rounded-2xl overflow-hidden ${item.featured ? 'col-span-2 h-48' : 'h-44'} flex flex-col justify-end text-left transition-transform active:scale-[0.98]`}
                     >
@@ -127,6 +133,10 @@ export default function Explore() {
                         </h3>
                       </div>
                     </button>
+                    {feedAdAfter(SECTION_OFFSETS[si] + idx, TOTAL_ITEMS) && (
+                      <AdSlot placement="isexy-feed-inline" className="col-span-2" />
+                    )}
+                    </Fragment>
                   ))}
                 </div>
               </div>
