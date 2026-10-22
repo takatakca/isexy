@@ -175,8 +175,8 @@ with header `x-cron-secret: <ISEXY_CRON_SECRET>`. Name it `isexy-subscription-re
 
 ### 3.9 Website: Coolify (main), Render (fallback)
 
-**Coolify** (coolify.takatak.ca, project **ISEXY**) is the hosting target.
-MochaHost is no longer used.
+**Coolify** (coolify.takatak.ca, project **ISEXY**) hosts the website.
+MochaHost still serves DNS and mailbox for `isexy.ca`; it no longer serves the site.
 
 | Setting | Value |
 | --- | --- |
@@ -184,7 +184,9 @@ MochaHost is no longer used.
 | Build pack | Nixpacks, **"Is it a static site?" on** |
 | Publish directory | `/dist` |
 | Install / build | taken from `nixpacks.toml`: Node 22, `npm ci`, `npm run build` (no bun, no deno) |
-| Environment (optional) | `VITE_SITE_URL` = the public URL (default in `.env`: `https://isexy.onrender.com`); `VITE_TURN_URL` (older name `VITE_TURN_URLS`), `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` for calls from strict mobile networks (see `DEPLOYMENT.md` › Variables) |
+| Domains | `https://isexy.ca`, `https://www.isexy.ca` (Let’s Encrypt). Apex A is the Coolify server `31.220.96.134`. `www` is a CNAME to the apex. Mail stays on `mail.isexy.ca` → `209.42.24.127` |
+| Auto-deploy | GitHub App installation (private source), repository id `1147646156`, branch `main`. A push to `main` deploys |
+| Environment | `VITE_SITE_URL` = `https://isexy.ca` (also the `.env` default). `VITE_TURN_URL` (older name `VITE_TURN_URLS`), `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` for calls from strict mobile networks (see `DEPLOYMENT.md` › Variables) |
 
 Why `nixpacks.toml` exists: `package-lock.json` is the only lockfile, but
 Nixpacks auto-detection is unreliable for this repo. The Lovable-era `bun.lockb`
@@ -194,9 +196,12 @@ Nixpacks CLI plan: without the file, deno and no install step; with it,
 `nodejs_22` + npm, `npm ci`, `npm run build`. CI fails if `bun.lockb`,
 `bun.lock`, `yarn.lock` or `pnpm-lock.yaml` comes back.
 
-**The first Coolify build failed because it builds `main`**, which still has
-`bun.lockb` until this PR is merged. To test before merging, point the Coolify
-app at branch `claude/zealous-brown-kv2hmx` once, then back to `main`.
+Live check on 22 October 2026: commit `a188694` is deployed, `/`, `/auth` and
+`/discover` return 200, and the canonical URL is `https://isexy.ca/`.
+The earlier Nixpacks failure (bun/deno detection) is already fixed on `main`
+by `nixpacks.toml`. DNS for the zone is still edited in the bolon.ca cPanel
+account on `s3650`, because that account owns `isexy.ca`. Do not point MX
+back at the apex.
 
 After the first successful deploy:
 1. Open `<coolify domain>/auth` and `<coolify domain>/discover` directly; both

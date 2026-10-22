@@ -6,7 +6,7 @@ sans refaire les migrations déjà appliquées.
 | Priorité | Tâche | État / critère d'acceptation |
 | --- | --- | --- |
 | P0 | Réconcilier les SHA | CI 38951304397 SUCCESS et Render `445fc829` LIVE; contrôler le prochain commit de relève et /release.json |
-| P0 | Examiner Coolify puis `isexy.ca` | GitHub `main` → image publiée; SSL, DNS, `/auth`, `/discover` et URL canonique vérifiés |
+| P0 | Examiner Coolify puis `isexy.ca` | Fait le 2026-10-22 : `main` a188694 sur Coolify, DNS A `31.220.96.134`, TLS Let’s Encrypt, `/` `/auth` `/discover` 200, canonique `https://isexy.ca/`, auto-deploy GitHub App. Courrier reste sur `mail.isexy.ca` → `209.42.24.127` |
 | P0 | Rétablir GitHub → Supabase | Secrets `ISEXY_DB_URL` et `SUPABASE_ACCESS_TOKEN` disponibles dans l'environnement du job; aucune étape prod sautée, résultat observable |
 | P0 | Vérifier Data API et Takatak Auth | Contrôle Data API REST schéma isexy passé dans CI 38882814481; Auth Google/email/SMS et RLS réelles restent à valider |
 | P0 | Audit paiement et fournisseurs | Migrations 0011 (crédits/minutes) et 0012 (boosts/Super Likes) APPLIQUÉES; webhook v6 ACTIVE. Restent dons/cadeaux/recharges, paiement Stripe sandbox signé, reprise d'événements en échec et remboursement réel |
