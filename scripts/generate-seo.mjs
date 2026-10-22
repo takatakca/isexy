@@ -12,6 +12,7 @@
  *
  * Never fails the build: if Supabase is unreachable, articles are skipped.
  */
+import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -41,14 +42,35 @@ const SUPABASE_URL = env("VITE_SUPABASE_URL");
 const SUPABASE_KEY = env("VITE_SUPABASE_PUBLISHABLE_KEY");
 const today = new Date().toISOString().slice(0, 10);
 
-// Deployment proof: Render exposes RENDER_GIT_COMMIT during builds, GitHub
-// Actions exposes GITHUB_SHA, and other build systems may set SOURCE_COMMIT.
-// This metadata is public and contains no credentials.
-const deployedCommit = [
-  process.env.RENDER_GIT_COMMIT,
-  process.env.GITHUB_SHA,
-  process.env.SOURCE_COMMIT,
-].find((value) => /^[a-f0-9]{40}$/i.test(value || "")) || null;
+// Deployment proof. Render sets RENDER_GIT_COMMIT, GitHub Actions sets
+// GITHUB_SHA, and Coolify may set SOURCE_COMMIT. Nixpacks also writes
+// .git-head-sha before the build. The checkout's HEAD covers a Coolify build
+// that does not inject any of those. This metadata is public.
+const fullSha = (value) => (/^[a-f0-9]{40}$/i.test(value || "") ? value.toLowerCase() : null);
+async function readShaFile() {
+  const file = path.join(root, ".git-head-sha");
+  if (!existsSync(file)) return null;
+  return fullSha((await readFile(file, "utf8")).trim());
+}
+function gitHead() {
+  try {
+    return fullSha(
+      execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim(),
+    );
+  } catch {
+    return null;
+  }
+}
+const deployedCommit =
+  fullSha(process.env.RENDER_GIT_COMMIT) ||
+  fullSha(process.env.GITHUB_SHA) ||
+  fullSha(process.env.SOURCE_COMMIT) ||
+  (await readShaFile()) ||
+  gitHead();
 await writeFile(
   path.join(dist, "release.json"),
   JSON.stringify({ commit: deployedCommit, built_at: new Date().toISOString() }, null, 2) + "\n",

@@ -220,7 +220,7 @@ First-time setup and every human step: [`V1-MIGRATION.md`](V1-MIGRATION.md).
 | **V1 safety rules** | fails on `supabase/migrations/`, `supabase db push`, a bare `supabase functions deploy`, a function not named `isexy-*`, `public.*` in ISEXY migrations, or any Lovable dependency | always |
 | **Deploy ISEXY to TAKATAK V1** | `migrate.sh` dry run on V1 → `migrate.sh --apply` (isexy schema only) → deploy each `isexy-*` function by name | push to `main`; migrations when `ISEXY_DB_URL` exists, functions when `SUPABASE_ACCESS_TOKEN` exists; waits for the `production` environment's reviewers |
 | **Publish website** | Coolify (and Render, fallback) deploy `main` on their own. Optional: rsync `dist/` to an SSH host with an atomic swap | SSH part only when all `ISEXY_DEPLOY_*` secrets exist |
-| **Smoke test** | `/`, `/auth`, `/discover`, `/knowledge-base`, `/faq` must return 200; warns if `isexy-*` functions are missing | push to `main` |
+| **Smoke test** | `https://isexy.ca` (not the Render fallback): `/`, `/auth`, `/discover`, `/knowledge-base`, `/faq` must end on HTTP 200, and `/release.json` `commit` must equal that push. Same-site redirects are followed. Polls for 10 minutes so Coolify can finish | push to `main` |
 
 Stages without their secrets are skipped with a notice, so the pipeline stays
 green and switches on as soon as you add them. **Never** run `supabase db push`
