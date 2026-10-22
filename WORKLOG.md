@@ -3,7 +3,7 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
-- 2026-10-22 | cursor | cursor/isexy-smoke-live-3bc7 → PR | active | Smoke test failed waiting on Render for a4b70711 while isexy.ca is production and its release.json commit was null; point the check at isexy.ca, stamp the build SHA from git, and poll long enough for Coolify | next: merge and confirm the next main smoke test
+- 2026-10-22 | cursor | cursor/isexy-smoke-live-3bc7 → PR #7 | PR #7 | Smoke test failed waiting on Render for a4b70711 while isexy.ca is production and its release.json commit was null; point the check at isexy.ca, stamp the build SHA from git, and poll long enough for Coolify | next: merge and confirm the next main smoke test
 
 - 2026-10-22 | cursor | cursor/isexy-http3-fix-3bc7 → PR #4 | PR #4 | isexy.ca answered HTTP/2 200 but Traefik advertised broken HTTP/3, so Chrome failed with a QUIC error; HTTP/3 removed from the proxy and directory redirects stay on HTTPS | next: owner hard-refreshes https://isexy.ca; do not turn proxy HTTP/3 back on
 
