@@ -140,6 +140,16 @@ INSERT INTO results SELECT 'S1b free member pays now: ad-free at once',
   FROM (SELECT isexy.get_my_ad_status() AS r) x;
 RESET ROLE;
 
+-- 0015 is_staff(): a suspended moderator loses staff status, ads included.
+UPDATE isexy.profiles SET is_active = false WHERE id = 'adadadad-0000-0000-0000-000000000008';
+SET ROLE authenticated;
+SELECT pg_temp.as_user('adadadad-0000-0000-0000-000000000008');
+INSERT INTO results SELECT 'S8b suspended moderator (0015 is_staff): no longer staff, sees ads',
+  NOT (r->>'ad_free')::boolean AND r->>'reason' = 'free', r::text
+  FROM (SELECT isexy.get_my_ad_status() AS r) x;
+RESET ROLE;
+UPDATE isexy.profiles SET is_active = true WHERE id = 'adadadad-0000-0000-0000-000000000008';
+
 -- Refusals and grants ------------------------------------------------------------
 SET ROLE anon;
 DO $$ BEGIN

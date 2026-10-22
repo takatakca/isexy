@@ -5,14 +5,17 @@
 -- (src/hooks/useAdFree.ts). NOT applied anywhere yet.
 --
 -- Runs after 0013_app_completion (plan_grants, tier_rank, the Stripe
--- fulfilment ledgers) and 0014_security_and_performance (members can no
--- longer write any of the tables read here). 0015 (trust area) is
--- independent of this file. isexy schema only, no table, no policy, no data
--- change: one read-only SECURITY DEFINER function.
+-- fulfilment ledgers), 0014_security_and_performance (members can no longer
+-- write any of the tables read here) and 0015_trust_and_moderation (whose
+-- is_staff() defines staff: admin or moderator, account not suspended).
+-- isexy schema only, no table, no policy, no data change: one read-only
+-- SECURITY DEFINER function.
 --
 -- get_my_ad_status() -> jsonb {ad_free boolean, reason text, until timestamptz}
 --   ad_free = true when the caller (auth.uid()) is, in this order:
---   1. staff: isexy.user_roles admin or moderator                reason 'staff'
+--   1. staff: is_staff() (0015 A1: user_roles admin or moderator, account
+--      not suspended; a suspended moderator is treated like any member)
+--                                                                reason 'staff'
 --   2. on any active plan (Plus, Gold, Platinum: "No ads" is a plan benefit),
 --      from the same sources as refresh_member_plan (0013 R3): an active or
 --      trialing Stripe subscription (1 day of grace after the period end), a
@@ -62,8 +65,8 @@ BEGIN
     RAISE EXCEPTION 'not allowed' USING ERRCODE = '42501';
   END IF;
 
-  -- 1. Staff never see ads.
-  IF has_role(v_uid, 'admin'::app_role) OR has_role(v_uid, 'moderator'::app_role) THEN
+  -- 1. Staff never see ads (0015's definition of staff).
+  IF is_staff() THEN
     RETURN jsonb_build_object('ad_free', true, 'reason', 'staff', 'until', NULL);
   END IF;
 

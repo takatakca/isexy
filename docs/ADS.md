@@ -33,7 +33,7 @@ example before 0016 is applied): paying members never see an ad flash.
 
 | Member | Ads? | `reason` |
 |---|---|---|
-| Staff (`user_roles` admin or moderator) | no | `staff` |
+| Staff: admin or moderator whose account is not suspended (`is_staff()`, 0015) | no | `staff` |
 | Any active plan: Plus, Gold, Platinum, from Stripe (active or trialing, 1 day of grace after the period end), a redeemed code, a loyalty reward, a staff grant, or the plan on the profile | no | `plan` |
 | Active chat subscription | no | `chat_subscription` |
 | **Any successful payment in the last 30 days**: credits, call minutes, Super Likes, Boosts, a gift sent, a donation, or a Stripe plan period that started in that window (a plan cancelled after one paid week keeps ads away for the rest of the 30 days) | no | `recent_payment` |
