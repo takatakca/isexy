@@ -3,7 +3,7 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
-- 2026-10-22 | cursor | cursor/isexy-http3-fix-3bc7 → PR | active | isexy.ca answered HTTP/2 200 but Traefik advertised broken HTTP/3, so Chrome failed with a QUIC error; HTTP/3 removed from the proxy and directory redirects stay on HTTPS | next: owner hard-refreshes https://isexy.ca; do not turn proxy HTTP/3 back on
+- 2026-10-22 | cursor | cursor/isexy-http3-fix-3bc7 → PR #4 | PR #4 | isexy.ca answered HTTP/2 200 but Traefik advertised broken HTTP/3, so Chrome failed with a QUIC error; HTTP/3 removed from the proxy and directory redirects stay on HTTPS | next: owner hard-refreshes https://isexy.ca; do not turn proxy HTTP/3 back on
 
 - 2026-10-22 | cursor | cursor/isexy-coolify-dns-3bc7 → PR #3 | PR #3 | isexy.ca 403 was empty Apache on 209.42.24.127; Coolify serves main with GitHub App auto-deploy, DNS A 31.220.96.134, TLS issued, mail kept on mail.isexy.ca | next: merge PR #3; owner sets new Contabo, MochaHost, WHM and bolon cPanel passwords
 
