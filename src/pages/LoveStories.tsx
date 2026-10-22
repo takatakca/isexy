@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Heart, Quote, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { shareLink } from "@/lib/share";
+import { AdSlot } from "@/components/AdSlot";
+import { feedAdAfter } from "@/lib/ads";
 
 const successStories = [
   {
@@ -179,8 +181,8 @@ export default function LoveStories() {
         <h3 className="text-lg font-bold text-foreground mb-4">More Community Stories</h3>
         <div className="grid grid-cols-2 gap-3">
           {successStories.map((story, idx) => (
+            <Fragment key={story.id}>
             <button
-              key={story.id}
               onClick={() => { setSelectedStory(idx); window.scrollTo({ top: 0, behavior: "smooth" }); }}
               className={`relative aspect-square rounded-2xl overflow-hidden ${
                 idx === selectedStory ? "ring-2 ring-primary ring-offset-2" : ""
@@ -198,6 +200,8 @@ export default function LoveStories() {
                 <p className="font-semibold text-sm truncate">{story.names}</p>
               </div>
             </button>
+            {feedAdAfter(idx, successStories.length) && <AdSlot placement="isexy-feed-inline" className="col-span-2" />}
+            </Fragment>
           ))}
         </div>
       </div>

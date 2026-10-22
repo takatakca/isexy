@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BadgeCheck, Crown, Heart, Loader2, Lock, RefreshCw, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { MatchCelebration } from "@/components/MatchCelebration";
+import { AdSlot } from "@/components/AdSlot";
+import { listAdAfterIndex } from "@/lib/ads";
 import { useAuth } from "@/hooks/useAuth";
 import { useChatOpener } from "@/hooks/useChatOpener";
 import { ageFrom } from "@/lib/discoverFeed";
@@ -190,6 +192,9 @@ export function LikesReceivedGrid() {
         </div>
       )}
 
+      {/* Free members: one banner after the 3rd row of the grid, or at the top of a shorter one. */}
+      {listAdAfterIndex(likers.length, 2) < 0 && <AdSlot placement="isexy-list-banner" className="mb-4" />}
+
       {likers.length === 0 ? (
         <div className="text-center py-16">
           <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -205,7 +210,8 @@ export function LikesReceivedGrid() {
             const locked = liker.locked || !liker.liker_id;
             const key = liker.liker_id ?? `locked-${i}-${liker.liked_at}`;
             return (
-              <div key={key} className="relative rounded-xl overflow-hidden aspect-[3/4] bg-muted">
+              <Fragment key={key}>
+              <div className="relative rounded-xl overflow-hidden aspect-[3/4] bg-muted">
                 {locked ? (
                   <button
                     type="button"
@@ -290,6 +296,8 @@ export function LikesReceivedGrid() {
                   )}
                 </div>
               </div>
+              {i === listAdAfterIndex(likers.length, 2) && <AdSlot placement="isexy-list-banner" className="col-span-full" />}
+              </Fragment>
             );
           })}
         </div>

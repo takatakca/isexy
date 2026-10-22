@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
+import { AdSlot } from "@/components/AdSlot";
 import { Shield, Settings, Pencil, Star, Zap, Flame, Check, Lock, Image, FileText, BadgeCheck, Plus, ChevronRight, Briefcase, GraduationCap, MapPin, Quote, Heart, Sparkles, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWallet, superLikesAvailable } from "@/hooks/useWallet";
@@ -211,6 +212,8 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      <AdSlot placement="isexy-profile-banner" className="mx-4 mt-4 w-auto" />
 
       <BottomNav />
     </div>

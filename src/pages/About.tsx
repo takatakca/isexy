@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Heart, Shield, Globe, Users, Sparkles, BadgeCheck, MapPin, Award, Target, Zap, Star, MessageCircle, Lock, Eye } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { AdSlot } from "@/components/AdSlot";
 
 const stats = [
   { value: "18+", label: "Adults Only" },
@@ -336,6 +337,8 @@ export default function About() {
           </button>
         </div>
       </div>
+
+      <AdSlot placement="isexy-content-inline" className="mx-4 mb-8 w-auto" />
 
       {/* Footer */}
       <div className="px-4 py-8 text-center border-t border-border">

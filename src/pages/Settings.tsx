@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { openConsentSettings } from "@/lib/consent";
 import { AuthLayout } from "@/components/AuthLayout";
+import { AdSlot } from "@/components/AdSlot";
 import { AuthButton } from "@/components/AuthButton";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -906,6 +907,8 @@ export default function Settings() {
             </button>
           </SettingCard>
         </section>
+
+        <AdSlot placement="isexy-profile-banner" className="mb-8" />
       </div>
 
       {/* Unsaved changes: keep Save in reach on a long page (phones especially). */}

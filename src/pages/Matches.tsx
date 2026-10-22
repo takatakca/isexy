@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,8 @@ import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { useChatOpener } from "@/hooks/useChatOpener";
 import { fetchInbox } from "@/lib/inbox";
 import { ageFrom } from "@/lib/discoverFeed";
+import { AdSlot } from "@/components/AdSlot";
+import { listAdAfterIndex } from "@/lib/ads";
 
 interface Match {
   id: string;
@@ -105,6 +107,9 @@ export default function Matches() {
     unlocked: match.is_unlocked,
   });
 
+  // Free members: one banner after the 3rd conversation, or at the top of a shorter list.
+  const adAfter = listAdAfterIndex(matches.length);
+
   return (
     <div className="min-h-screen bg-background pb-40">
       {/* Header */}
@@ -129,6 +134,9 @@ export default function Matches() {
       </header>
 
       <main className="px-4 pt-4 safe-bottom">
+        {!loading && !(loadError && matches.length === 0) && adAfter < 0 && (
+          <AdSlot placement="isexy-list-banner" className="mb-4" />
+        )}
         {loading ? (
           <div className="space-y-6" aria-busy="true">
             <div className="grid grid-cols-3 gap-2">
@@ -245,9 +253,9 @@ export default function Matches() {
                 Messages
               </h2>
               <div className="space-y-2">
-                {matches.map((match) => (
+                {matches.map((match, i) => (
+                  <Fragment key={match.id}>
                   <button
-                    key={match.id}
                     onClick={() => open(match)}
                     className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 transition-all active:scale-[0.99]"
                   >
@@ -308,6 +316,8 @@ export default function Matches() {
                       )}
                     </div>
                   </button>
+                  {i === adAfter && <AdSlot placement="isexy-list-banner" />}
+                  </Fragment>
                 ))}
               </div>
             </div>

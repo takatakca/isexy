@@ -33,7 +33,7 @@ const allFeatures = [
   { key: "controlProfile", label: "Control Your Profile", plus: true, gold: true, platinum: true },
   { key: "controlWhoSees", label: "Control Who Sees You", plus: true, gold: true, platinum: true },
   { key: "controlWhoYouSee", label: "Control Who You See", plus: true, gold: true, platinum: true },
-  { key: "hideAds", label: "Hide Ads", plus: true, gold: true, platinum: true },
+  { key: "noAds", label: "No Ads", plus: true, gold: true, platinum: true },
 ];
 
 const tierConfig: Record<SubscriptionTier, {

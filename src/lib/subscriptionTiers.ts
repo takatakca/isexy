@@ -13,7 +13,7 @@ export const subscriptionTiers = {
       "Unlimited Rewinds",
       "Passport Mode",
       "Control who you see",
-      "Hide ads",
+      "No ads",
     ],
   },
   gold: {
@@ -29,6 +29,7 @@ export const subscriptionTiers = {
       "Top Picks",
       "5 Super Likes per week",
       "1 Boost per month",
+      "No ads",
     ],
   },
   platinum: {
@@ -44,6 +45,7 @@ export const subscriptionTiers = {
       "Message before matching: 3 First Impressions a week",
       "Priority Likes",
       "Premium discovery priority",
+      "No ads",
     ],
   },
 } as const;

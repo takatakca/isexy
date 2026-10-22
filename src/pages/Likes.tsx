@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
+import { AdSlot } from "@/components/AdSlot";
+import { listAdAfterIndex } from "@/lib/ads";
 import { LikesReceivedGrid } from "@/components/LikesReceivedGrid";
 import { Heart, Star, Loader2, BadgeCheck, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -140,6 +142,7 @@ export default function Likes() {
             </div>
           ) : sentLikes.length === 0 ? (
             <div className="flex flex-col items-center py-12">
+              <AdSlot placement="isexy-list-banner" className="mb-8" />
               <Heart className="w-12 h-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No likes sent yet</p>
               <button onClick={() => navigate("/discover")} className="mt-4 text-primary font-semibold">
@@ -148,11 +151,12 @@ export default function Likes() {
             </div>
           ) : (
             <>
+              {listAdAfterIndex(sentLikes.length, 2) < 0 && <AdSlot placement="isexy-list-banner" className="mb-4" />}
               <div className="grid grid-cols-2 gap-3">
-                {sentLikes.map((profile) => (
+                {sentLikes.map((profile, i) => (
+                  <Fragment key={profile.id}>
                   <button
                     type="button"
-                    key={profile.id}
                     className="relative rounded-xl overflow-hidden aspect-[3/4] text-left bg-muted"
                     onClick={() => navigate(`/web-profile/${profile.id}`)}
                     aria-label={`Open ${profile.first_name}'s profile`}
@@ -178,6 +182,8 @@ export default function Likes() {
                       </div>
                     )}
                   </button>
+                  {i === listAdAfterIndex(sentLikes.length, 2) && <AdSlot placement="isexy-list-banner" className="col-span-full" />}
+                  </Fragment>
                 ))}
               </div>
               {hasMore && (
