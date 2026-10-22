@@ -1,17 +1,17 @@
-# ISEXY handoff (2026-10-20, after merging main)
+# ISEXY handoff (2026-10-22, trust area and ads merged)
 
-Branch `claude/zealous-brown-kv2hmx`: wf/discover, wf/accounts, wf/chat,
-wf/calls and wf/rewards are merged, the security + DB performance pass added
-`0014_security_and_performance.sql`, and **origin/main (ChatGPT's 47 commits,
-what production runs) is merged in** (`docs/handoff/merge-main.md`: map of
-main's changes and every merge decision). Our migrations were renumbered
-**0013_app_completion** and **0014_security_and_performance** (they were 0004
-and 0005 on this branch; main's 0004-0012 are applied on V1). **The trust
-area is done on `wf/trust`** (local, not pushed, on top of this branch's
-head 092107f: `0015_trust_and_moderation.sql` + 3 functions + client, tested
-and reviewed adversarially; see [Trust area](#trust-area-wftrust)); it goes
-out **after** this PR. **Nothing
-of this branch is deployed**: see [Production state and deploy plan](#production-state-and-deploy-plan).
+Branch `claude/zealous-brown-kv2hmx` (PR #2): wf/discover, wf/accounts,
+wf/chat, wf/calls and wf/rewards are merged, the security + DB performance
+pass added `0014_security_and_performance.sql`, **origin/main (production) is
+merged in** (`docs/handoff/merge-main.md`), and since 2026-10-22 the **trust
+area** (`wf/trust`: `0015_trust_and_moderation.sql`, staff tools, blocks and
+reports, tickets; [Trust area](#trust-area-wftrust)) and the **ads**
+(`wf/ads`: `0016_ads.sql`, TAKATAK ads then AdSense then a house banner for
+free members, ad-free for paying members; [Ads (0016)](#ads-0016)) are merged
+too. Our migrations are **0013_app_completion**, **0014_security_and_performance**,
+**0015_trust_and_moderation**, **0016_ads** (main's 0001-0012 are applied on
+V1). **Nothing of this branch is deployed**: see
+[Production state and deploy plan](#production-state-and-deploy-plan).
 Details per area: the tables below, [docs/handoff/accounts.md](handoff/accounts.md),
 [docs/handoff/chat.md](handoff/chat.md), [docs/handoff/calls.md](handoff/calls.md),
 [docs/handoff/rewards.md](handoff/rewards.md), [docs/handoff/security.md](handoff/security.md),
@@ -31,8 +31,9 @@ Contents: [Production state and deploy plan](#production-state-and-deploy-plan) 
 
 **Production = main** (baseline; everything below is checked against it):
 
-- Render serves `main` (main's docs: `445fc829` live, CI run 38951304397
-  green; main head `a188694` is a docs commit). Coolify / isexy.ca not verified.
+- Coolify serves `main` at `https://isexy.ca` (GitHub App auto-deploy, PR #3;
+  live check 2026-10-22), Render (`https://isexy.onrender.com`) is the
+  fallback. origin/main head: `d7f3449` (2026-10-22).
 - TAKATAK V1 (`pcjfahhlozsseqqevimi`), schema `isexy`: migrations
   **0001-0012 applied with checksums** (0004 normalize_gender search_path,
   0005 FK indexes, 0006 adult profiles, 0007 allowance resets, 0008
@@ -48,35 +49,54 @@ Contents: [Production state and deploy plan](#production-state-and-deploy-plan) 
 **What this branch adds on top** (none of it deployed): the Done tables below
 (Discover, Accounts, Chat, Calls + Phone Line + Twilio, Rewards/payments
 economy) in `0013_app_completion.sql`, the security + DB performance pass in
-`0014_security_and_performance.sql`, and the functions listed in step 2.
-Main's live fixes are all kept (merge-main.md §2, §3): identity of Stripe
-payers from server metadata only, paid-only fulfilment, 503 for in-flight
-duplicates, ISEXY_APP_URL return URLs, safe checkout metadata, fail-closed
-gate (server and client), POST + strong secret for the scheduler, ticket
-confirmation owner/staff only, IAP 501, adult-only profiles, ticket staff
-fields, service-only maintenance RPCs.
+`0014_security_and_performance.sql`, the trust area in
+`0015_trust_and_moderation.sql`, the ads in `0016_ads.sql`, and the functions
+listed in step 2. Main's live fixes are all kept (merge-main.md §2, §3):
+identity of Stripe payers from server metadata only, paid-only fulfilment,
+503 for in-flight duplicates, ISEXY_APP_URL return URLs, safe checkout
+metadata, fail-closed gate (server and client), POST + strong secret for the
+scheduler, ticket confirmation owner/staff only, IAP 501, adult-only
+profiles, ticket staff fields, service-only maintenance RPCs.
+
+**origin/main moved** after 092107f to `d7f3449` (PRs #4, #7, #8: HTTP/3
+proxy fix, CI smoke test of isexy.ca, release docs; no function, no
+migration). Merging it into this branch conflicts only in `WORKLOG.md`
+(checked with `git merge-tree`): do it before merging PR #2.
 
 **Deploy plan** (main session / owner, in this order; nothing here was run
-against V1):
+against V1). Steps 1-3 belong together: once 0013/0014 are applied, the
+client still served from main loses the writes they close (step 3).
 
+0. **Owner first** (see [Needs the owner](#needs-the-owner)): GitHub Actions
+   secrets `ISEXY_DB_URL` (V1 session pooler, port 5432) and
+   `SUPABASE_ACCESS_TOKEN`, so CI can run steps 1-2 on the push to `main`
+   (otherwise run them by hand as below); Resend: verify the sending domain
+   of `ISEXY_RESEND_FROM` (default `notifications@isexy.ca`) before the two
+   ticket functions go out.
 1. **Migrations.** `ISEXY_DB_URL=<V1 session pooler> scripts/isexy/migrate.sh`
-   (dry run): it must list exactly `0013_app_completion.sql` then
-   `0014_security_and_performance.sql`, end with "isexy guard: V1 objects
-   unchanged" and "Dry run OK: 2 migration(s)". Anything else (a checksum
-   error, more pending files, a "C2: ... fingerprint" error) = stop and
-   investigate. Then `scripts/isexy/migrate.sh --apply` (one transaction per
-   file, both in one run), then `scripts/isexy/migrate.sh` → "up to date".
-   Checks: `isexy.schema_migrations` has 14 rows;
+   (dry run): it must list **exactly** `0013_app_completion.sql`,
+   `0014_security_and_performance.sql`, `0015_trust_and_moderation.sql`,
+   `0016_ads.sql`, end with "isexy guard: V1 objects unchanged" and "Dry run
+   OK: 4 migration(s)". Anything else (a checksum error, other pending
+   files, a "C2: ... fingerprint" error) = stop and investigate. Then
+   `scripts/isexy/migrate.sh --apply` (one transaction per file), then
+   `scripts/isexy/migrate.sh` → "up to date". Checks:
+   `isexy.schema_migrations` has 16 rows;
    `has_function_privilege('anon'|'authenticated', 'isexy.fulfill_stripe_payment(text,uuid,text,integer,text,jsonb)', 'EXECUTE')`
-   false, `service_role` true; the live webhook v6 keeps working in the gap
-   (its two RPCs keep their signatures; see merge-main.md §3).
-2. **Functions** (after step 1: the new webhook and checkouts need 0013's
-   SQL). `supabase functions deploy <name> --project-ref pcjfahhlozsseqqevimi`
-   one by one, `verify_jwt` as in `supabase/config.toml`:
+   false, `service_role` true; `has_function_privilege('anon', 'isexy.get_my_ad_status()', 'EXECUTE')`
+   false, `authenticated` true; the live webhook v6 keeps working in the gap
+   (its two RPCs keep their signatures; merge-main.md §3). Rehearsed
+   locally on 2026-10-22: production simulation (v1-mock + 0001-0012, then
+   these 4 pending) and from scratch, with every SQL test CI runs.
+2. **Functions** (after step 1: they need 0013-0015's SQL).
+   `supabase functions deploy <name> --project-ref pcjfahhlozsseqqevimi`
+   one by one, `verify_jwt` as in `supabase/config.toml` (no `config.toml`
+   change vs main). These 23 differ from origin/main (`index.ts` or a
+   `_shared/` file they import, compared transitively):
 
-   | Function | verify_jwt | Why (differs from main) |
+   | Function | verify_jwt | What differs from main |
    |---|---|---|
-   | `isexy-stripe-webhook` | false | atomic SQL fulfilment + main's identity/503 rules (merge-main.md §2) |
+   | `isexy-stripe-webhook` | false | atomic SQL fulfilment + main's identity/503 rules (merge-main.md §2); `_shared/payments.ts`, `_shared/subscription-entitlement.ts` |
    | `isexy-create-checkout` | false | gate, wallet plan, coupon path, ISEXY_APP_URL |
    | `isexy-create-credit-purchase` | false | CAD catalog, gate |
    | `isexy-create-minute-purchase` | false | CAD catalog, chat subscription, gate |
@@ -90,42 +110,58 @@ against V1):
    | `isexy-send-notification-email` | false | settings honoured, throttle |
    | `isexy-send-missed-call-notification` | false | only after `record_missed_call` |
    | `isexy-send-whatsapp-call-notification` | false | caller/match checks |
-   | `isexy-twilio-inbound-phone-line` | false | signature, one session per CallSid |
+   | `isexy-twilio-inbound-phone-line` | false | signature, one session per CallSid (`_shared/twilio.ts`) |
    | `isexy-twilio-phone-line-menu` | false | signature, escaped TwiML, menu |
    | `isexy-twilio-call-status` | false | `apply_twilio_call_status` |
    | `isexy-get-voice-greeting-url` | **true** (default) | staff review queue access |
-   | `isexy-ai-chat`, `isexy-send-ticket-confirmation`, `isexy-send-ticket-status-update`, `isexy-send-verification-notification`, `isexy-send-whatsapp-otp` | false | only `_shared/env.ts` differs (`ISEXY_TWILIO_WEBHOOK_BASE` is ISEXY-only): no behaviour change, redeploy to keep the bundle equal to the repo |
+   | `isexy-ai-chat` | false | trust: hand-off to a person for members only, one open chat per member |
+   | `isexy-send-ticket-confirmation` | false | trust: sender `ISEXY_RESEND_FROM` (verify the domain first) |
+   | `isexy-send-ticket-status-update` | false | trust: reads the ticket from the database, admins only, sender `ISEXY_RESEND_FROM` |
+   | `isexy-send-verification-notification`, `isexy-send-whatsapp-otp` | false | only `_shared/env.ts` differs (`ISEXY_TWILIO_WEBHOOK_BASE` is ISEXY-only): no behaviour change, redeploy to keep the bundle equal to the repo |
 
    Not to deploy: `isexy-seed-profiles`, `isexy-subscription-resets`
-   (quarantined by main; our edits to the latter stay in the repo for a later
-   review). Unchanged from main: `isexy-get-voice-reply-url`,
-   `isexy-verify-iap-receipt`.
-3. **Client, right after 1-2**: open a PR `claude/zealous-brown-kv2hmx` →
-   `main` and merge it (Render publishes `main`; check `/release.json`
-   shows the merge SHA). Do 1-3 in one window: once 0013/0014 are applied,
-   the client still served from main loses the writes they close (checked
-   by a scan of main's `src/`): in-app video calls (`video_call_sessions`
-   insert/update), chat read state and `matches` update after a send,
-   "Who liked you" like-back (`swipes` insert) and the First Impression
-   update, Referrals code, My Stars cash-out, Cuban signup flag, staff
-   verified flag / Cuban review, scheduled calls, Double Hangout, forum
-   posts. V1 has 0 member profiles (main's last count), so nobody is hit
-   if the three steps follow each other.
-4. **Owner secrets** (see [Needs the owner](#needs-the-owner)): Stripe
-   (test mode first) + `ISEXY_STRIPE_PRICE_CHAT_1MO`, `ISEXY_APP_URL`,
-   VAPID, Resend, Anthropic, Twilio, `ISEXY_CRON_SECRET` (≥ 16 characters,
-   the same value as the GitHub secret of `isexy-allowance-cron.yml`).
+   (quarantined by main; they differ only through `_shared/env.ts` and our
+   edits to the latter, kept for a later review). Unchanged from main:
+   `isexy-get-voice-reply-url`, `isexy-verify-iap-receipt`. The ads need no
+   function.
+3. **Client, right after 1-2**: merge origin/main into this branch (above),
+   then merge PR #2 into `main` (Coolify and Render publish `main`; check
+   `https://isexy.ca/release.json` shows the merge SHA). Do 1-3 in one
+   window: with 0013/0014 applied, the client still served from main loses
+   the writes they close (checked by a scan of main's `src/`): in-app video
+   calls (`video_call_sessions` insert/update), chat read state and
+   `matches` update after a send, "Who liked you" like-back (`swipes`
+   insert) and the First Impression update, Referrals code, My Stars
+   cash-out, Cuban signup flag, staff verified flag / Cuban review,
+   scheduled calls, Double Hangout, forum posts. V1 has 0 member profiles
+   (main's last count), so nobody is hit if the three steps follow each
+   other. 0015 does not break main's client either (trust.md); 0016 only
+   adds a function main's client never calls.
+4. **Owner secrets and accounts** (see [Needs the owner](#needs-the-owner)):
+   Supabase function secrets: Stripe (test mode first) +
+   `ISEXY_STRIPE_PRICE_CHAT_1MO`, `ISEXY_APP_URL`, VAPID, Resend
+   (`ISEXY_RESEND_API_KEY`, `ISEXY_RESEND_FROM`), Anthropic, Twilio,
+   `ISEXY_CRON_SECRET` (≥ 16 characters, the same value as the GitHub
+   secret of `isexy-allowance-cron.yml`). Ads: TAKATAK publisher `isexy`
+   and its 5 placements, then AdSense with `VITE_ADSENSE_CLIENT` in the
+   Coolify/Render build environment (docs/ADS.md). Coolify build
+   environment: `VITE_VAPID_PUBLIC_KEY`, TURN, `VITE_PHONE_LINE_NUMBER`,
+   ads variables.
 5. **After deploying**: one Stripe test purchase per kind (plan, Boost, Super
    Likes, credits, minutes), resend one event (`stripe events resend`) and
-   check nothing changes; a call between two members; a push; the scheduler
-   run answering 200.
+   check nothing changes; the buyer's ads disappear (`get_my_ad_status`
+   → `recent_payment` or `plan`); a call between two members; a push; the
+   scheduler run answering 200; a report and a staff review on
+   `/admin/moderation`; a free member sees the house banner (or a TAKATAK
+   ad) on `/discover`, none on a chat or `/premium`.
 
 ## Done
 
 Every item was checked on a mocked backend (Playwright, 390x844) and, for SQL,
-on a throwaway Postgres 16. After the last merge: typecheck clean, build OK, no
-new lint errors (120 errors, all pre-existing; 148 at 336099c, 168 before the
-first pass), every e2e below passes.
+on a throwaway Postgres 16. After the trust + ads merge (2026-10-22):
+typecheck clean, build OK, no new lint errors (98 errors, all pre-existing;
+116 at 092107f, 148 at 336099c, 168 before the first pass), every e2e below
+passes.
 
 ### Discover, likes, matches, sharing (wf/discover)
 
@@ -218,8 +254,8 @@ first pass), every e2e below passes.
 
 ## Trust area (wf/trust)
 
-Branch `wf/trust` (worktree `.claude/worktrees/trust`), local and not
-pushed: PR #2's heads 30caf62 and 092107f merged in, the trust work finished,
+Branch `wf/trust` (worktree `.claude/worktrees/trust`), **merged into this
+branch on 2026-10-22**: PR #2's heads 30caf62 and 092107f merged in, the trust work finished,
 tested (2026-10-22) and reviewed as a malicious member and a malicious
 moderator. Details, defect list, decisions, adversarial review:
 [docs/handoff/trust.md](handoff/trust.md).
@@ -236,27 +272,13 @@ moderator. Details, defect list, decisions, adversarial review:
 | Adversarial pass (proven first: 33 T9 checks failed on the WIP 0015): moderators no longer write warnings, live chat sessions or their own plan/limits/badge directly; never act on themselves (reports about them, own verification, photo check, voice greeting); reports about staff for admins only; a suspended staff account loses every staff tool; reporters do not read reviewed reports; the blocker's photos, Phone Line profile and greeting are hidden from the blocked member, photos signed-in only; a member's live chat can only carry their own assistant chat | trust-smoke T9 (78 checks); security-smoke A |
 | Member-written HTML/script (reports, chat attempts, tickets, audit reasons) renders as text on the staff pages; Cuban ID evidence (on hold) opens through signed URLs, other schemes never opened | trust-e2e D1-D5 |
 
-**Deploy (after this PR's steps 1-3, in this order):**
-
-1. `scripts/isexy/migrate.sh` dry run must list exactly
-   `0015_trust_and_moderation.sql`, end with "isexy guard: V1 objects
-   unchanged" and "Dry run OK: 1 migration(s)"; then `--apply`, then a
-   re-run says "up to date" (`schema_migrations`: 15 rows). Tested locally
-   on 0001-0014 (and on 0001-0012 → 0013-0015, and from scratch), with every
-   SQL test file CI runs (trust-smoke: 203 checks).
-2. Functions (`verify_jwt = false` for all three, as in `supabase/config.toml`):
-   `isexy-ai-chat` (handoff for members only, one open chat per member),
-   `isexy-send-ticket-confirmation` and `isexy-send-ticket-status-update`
-   (sender `ISEXY_RESEND_FROM`; status e-mail reads the ticket from the
-   database, admins only). **Before** the two ticket functions: the owner
-   verifies the sending domain in Resend (default `notifications@isexy.ca`).
-3. Client: merge `wf/trust` (after PR #2 is merged). 0015 does not break
-   PR #2's client meanwhile (its admin ticket updates still pass main's
-   0009 rule; the policies 0015 tightens are not used by it except the
-   old Agent Dashboard's "system" lines, staff only; its direct warning and
-   live chat session writes still work for admins, the only role they ever
-   worked for (moderators' were already refused); every page reading photos
-   is signed in).
+**Deploy:** part of the [deploy plan](#production-state-and-deploy-plan)
+above since the merge into this branch: 0015 in step 1 (with 0013, 0014,
+0016), `isexy-ai-chat`, `isexy-send-ticket-confirmation` and
+`isexy-send-ticket-status-update` in step 2 (`verify_jwt = false`; verify the
+Resend sending domain first, step 0), the client in step 3. Before the
+merge it was tested alone on 092107f (trust.md); after the merge the whole
+branch was tested again (see the work log line of 2026-10-22).
 
 Still open in the area: account deletion stays a ticket (staff delete by
 hand); Cuban ID review on hold (bug fix only: evidence links); staff pages
@@ -350,6 +372,16 @@ policies come with the migration; `call_sessions` joins Realtime through the
 migration; the `isexy` schema is already exposed). Resend: verify the sending
 domain for `ISEXY_RESEND_FROM`.
 
+**Ads** (docs/ADS.md): on TAKATAK (takatak.ca), publisher `isexy` with
+allowed origins `https://isexy.ca`, `https://www.isexy.ca`,
+`https://isexy.onrender.com` and the placements `isexy-discover-banner`,
+`isexy-list-banner`, `isexy-feed-inline`, `isexy-profile-banner`,
+`isexy-content-inline` (no screen yet: a seed script like
+`scripts/seed-ahmv-ads-publisher.ts`), Direct campaigns linked to them,
+`ADS_EVENT_SIGNING_SECRET` for counting. Google AdSense: apply with
+isexy.ca after setting `VITE_ADSENSE_CLIENT`, keep Auto ads off, one unit per
+placement after approval, Privacy & messaging consent message.
+
 **Decisions**:
 1. Chat rule pre-launch: Premium or a chat unlock (current) or relaxed?
 2. Default Discover distance before the distance filter is enforced (all profiles default to 80 km).
@@ -368,7 +400,7 @@ domain for `ISEXY_RESEND_FROM`.
 ```bash
 npm run typecheck
 NODE_OPTIONS="--import=./e2e/no-network.mjs" npm run build   # add VITE_PHONE_LINE_NUMBER="+1 514 555 0100" for calls-phone-line-pages
-npm run lint                          # 119 errors, all pre-existing (148 at 336099c)
+npm run lint                          # 98 errors, all pre-existing (116 at 092107f)
 npx vite preview --port 4173 --strictPort --host 127.0.0.1 &
 node --import ./e2e/offline-browser.mjs e2e/<file>.mjs [args]   # see e2e/README.md
 node --experimental-strip-types --no-warnings --import ./e2e/calls-twilio-loader.mjs e2e/calls-twilio-test.mjs
@@ -383,15 +415,16 @@ scripts/isexy/migrate.sh && scripts/isexy/migrate.sh --apply && scripts/isexy/mi
 for t in adult-profiles allowance-rpc-permissions privileged-rpc-permissions support-ticket-staff-fields atomic-credit-checkout atomic-boost-checkout; do
   psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/$t.sql   # main's assertions (each rolls back)
 done
-for t in 0013-smoke calls-smoke rewards-smoke security-smoke live-functions-compat trust-smoke; do
+for t in 0013-smoke calls-smoke rewards-smoke security-smoke live-functions-compat trust-smoke ads-smoke; do
   printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' $t | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
 done   # -v ON_ERROR_STOP=1: without it psql exits 0 even when a smoke file fails (CI runs the same loop)
 ```
 
 Production simulation (what V1 will see): a fresh database with v1-mock and
-only 0001-0012 applied (move 0013/0014 aside, `--apply`, put them back), then
-the dry run must list only 0013 and 0014; `--apply`, re-run, all SQL tests
-(see merge-main.md §3).
+only 0001-0012 applied (e.g. `migrate.sh --apply` from a copy of the repo
+holding only 0001-0012), then from the real checkout the dry run must list
+only 0013, 0014, 0015 and 0016; `--apply`, re-run, all SQL tests (see
+merge-main.md §3).
 
 The sandbox does not let the `postgres` user into the scratchpad: the data
 directory has to live elsewhere (e.g. a new folder under `/var/tmp`).
@@ -441,7 +474,9 @@ Left (not changed here; details in security.md › Looked at and left alone):
 
 ## Ads (0016)
 
-Branch `wf/ads` (owner guide: [docs/ADS.md](ADS.md)). Free members see small
+Branch `wf/ads` (owner guide: [docs/ADS.md](ADS.md)), **merged into this
+branch on 2026-10-22** after wf/trust; 0016 runs after 0015 and uses its
+`is_staff()` (admin or moderator, not suspended). Free members see small
 labelled banners, **anyone who pays for anything sees none**. Each slot asks
 TAKATAK ads first (`POST {VITE_TAKATAK_ADS_URL, default https://takatak.ca}/api/ads/serve`,
 publisher `isexy`), then Google AdSense (only when `VITE_ADSENSE_CLIENT` and the
@@ -450,7 +485,7 @@ ISEXY Plus". Nothing is deployed.
 
 | Done | Where | Verified by |
 |---|---|---|
-| Who is ad-free, decided on the server: staff, any active plan (Stripe, code, reward, staff grant, profile plan), active chat subscription, any successful payment in the last 30 days (credits, minutes, Super Likes, Boosts, gifts sent, donations, a Stripe plan period started in the window); browser shows nothing until it knows, fails closed | `0016_ads.sql` `isexy.get_my_ad_status()` (SECURITY DEFINER, STABLE, pinned search_path, authenticated only), `src/hooks/useAdFree.ts` | `ads-smoke.sql` (32 checks, in CI), ads-e2e E1-E4 |
+| Who is ad-free, decided on the server: staff (`is_staff()`, 0015), any active plan (Stripe, code, reward, staff grant, profile plan), active chat subscription, any successful payment in the last 30 days (credits, minutes, Super Likes, Boosts, gifts sent, donations, a Stripe plan period started in the window); browser shows nothing until it knows, fails closed | `0016_ads.sql` `isexy.get_my_ad_status()` (SECURITY DEFINER, STABLE, pinned search_path, authenticated only), `src/hooks/useAdFree.ts` | `ads-smoke.sql` (33 checks, in CI), ads-e2e E1-E4 |
 | 5 spaces (Discover strip, lists after the 3rd row, feeds every 6 items, Profile/Settings, public content pages) with reserved height; never on chat, calls, purchase/checkout, sign-in/onboarding/setup, staff, legal, 404 | `src/lib/ads.ts`, `src/components/AdSlot.tsx`, 15 pages | ads-e2e L1-L4, A1-A7, B1-B6, F1-F2, H1-H2 |
 | TAKATAK contract (serve, impression after 1 s at 50 % visible, click through `clickUrl`), ad text never HTML, `javascript:` refused, no cookies sent | `src/lib/ads.ts` | ads-e2e L5-L6, A2-A6, D8-D11 |
 | AdSense fallback: one script, non-personalized (`requestNonPersonalizedAds = 1`) without the Advertising consent, unfilled/blocked → house banner; `ads.txt` + `<meta name="google-adsense-account">` written at build only with `VITE_ADSENSE_CLIENT` | `src/lib/ads.ts`, `vite.config.ts` | ads-e2e D1-D7, I1-I2, P1-P6 (plain build: no Google request) |
