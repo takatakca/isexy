@@ -22,6 +22,18 @@ const BEN = "dddd0000-0000-4000-8000-00000000000b"; // member
 const MOD = "dddd0000-0000-4000-8000-00000000000d"; // moderator
 const ADM = "dddd0000-0000-4000-8000-00000000000e"; // admin
 const now = () => new Date().toISOString();
+// Script/HTML injection payloads written by members (reports, chat attempts,
+// tickets) or carried into the audit log. Each would set window.__xss if run.
+const XSS = {
+  report: `<img src=x onerror="window.__xss='report'">harassed me`,
+  violation: `<script>window.__xss='violation'</script>call me`,
+  audit: `<img src=x onerror="window.__xss='audit'">`,
+  ticketName: `<b onmouseover="window.__xss='name'">Eve</b>`,
+  ticketSubject: `<img src=x onerror="window.__xss='subject'">refund`,
+  ticketMessage: `<svg onload="window.__xss='message'"></svg>please help`,
+};
+const xssRan = (page) => page.evaluate(() => window.__xss ?? null);
+const injectedNodes = (page) => page.evaluate(() => document.querySelectorAll('img[src="x"], body script:not([src]), svg[onload], [onerror], [onmouseover]').length);
 
 function trustState() {
   const state = newState({
@@ -31,15 +43,19 @@ function trustState() {
     ],
     reports: [
       { id: "rep00000-0000-4000-8000-000000000001", reporter_id: ANA, reported_id: BEN, reason: "scam", description: "asked for gift cards", status: "pending", source: "chat", resolution_note: null, created_at: now() },
+      // Member-written text shown on staff pages: must stay text (D checks).
+      { id: "rep00000-0000-4000-8000-000000000002", reporter_id: BEN, reported_id: ANA, reason: "other", description: XSS.report, status: "pending", source: "profile", resolution_note: null, created_at: now() },
     ],
     user_warnings: [],
     content_violations: [
       { id: "cv1", profile_id: BEN, violation_type: "phone_number", detected_content: "514 555 0100", action_taken: "message_blocked", created_at: now() },
+      { id: "cv2", profile_id: ANA, violation_type: "other", detected_content: XSS.violation, action_taken: "message_blocked", created_at: now() },
     ],
     live_chat_sessions: [],
     live_chat_messages: [],
     staff_actions: [
       { id: "sa1", actor_user_id: MOD, action: "suspend", target_profile_id: BEN, target_id: null, details: { reason: "spam wave" }, created_at: now() },
+      { id: "sa2", actor_user_id: MOD, action: "edit_profile", target_profile_id: ANA, target_id: null, details: { reason: XSS.audit }, created_at: now() },
     ],
     forum_categories: [],
     knowledge_base: [],
@@ -50,6 +66,8 @@ function trustState() {
   completeProfile(state, MOD, { first_name: "Mo" });
   completeProfile(state, ADM, { first_name: "Xan" });
   state.support_tickets.push({ id: "tk000000-0000-4000-8000-000000000001", ticket_number: "IS-ABC123", user_id: null, name: "Guest", email: "guest@example.ca", subject: "Cannot sign in", category: "account", priority: "high", message: "help please", status: "open", response: null, admin_notes: null, assigned_to: null, created_at: now(), updated_at: now() });
+  state.support_tickets.push({ id: "tk000000-0000-4000-8000-000000000002", ticket_number: "IS-XSS001", user_id: null, name: XSS.ticketName, email: "x@example.ca", subject: XSS.ticketSubject, category: "other", priority: "low", message: XSS.ticketMessage, status: "open", response: null, admin_notes: null, assigned_to: null, attachments: ["javascript:window.__xss='attachment'"], created_at: new Date(Date.now() - 60_000).toISOString(), updated_at: now() });
+  state.cuban_verifications = [{ id: "cu000000-0000-4000-8000-000000000001", profile_id: ANA, whatsapp_number: "+5355550000", whatsapp_verified: true, carnet_id: "90010112345", carnet_verified: false, carnet_front_url: "javascript:window.__xss='carnet'", carnet_back_url: `${ANA}/carnet-back.jpg`, video_verified: false, video_url: null, audio_verified: false, audio_url: null, verification_status: "pending", rejection_reason: null, submitted_at: now(), verified_at: null, profile: { first_name: "Ana", city: "Havana", country: "Cuba" } }];
   state.photo_verifications.push({ id: "pv000000-0000-4000-8000-000000000001", profile_id: BEN, selfie_path: `${BEN}/selfie.jpg`, status: "pending", submitted_at: now(), reviewed_at: null, rejection_reason: null });
   return state;
 }
@@ -357,10 +375,16 @@ const directWrites = (state, tables) => state.writes
   await page.goto(`${base}/admin/moderation`);
   await page.getByTestId("staff-report").first().waitFor();
   check("B4 reports listed for a moderator", await page.getByText("asked for gift cards").isVisible());
-  await page.getByRole("button", { name: "Resolve" }).click();
+  await page.getByTestId("staff-report").filter({ hasText: "asked for gift cards" }).getByRole("button", { name: "Resolve" }).click();
   await page.waitForTimeout(500);
   check("B4 report resolved through staff_resolve_report", rpcCalls(state, "staff_resolve_report").at(-1)?.body?.p_status === "resolved");
   check("B4 moderation phone layout", await noHScroll(page));
+  check("D1 a report with HTML/script shows as text on the moderation page", await page.getByText("harassed me", { exact: false }).first().isVisible() && await page.getByText(XSS.report).first().isVisible());
+  check("D1 nothing injected ran or became an element (reports)", (await xssRan(page)) === null && (await injectedNodes(page)) === 0, `${await xssRan(page)} / ${await injectedNodes(page)}`);
+  await page.getByRole("tab", { name: "Attempts" }).click();
+  await page.getByText(XSS.violation).first().waitFor({ timeout: 5000 });
+  check("D2 a blocked chat attempt with a script shows as text", await page.getByText(XSS.violation).first().isVisible());
+  check("D2 nothing injected ran or became an element (attempts)", (await xssRan(page)) === null && (await injectedNodes(page)) === 0, `${await xssRan(page)} / ${await injectedNodes(page)}`);
   await page.screenshot({ path: `${out}/moderation-390.png` });
   await page.getByRole("tab", { name: "Photos" }).click();
   await page.getByTestId("photo-check").first().waitFor();
@@ -437,7 +461,27 @@ const directWrites = (state, tables) => state.writes
   await page.getByRole("button", { name: "Menu" }).click();
   await page.getByRole("button", { name: "Audit log" }).click();
   await page.getByTestId("audit-log").getByText("Suspended").waitFor();
-  check("C3 audit log lists staff actions with names", await page.getByTestId("audit-log").getByText("Mo").isVisible());
+  check("C3 audit log lists staff actions with names", await page.getByTestId("audit-log").getByText("Mo").first().isVisible());
+  check("D3 a reason with HTML shows as text in the audit log", await page.getByTestId("audit-log").getByText(XSS.audit, { exact: false }).first().isVisible());
+  check("D3 nothing injected ran or became an element (audit log)", (await xssRan(page)) === null && (await injectedNodes(page)) === 0, `${await xssRan(page)} / ${await injectedNodes(page)}`);
+
+  await page.goto(`${base}/support`);
+  await page.getByTestId("portal-ticket").filter({ hasText: "refund" }).first().click();
+  await page.getByText("please help").first().waitFor({ timeout: 5000 });
+  check("D4 a ticket's name, subject and message with HTML show as text", await page.getByText(XSS.ticketMessage).first().isVisible() && await page.getByText(XSS.ticketSubject).first().isVisible());
+  check("D4 nothing injected ran or became an element (tickets)", (await xssRan(page)) === null && (await injectedNodes(page)) === 0, `${await xssRan(page)} / ${await injectedNodes(page)}`);
+
+  await page.goto(`${base}/admin/verifications`);
+  await page.getByRole("tab", { name: "Cuban ID (on hold)" }).click();
+  await page.getByText("Havana", { exact: false }).first().click();
+  const popupsBefore = ctx.pages().length;
+  await page.getByRole("button", { name: "Front" }).click();
+  await page.getByText("This file link is not valid.").waitFor({ timeout: 5000 });
+  check("D5 a 'javascript:' ID link from a member is not opened", (await xssRan(page)) === null && ctx.pages().length === popupsBefore, `${await xssRan(page)} / ${ctx.pages().length - popupsBefore} popup(s)`);
+  await page.getByRole("button", { name: "Back" }).click();
+  check("D5 a stored file path opens through a signed URL of the private bucket",
+    await waitUntil(() => state.log.some((l) => l.includes(`sign/isexy-cuban-verifications/${ANA}/carnet-back.jpg`))), state.log.filter((l) => l.startsWith("storage")).join(" | "));
+  for (const extra of ctx.pages()) if (extra !== page) await extra.close();
 
   await page.goto(`${base}/admin/users`);
   await page.getByText("User & Access Management").waitFor();

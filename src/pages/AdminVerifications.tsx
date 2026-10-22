@@ -100,6 +100,31 @@ export default function AdminVerifications() {
     }
   };
 
+  /** Member-supplied evidence: a path in the private bucket (opened through a
+   *  short signed URL) or an older http(s) link. Nothing else is opened: a
+   *  "javascript:" value would run in the admin's session. */
+  const openEvidence = async (ref: string) => {
+    const value = ref.trim();
+    if (/^https?:\/\//i.test(value)) {
+      window.open(value, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.includes("..")) {
+      toast.error("This file link is not valid.");
+      return;
+    }
+    const win = window.open("", "_blank");
+    if (win) win.opener = null;
+    const { data, error } = await supabase.storage.from("isexy-cuban-verifications").createSignedUrl(value, 600);
+    if (error || !data?.signedUrl) {
+      win?.close();
+      toast.error("The file could not be opened.");
+      return;
+    }
+    if (win) win.location.href = data.signedUrl;
+    else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const handleApprove = async (verification: Verification) => {
     setProcessing(true);
     try {
@@ -359,30 +384,28 @@ export default function AdminVerifications() {
                   
                   <div className="grid grid-cols-2 gap-2">
                     {selectedVerification.carnet_front_url ? (
-                      <a
-                        href={selectedVerification.carnet_front_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => void openEvidence(selectedVerification.carnet_front_url!)}
                         className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-accent transition"
                       >
                         <Eye className="h-4 w-4" />
                         <span className="text-sm">Front</span>
-                      </a>
+                      </button>
                     ) : (
                       <div className="p-2 bg-background rounded border text-sm text-muted-foreground">
                         No front image
                       </div>
                     )}
                     {selectedVerification.carnet_back_url ? (
-                      <a
-                        href={selectedVerification.carnet_back_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => void openEvidence(selectedVerification.carnet_back_url!)}
                         className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-accent transition"
                       >
                         <Eye className="h-4 w-4" />
                         <span className="text-sm">Back</span>
-                      </a>
+                      </button>
                     ) : (
                       <div className="p-2 bg-background rounded border text-sm text-muted-foreground">
                         No back image
