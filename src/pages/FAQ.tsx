@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { goBack } from "@/lib/navigation";
 import { 
   ArrowLeft, ChevronDown, HelpCircle, Heart, CreditCard, Shield, 
   User, Settings, MessageCircle, Camera, Lock, Globe, Zap,
@@ -346,7 +347,7 @@ export default function FAQ() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button onClick={() => goBack(navigate, "/help-support")} className="p-2 -ml-2" aria-label="Back">
             <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="text-xl font-bold text-foreground">FAQ</h1>

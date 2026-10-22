@@ -392,28 +392,35 @@ export function AIChatWidget() {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      // One SSE line: `data: {"choices":[{"delta":{"content":"..."}}]}` (or [DONE]).
+      const readLine = (raw: string) => {
+        const line = raw.trim();
+        if (!line.startsWith("data:")) return;
+        const payload = line.slice(5).trim();
+        if (payload === "[DONE]") return;
+        try {
+          const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
+          if (typeof delta === "string" && delta) {
+            received += delta;
+            patchLast({ content: received });
+          }
+        } catch {
+          // A complete line that is not JSON (lines are only read up to a newline): skip it.
+        }
+      };
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         let nl: number;
         while ((nl = buffer.indexOf("\n")) !== -1) {
-          const line = buffer.slice(0, nl).trim();
+          readLine(buffer.slice(0, nl));
           buffer = buffer.slice(nl + 1);
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (payload === "[DONE]") continue;
-          try {
-            const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
-            if (typeof delta === "string" && delta) {
-              received += delta;
-              patchLast({ content: received });
-            }
-          } catch {
-            // A complete line that is not JSON (lines are only read up to a newline): skip it.
-          }
         }
       }
+      // The last line may arrive without a final newline.
+      buffer += decoder.decode();
+      if (buffer.trim()) readLine(buffer);
       if (!received) throw new Error(t.error);
       patchLast({ content: received, sources });
     } catch (e) {

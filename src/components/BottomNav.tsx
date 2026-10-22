@@ -16,11 +16,13 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border safe-area-inset-bottom z-50">
+    <nav aria-label="Main" className="fixed bottom-0 left-0 right-0 bg-background border-t border-border safe-area-inset-bottom z-50">
       <div className="flex items-center justify-around h-16 max-w-md mx-auto">
         {navItems.map(({ path, icon: Icon, label, badge }) => {
-          const isActive = location.pathname === path || 
-            (path === "/matches" && location.pathname.startsWith("/chat"));
+          const here = location.pathname;
+          const isActive = here === path || here.startsWith(`${path}/`) ||
+            (path === "/matches" && (here.startsWith("/chat/") || here.startsWith("/group-chat/"))) ||
+            (path === "/likes" && here === "/who-liked-you");
           return (
             <Link
               key={path}

@@ -59,6 +59,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Screen readers and the browser read the page in the chosen language (en, fr...).
+  useEffect(() => {
+    document.documentElement.lang = language.code === 'fr' ? 'fr-CA' : language.code === 'en' ? 'en-CA' : language.code;
+  }, [language.code]);
+
   const setLanguage = async (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('preferred_language', lang.code);
