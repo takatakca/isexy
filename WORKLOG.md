@@ -3,7 +3,7 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
-- 2026-10-22 | cursor | cursor/isexy-coolify-dns-3bc7 → PR | active | isexy.ca 403 was empty Apache on 209.42.24.127; Coolify now serves main with GitHub App auto-deploy and DNS/TLS cut over, mail kept on mail.isexy.ca | next: open PR, remove temporary server access
+- 2026-10-22 | cursor | cursor/isexy-coolify-dns-3bc7 → PR #3 | PR #3 | isexy.ca 403 was empty Apache on 209.42.24.127; Coolify serves main with GitHub App auto-deploy, DNS A 31.220.96.134, TLS issued, mail kept on mail.isexy.ca | next: merge PR #3; owner sets new Contabo, MochaHost, WHM and bolon cPanel passwords
 
 - 2026-10-16 | ChatGPT | main + Supabase V1 | done (partial release) | Atomic boost purchases migration 0012 tested in CI run 38951304397 SUCCESS, checksummed and applied to isexy schema, service-role-only permissions verified, Stripe webhook deployed v6 ACTIVE; Render 445fc829 LIVE | next: sandbox Stripe, donations/gifts idempotence, Cron secret, GitHub backend deployment, Coolify/isexy.ca
 
