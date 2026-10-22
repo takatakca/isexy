@@ -8,8 +8,9 @@ main's changes and every merge decision). Our migrations were renumbered
 **0013_app_completion** and **0014_security_and_performance** (they were 0004
 and 0005 on this branch; main's 0004-0012 are applied on V1). **The trust
 area is done on `wf/trust`** (local, not pushed, on top of this branch's
-head 30caf62: `0015_trust_and_moderation.sql` + 3 functions + client; see
-[Trust area](#trust-area-wftrust)); it goes out **after** this PR. **Nothing
+head 092107f: `0015_trust_and_moderation.sql` + 3 functions + client, tested
+and reviewed adversarially; see [Trust area](#trust-area-wftrust)); it goes
+out **after** this PR. **Nothing
 of this branch is deployed**: see [Production state and deploy plan](#production-state-and-deploy-plan).
 Details per area: the tables below, [docs/handoff/accounts.md](handoff/accounts.md),
 [docs/handoff/chat.md](handoff/chat.md), [docs/handoff/calls.md](handoff/calls.md),
@@ -217,8 +218,10 @@ first pass), every e2e below passes.
 ## Trust area (wf/trust)
 
 Branch `wf/trust` (worktree `.claude/worktrees/trust`), local and not
-pushed: PR #2's head 30caf62 merged in, then the trust work finished and
-tested. Details, defect list, decisions: [docs/handoff/trust.md](handoff/trust.md).
+pushed: PR #2's heads 30caf62 and 092107f merged in, the trust work finished,
+tested (2026-10-22) and reviewed as a malicious member and a malicious
+moderator. Details, defect list, decisions, adversarial review:
+[docs/handoff/trust.md](handoff/trust.md).
 
 | Fix | Verified by |
 |---|---|
@@ -229,6 +232,8 @@ tested. Details, defect list, decisions: [docs/handoff/trust.md](handoff/trust.m
 | Tickets: guests track by number + e-mail (`get_ticket_status`); ticket e-mails from `ISEXY_RESEND_FROM`; status e-mail function admin only | trust-smoke T3; trust-e2e A8, C2 |
 | Assistant: streamed answers (last line read without a newline); members reach a person inside the widget; guests are offered sign-in or a ticket | trust-e2e A9 |
 | 404 branded EN/FR with in-app links; EN/FR button shows EN/FR and has a name; Help search opens the Help Centre; back buttons stay in ISEXY; bottom-nav tab stays highlighted on nested pages | trust-e2e A5-A7 |
+| Adversarial pass (proven first: 33 T9 checks failed on the WIP 0015): moderators no longer write warnings, live chat sessions or their own plan/limits/badge directly; never act on themselves (reports about them, own verification, photo check, voice greeting); reports about staff for admins only; a suspended staff account loses every staff tool; reporters do not read reviewed reports; the blocker's photos, Phone Line profile and greeting are hidden from the blocked member, photos signed-in only; a member's live chat can only carry their own assistant chat | trust-smoke T9 (78 checks); security-smoke A |
+| Member-written HTML/script (reports, chat attempts, tickets, audit reasons) renders as text on the staff pages; Cuban ID evidence (on hold) opens through signed URLs, other schemes never opened | trust-e2e D1-D5 |
 
 **Deploy (after this PR's steps 1-3, in this order):**
 
@@ -236,7 +241,8 @@ tested. Details, defect list, decisions: [docs/handoff/trust.md](handoff/trust.m
    `0015_trust_and_moderation.sql`, end with "isexy guard: V1 objects
    unchanged" and "Dry run OK: 1 migration(s)"; then `--apply`, then a
    re-run says "up to date" (`schema_migrations`: 15 rows). Tested locally
-   on 0001-0014 (and on 0001-0012 → 0013-0015, and from scratch).
+   on 0001-0014 (and on 0001-0012 → 0013-0015, and from scratch), with every
+   SQL test file CI runs (trust-smoke: 203 checks).
 2. Functions (`verify_jwt = false` for all three, as in `supabase/config.toml`):
    `isexy-ai-chat` (handoff for members only, one open chat per member),
    `isexy-send-ticket-confirmation` and `isexy-send-ticket-status-update`
@@ -246,10 +252,16 @@ tested. Details, defect list, decisions: [docs/handoff/trust.md](handoff/trust.m
 3. Client: merge `wf/trust` (after PR #2 is merged). 0015 does not break
    PR #2's client meanwhile (its admin ticket updates still pass main's
    0009 rule; the policies 0015 tightens are not used by it except the
-   old Agent Dashboard's "system" lines, staff only).
+   old Agent Dashboard's "system" lines, staff only; its direct warning and
+   live chat session writes still work for admins, the only role they ever
+   worked for (moderators' were already refused); every page reading photos
+   is signed in).
 
 Still open in the area: account deletion stays a ticket (staff delete by
-hand); Cuban ID review untouched (on hold); staff pages English only.
+hand); Cuban ID review on hold (bug fix only: evidence links); staff pages
+English only; a ticket's owner can read its staff notes through the API
+(main's 0010 policy); shadow-ban flag/reason readable on profiles (security
+Left below). Full list: trust.md › Left.
 
 ## Left (ordered by member impact)
 
@@ -416,7 +428,7 @@ Left (not changed here; details in security.md › Looked at and left alone):
 | Staff ban button (`AdminDashboardFull` → `profiles.is_active`) changes nothing: no staff UPDATE policy on `profiles` | Done on wf/trust: `staff_set_account_active` (0015 E) |
 | `useContentModeration` inserts `user_warnings` as the member (staff-only policy): progressive bans never record | Done on wf/trust: `record_contact_sharing` + messages trigger (0015 C, D) |
 | Reporter can set `reports.status` on INSERT | Done on wf/trust: INSERT check pending/unreviewed/not self (0015 B4) |
-| Every member reads every column of every active profile (`blocked_contacts`, coarse location, plan, shadow ban) | Owner/next pass: a member-facing view or RPC with the public columns |
+| Every member reads every column of every active profile (`blocked_contacts`, coarse location, plan, shadow ban and, since wf/trust's staff tool writes it, the shadow-ban reason) | Owner/next pass: a member-facing view or RPC with the public columns |
 | Chat unlock and Plus-only settings (Incognito, Recently Active) enforced in the UI only | After owner decision #1: `messages` INSERT check / settings RPC |
 | A policy added or changed later makes 0014 C2 stop | Only if 0014 itself is edited: later migrations (0015) write policies in the `(select auth.uid())` form, and 0014 re-run after 0015 says "already applied" |
 

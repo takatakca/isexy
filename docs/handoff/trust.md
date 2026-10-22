@@ -5,13 +5,16 @@ pushed). History: started on b9f1815, then **PR #2's head 30caf62 was merged
 in** (main's production work 0001-0012, our 0013/0014 and the merge-review
 fixes) before finishing. Conflicts were only `WORKLOG.md` (both kept) and
 `ContactUs.tsx` (trust's success panel + main's "confirmation only when the
-function says so").
+function says so"). Then PR #2's head **092107f** (isexy.ca on Coolify: docs
+and WORKLOG only) was merged (WORKLOG conflict, both kept), the tests were
+run for real (the WIP commit c3a65d1 had written "pass" before running them)
+and an adversarial pass closed 9 more hole classes ([below](#adversarial-review-2026-10-22)).
 
 All SQL is in **`supabase/isexy-migrations/0015_trust_and_moderation.sql`**
 (runs after 0014; not applied anywhere). `docs/handoff/trust.sql` is the
 branch history only (marked FOLDED, do not apply). Tests:
-`scripts/isexy/test/trust-smoke.sql` (125 checks, in the CI smoke loop) and
-`e2e/trust-e2e.mjs` (69 checks).
+`scripts/isexy/test/trust-smoke.sql` (203 checks, T1-T9, in the CI smoke loop)
+and `e2e/trust-e2e.mjs` (79 checks, A-D).
 
 ## Defect list (found by reading every page/function in the area and the
 ## 0001-0004 schema on the local copy), most member-visible first
@@ -106,20 +109,67 @@ deleted.
 
 | Part | What | Why |
 |---|---|---|
-| A | `is_staff()`; `staff_actions` audit table (admins read, only the staff RPCs write, through `log_staff_action`); staff read every profile (suspended ones too) and every report | banned members vanished from staff lists; reports reached nobody |
+| A | `is_staff()` (admin or moderator, **not suspended**), `is_admin()`, `staff_profile_ids()` (staff only); `staff_actions` audit table (admins read, only the staff RPCs write, through `log_staff_action`); staff read every profile (suspended ones too) and every report (reports about a staff account: admins only) | banned members vanished from staff lists; reports reached nobody |
 | B | `reports.source/reviewed_by/reviewed_at/resolution_note`; profiles SELECT hides the profile of anyone who blocked you (`my_blocker_ids()`, once per statement) and always shows your own; `get_my_hidden_member_ids`, `block_member` (idempotent), `report_member` (reasons checked, no self-report, one pending report per pair, 20 a day); direct report inserts must be pending, unreviewed, not about yourself | defects 3-5, security.md "reporter can set status" |
 | C | `user_warnings.lifted_at/lifted_by/lift_reason`; `active_restriction`, `get_my_moderation_status`, `record_contact_sharing` (24 h, 7 days, permanent; one strike at a time, advisory lock; strikes lifted as "mistake…" do not count) | defects 1-2 |
 | D | `validate_message_allowed` (0001 body) also refuses restricted senders and suspended accounts; 0014 B3 grants restated | restriction and suspension were browser-only |
-| E | staff RPCs (admin or moderator; a staff account only by an admin; never on yourself): `staff_issue_warning`, `staff_lift_restrictions`, `staff_set_shadow_ban`, `staff_set_account_active` (reason required to suspend), `staff_resolve_report`, `staff_update_profile` (name/bio, reason required); admin only: `staff_list_roles`, `staff_grant_role` (no role removal from the app: no deletion) | defect 14; 0014 blocks direct writes of the protected profile columns and staff have no UPDATE policy on profiles/reports |
+| E | staff RPCs (admin or moderator; a staff account only by an admin; never on yourself): `staff_issue_warning`, `staff_lift_restrictions`, `staff_set_shadow_ban`, `staff_set_account_active` (reason required to suspend), `staff_resolve_report` (same rules on the reported member), `staff_update_profile` (name/bio, reason required); admin only: `staff_list_roles`, `staff_grant_role` (no role removal from the app: no deletion) | defect 14; 0014 blocks direct writes of the protected profile columns and staff have no UPDATE policy on profiles/reports |
 | F | `get_ticket_status(number, email)` (guests and members); `staff_update_ticket`, `staff_bulk_update_tickets` **admin only** (main's 0009 trigger lets only admins/service role change staff fields: a moderator RPC would fail inside it); assignees must be admins. Main's 0010 SELECT/UPDATE policies and 0009/0014 D2 triggers untouched (the branch notes' policy rewrites were dropped) | defects 6-7 |
-| G | staff read the live chat queue and messages; `staff_accept_live_chat`, `staff_close_live_chat`, `staff_get_live_chat_transcript`, `end_my_live_chat`; 0014 D5's message policy tightened **in place** (same name): sender is always the caller, members post "user" only in their own waiting/active chat, agents "agent" only in an active chat assigned to them, nobody posts "system" lines directly | defects 8, 11, 17 |
+| G | staff read the live chat queue and messages; `staff_accept_live_chat`, `staff_close_live_chat`, `staff_get_live_chat_transcript`, `end_my_live_chat`; 0014 D5's policies tightened **in place** (same names): sender is always the caller, members post "user" only in their own waiting/active chat, agents "agent" only in an active chat assigned to them, nobody posts "system" lines directly; direct session writes admins only; a member opens a chat only as "waiting", with no ticket and at most their own assistant chat | defects 8, 11, 17; T9 |
 | H | `staff_dashboard_stats()`: staff home numbers in one call (members, queues; open tickets and revenue for admins) | the page loaded every profile row and summed tables admins could not read |
 | I | admins read `credit_transactions`, `boost_transactions`, `gift_transactions`, `subscriptions`, `chat_subscriptions` (SELECT only) | payment pages counted only the admin's own purchases |
+| J | adversarial review: direct warning writes admins only (J1); a reporter reads their report only while pending (J2); photos (signed-in only), Phone Line profiles and greetings hidden from the members their owner blocked (J3); 0013's `staff_set_profile_verified`, `review_photo_verification`, `review_voice_greeting` follow E's rules and write the audit log (J4); 0014's protected profile columns: direct writes by active admins only (J5) | [below](#adversarial-review-2026-10-22) |
 
-Two `security-smoke.sql` expectations changed on purpose (0015 behaviour):
+Three `security-smoke.sql` expectations changed on purpose (0015 behaviour):
 a suspended member now reads their own row (the filtered UPDATE then reaches
 the trigger and is refused, instead of touching 0 rows); a member can no
-longer post a "system" line in their own support chat.
+longer post a "system" line in their own support chat; a moderator can no
+longer write protected columns of their own profile (J5). One `trust-smoke`
+T5 expectation changed: a moderator sees the 2 reports about members, not the
+20 about themselves (admins see all 22, T9e).
+
+## Adversarial review (2026-10-22)
+
+Run as a malicious member and a malicious moderator against the final schema
+(0001-0015) on a throwaway Postgres: `trust-smoke.sql` T9 (78 checks). Before
+the fixes **33 of the first 77 failed** on the WIP 0015 (proof; the 78th, a
+suspended moderator still posting in their open chat, was found while fixing);
+after, all pass. Then the client: `trust-e2e.mjs` D1-D5 (10 checks).
+
+| Hole (proven) | Fix | Check |
+|---|---|---|
+| A moderator wrote warnings directly: a permanent restriction on an admin (no rule, no audit), lifted their own restriction, rewrote evidence/issuer of others' warnings (0001 policies) | J1: direct warning writes admins only; moderators use the RPCs | T9d |
+| A moderator read the reports about themselves (who reported them) and about other staff, and dismissed them through `staff_resolve_report` | A3 policy: reports about staff for admins only; `staff_resolve_report` runs `assert_staff_may_act_on(reported)` (nobody on themselves, staff targets admin only) | T9d, T9e, T5 |
+| A moderator verified themselves, unverified an admin, approved their own photo check and their own voice greeting (0013 RPCs checked the role only) | J4: same rules as E + audit log | T9d |
+| A moderator gave themselves Platinum / unlimited likes / the badge: 0014's trigger exempted staff, and staff can only update their own row | J5: exemption for active admins only | T9d, security-smoke A |
+| An assigned moderator moved a live chat to another member (then wrote "agent" lines to them), reopened an ended chat, swapped the transcript staff read | G: direct session writes admins only | T9d |
+| A member attached another member's assistant chat to their live chat (staff would read it as theirs), or opened a chat already "active" | G: own assistant chat only, "waiting", no ticket | T9b |
+| A suspended moderator kept every staff tool (roles are never deleted from the app, so an admin had no way to stop one) | `is_staff()`/`is_admin()` require an active account; all staff RPCs, staff policies and the agent branch of the live chat message policy use them | T9e |
+| A reporter read the outcome, the reviewer's id and the staff note of reviewed reports (others' moderation state) | J2: own reports readable while pending only (no page reads them) | T9b |
+| A blocked member read the blocker's photos, Phone Line profile and greeting by profile id; anyone signed out listed every member's photos | J3 | T9a |
+
+Checked and already closed (regression cases in T9): a blocked member cannot
+delete or rewrite the block or file one in someone else's name; members get
+`42501` from every staff RPC (19 listed) and `not_authorized` from
+`review_voice_greeting`, no staff directory, no warnings/violations/audit
+rows, no one else's assistant chat (members or guests); moderators cannot
+grant roles (no self-promotion), list roles, bulk-update tickets, insert a
+role row; ticket tracking takes no wildcards.
+
+Client (React escapes text; `trust-e2e.mjs` D1-D4 seed `<img onerror>`,
+`<script>`, `<svg onload>` and `onmouseover` payloads in a report, a blocked
+chat attempt, the audit log and a ticket's name/subject/message: they render
+as text on `/admin/moderation`, the audit log and `/support`, nothing runs,
+no element is created). Ticket e-mails escape every field (both functions).
+The assistant (`isexy-ai-chat`) checks conversation ownership (member id, or
+the guest session id for guest rows), reads published KB articles only and
+no member data; members/anon cannot read `chatbot_*` rows of others (T9b).
+`AdminVerifications` (Cuba on hold, bug fix): the stored ID images are paths
+in a private bucket, so the old links opened an app 404; they now open a
+10-minute signed URL, and a member-supplied value with any other scheme
+(`javascript:`) is never opened (D5; in current Chromium the old
+`rel="noopener"` link ran such a value in a null-origin blank window, so this
+is defence in depth rather than a proven exploit).
 
 ## Progress
 
@@ -145,8 +195,16 @@ longer post a "system" line in their own support chat.
       dead links, saved replies, audit log, no member billing page;
       Settings shows "Staff tools" to staff
 - [x] #17 live chat agent side (RPCs, names, transcript, phone layout)
-- [x] 0015 + tests (from scratch, production simulations), typecheck, build,
-      lint, e2e, deno check
+- [x] 0015 + tests, run on 2026-10-22 after merging 092107f: migrations from
+      scratch (dry run, apply, main's 6 assertions, re-run "up to date", 15
+      rows), production simulations 0001-0012 → 0013-0015 and 0001-0014 →
+      0015, 0014 and 0015 re-run on themselves (C2 "already applied"); smoke
+      0013 34, calls 101, rewards 95, security 135, live-functions-compat 54,
+      trust 203, all PASS; typecheck clean; build OK; lint 98 errors, none new
+      (116 on PR #2's head); every e2e (trust 79, rewards 95, calls 62 (one
+      timing flake on the first run, passes on re-run), …); deno check of the
+      27 functions + main's 14 Deno tests
+- [x] adversarial pass (above): T9 78 checks, trust-e2e D1-D5
 
 ## Owner decisions taken here (easy to revert)
 
@@ -155,7 +213,12 @@ longer post a "system" line in their own support chat.
 - Tickets stay admin only (main's 0009). If moderators should answer
   tickets, main's 0009 trigger function must allow them first (owner call).
 - Role removal is not in the app (no row deletion): remove a role in the
-  database.
+  database. In the app, an admin stops a staff member by suspending the
+  account: a suspended account keeps its role row but loses every staff tool.
+- Reports about a staff account are reviewed by admins only (moderators do
+  not see them); a reporter does not see the outcome of a reviewed report.
+- Direct writes of warnings, live chat sessions and protected profile columns
+  are admin only (moderators go through the audited RPCs).
 
 ## Left
 
@@ -163,7 +226,13 @@ longer post a "system" line in their own support chat.
 |---|---|
 | Ticket e-mails now send from `ISEXY_RESEND_FROM` (default `notifications@isexy.ca`) | Owner: verify the domain in Resend before deploying the two ticket functions (with Resend's sandbox sender they only reached the account owner) |
 | Account deletion is still a ticket; staff delete by hand | Owner process |
-| Cuban ID review (on hold): admin only, direct writes under the existing admin policy | Untouched (Cuba on hold) |
+| Cuban ID review (on hold): admin only, direct writes under the existing admin policy | Untouched except the evidence links (bug fix, D5) |
 | Knowledge base / categories admin pages delete rows (admin content tools) | Owner: keep, or switch to unpublish |
 | Staff UI is English only | i18n pass (HANDOFF Left #26) |
 | A blocked member can work out who blocked them (`get_my_hidden_member_ids` minus their own blocks; the same signal as 0014's `blocked_with_me` and as probing a profile id) | Accepted for now: pages filter people in the browser. A server-side filter in each list RPC would remove the need for the id list |
+| A ticket's owner can read its `admin_notes` (staff notes) through the API and the realtime payload (main's 0010 SELECT policy; no member page shows them) | Move staff notes to a staff-only table (e.g. `support_ticket_notes`, admin RLS) written by `staff_update_ticket` and read by the Support Portal; or column grants + a staff ticket RPC |
+| Anyone can file a ticket under someone else's e-mail; it then shows in that member's ticket list (main's 0010 policy matches the sign-in e-mail) | Owner call: list only `user_id` tickets for members, or mark tickets whose e-mail was not verified |
+| `shadow_banned` and the staff's `shadow_banned_reason` are readable by every member on any active profile (security.md: every member reads every column of `profiles`) | Member-facing profile view/RPC with the public columns (security.md › Left) |
+| A suspended **admin** keeps the reads gated by `has_role(admin)` policies (payment ledgers, audit log, tickets); the 0015 staff RPCs refuse (`is_staff()`/`is_admin()`) | Only an admin can suspend an admin; switch those policies to `is_admin()` if the owner wants suspension to cut reads too |
+| Members can add "assistant" lines to their own assistant chat (direct insert); staff read them in the handoff transcript | Low: only misleads staff about that member's own chat; a role check on `chatbot_messages` INSERT would close it |
+| Cuban ID video/audio are stored as bucket paths, so they do not play in `AdminVerifications` (Cuba on hold) | Sign the two paths when a case is opened, as the ID images now are |
