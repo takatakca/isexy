@@ -1,5 +1,6 @@
 -- Smoke tests for 0015_trust_and_moderation.sql (moderation, reports,
--- blocks, support tickets, live chat, staff RPCs and audit log).
+-- blocks, support tickets, live chat, staff RPCs and audit log; T9: a
+-- malicious member and a malicious moderator).
 -- Run on a THROWAWAY local Postgres only (never on V1), after:
 --   psql "$ISEXY_DB_URL" -f scripts/isexy/test/v1-mock.sql
 --   scripts/isexy/migrate.sh --apply
@@ -430,7 +431,7 @@ EXCEPTION WHEN insufficient_privilege THEN
   INSERT INTO results VALUES ('T5 members cannot use the staff report RPC', true, SQLERRM);
 END $$;
 SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator
-INSERT INTO results SELECT 'T5 staff see every report', count(*) = 22, count(*)::text FROM isexy.reports;
+INSERT INTO results SELECT 'T5 a moderator sees every report about members (not the 20 about themselves: admins only)', count(*) = 2, count(*)::text FROM isexy.reports;
 INSERT INTO results SELECT 'T5 staff join reporter and reported names', count(*) = 1 AND max(rp.first_name) = 'Ben' AND max(rd.first_name) = 'Cleo', NULL
   FROM isexy.reports r JOIN isexy.profiles rp ON rp.id = r.reporter_id JOIN isexy.profiles rd ON rd.id = r.reported_id
  WHERE r.id = 'abababab-0000-0000-0000-000000000001';
@@ -617,7 +618,7 @@ INSERT INTO results SELECT 'T6 every new function pins search_path and is SECURI
   bool_and(p.prosecdef AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')), string_agg(p.proname, ',') FILTER (WHERE NOT p.prosecdef)
   FROM pg_proc p
  WHERE p.pronamespace = 'isexy'::regnamespace
-   AND p.proname IN ('is_staff', 'log_staff_action', 'my_blocker_ids', 'get_my_hidden_member_ids', 'block_member', 'report_member',
+   AND p.proname IN ('is_staff', 'is_admin', 'staff_profile_ids', 'log_staff_action', 'my_blocker_ids', 'get_my_hidden_member_ids', 'block_member', 'report_member',
                      'active_restriction', 'get_my_moderation_status', 'record_contact_sharing', 'validate_message_allowed',
                      'assert_staff_may_act_on', 'staff_issue_warning', 'staff_lift_restrictions', 'staff_set_shadow_ban',
                      'staff_set_account_active', 'staff_resolve_report', 'staff_update_profile', 'staff_list_roles', 'staff_grant_role',
@@ -627,7 +628,7 @@ INSERT INTO results SELECT 'T6 anon can run none of them except get_ticket_statu
   bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE')), string_agg(p.proname, ',') FILTER (WHERE has_function_privilege('anon', p.oid, 'EXECUTE'))
   FROM pg_proc p
  WHERE p.pronamespace = 'isexy'::regnamespace
-   AND p.proname IN ('is_staff', 'log_staff_action', 'my_blocker_ids', 'get_my_hidden_member_ids', 'block_member', 'report_member',
+   AND p.proname IN ('is_staff', 'is_admin', 'staff_profile_ids', 'log_staff_action', 'my_blocker_ids', 'get_my_hidden_member_ids', 'block_member', 'report_member',
                      'active_restriction', 'get_my_moderation_status', 'record_contact_sharing', 'validate_message_allowed',
                      'assert_staff_may_act_on', 'staff_issue_warning', 'staff_lift_restrictions', 'staff_set_shadow_ban',
                      'staff_set_account_active', 'staff_resolve_report', 'staff_update_profile', 'staff_list_roles', 'staff_grant_role',
@@ -680,6 +681,225 @@ DO $$ BEGIN
 EXCEPTION WHEN insufficient_privilege THEN
   INSERT INTO results VALUES ('T8 admins still cannot write the ledger', true, SQLERRM);
 END $$;
+RESET ROLE;
+
+-- T9 adversarial pass: a malicious member and a malicious moderator ------------------
+-- (Cleo is a moderator since T6. Gil blocked Ana in T2.)
+CREATE OR REPLACE FUNCTION pg_temp.refused(p_name text, p_sql text) RETURNS void LANGUAGE plpgsql AS $f$
+BEGIN
+  EXECUTE p_sql;
+  INSERT INTO results VALUES (p_name, false, 'not refused');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES (p_name, true, SQLERRM);
+WHEN OTHERS THEN
+  INSERT INTO results VALUES (p_name, false, SQLSTATE || ' ' || SQLERRM);
+END $f$;
+-- Rows a statement touched (RLS filters silently: 0 = nothing happened).
+CREATE OR REPLACE FUNCTION pg_temp.touched(p_sql text) RETURNS int LANGUAGE plpgsql AS $f$
+DECLARE n int;
+BEGIN
+  EXECUTE p_sql;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+EXCEPTION WHEN insufficient_privilege THEN
+  RETURN 0;
+END $f$;
+
+INSERT INTO isexy.reports (id, reporter_id, reported_id, reason, description, status) VALUES
+ ('abababab-0000-0000-0000-000000000009', 'dddddddd-0000-0000-0000-00000000000b', 'dddddddd-0000-0000-0000-00000000000d', 'harassment', 'the moderator threatened me', 'pending'),
+ ('abababab-0000-0000-0000-00000000000a', 'dddddddd-0000-0000-0000-00000000000b', 'dddddddd-0000-0000-0000-00000000000e', 'harassment', 'the admin insulted me', 'pending'),
+ ('abababab-0000-0000-0000-00000000000b', 'dddddddd-0000-0000-0000-00000000000b', 'dddddddd-0000-0000-0000-00000000000f', 'spam', 'sends links', 'pending');
+INSERT INTO isexy.photo_verifications (id, profile_id, selfie_path)
+VALUES ('9a9a9a9a-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000d', 'dddddddd-0000-0000-0000-00000000000d/selfie.jpg');
+INSERT INTO isexy.phone_line_profiles (id, profile_id, display_name, age, status, is_public) VALUES
+ ('9b9b9b9b-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000d', 'Mod', 41, 'active', true),
+ ('9b9b9b9b-0000-0000-0000-000000000002', 'dddddddd-0000-0000-0000-00000000000f', 'Gil', 33, 'active', true);
+INSERT INTO isexy.voice_greetings (id, phone_line_profile_id, profile_id, audio_url, duration_seconds, moderation_status) VALUES
+ ('9c9c9c9c-0000-0000-0000-000000000001', '9b9b9b9b-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000d', 'dddddddd-0000-0000-0000-00000000000d/g.wav', 10, 'pending'),
+ ('9c9c9c9c-0000-0000-0000-000000000002', '9b9b9b9b-0000-0000-0000-000000000002', 'dddddddd-0000-0000-0000-00000000000f', 'dddddddd-0000-0000-0000-00000000000f/g.wav', 10, 'approved');
+INSERT INTO isexy.profile_photos (profile_id, photo_url, position) VALUES
+ ('dddddddd-0000-0000-0000-00000000000f', 'https://example.ca/gil.jpg', 0),
+ ('dddddddd-0000-0000-0000-00000000000b', 'https://example.ca/ben.jpg', 0);
+INSERT INTO isexy.chatbot_conversations (id, user_id, session_id, status) VALUES
+ ('ffffffff-0000-0000-0000-000000000002', 'dddddddd-0000-0000-0000-00000000000b', 'member_ben', 'active'),
+ ('ffffffff-0000-0000-0000-000000000003', NULL, 'guest_abcdefgh', 'active');
+INSERT INTO isexy.chatbot_messages (conversation_id, role, content) VALUES
+ ('ffffffff-0000-0000-0000-000000000002', 'user', 'my card ending 4242 was charged twice'),
+ ('ffffffff-0000-0000-0000-000000000003', 'user', 'a guest question');
+INSERT INTO isexy.live_chat_sessions (id, user_id, status)
+VALUES ('ffffffff-0000-0000-0000-0000000000a2', 'dddddddd-0000-0000-0000-00000000000a', 'waiting');
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- admin restricts the moderator for 7 days
+SELECT isexy.staff_issue_warning('dddddddd-0000-0000-0000-00000000000d', 'harassment', '7d', 'abusive replies to members');
+RESET ROLE;
+
+-- T9a member: blocks ------------------------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');  -- Ana, blocked by Gil
+INSERT INTO results SELECT 'T9a a blocked member cannot delete the block (unblock themselves)',
+  pg_temp.touched($q$DELETE FROM isexy.blocks WHERE blocker_id = 'dddddddd-0000-0000-0000-00000000000f' AND blocked_id = 'dddddddd-0000-0000-0000-00000000000a'$q$) = 0, NULL;
+INSERT INTO results SELECT 'T9a a blocked member cannot rewrite the block',
+  pg_temp.touched($q$UPDATE isexy.blocks SET blocked_id = 'dddddddd-0000-0000-0000-00000000000b' WHERE blocker_id = 'dddddddd-0000-0000-0000-00000000000f'$q$) = 0, NULL;
+SELECT pg_temp.refused('T9a a member cannot file a block in someone else''s name',
+  $q$INSERT INTO isexy.blocks (blocker_id, blocked_id) VALUES ('dddddddd-0000-0000-0000-00000000000f', 'dddddddd-0000-0000-0000-00000000000b')$q$);
+INSERT INTO results SELECT 'T9a a member reads only the blocks they made', count(*) = 1 AND bool_and(blocker_id = 'dddddddd-0000-0000-0000-00000000000a'), count(*)::text
+  FROM isexy.blocks;
+INSERT INTO results SELECT 'T9a a blocked member cannot read the blocker''s photos', count(*) = 0, count(*)::text
+  FROM isexy.profile_photos WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000f';
+INSERT INTO results SELECT 'T9a ... nor the blocker''s Phone Line profile and greeting',
+  (SELECT count(*) FROM isexy.phone_line_profiles WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000f') = 0
+  AND (SELECT count(*) FROM isexy.voice_greetings WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000f') = 0, NULL;
+INSERT INTO results SELECT 'T9a other members'' photos stay visible', count(*) = 1, count(*)::text
+  FROM isexy.profile_photos WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000b';
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000f');  -- Gil, the blocker
+INSERT INTO results SELECT 'T9a the blocker keeps their own photos and Phone Line', 
+  (SELECT count(*) FROM isexy.profile_photos WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000f') = 1
+  AND (SELECT count(*) FROM isexy.phone_line_profiles WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000f') = 1, NULL;
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+INSERT INTO results SELECT 'T9a anon lists no member photos', count(*) = 0, count(*)::text FROM isexy.profile_photos;
+RESET ROLE;
+
+-- T9b member: other members' moderation state, assistant chats ------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+INSERT INTO results SELECT 'T9b a reporter does not read reviewed reports (outcome, reviewer, staff note)',
+  count(*) = 0, string_agg(DISTINCT status, ',')
+  FROM isexy.reports WHERE coalesce(status, 'pending') <> 'pending';
+INSERT INTO results SELECT 'T9b a reporter still reads their pending report', count(*) = 1, count(*)::text
+  FROM isexy.reports WHERE coalesce(status, 'pending') = 'pending';
+INSERT INTO results SELECT 'T9b a member reads no warnings, violations or staff actions',
+  (SELECT count(*) FROM isexy.user_warnings) + (SELECT count(*) FROM isexy.content_violations) + (SELECT count(*) FROM isexy.staff_actions) = 0, NULL;
+INSERT INTO results SELECT 'T9b a member reads no one else''s assistant chat (member or guest)',
+  (SELECT count(*) FROM isexy.chatbot_messages WHERE conversation_id IN ('ffffffff-0000-0000-0000-000000000002', 'ffffffff-0000-0000-0000-000000000003')) = 0
+  AND (SELECT count(*) FROM isexy.chatbot_conversations WHERE id IN ('ffffffff-0000-0000-0000-000000000002', 'ffffffff-0000-0000-0000-000000000003')) = 0, NULL;
+SELECT pg_temp.refused('T9b a member cannot attach someone else''s assistant chat to a live chat (staff would read it)',
+  $q$INSERT INTO isexy.live_chat_sessions (user_id, status, chatbot_conversation_id) VALUES ('dddddddd-0000-0000-0000-00000000000a', 'waiting', 'ffffffff-0000-0000-0000-000000000002')$q$);
+SELECT pg_temp.refused('T9b a member cannot open a live chat that skips the queue',
+  $q$INSERT INTO isexy.live_chat_sessions (user_id, status) VALUES ('dddddddd-0000-0000-0000-00000000000a', 'active')$q$);
+INSERT INTO isexy.live_chat_sessions (user_id, status, chatbot_conversation_id)
+VALUES ('dddddddd-0000-0000-0000-00000000000a', 'waiting', 'ffffffff-0000-0000-0000-000000000001');
+INSERT INTO results SELECT 'T9b a member still opens a waiting chat with their own assistant chat', count(*) = 1, count(*)::text
+  FROM isexy.live_chat_sessions WHERE chatbot_conversation_id = 'ffffffff-0000-0000-0000-000000000001' AND status = 'waiting';
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+INSERT INTO results SELECT 'T9b anon reads no guest assistant chats', 
+  (SELECT count(*) FROM isexy.chatbot_conversations) + (SELECT count(*) FROM isexy.chatbot_messages) = 0, NULL;
+INSERT INTO results SELECT 'T9b ticket tracking takes no wildcards', count(*) = 0, count(*)::text FROM isexy.get_ticket_status('%', '%@%');
+RESET ROLE;
+
+-- T9c member: every staff RPC refuses ----------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');  -- Ben, member
+SELECT pg_temp.refused('T9c member refused: ' || f, q) FROM (VALUES
+  ('staff_issue_warning', $q$SELECT isexy.staff_issue_warning('dddddddd-0000-0000-0000-00000000000a', 'spam', 'none', NULL)$q$),
+  ('staff_lift_restrictions', $q$SELECT isexy.staff_lift_restrictions('dddddddd-0000-0000-0000-00000000000a', NULL)$q$),
+  ('staff_set_shadow_ban', $q$SELECT isexy.staff_set_shadow_ban('dddddddd-0000-0000-0000-00000000000a', true, NULL)$q$),
+  ('staff_set_account_active', $q$SELECT isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000a', false, 'x')$q$),
+  ('staff_resolve_report', $q$SELECT isexy.staff_resolve_report('abababab-0000-0000-0000-000000000009', 'dismissed', NULL)$q$),
+  ('staff_update_profile', $q$SELECT isexy.staff_update_profile('dddddddd-0000-0000-0000-00000000000a', 'Hacked', NULL, 'x')$q$),
+  ('staff_list_roles', $q$SELECT * FROM isexy.staff_list_roles(ARRAY['dddddddd-0000-0000-0000-00000000000e']::uuid[])$q$),
+  ('staff_grant_role', $q$SELECT isexy.staff_grant_role('dddddddd-0000-0000-0000-00000000000b', 'admin')$q$),
+  ('staff_update_ticket', $q$SELECT isexy.staff_update_ticket(gen_random_uuid(), 'closed', NULL, NULL, NULL, false)$q$),
+  ('staff_bulk_update_tickets', $q$SELECT isexy.staff_bulk_update_tickets(ARRAY[]::uuid[], 'closed', NULL, false)$q$),
+  ('staff_accept_live_chat', $q$SELECT isexy.staff_accept_live_chat('ffffffff-0000-0000-0000-0000000000a2')$q$),
+  ('staff_close_live_chat', $q$SELECT isexy.staff_close_live_chat('ffffffff-0000-0000-0000-0000000000a2')$q$),
+  ('staff_get_live_chat_transcript', $q$SELECT * FROM isexy.staff_get_live_chat_transcript('ffffffff-0000-0000-0000-0000000000a2')$q$),
+  ('staff_dashboard_stats', $q$SELECT isexy.staff_dashboard_stats()$q$),
+  ('staff_set_profile_verified', $q$SELECT isexy.staff_set_profile_verified('dddddddd-0000-0000-0000-00000000000b', true)$q$),
+  ('review_photo_verification', $q$SELECT isexy.review_photo_verification('9a9a9a9a-0000-0000-0000-000000000001', true, NULL)$q$),
+  ('get_voice_greetings_for_review', $q$SELECT * FROM isexy.get_voice_greetings_for_review(10)$q$),
+  ('direct role insert', $q$INSERT INTO isexy.user_roles (user_id, role) VALUES ('dddddddd-0000-0000-0000-00000000000b', 'admin')$q$),
+  ('direct warning insert', $q$INSERT INTO isexy.user_warnings (profile_id, warning_type, warning_level) VALUES ('dddddddd-0000-0000-0000-00000000000a', 'spam', 1)$q$)
+) v(f, q);
+INSERT INTO results SELECT 'T9c member refused: review_voice_greeting', r ->> 'error' = 'not_authorized', r::text
+  FROM (SELECT isexy.review_voice_greeting('9c9c9c9c-0000-0000-0000-000000000001', true, NULL) AS r) s;
+INSERT INTO results SELECT 'T9c member gets no staff directory', count(*) = 0, count(*)::text FROM isexy.get_admin_users();
+RESET ROLE;
+
+-- T9d moderator: admin-only actions, writes around the RPCs -------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- Mod (restricted for 7 days by the admin)
+SELECT pg_temp.refused('T9d moderator refused: ' || f, q) FROM (VALUES
+  ('staff_grant_role (promote themselves to admin)', $q$SELECT isexy.staff_grant_role('dddddddd-0000-0000-0000-00000000000d', 'admin')$q$),
+  ('staff_list_roles', $q$SELECT * FROM isexy.staff_list_roles(ARRAY['dddddddd-0000-0000-0000-00000000000e']::uuid[])$q$),
+  ('staff_bulk_update_tickets', $q$SELECT isexy.staff_bulk_update_tickets(ARRAY[]::uuid[], 'closed', NULL, false)$q$),
+  ('direct role insert', $q$INSERT INTO isexy.user_roles (user_id, role) VALUES ('dddddddd-0000-0000-0000-00000000000d', 'admin')$q$),
+  ('a direct warning (permanent ban on an admin, no audit)', $q$INSERT INTO isexy.user_warnings (profile_id, warning_type, warning_level, is_permanent_ban) VALUES ('dddddddd-0000-0000-0000-00000000000e', 'other', 3, true)$q$),
+  ('a direct warning on a member (no audit)', $q$INSERT INTO isexy.user_warnings (profile_id, warning_type, warning_level, ban_until) VALUES ('dddddddd-0000-0000-0000-00000000000b', 'spam', 1, now() + interval '1 day')$q$),
+  ('lifting their own restriction through the RPC', $q$SELECT isexy.staff_lift_restrictions('dddddddd-0000-0000-0000-00000000000d', 'mistake')$q$),
+  ('verifying themselves', $q$SELECT isexy.staff_set_profile_verified('dddddddd-0000-0000-0000-00000000000d', true)$q$),
+  ('unverifying an admin', $q$SELECT isexy.staff_set_profile_verified('dddddddd-0000-0000-0000-00000000000e', false)$q$),
+  ('approving their own photo check', $q$SELECT isexy.review_photo_verification('9a9a9a9a-0000-0000-0000-000000000001', true, NULL)$q$),
+  ('dismissing a report about themselves', $q$SELECT isexy.staff_resolve_report('abababab-0000-0000-0000-000000000009', 'dismissed', 'nothing happened')$q$),
+  ('dismissing a report about an admin', $q$SELECT isexy.staff_resolve_report('abababab-0000-0000-0000-00000000000a', 'dismissed', NULL)$q$),
+  ('giving themselves Platinum', $q$UPDATE isexy.profiles SET is_premium = true, subscription_tier = 'platinum' WHERE user_id = 'dddddddd-0000-0000-0000-00000000000d'$q$),
+  ('giving themselves unlimited likes', $q$UPDATE isexy.profiles SET likes_remaining = 999999 WHERE user_id = 'dddddddd-0000-0000-0000-00000000000d'$q$)
+) v(f, q);
+INSERT INTO results SELECT 'T9d moderator refused: approving their own voice greeting', r ->> 'error' = 'not_authorized', r::text
+  FROM (SELECT isexy.review_voice_greeting('9c9c9c9c-0000-0000-0000-000000000001', true, NULL) AS r) s;
+INSERT INTO results SELECT 'T9d a moderator cannot lift their own restriction directly',
+  pg_temp.touched($q$UPDATE isexy.user_warnings SET lifted_at = now() WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000d'$q$) = 0
+  AND (isexy.get_my_moderation_status() ->> 'restricted')::boolean, isexy.get_my_moderation_status()::text;
+INSERT INTO results SELECT 'T9d a moderator cannot rewrite a warning (evidence, issuer)',
+  pg_temp.touched($q$UPDATE isexy.user_warnings SET evidence = 'forged', issued_by = NULL WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000b'$q$) = 0, NULL;
+INSERT INTO results SELECT 'T9d a moderator does not read reports about themselves (no reporter to retaliate against)', count(*) = 0, count(*)::text
+  FROM isexy.reports WHERE reported_id = 'dddddddd-0000-0000-0000-00000000000d';
+INSERT INTO results SELECT 'T9d ... nor reports about other staff', count(*) = 0, count(*)::text
+  FROM isexy.reports WHERE reported_id IN ('dddddddd-0000-0000-0000-00000000000e', 'dddddddd-0000-0000-0000-00000000000c');
+INSERT INTO results SELECT 'T9d a moderator still reads reports about members', count(*) = 1, count(*)::text
+  FROM isexy.reports WHERE id = 'abababab-0000-0000-0000-00000000000b';
+SELECT isexy.staff_accept_live_chat('ffffffff-0000-0000-0000-0000000000a2');
+INSERT INTO results SELECT 'T9d an agent cannot move a chat to another member',
+  pg_temp.touched($q$UPDATE isexy.live_chat_sessions SET user_id = 'dddddddd-0000-0000-0000-00000000000b' WHERE id = 'ffffffff-0000-0000-0000-0000000000a2'$q$) = 0, NULL;
+INSERT INTO results SELECT 'T9d an agent cannot reopen an ended chat',
+  pg_temp.touched($q$UPDATE isexy.live_chat_sessions SET status = 'active', ended_at = NULL WHERE id = 'ffffffff-0000-0000-0000-0000000000a1'$q$) = 0, NULL;
+INSERT INTO results SELECT 'T9d an agent cannot swap the assistant chat staff will read',
+  pg_temp.touched($q$UPDATE isexy.live_chat_sessions SET chatbot_conversation_id = 'ffffffff-0000-0000-0000-000000000002' WHERE id = 'ffffffff-0000-0000-0000-0000000000a2'$q$) = 0, NULL;
+RESET ROLE;
+INSERT INTO results SELECT 'T9d nothing was written around the RPCs',
+  (SELECT count(*) FROM isexy.user_warnings WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000e') = 0
+  AND (SELECT count(*) FROM isexy.user_warnings WHERE evidence = 'forged') = 0
+  AND (SELECT count(*) FROM isexy.user_warnings WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000d' AND lifted_at IS NULL) = 1
+  AND (SELECT NOT coalesce(is_verified, false) AND NOT coalesce(is_premium, false) AND likes_remaining < 999999 FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000d')
+  AND (SELECT status FROM isexy.photo_verifications WHERE id = '9a9a9a9a-0000-0000-0000-000000000001') = 'pending'
+  AND (SELECT moderation_status FROM isexy.voice_greetings WHERE id = '9c9c9c9c-0000-0000-0000-000000000001') = 'pending'
+  AND (SELECT coalesce(status, 'pending') FROM isexy.reports WHERE id = 'abababab-0000-0000-0000-000000000009') = 'pending'
+  AND (SELECT user_id = 'dddddddd-0000-0000-0000-00000000000a' AND chatbot_conversation_id IS NULL FROM isexy.live_chat_sessions WHERE id = 'ffffffff-0000-0000-0000-0000000000a2')
+  AND (SELECT status FROM isexy.live_chat_sessions WHERE id = 'ffffffff-0000-0000-0000-0000000000a1') = 'closed'
+  AND NOT EXISTS (SELECT 1 FROM isexy.user_roles WHERE user_id = 'dddddddd-0000-0000-0000-00000000000d' AND role = 'admin'), NULL;
+
+-- T9e admin: staff accounts, reports about staff, a suspended moderator ------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- Xan, admin
+INSERT INTO results SELECT 'T9e an admin reads the reports about staff', count(*) = 22, count(*)::text
+  FROM isexy.reports WHERE reported_id IN ('dddddddd-0000-0000-0000-00000000000d', 'dddddddd-0000-0000-0000-00000000000e');
+INSERT INTO results SELECT 'T9e an admin reviews a report about a moderator', r ->> 'status' = 'resolved', r::text
+  FROM (SELECT isexy.staff_resolve_report('abababab-0000-0000-0000-000000000009', 'resolved', 'warned the moderator') AS r) s;
+SELECT pg_temp.refused('T9e an admin cannot review a report about themselves',
+  $q$SELECT isexy.staff_resolve_report('abababab-0000-0000-0000-00000000000a', 'dismissed', NULL)$q$);
+INSERT INTO results SELECT 'T9e an admin suspends the moderator', NOT (r ->> 'is_active')::boolean, r::text
+  FROM (SELECT isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000d', false, 'abuse of the staff tools') AS r) s;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- the suspended moderator
+SELECT pg_temp.refused('T9e a suspended moderator loses the staff tools: ' || f, q) FROM (VALUES
+  ('staff_issue_warning', $q$SELECT isexy.staff_issue_warning('dddddddd-0000-0000-0000-00000000000b', 'spam', 'permanent', 'revenge')$q$),
+  ('staff_set_account_active', $q$SELECT isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000b', false, 'revenge')$q$),
+  ('staff_resolve_report', $q$SELECT isexy.staff_resolve_report('abababab-0000-0000-0000-00000000000b', 'dismissed', NULL)$q$),
+  ('staff_accept_live_chat', $q$SELECT isexy.staff_accept_live_chat('ffffffff-0000-0000-0000-0000000000a2')$q$),
+  ('staff_dashboard_stats', $q$SELECT isexy.staff_dashboard_stats()$q$),
+  ('review_photo_verification', $q$SELECT isexy.review_photo_verification('9a9a9a9a-0000-0000-0000-000000000001', false, 'x')$q$),
+  ('staff_set_profile_verified', $q$SELECT isexy.staff_set_profile_verified('dddddddd-0000-0000-0000-00000000000b', false)$q$)
+) v(f, q);
+INSERT INTO results SELECT 'T9e a suspended moderator is not staff and reads no member reports',
+  NOT isexy.is_staff() AND (SELECT count(*) FROM isexy.reports WHERE id = 'abababab-0000-0000-0000-00000000000b') = 0, NULL;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');
+INSERT INTO results SELECT 'T9e the admin reinstates the moderator', (r ->> 'is_active')::boolean, r::text
+  FROM (SELECT isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000d', true, NULL) AS r) s;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');
+INSERT INTO results SELECT 'T9e reinstated: the staff tools work again', (r -> 'members' ->> 'total') IS NOT NULL, NULL
+  FROM (SELECT isexy.staff_dashboard_stats() AS r) s;
 RESET ROLE;
 
 -- @@PARTS@@

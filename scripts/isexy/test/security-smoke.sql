@@ -153,8 +153,11 @@ SELECT pg_temp.refused('A member cannot create a profile for someone else',
   $q$INSERT INTO isexy.profiles (user_id, first_name, birth_date, gender)
      VALUES ('5ec00000-0000-4000-8000-00000000000c', 'Noa', '1996-01-01', 'woman')$q$);
 SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000d');
-SELECT pg_temp.rows('A staff (moderator) may change protected columns',
-  $q$UPDATE isexy.profiles SET is_verified = true WHERE id = '5ec00000-0000-4000-8000-00000000000d'$q$, 1);
+-- (0015 J5: protected columns are written directly by admins only. Staff have no
+-- UPDATE policy on other profiles, so the old staff exemption only ever covered
+-- their own row: a moderator could give themselves a plan, likes or the badge.)
+SELECT pg_temp.refused('A a moderator cannot change protected columns of their own row (0015 J5)',
+  $q$UPDATE isexy.profiles SET is_verified = true WHERE id = '5ec00000-0000-4000-8000-00000000000d'$q$);
 SELECT isexy.staff_set_profile_verified('5ec00000-0000-4000-8000-00000000000a', true);
 RESET ROLE;
 SELECT pg_temp.ok('A staff_set_profile_verified (SECURITY DEFINER) still works', is_verified, NULL)

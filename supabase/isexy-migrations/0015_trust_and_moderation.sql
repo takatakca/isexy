@@ -9,11 +9,12 @@
 --     the members' UPDATE policy and re-created the SELECT policy: not done
 --     here (0010 already fixed the auth.users read and 0009 limits members to
 --     message/attachments). Staff ticket RPCs are admin only, like 0009.
---   - live chat: 0014 D5's message policy is tightened in place (same name),
---     not replaced.
---   - blocked_with_me (0014 D3) is reused; nothing of 0013/0014 is redefined
---     except validate_message_allowed (0001 body + two checks, D below), whose
---     0014 B3 grants are restated.
+--   - live chat: 0014 D5's message and session policies are tightened in
+--     place (same names), not replaced.
+--   - blocked_with_me (0014 D3) is reused; redefined from earlier files, with
+--     the same signatures: validate_message_allowed (0001 body + two checks, D
+--     below; 0014 B3 grants restated), and in J (adversarial review) three
+--     0013 staff RPCs and 0014's profiles_protect_columns (one line changed).
 -- Every policy written here already uses (select auth.uid()) /
 -- (select isexy.has_role(...)) / (select isexy.is_staff()), so 0014 C2's
 -- guard stays quiet if 0014 is ever re-run.
@@ -30,12 +31,14 @@
 -- Tests: scripts/isexy/test/trust-smoke.sql.
 --
 -- A. Staff helpers and audit log
---    A1. is_staff(): the caller is admin or moderator.
+--    A1. is_staff(): the caller is admin or moderator and not suspended;
+--        is_admin(); staff_profile_ids() (staff only).
 --    A2. staff_actions table (who did what to whom, details jsonb), read by
 --        admins; written only by the staff RPCs through log_staff_action().
 --    A3. Staff (admin + moderator) read every profile, also suspended ones
 --        (the members' policy shows active profiles only, so banned members
---        vanished from every staff list), and every report.
+--        vanished from every staff list), and every report (reports about a
+--        staff account: admins only).
 -- B. Members: blocks and reports
 --    B1. reports.source / reviewed_by / reviewed_at / resolution_note.
 --    B2. profiles SELECT: a member never reads the profile of someone who
@@ -74,7 +77,9 @@
 --    chat with end_my_live_chat. 0014 D5's message policy tightened: a member
 --    posts only as "user" in their own open chat, an agent only as "agent"
 --    in an active chat assigned to them, nobody posts "system" messages
---    directly (the RPCs do), sender_id is always the caller.
+--    directly (the RPCs do), sender_id is always the caller. Direct session
+--    writes: admins only; members open a "waiting" chat with at most their
+--    own assistant chat.
 -- H. staff_dashboard_stats(): the staff home page's numbers in one call
 --    (the page loaded every profile row into the browser, and its revenue
 --    cards summed tables admins cannot read in full, so they showed the
@@ -85,6 +90,15 @@
 --    check page: each table only had "own rows" policies, so the page counted
 --    the admin's own purchases. Read only; writes stay with the RPCs and the
 --    service role.
+-- J. Adversarial review of the area (malicious member, malicious moderator):
+--    J1 direct warning writes admins only; J2 a reporter reads their report
+--    only while pending; J3 photos (signed-in only), Phone Line profiles and
+--    greetings hidden from the members their owner blocked; J4 0013's
+--    staff_set_profile_verified / review_photo_verification /
+--    review_voice_greeting follow E's rules + audit log; J5 0014's protected
+--    profile columns: direct writes by admins only (a moderator could give
+--    themselves a plan, likes or the badge). Staff report review follows E's
+--    rules too (nobody on a report about themselves).
 
 -- =====================================================================
 -- A1. is_staff()
@@ -98,9 +112,44 @@ SET search_path = isexy, extensions
 AS $$
   SELECT auth.uid() IS NOT NULL
      AND (isexy.has_role(auth.uid(), 'admin') OR isexy.has_role(auth.uid(), 'moderator'))
+     -- A suspended staff account keeps its role row (roles are never deleted
+     -- from the app) but loses the staff tools: suspending is how an admin
+     -- stops a moderator.
+     AND NOT EXISTS (SELECT 1 FROM isexy.profiles p WHERE p.user_id = auth.uid() AND p.is_active IS FALSE)
 $$;
 REVOKE ALL ON FUNCTION isexy.is_staff() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION isexy.is_staff() TO authenticated, service_role;
+
+-- The caller is an admin whose account is not suspended.
+CREATE OR REPLACE FUNCTION isexy.is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+  SELECT isexy.is_staff() AND isexy.has_role(auth.uid(), 'admin')
+$$;
+REVOKE ALL ON FUNCTION isexy.is_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.is_admin() TO authenticated, service_role;
+
+-- Profile ids of staff accounts, for staff only (members get an empty list:
+-- the staff directory stays private, as in main's 0008 get_admin_users).
+CREATE OR REPLACE FUNCTION isexy.staff_profile_ids()
+RETURNS uuid[]
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+  SELECT coalesce(array_agg(DISTINCT p.id), ARRAY[]::uuid[])
+    FROM isexy.user_roles r
+    JOIN isexy.profiles p ON p.user_id = r.user_id
+   WHERE r.role IN ('admin', 'moderator')
+     AND isexy.is_staff()
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_profile_ids() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_profile_ids() TO authenticated;
 
 -- =====================================================================
 -- A2. Audit log of staff actions
@@ -152,10 +201,14 @@ CREATE POLICY "Staff view all profiles" ON isexy.profiles
   FOR SELECT TO authenticated
   USING ((SELECT isexy.is_staff()));
 
+-- Reports about a staff account are for admins only: a moderator never reads
+-- the reports about themselves (who reported them) or about other staff.
 DROP POLICY IF EXISTS "Staff view all reports" ON isexy.reports;
 CREATE POLICY "Staff view all reports" ON isexy.reports
   FOR SELECT TO authenticated
-  USING ((SELECT isexy.is_staff()));
+  USING ((SELECT isexy.is_staff())
+         AND ((SELECT isexy.is_admin())
+              OR NOT (reported_id = ANY ((SELECT isexy.staff_profile_ids())::uuid[]))));
 
 -- =====================================================================
 -- B1. Report columns
@@ -727,6 +780,8 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Report not found' USING ERRCODE = 'P0002';
   END IF;
+  -- Nobody reviews a report about themselves; reports about staff: admins.
+  PERFORM isexy.assert_staff_may_act_on(v_reported);
   UPDATE isexy.reports
      SET status = p_status,
          reviewed_by = auth.uid(),
@@ -793,7 +848,7 @@ SECURITY DEFINER
 SET search_path = isexy, extensions
 AS $$
 BEGIN
-  IF auth.uid() IS NULL OR NOT isexy.has_role(auth.uid(), 'admin') THEN
+  IF NOT isexy.is_admin() THEN
     RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
   END IF;
   IF coalesce(array_length(p_user_ids, 1), 0) > 500 THEN
@@ -818,7 +873,7 @@ DECLARE
   v_id uuid;
   v_profile uuid;
 BEGIN
-  IF auth.uid() IS NULL OR NOT isexy.has_role(auth.uid(), 'admin') THEN
+  IF NOT isexy.is_admin() THEN
     RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
   END IF;
   IF p_role IS NULL OR p_role NOT IN ('admin', 'moderator') THEN
@@ -890,7 +945,7 @@ DECLARE
   v_response text := nullif(btrim(p_response), '');
   v_note text := nullif(btrim(p_note), '');
 BEGIN
-  IF v_uid IS NULL OR NOT isexy.has_role(v_uid, 'admin') THEN
+  IF NOT isexy.is_admin() THEN
     RAISE EXCEPTION 'Only ISEXY admins can update tickets' USING ERRCODE = '42501';
   END IF;
   IF p_status IS NOT NULL AND NOT (p_status = ANY (c_statuses)) THEN
@@ -954,7 +1009,7 @@ DECLARE
   v_changed jsonb;
   v_count int;
 BEGIN
-  IF auth.uid() IS NULL OR NOT isexy.has_role(auth.uid(), 'admin') THEN
+  IF NOT isexy.is_admin() THEN
     RAISE EXCEPTION 'Only ISEXY admins can update tickets' USING ERRCODE = '42501';
   END IF;
   IF p_status IS NOT NULL AND NOT (p_status = ANY (c_statuses)) THEN
@@ -1021,6 +1076,26 @@ ALTER POLICY "Users can insert messages in their sessions" ON isexy.live_chat_me
           AND session_id IN (SELECT s.id FROM isexy.live_chat_sessions s
                               WHERE s.agent_id = (SELECT auth.uid()) AND s.status = 'active'))
     )
+  );
+
+-- 0014 D5's session policies, tightened (same names). Direct session writes
+-- are for admins only: an assigned moderator could move a chat to any member
+-- (then post "agent" lines to them), reopen an ended chat or swap the
+-- assistant chat staff read; moderators use the RPCs below. A member opens a
+-- chat only as "waiting", with no ticket and at most their own assistant chat
+-- (another member's would be shown to staff as this member's transcript).
+ALTER POLICY "Admins can manage chat sessions" ON isexy.live_chat_sessions
+  USING ((SELECT isexy.is_admin()))
+  WITH CHECK ((SELECT isexy.is_admin()));
+ALTER POLICY "Users can create own chat sessions" ON isexy.live_chat_sessions
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND agent_id IS NULL
+    AND status = 'waiting'
+    AND ticket_id IS NULL
+    AND (chatbot_conversation_id IS NULL
+         OR chatbot_conversation_id IN (SELECT c.id FROM isexy.chatbot_conversations c
+                                         WHERE c.user_id = (SELECT auth.uid())))
   );
 
 CREATE OR REPLACE FUNCTION isexy.staff_accept_live_chat(p_session_id uuid)
@@ -1220,3 +1295,230 @@ DROP POLICY IF EXISTS "Admins read all chat subscriptions" ON isexy.chat_subscri
 CREATE POLICY "Admins read all chat subscriptions" ON isexy.chat_subscriptions
   FOR SELECT TO authenticated
   USING ((SELECT isexy.has_role((SELECT auth.uid()), 'admin'::isexy.app_role)));
+
+-- =====================================================================
+-- J. Adversarial review (a malicious member, a malicious moderator):
+--    older objects closed here; tests: trust-smoke.sql T9.
+-- =====================================================================
+-- J1. Warnings are written through the staff RPCs (rules + audit log). The
+--     0001 policies let a moderator write any warning directly: a permanent
+--     restriction on an admin, lifting their own restriction, rewriting the
+--     evidence or issuer of someone else's. Direct writes: admins only.
+ALTER POLICY "Admins and moderators can insert warnings" ON isexy.user_warnings
+  WITH CHECK ((SELECT isexy.is_admin()));
+ALTER POLICY "Admins can update warnings" ON isexy.user_warnings
+  USING ((SELECT isexy.is_admin()));
+
+-- J2. A reporter reads their report while it is pending (to add details);
+--     once staff review it, the outcome, the reviewer's id and the staff note
+--     are moderation state of another member and stay with staff.
+ALTER POLICY "Users can view own reports" ON isexy.reports
+  USING (
+    reporter_id IN (SELECT profiles.id FROM isexy.profiles WHERE profiles.user_id = (SELECT auth.uid()))
+    AND coalesce(status, 'pending') = 'pending'
+  );
+
+-- J3. Someone who blocked you stays hidden on the tables that are read by
+--     profile id: photos (also readable by anyone signed out until now),
+--     Phone Line profiles and greetings. Owners keep their own rows through
+--     their "own" policies; staff read every photo.
+ALTER POLICY "Anyone can view profile photos" ON isexy.profile_photos
+  TO authenticated
+  USING ((SELECT isexy.is_staff())
+         OR NOT (profile_id = ANY ((SELECT isexy.my_blocker_ids())::uuid[])));
+ALTER POLICY "Authenticated users can browse active public profiles" ON isexy.phone_line_profiles
+  USING (status = 'active' AND is_public = true
+         AND NOT (profile_id = ANY ((SELECT isexy.my_blocker_ids())::uuid[])));
+ALTER POLICY "Authenticated can read approved active greetings of public prof" ON isexy.voice_greetings
+  USING (moderation_status = 'approved' AND is_active = true AND is_hidden = false
+         AND NOT (profile_id = ANY ((SELECT isexy.my_blocker_ids())::uuid[]))
+         AND EXISTS (SELECT 1 FROM isexy.phone_line_profiles plp
+                      WHERE plp.id = voice_greetings.phone_line_profile_id
+                        AND plp.status = 'active' AND plp.is_public = true));
+
+-- J4. 0013's verification and voice review RPCs follow the staff rules of E
+--     (nobody on themselves, a staff account only by an admin, suspended staff
+--     refused) and write the audit log. Same signatures and results.
+CREATE OR REPLACE FUNCTION isexy.staff_set_profile_verified(p_profile_id uuid, p_verified boolean)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  PERFORM isexy.assert_staff_may_act_on(p_profile_id);
+  UPDATE isexy.profiles SET is_verified = coalesce(p_verified, false), updated_at = now() WHERE id = p_profile_id;
+  PERFORM isexy.log_staff_action(CASE WHEN coalesce(p_verified, false) THEN 'verify' ELSE 'unverify' END,
+    p_profile_id, NULL, '{}'::jsonb);
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_set_profile_verified(uuid, boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_set_profile_verified(uuid, boolean) TO authenticated;
+
+CREATE OR REPLACE FUNCTION isexy.review_photo_verification(
+  p_request_id UUID,
+  p_approve BOOLEAN,
+  p_reason TEXT DEFAULT NULL
+)
+RETURNS isexy.photo_verifications
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_caller UUID := auth.uid();
+  v_profile UUID;
+  v_row isexy.photo_verifications;
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Only ISEXY staff can review photo verifications' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT profile_id INTO v_profile
+    FROM isexy.photo_verifications
+   WHERE id = p_request_id AND status = 'pending'
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'No pending photo verification with this id' USING ERRCODE = 'P0002';
+  END IF;
+  PERFORM isexy.assert_staff_may_act_on(v_profile);
+
+  UPDATE isexy.photo_verifications
+  SET status = CASE WHEN p_approve THEN 'approved' ELSE 'rejected' END,
+      rejection_reason = CASE WHEN p_approve THEN NULL ELSE left(nullif(btrim(p_reason), ''), 500) END,
+      reviewed_at = now(),
+      reviewed_by = v_caller
+  WHERE id = p_request_id AND status = 'pending'
+  RETURNING * INTO v_row;
+
+  IF p_approve THEN
+    UPDATE isexy.profiles SET is_verified = true WHERE id = v_row.profile_id;
+  END IF;
+  PERFORM isexy.log_staff_action(CASE WHEN p_approve THEN 'photo_check_approved' ELSE 'photo_check_rejected' END,
+    v_row.profile_id, p_request_id, jsonb_strip_nulls(jsonb_build_object('reason', v_row.rejection_reason)));
+
+  RETURN v_row;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.review_photo_verification(UUID, BOOLEAN, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.review_photo_verification(UUID, BOOLEAN, TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION isexy.review_voice_greeting(
+  p_greeting_id uuid,
+  p_approve boolean,
+  p_reason text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_g isexy.voice_greetings%ROWTYPE;
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authorized');
+  END IF;
+  SELECT * INTO v_g FROM isexy.voice_greetings WHERE id = p_greeting_id FOR UPDATE;
+  IF v_g.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_found');
+  END IF;
+  IF p_approve IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'missing_decision');
+  END IF;
+  BEGIN
+    PERFORM isexy.assert_staff_may_act_on(v_g.profile_id);
+  EXCEPTION WHEN insufficient_privilege THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_authorized');
+  END;
+  UPDATE isexy.voice_greetings
+     SET moderation_status = CASE WHEN p_approve THEN 'approved' ELSE 'rejected' END,
+         rejected_reason = CASE WHEN p_approve THEN NULL ELSE left(nullif(trim(p_reason), ''), 300) END,
+         is_hidden = CASE WHEN p_approve THEN false ELSE is_hidden END,
+         updated_at = now()
+   WHERE id = p_greeting_id;
+  PERFORM isexy.log_staff_action(CASE WHEN p_approve THEN 'voice_greeting_approved' ELSE 'voice_greeting_rejected' END,
+    v_g.profile_id, p_greeting_id, jsonb_strip_nulls(jsonb_build_object('reason', left(nullif(trim(p_reason), ''), 300))));
+  RETURN jsonb_build_object('success', true, 'moderation_status', CASE WHEN p_approve THEN 'approved' ELSE 'rejected' END);
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.review_voice_greeting(uuid, boolean, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.review_voice_greeting(uuid, boolean, text) TO authenticated;
+
+-- J5. 0014's profiles_protect_columns let staff write plans, limits and flags
+--     directly. Staff have no UPDATE policy on other members' profiles, so
+--     the exemption only ever applied to their own row: a moderator could give
+--     themselves Platinum, unlimited likes or the verified badge. Same body,
+--     exemption for (active) admins only; the staff RPCs are unaffected.
+CREATE OR REPLACE FUNCTION isexy.profiles_protect_columns()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  c_cols CONSTANT text[] := ARRAY[
+    'is_premium', 'subscription_tier', 'subscription_expires_at', 'is_verified',
+    'shadow_banned', 'shadow_banned_at', 'shadow_banned_reason',
+    'likes_remaining', 'super_likes_remaining', 'boosts_remaining', 'last_boost_at',
+    'super_boost_until', 'daily_swipe_count', 'last_swipe_reset_at', 'swipe_cooldown_until',
+    'first_purchase_promo_used', 'promo_expires_at', 'is_cuban', 'referral_code',
+    'user_id', 'id', 'created_at', 'is_active'];
+  v_uid uuid;
+  v_new jsonb;
+  v_ref jsonb;
+  v_bad text[];
+BEGIN
+  -- Direct client writes only. SECURITY DEFINER functions run as their owner,
+  -- so the RPCs (and the service role, and migrations) are not checked here.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+
+  v_uid := auth.uid();
+  v_new := to_jsonb(NEW);
+  IF TG_OP = 'UPDATE' THEN
+    v_ref := to_jsonb(OLD);
+  ELSE
+    -- Column defaults (0001); profiles_id_from_user has already set id = user_id.
+    v_ref := jsonb_build_object(
+      'is_premium', false,
+      'subscription_tier', 'free',
+      'subscription_expires_at', NULL::timestamptz,
+      'is_verified', false,
+      'shadow_banned', false,
+      'shadow_banned_at', NULL::timestamptz,
+      'shadow_banned_reason', NULL::text,
+      'likes_remaining', 100,
+      'super_likes_remaining', 1,
+      'boosts_remaining', 0,
+      'last_boost_at', NULL::timestamptz,
+      'super_boost_until', NULL::timestamptz,
+      'daily_swipe_count', 0,
+      'last_swipe_reset_at', now(),
+      'swipe_cooldown_until', NULL::timestamptz,
+      'first_purchase_promo_used', false,
+      'promo_expires_at', NULL::timestamptz,
+      'is_cuban', false,
+      'referral_code', NULL::text,
+      'user_id', v_uid,
+      'id', v_uid,
+      'created_at', now(),
+      'is_active', true);
+  END IF;
+
+  SELECT array_agg(c ORDER BY c) INTO v_bad
+    FROM unnest(c_cols) AS c
+   WHERE (v_new -> c) IS DISTINCT FROM (v_ref -> c);
+
+  IF v_bad IS NULL THEN
+    RETURN NEW;
+  END IF;
+  IF v_uid IS NOT NULL AND isexy.is_admin() THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'profiles: % cannot be set by the member', array_to_string(v_bad, ', ')
+    USING ERRCODE = '42501',
+          HINT = 'Plans, limits, flags and ids change only through the ISEXY RPCs and functions.';
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.profiles_protect_columns() FROM PUBLIC, anon, authenticated;
