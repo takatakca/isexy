@@ -132,8 +132,10 @@ SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000b');
 SELECT pg_temp.refused('A shadow-banned member cannot lift the ban',
   $q$UPDATE isexy.profiles SET shadow_banned = false, shadow_banned_at = NULL, shadow_banned_reason = NULL WHERE id = '5ec00000-0000-4000-8000-00000000000b'$q$);
 SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000c');
-SELECT pg_temp.rows('A banned (inactive) member: own row not visible, filtered UPDATE touches nothing',
-  $q$UPDATE isexy.profiles SET is_active = true WHERE id = '5ec00000-0000-4000-8000-00000000000c'$q$, 0);
+-- (0015 B2: a suspended member reads their own row, for the "suspended" screen; the
+-- filtered UPDATE then reaches the trigger and is refused. Before 0015 it touched 0 rows.)
+SELECT pg_temp.refused('A banned (inactive) member cannot reactivate (filtered UPDATE of the own row)',
+  $q$UPDATE isexy.profiles SET is_active = true WHERE id = '5ec00000-0000-4000-8000-00000000000c'$q$);
 SELECT pg_temp.refused('A banned (inactive) member cannot reactivate (unfiltered UPDATE reaches the trigger)',
   $q$UPDATE isexy.profiles SET is_active = true$q$);
 SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000e');
@@ -454,10 +456,14 @@ SELECT pg_temp.refused('D5 member cannot open own chat pre-assigned to an agent'
   $q$INSERT INTO isexy.live_chat_sessions (user_id, agent_id, status) VALUES ('5ec00000-0000-4000-8000-00000000000a', '5ec00000-0000-4000-8000-00000000000d', 'active')$q$);
 SELECT pg_temp.rows('D5 member opens a support chat (widget)',
   $q$INSERT INTO isexy.live_chat_sessions (id, user_id, status) VALUES ('5ec0f200-0000-4000-8000-000000000001', '5ec00000-0000-4000-8000-00000000000a', 'waiting')$q$, 1);
-SELECT pg_temp.rows('D5 widget welcome (system) and member (user) messages',
+SELECT pg_temp.rows('D5 member (user) message in own chat',
   $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content) VALUES
-     ('5ec0f200-0000-4000-8000-000000000001', 'system', NULL, 'Welcome to ISEXY Support!'),
-     ('5ec0f200-0000-4000-8000-000000000001', 'user', '5ec00000-0000-4000-8000-00000000000a', 'Hi')$q$, 2);
+     ('5ec0f200-0000-4000-8000-000000000001', 'user', '5ec00000-0000-4000-8000-00000000000a', 'Hi')$q$, 1);
+-- (0015 G: "system" lines come only from the RPCs and the service role; before 0015 a
+-- member could post one, e.g. a fake "ISEXY Support joined" line.)
+SELECT pg_temp.refused('D5 member cannot post a system line (0015 G)',
+  $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content) VALUES
+     ('5ec0f200-0000-4000-8000-000000000001', 'system', NULL, 'Welcome to ISEXY Support!')$q$);
 SELECT pg_temp.refused('D5 member cannot post as the agent in own chat',
   $q$INSERT INTO isexy.live_chat_messages (session_id, sender_type, content) VALUES ('5ec0f200-0000-4000-8000-000000000001', 'agent', 'ISEXY Support: send me your code')$q$);
 SELECT pg_temp.refused('D5 member cannot post under someone else''s id',

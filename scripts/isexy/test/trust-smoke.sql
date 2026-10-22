@@ -1,11 +1,10 @@
--- Smoke tests for the trust area SQL (docs/handoff/trust.sql: moderation,
--- reports, blocks, support tickets, staff RPCs).
+-- Smoke tests for 0015_trust_and_moderation.sql (moderation, reports,
+-- blocks, support tickets, live chat, staff RPCs and audit log).
 -- Run on a THROWAWAY local Postgres only (never on V1), after:
 --   psql "$ISEXY_DB_URL" -f scripts/isexy/test/v1-mock.sql
 --   scripts/isexy/migrate.sh --apply
---   psql "$ISEXY_DB_URL" -f docs/handoff/trust.sql   # until it is folded into a migration
 -- then (everything is rolled back):
---   printf 'BEGIN;\n\\i scripts/isexy/test/trust-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q
+--   printf 'BEGIN;\n\\i scripts/isexy/test/trust-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
 -- Fake members call each RPC / table as the authenticated and anon roles with
 -- request.jwt.claim(s) set; allowed and forbidden calls for each.
 \set ON_ERROR_STOP on
@@ -235,7 +234,7 @@ INSERT INTO results SELECT 'T3 wrong email finds nothing', count(*) = 0, count(*
   FROM isexy.get_ticket_status('IS-GUEST1', 'other@example.ca');
 INSERT INTO results SELECT 'T3 guests cannot list tickets', count(*) = 0, count(*)::text FROM isexy.support_tickets;
 INSERT INTO isexy.support_tickets (ticket_number, name, email, subject, category, priority, message)
-VALUES ('IS-ANA001', 'Ana', 'TA@test.ca', 'Sent before signing in', 'account', 'low', 'hello');
+VALUES ('IS-ANA001', 'Ana', 'ta@test.ca', 'Sent before signing in', 'account', 'low', 'hello');  -- Contact Us stores e-mails in lower case
 RESET ROLE;
 SET ROLE authenticated;
 SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000a', 'ta@test.ca');
@@ -246,8 +245,15 @@ SET ROLE authenticated;
 SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
 INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
 VALUES ('IS-BEN001', 'dddddddd-0000-0000-0000-00000000000b', 'Ben', 'tb@test.ca', 'Billing', 'billing', 'high', 'charged twice');
-UPDATE isexy.support_tickets SET status = 'resolved', response = 'self-answered', admin_notes = 'x' WHERE ticket_number = 'IS-BEN001';
-INSERT INTO results SELECT 'T3 member cannot change their own ticket', bool_and(status = 'open' AND response IS NULL), max(status)
+DO $$ BEGIN
+  UPDATE isexy.support_tickets SET status = 'resolved', response = 'self-answered', admin_notes = 'x' WHERE ticket_number = 'IS-BEN001';
+  INSERT INTO results VALUES ('T3 member cannot change staff fields of their ticket (main''s 0009)', false, 'update succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T3 member cannot change staff fields of their ticket (main''s 0009)', true, SQLERRM);
+END $$;
+UPDATE isexy.support_tickets SET message = 'charged twice (card ending 4242)' WHERE ticket_number = 'IS-BEN001';
+INSERT INTO results SELECT 'T3 member can still add details to their ticket (main''s 0009)',
+  bool_and(status = 'open' AND response IS NULL AND message LIKE '%4242%'), max(status)
   FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001';
 INSERT INTO results SELECT 'T3 member sees only their own tickets', count(*) = 1, string_agg(ticket_number, ',') FROM isexy.support_tickets;
 DO $$ BEGIN
@@ -257,14 +263,23 @@ EXCEPTION WHEN insufficient_privilege THEN
   INSERT INTO results VALUES ('T3 member cannot use the staff ticket RPC', true, SQLERRM);
 END $$;
 SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator
-INSERT INTO results SELECT 'T3 moderator sees every ticket', count(*) >= 2, count(*)::text
-  FROM isexy.support_tickets WHERE ticket_number IN ('IS-GUEST1', 'IS-BEN001');
-INSERT INTO results SELECT 'T3 moderator answers a ticket',
+INSERT INTO results SELECT 'T3 tickets stay admin-only: a moderator reads none', count(*) = 0, count(*)::text
+  FROM isexy.support_tickets;
+DO $$ BEGIN
+  PERFORM isexy.staff_update_ticket((SELECT t.id FROM isexy.support_tickets t LIMIT 1), 'resolved', NULL, NULL, NULL, false);
+  INSERT INTO results VALUES ('T3 a moderator cannot update tickets (main''s 0009 rule)', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T3 a moderator cannot update tickets (main''s 0009 rule)', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- admin
+INSERT INTO results SELECT 'T3 admin sees every ticket', count(*) = 3, count(*)::text
+  FROM isexy.support_tickets WHERE ticket_number IN ('IS-GUEST1', 'IS-BEN001', 'IS-ANA001');
+INSERT INTO results SELECT 'T3 admin answers a ticket',
   (r ->> 'notify')::boolean AND r ->> 'old_status' = 'open' AND r ->> 'new_status' = 'in_progress' AND (r ->> 'responded')::boolean, r::text
   FROM (SELECT isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'),
           'in_progress', 'We are refunding the second charge.', 'checked Stripe', 'dddddddd-0000-0000-0000-00000000000e', true) AS r) s;
 INSERT INTO results SELECT 'T3 note, response and assignee saved',
-  admin_notes LIKE '%Mod] checked Stripe' AND response LIKE 'We are refunding%' AND responded_at IS NOT NULL
+  admin_notes LIKE '%Xan] checked Stripe' AND response LIKE 'We are refunding%' AND responded_at IS NOT NULL
     AND assigned_to = 'dddddddd-0000-0000-0000-00000000000e', admin_notes
   FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001';
 INSERT INTO results SELECT 'T3 a note alone does not notify', NOT (r ->> 'notify')::boolean, r::text
@@ -277,10 +292,10 @@ EXCEPTION WHEN invalid_parameter_value THEN
   INSERT INTO results VALUES ('T3 unknown status refused', true, SQLERRM);
 END $$;
 DO $$ BEGIN
-  PERFORM isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'), NULL, NULL, NULL, 'dddddddd-0000-0000-0000-00000000000b', true);
-  INSERT INTO results VALUES ('T3 cannot assign to a member', false, 'call succeeded');
+  PERFORM isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'), NULL, NULL, NULL, 'dddddddd-0000-0000-0000-00000000000d', true);
+  INSERT INTO results VALUES ('T3 tickets are assigned to admins only', false, 'call succeeded');
 EXCEPTION WHEN invalid_parameter_value THEN
-  INSERT INTO results VALUES ('T3 cannot assign to a member', true, SQLERRM);
+  INSERT INTO results VALUES ('T3 tickets are assigned to admins only', true, SQLERRM);
 END $$;
 SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- admin
 INSERT INTO results SELECT 'T3 bulk update reports the status changes',
@@ -314,6 +329,20 @@ DO $$ BEGIN
   INSERT INTO results VALUES ('T4 member cannot post as an agent', false, 'insert succeeded');
 EXCEPTION WHEN insufficient_privilege THEN
   INSERT INTO results VALUES ('T4 member cannot post as an agent', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'system', 'dddddddd-0000-0000-0000-00000000000a', 'ISEXY Support joined the chat.');
+  INSERT INTO results VALUES ('T4 member cannot post a system line', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T4 member cannot post a system line', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  INSERT INTO isexy.live_chat_messages (session_id, sender_type, sender_id, content)
+  VALUES ('ffffffff-0000-0000-0000-0000000000a1', 'user', NULL, 'no sender');
+  INSERT INTO results VALUES ('T4 member messages carry the member as sender', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T4 member messages carry the member as sender', true, SQLERRM);
 END $$;
 DO $$ BEGIN
   PERFORM isexy.staff_accept_live_chat('ffffffff-0000-0000-0000-0000000000a1');
@@ -368,6 +397,247 @@ EXCEPTION WHEN no_data_found THEN
   INSERT INTO results VALUES ('T4 closing an ended chat is refused', true, SQLERRM);
 END $$;
 RESET ROLE;
+
+-- T5 reports: staff review, direct inserts ---------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
+DO $$ BEGIN
+  INSERT INTO isexy.reports (reporter_id, reported_id, reason, status)
+  VALUES ('dddddddd-0000-0000-0000-00000000000b', 'dddddddd-0000-0000-0000-00000000000c', 'spam', 'resolved');
+  INSERT INTO results VALUES ('T5 a report cannot be filed as already resolved', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T5 a report cannot be filed as already resolved', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  INSERT INTO isexy.reports (reporter_id, reported_id, reason)
+  VALUES ('dddddddd-0000-0000-0000-00000000000b', 'dddddddd-0000-0000-0000-00000000000b', 'spam');
+  INSERT INTO results VALUES ('T5 no direct self-report', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T5 no direct self-report', true, SQLERRM);
+END $$;
+INSERT INTO isexy.reports (id, reporter_id, reported_id, reason, description)
+VALUES ('abababab-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000b', 'dddddddd-0000-0000-0000-00000000000c', 'spam', 'older app');
+INSERT INTO results SELECT 'T5 a plain direct report still works (older clients)', count(*) = 1, count(*)::text
+  FROM isexy.reports WHERE id = 'abababab-0000-0000-0000-000000000001';
+UPDATE isexy.reports SET status = 'dismissed' WHERE id = 'abababab-0000-0000-0000-000000000001';
+INSERT INTO results SELECT 'T5 members cannot change a report', bool_and(coalesce(status, 'pending') = 'pending'), max(status)
+  FROM isexy.reports WHERE id = 'abababab-0000-0000-0000-000000000001';
+INSERT INTO results SELECT 'T5 members see only their own reports', count(*) = 1, count(*)::text FROM isexy.reports;
+DO $$ BEGIN
+  PERFORM isexy.staff_resolve_report('abababab-0000-0000-0000-000000000001', 'dismissed', NULL);
+  INSERT INTO results VALUES ('T5 members cannot use the staff report RPC', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T5 members cannot use the staff report RPC', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator
+INSERT INTO results SELECT 'T5 staff see every report', count(*) = 22, count(*)::text FROM isexy.reports;
+INSERT INTO results SELECT 'T5 staff join reporter and reported names', count(*) = 1 AND max(rp.first_name) = 'Ben' AND max(rd.first_name) = 'Cleo', NULL
+  FROM isexy.reports r JOIN isexy.profiles rp ON rp.id = r.reporter_id JOIN isexy.profiles rd ON rd.id = r.reported_id
+ WHERE r.id = 'abababab-0000-0000-0000-000000000001';
+INSERT INTO results SELECT 'T5 moderator resolves a report',
+  r ->> 'old_status' = 'pending' AND r ->> 'status' = 'resolved', r::text
+  FROM (SELECT isexy.staff_resolve_report('abababab-0000-0000-0000-000000000001', 'resolved', 'warned the member') AS r) s;
+INSERT INTO results SELECT 'T5 report keeps its row with reviewer and note',
+  status = 'resolved' AND reviewed_by = 'dddddddd-0000-0000-0000-00000000000d' AND reviewed_at IS NOT NULL AND resolution_note = 'warned the member', status
+  FROM isexy.reports WHERE id = 'abababab-0000-0000-0000-000000000001';
+DO $$ BEGIN
+  PERFORM isexy.staff_resolve_report('abababab-0000-0000-0000-000000000001', 'deleted', NULL);
+  INSERT INTO results VALUES ('T5 unknown report status refused', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T5 unknown report status refused', true, SQLERRM);
+END $$;
+RESET ROLE;
+
+-- T6 staff moderation -----------------------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000c');  -- member Cleo
+DO $$ BEGIN
+  PERFORM isexy.staff_issue_warning('dddddddd-0000-0000-0000-00000000000b', 'spam', '24h', 'x');
+  INSERT INTO results VALUES ('T6 members cannot warn', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 members cannot warn', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000b', false, 'x');
+  INSERT INTO results VALUES ('T6 members cannot suspend', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 members cannot suspend', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.staff_set_shadow_ban('dddddddd-0000-0000-0000-00000000000b', true, 'x');
+  INSERT INTO results VALUES ('T6 members cannot shadow ban', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 members cannot shadow ban', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  UPDATE isexy.profiles SET shadow_banned = true WHERE id = 'dddddddd-0000-0000-0000-00000000000c';
+  INSERT INTO results VALUES ('T6 members still cannot write protected columns (0014 A1)', false, 'update succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 members still cannot write protected columns (0014 A1)', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator
+INSERT INTO results SELECT 'T6 moderator warns with a 24 h restriction',
+  (r ->> 'level')::int = 1 AND (r ->> 'until')::timestamptz > now() + interval '23 hours', r::text
+  FROM (SELECT isexy.staff_issue_warning('dddddddd-0000-0000-0000-00000000000b', 'harassment', '24h', 'insults in chat') AS r) s;
+INSERT INTO results SELECT 'T6 the warning names the moderator as issuer', count(*) = 1, count(*)::text
+  FROM isexy.user_warnings WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000b' AND issued_by = 'dddddddd-0000-0000-0000-00000000000d'
+   AND warning_type = 'harassment' AND evidence LIKE '%insults in chat%';
+DO $$ BEGIN
+  PERFORM isexy.staff_issue_warning('dddddddd-0000-0000-0000-00000000000b', 'manual_ban', 'none', NULL);
+  INSERT INTO results VALUES ('T6 unknown warning type refused', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T6 unknown warning type refused', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.staff_issue_warning('dddddddd-0000-0000-0000-00000000000e', 'other', 'permanent', NULL);
+  INSERT INTO results VALUES ('T6 a moderator cannot act on an admin', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 a moderator cannot act on an admin', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000d', false, 'testing');
+  INSERT INTO results VALUES ('T6 staff cannot act on themselves', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 staff cannot act on themselves', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');  -- Ben, restricted
+INSERT INTO results SELECT 'T6 the member sees the restriction', (isexy.get_my_moderation_status() ->> 'restricted')::boolean,
+  isexy.get_my_moderation_status()::text;
+DO $$ BEGIN
+  INSERT INTO isexy.messages (match_id, sender_id, content)
+  VALUES ('eeeeeeee-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000b', 'still here');
+  INSERT INTO results VALUES ('T6 a restricted member cannot send', false, 'insert succeeded');
+EXCEPTION WHEN raise_exception THEN
+  INSERT INTO results VALUES ('T6 a restricted member cannot send', SQLERRM LIKE '%restricted%', SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');
+INSERT INTO results SELECT 'T6 moderator lifts the restriction', isexy.staff_lift_restrictions('dddddddd-0000-0000-0000-00000000000b', 'mistake: it was a joke between friends') = 1, NULL;
+INSERT INTO results SELECT 'T6 the lifted warning keeps its row', count(*) = 1 AND bool_and(lifted_at IS NOT NULL AND lifted_by = 'dddddddd-0000-0000-0000-00000000000d'), count(*)::text
+  FROM isexy.user_warnings WHERE profile_id = 'dddddddd-0000-0000-0000-00000000000b';
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
+INSERT INTO isexy.messages (match_id, sender_id, content)
+VALUES ('eeeeeeee-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000b', 'sorry');
+INSERT INTO results SELECT 'T6 after the lift the member can send', count(*) = 1, count(*)::text
+  FROM isexy.messages WHERE sender_id = 'dddddddd-0000-0000-0000-00000000000b' AND content = 'sorry';
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');
+INSERT INTO results SELECT 'T6 shadow ban', (r ->> 'shadow_banned')::boolean, r::text
+  FROM (SELECT isexy.staff_set_shadow_ban('dddddddd-0000-0000-0000-00000000000c', true, 'fake photos') AS r) s;
+INSERT INTO results SELECT 'T6 shadow ban fields set', shadow_banned AND shadow_banned_at IS NOT NULL AND shadow_banned_reason = 'fake photos', NULL
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000c';
+DO $$ BEGIN
+  PERFORM isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000b', false, '  ');
+  INSERT INTO results VALUES ('T6 suspension needs a reason', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T6 suspension needs a reason', true, SQLERRM);
+END $$;
+INSERT INTO results SELECT 'T6 moderator suspends', NOT (r ->> 'is_active')::boolean, r::text
+  FROM (SELECT isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000b', false, 'repeated harassment') AS r) s;
+INSERT INTO results SELECT 'T6 staff still see the suspended member', count(*) = 1, count(*)::text
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000b' AND is_active = false;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000c');
+INSERT INTO results SELECT 'T6 members no longer see the suspended member', count(*) = 0, count(*)::text
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000b';
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
+DO $$ BEGIN
+  INSERT INTO isexy.messages (match_id, sender_id, content)
+  VALUES ('eeeeeeee-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-00000000000b', 'suspended hello');
+  INSERT INTO results VALUES ('T6 a suspended member cannot send', false, 'insert succeeded');
+EXCEPTION WHEN raise_exception THEN
+  INSERT INTO results VALUES ('T6 a suspended member cannot send', SQLERRM LIKE '%suspended%', SQLERRM);
+END $$;
+DO $$ BEGIN
+  UPDATE isexy.profiles SET is_active = true WHERE user_id = 'dddddddd-0000-0000-0000-00000000000b';
+  INSERT INTO results VALUES ('T6 a suspended member cannot reinstate themselves', false, 'update succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 a suspended member cannot reinstate themselves', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');
+INSERT INTO results SELECT 'T6 moderator reinstates', (r ->> 'is_active')::boolean, r::text
+  FROM (SELECT isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000b', true, NULL) AS r) s;
+DO $$ BEGIN
+  PERFORM isexy.staff_update_profile('dddddddd-0000-0000-0000-00000000000c', NULL, '', NULL);
+  INSERT INTO results VALUES ('T6 a profile edit needs a reason', false, 'call succeeded');
+EXCEPTION WHEN invalid_parameter_value THEN
+  INSERT INTO results VALUES ('T6 a profile edit needs a reason', true, SQLERRM);
+END $$;
+INSERT INTO results SELECT 'T6 staff clears an offensive bio', (r ->> 'updated')::boolean, r::text
+  FROM (SELECT isexy.staff_update_profile('dddddddd-0000-0000-0000-00000000000c', NULL, '', 'offensive bio') AS r) s;
+INSERT INTO results SELECT 'T6 bio cleared, name kept', bio IS NULL AND first_name = 'Cleo', first_name
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000c';
+INSERT INTO results SELECT 'T6 staff verify a member (0013 RPC, moderators allowed)', true, NULL
+  FROM (SELECT isexy.staff_set_profile_verified('dddddddd-0000-0000-0000-00000000000c', true)) s;
+DO $$ BEGIN
+  PERFORM isexy.staff_list_roles(ARRAY['dddddddd-0000-0000-0000-00000000000e']::uuid[]);
+  INSERT INTO results VALUES ('T6 moderators cannot list roles', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 moderators cannot list roles', true, SQLERRM);
+END $$;
+DO $$ BEGIN
+  PERFORM isexy.staff_grant_role('dddddddd-0000-0000-0000-00000000000c', 'moderator');
+  INSERT INTO results VALUES ('T6 moderators cannot grant roles', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 moderators cannot grant roles', true, SQLERRM);
+END $$;
+INSERT INTO results SELECT 'T6 moderators cannot read the audit log', count(*) = 0, count(*)::text FROM isexy.staff_actions;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- admin
+INSERT INTO results SELECT 'T6 admin grants moderator', NOT (r ->> 'already')::boolean, r::text
+  FROM (SELECT isexy.staff_grant_role('dddddddd-0000-0000-0000-00000000000c', 'moderator') AS r) s;
+INSERT INTO results SELECT 'T6 granting twice is fine', (r ->> 'already')::boolean, r::text
+  FROM (SELECT isexy.staff_grant_role('dddddddd-0000-0000-0000-00000000000c', 'moderator') AS r) s;
+INSERT INTO results SELECT 'T6 admin lists roles', count(*) = 2, string_agg(role::text, ',')
+  FROM isexy.staff_list_roles(ARRAY['dddddddd-0000-0000-0000-00000000000c', 'dddddddd-0000-0000-0000-00000000000a', 'dddddddd-0000-0000-0000-00000000000e']::uuid[]);
+DO $$ BEGIN
+  PERFORM isexy.staff_set_shadow_ban('dddddddd-0000-0000-0000-00000000000c', false, NULL);
+  INSERT INTO results VALUES ('T6 an admin may act on a new moderator', true, NULL);
+END $$;
+INSERT INTO results SELECT 'T6 admin reads the audit log (every staff action, in order)',
+  count(*) >= 12 AND bool_and(actor_user_id IS NOT NULL)
+    AND bool_or(action = 'suspend') AND bool_or(action = 'reinstate') AND bool_or(action = 'issue_warning')
+    AND bool_or(action = 'lift_restrictions') AND bool_or(action = 'report_resolved') AND bool_or(action = 'edit_profile')
+    AND bool_or(action = 'grant_role') AND bool_or(action = 'update_ticket') AND bool_or(action = 'accept_live_chat'),
+  string_agg(action, ',' ORDER BY created_at)
+  FROM isexy.staff_actions;
+DO $$ BEGIN
+  INSERT INTO isexy.staff_actions (actor_user_id, action) VALUES ('dddddddd-0000-0000-0000-00000000000e', 'forged');
+  INSERT INTO results VALUES ('T6 nobody writes the audit log directly', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 nobody writes the audit log directly', true, SQLERRM);
+END $$;
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+DO $$ BEGIN
+  PERFORM isexy.staff_resolve_report('abababab-0000-0000-0000-000000000001', 'dismissed', NULL);
+  INSERT INTO results VALUES ('T6 anon cannot call staff RPCs', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T6 anon cannot call staff RPCs', true, SQLERRM);
+END $$;
+RESET ROLE;
+INSERT INTO results SELECT 'T6 every new function pins search_path and is SECURITY DEFINER',
+  bool_and(p.prosecdef AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')), string_agg(p.proname, ',') FILTER (WHERE NOT p.prosecdef)
+  FROM pg_proc p
+ WHERE p.pronamespace = 'isexy'::regnamespace
+   AND p.proname IN ('is_staff', 'log_staff_action', 'my_blocker_ids', 'get_my_hidden_member_ids', 'block_member', 'report_member',
+                     'active_restriction', 'get_my_moderation_status', 'record_contact_sharing', 'validate_message_allowed',
+                     'assert_staff_may_act_on', 'staff_issue_warning', 'staff_lift_restrictions', 'staff_set_shadow_ban',
+                     'staff_set_account_active', 'staff_resolve_report', 'staff_update_profile', 'staff_list_roles', 'staff_grant_role',
+                     'get_ticket_status', 'staff_update_ticket', 'staff_bulk_update_tickets', 'staff_accept_live_chat',
+                     'staff_close_live_chat', 'end_my_live_chat', 'staff_get_live_chat_transcript');
+INSERT INTO results SELECT 'T6 anon can run none of them except get_ticket_status',
+  bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE')), string_agg(p.proname, ',') FILTER (WHERE has_function_privilege('anon', p.oid, 'EXECUTE'))
+  FROM pg_proc p
+ WHERE p.pronamespace = 'isexy'::regnamespace
+   AND p.proname IN ('is_staff', 'log_staff_action', 'my_blocker_ids', 'get_my_hidden_member_ids', 'block_member', 'report_member',
+                     'active_restriction', 'get_my_moderation_status', 'record_contact_sharing', 'validate_message_allowed',
+                     'assert_staff_may_act_on', 'staff_issue_warning', 'staff_lift_restrictions', 'staff_set_shadow_ban',
+                     'staff_set_account_active', 'staff_resolve_report', 'staff_update_profile', 'staff_list_roles', 'staff_grant_role',
+                     'staff_update_ticket', 'staff_bulk_update_tickets', 'staff_accept_live_chat',
+                     'staff_close_live_chat', 'end_my_live_chat', 'staff_get_live_chat_transcript');
+INSERT INTO results SELECT 'T6 internal helpers are not callable by members',
+  NOT has_function_privilege('authenticated', 'isexy.log_staff_action(text,uuid,uuid,jsonb)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'isexy.active_restriction(uuid)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'isexy.assert_staff_may_act_on(uuid)', 'EXECUTE')
+  AND NOT has_function_privilege('authenticated', 'isexy.validate_message_allowed()', 'EXECUTE'), NULL;
 
 -- @@PARTS@@
 

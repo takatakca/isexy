@@ -1,3 +1,7 @@
+-- FOLDED into supabase/isexy-migrations/0015_trust_and_moderation.sql
+-- (deduplicated against 0013/0014 and main's 0009/0010; see that file's
+-- header for what changed). Kept as the branch's history only: do not apply.
+--
 -- ISEXY trust area (branch wf/trust): moderation, reports, blocks, support,
 -- staff tools. NOT a migration file: the integrator folds it into the next
 -- isexy migration (after 0004_app_completion.sql; before or together with the
