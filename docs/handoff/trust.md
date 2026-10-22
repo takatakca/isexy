@@ -1,11 +1,17 @@
 # Trust area: safety, moderation, support, staff tools, assistant, app shell (branch wf/trust)
 
-Running notes so the work survives a stop. Base: b9f1815 (the pushed
-`claude/zealous-brown-kv2hmx` head: discover, accounts, chat, calls, rewards).
-New SQL goes into `docs/handoff/trust.sql` (not a migration file); it was
-tested on a throwaway Postgres 16 with 0001-0004 applied
-(`/var/tmp/isexy-trust-pg`, port 55520: the postgres user cannot enter the
-scratchpad).
+Running notes so the work survives a stop. Branch `wf/trust` (local, not
+pushed). History: started on b9f1815, then **PR #2's head 30caf62 was merged
+in** (main's production work 0001-0012, our 0013/0014 and the merge-review
+fixes) before finishing. Conflicts were only `WORKLOG.md` (both kept) and
+`ContactUs.tsx` (trust's success panel + main's "confirmation only when the
+function says so").
+
+All SQL is in **`supabase/isexy-migrations/0015_trust_and_moderation.sql`**
+(runs after 0014; not applied anywhere). `docs/handoff/trust.sql` is the
+branch history only (marked FOLDED, do not apply). Tests:
+`scripts/isexy/test/trust-smoke.sql` (125 checks, in the CI smoke loop) and
+`e2e/trust-e2e.mjs` (69 checks).
 
 ## Defect list (found by reading every page/function in the area and the
 ## 0001-0004 schema on the local copy), most member-visible first
@@ -89,54 +95,75 @@ scratchpad).
     post as "agent"/"system" in their own session (insert policy checks only
     the session).
 
-## SQL (docs/handoff/trust.sql)
+## SQL: 0015_trust_and_moderation.sql
 
-Parts (all SECURITY DEFINER with `SET search_path = isexy, extensions`,
-REVOKE ALL FROM PUBLIC/anon, GRANT to authenticated; every staff RPC checks
-`has_role` admin or moderator, admin-only where noted):
+Deduplicated against 0013/0014 and main's 0009/0010 (the file header lists
+each part). Every function is SECURITY DEFINER with a pinned search_path,
+REVOKE ALL FROM PUBLIC (and anon unless guests need it), explicit GRANTs;
+every policy is written in the `(select auth.uid())` form, so 0014's C2
+guard stays quiet (0014 re-run after 0015: "already applied"). No row is
+deleted.
 
-- T1 moderation: `user_warnings.lifted_at/lifted_by/lift_reason`,
-  `is_staff()`, `active_restriction(profile)` (internal),
-  `get_my_moderation_status()`, `record_contact_sharing(types, excerpt, match)`
-  (strikes 24 h / 7 days / permanent, no new strike while restricted),
-  `validate_message_allowed` refuses a restricted sender.
-- T2 blocks and reports: `reports.source`; profiles SELECT policy hides the
-  profile of anyone who blocked the caller (`my_blocker_ids()`, evaluated once
-  per statement) and a new "Members view own profile" policy (a suspended
-  member keeps their own row); `get_my_hidden_member_ids()`,
-  `block_member(id)` (idempotent), `report_member(id, reason, details, block,
-  source)` (reasons checked, no self-report, one pending report per pair, 20 a
-  day).
-- T3 support tickets: `get_ticket_status(number, email)` (anon + members);
-  member UPDATE policy dropped; the members' SELECT policy no longer reads
-  `auth.users` (it failed for every signed-in reader, admins included: the
-  authenticated role cannot read auth.users) and uses the JWT e-mail; staff
-  (admin + moderator) read all tickets; `staff_update_ticket(id, status,
-  response, note, assignee, change_assignee)` and
-  `staff_bulk_update_tickets(ids, status, assignee, change_assignee)`
-  (statuses open / in_progress / resolved / closed, notes appended with author
-  and time, assignee must be staff) return what the e-mail needs.
+| Part | What | Why |
+|---|---|---|
+| A | `is_staff()`; `staff_actions` audit table (admins read, only the staff RPCs write, through `log_staff_action`); staff read every profile (suspended ones too) and every report | banned members vanished from staff lists; reports reached nobody |
+| B | `reports.source/reviewed_by/reviewed_at/resolution_note`; profiles SELECT hides the profile of anyone who blocked you (`my_blocker_ids()`, once per statement) and always shows your own; `get_my_hidden_member_ids`, `block_member` (idempotent), `report_member` (reasons checked, no self-report, one pending report per pair, 20 a day); direct report inserts must be pending, unreviewed, not about yourself | defects 3-5, security.md "reporter can set status" |
+| C | `user_warnings.lifted_at/lifted_by/lift_reason`; `active_restriction`, `get_my_moderation_status`, `record_contact_sharing` (24 h, 7 days, permanent; one strike at a time, advisory lock; strikes lifted as "mistake…" do not count) | defects 1-2 |
+| D | `validate_message_allowed` (0001 body) also refuses restricted senders and suspended accounts; 0014 B3 grants restated | restriction and suspension were browser-only |
+| E | staff RPCs (admin or moderator; a staff account only by an admin; never on yourself): `staff_issue_warning`, `staff_lift_restrictions`, `staff_set_shadow_ban`, `staff_set_account_active` (reason required to suspend), `staff_resolve_report`, `staff_update_profile` (name/bio, reason required); admin only: `staff_list_roles`, `staff_grant_role` (no role removal from the app: no deletion) | defect 14; 0014 blocks direct writes of the protected profile columns and staff have no UPDATE policy on profiles/reports |
+| F | `get_ticket_status(number, email)` (guests and members); `staff_update_ticket`, `staff_bulk_update_tickets` **admin only** (main's 0009 trigger lets only admins/service role change staff fields: a moderator RPC would fail inside it); assignees must be admins. Main's 0010 SELECT/UPDATE policies and 0009/0014 D2 triggers untouched (the branch notes' policy rewrites were dropped) | defects 6-7 |
+| G | staff read the live chat queue and messages; `staff_accept_live_chat`, `staff_close_live_chat`, `staff_get_live_chat_transcript`, `end_my_live_chat`; 0014 D5's message policy tightened **in place** (same name): sender is always the caller, members post "user" only in their own waiting/active chat, agents "agent" only in an active chat assigned to them, nobody posts "system" lines directly | defects 8, 11, 17 |
+| H | `staff_dashboard_stats()`: staff home numbers in one call (members, queues; open tickets and revenue for admins) | the page loaded every profile row and summed tables admins could not read |
+| I | admins read `credit_transactions`, `boost_transactions`, `gift_transactions`, `subscriptions`, `chat_subscriptions` (SELECT only) | payment pages counted only the admin's own purchases |
+
+Two `security-smoke.sql` expectations changed on purpose (0015 behaviour):
+a suspended member now reads their own row (the filtered UPDATE then reaches
+the trigger and is refused, instead of touching 0 rows); a member can no
+longer post a "system" line in their own support chat.
 
 ## Progress
 
-- [x] defect list (this file)
-- [x] #1 + #2 chat contact-details guard: word-boundary patterns
-      (`src/hooks/useContentModeration.ts`; 30 sample sentences: no false positive,
-      no miss), strikes and restriction on the server (T1), Chat shows the server's
-      status and refuses on "restricted"; trust-smoke T1 13/13
-- [x] #3 + #4 blocks and reports: `src/lib/blocks.ts` (RPCs, old table writes as
-      fallback), Block/Report page behind sign-in, idempotent block, name in the
-      header, honest copy, back to the inbox after blocking from a chat; hidden
-      either way in Likes > Sent, group chat messages, chat links (Chat uses the
-      hidden ids), web profile (RLS); suspended members see a "suspended" screen
-      instead of profile setup; trust-smoke T2 20/20
-- [x] #6 + #7 tickets: tracking by number + e-mail (RPC, guests too), staff
-      replies shown to the member, own tickets only in "Your tickets", back
-      button stays in ISEXY; Contact Us prefills name/e-mail, IS- numbers, a
-      success panel with the number, attachments only when signed in and stored
-      as private paths (staff open them with a 10-minute signed URL); both
-      ticket e-mails send from `ISEXY_RESEND_FROM` (default
-      notifications@isexy.ca) instead of Resend's sandbox sender; the status
-      e-mail reads the ticket from the database (`{ ticketId, withResponse }`);
-      AdminTickets (single + bulk) and Support Portal use the staff RPCs and
-      e-mail only on a real status change or a new reply; trust-smoke T3 15/15
+- [x] defect list (above)
+- [x] #1 + #2 contact-details guard (word boundaries) + server strikes (C, D)
+- [x] #3 + #4 blocks and reports through RPCs, hidden both ways (Likes sent,
+      group chat, chat links, web profile, forum posts/replies, Phone Line
+      voice inbox); Block/Report behind sign-in
+- [x] #5 + #14 + #15 staff: reports, warnings/restrictions, shadow ban,
+      suspend/reinstate, verify, name/bio edits, all through RPCs
+      (`src/lib/staff.ts`, `src/components/admin/*`); suspended members listed
+- [x] #6 + #7 tickets: tracking by number + e-mail, staff RPCs (admin only),
+      e-mails from `ISEXY_RESEND_FROM`; status e-mail function admin only
+- [x] #8 assistant: members reach a person in the widget (live view, unread
+      badge, end chat); guests get sign-in or a ticket; stream reads the last
+      line without a newline
+- [x] #9 EN/FR button shows EN/FR and has a name; #10 branded EN/FR 404
+- [x] #11 + #12 + #13 moderators: `/admin`, `/admin/moderation`,
+      `/admin/verifications`, `/admin/agent`, `/support`; photo verification
+      queue; voice greeting queue on `/admin/moderation` (Voice tab)
+- [x] #16 admin pages: role checks (`AdminRoute`; a moderator on an
+      admin-only page lands on `/admin`), Support Portal tabs instead of
+      dead links, saved replies, audit log, no member billing page;
+      Settings shows "Staff tools" to staff
+- [x] #17 live chat agent side (RPCs, names, transcript, phone layout)
+- [x] 0015 + tests (from scratch, production simulations), typecheck, build,
+      lint, e2e, deno check
+
+## Owner decisions taken here (easy to revert)
+
+- Moderators answer live chats (accept through `staff_accept_live_chat`).
+  Revert: make the RPC admin only.
+- Tickets stay admin only (main's 0009). If moderators should answer
+  tickets, main's 0009 trigger function must allow them first (owner call).
+- Role removal is not in the app (no row deletion): remove a role in the
+  database.
+
+## Left
+
+| What | Next step |
+|---|---|
+| Ticket e-mails now send from `ISEXY_RESEND_FROM` (default `notifications@isexy.ca`) | Owner: verify the domain in Resend before deploying the two ticket functions (with Resend's sandbox sender they only reached the account owner) |
+| Account deletion is still a ticket; staff delete by hand | Owner process |
+| Cuban ID review (on hold): admin only, direct writes under the existing admin policy | Untouched (Cuba on hold) |
+| Knowledge base / categories admin pages delete rows (admin content tools) | Owner: keep, or switch to unpublish |
+| Staff UI is English only | i18n pass (HANDOFF Left #26) |
+| A blocked member can work out who blocked them (`get_my_hidden_member_ids` minus their own blocks; the same signal as 0014's `blocked_with_me` and as probing a profile id) | Accepted for now: pages filter people in the browser. A server-side filter in each list RPC would remove the need for the id list |

@@ -47,7 +47,7 @@ export function StaffMemberSearch({ initialFilter = "all", onChanged }: { initia
       .select("id, first_name, city, country, is_verified, is_active, shadow_banned, created_at")
       .order("created_at", { ascending: false })
       .limit(50);
-    const term = query.trim().replace(/[%_,()*]/g, " ").trim();
+    const term = query.trim().replace(/[%_,()*"\\]/g, " ").trim(); // PostgREST or() syntax characters
     if (term) q = q.or(`first_name.ilike.%${term}%,city.ilike.%${term}%`);
     if (filter === "suspended") q = q.eq("is_active", false);
     if (filter === "shadow") q = q.eq("shadow_banned", true);

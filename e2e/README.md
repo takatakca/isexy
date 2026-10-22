@@ -40,6 +40,7 @@ Pass/fail checks (print `PASS`/`FAIL` lines, exit 1 on a failure):
 | `calls-e2e.mjs` | Calls | two browsers, real WebRTC (fake camera/mic): ring, answer, video + audio-only, mute/camera/speaker/switch camera, ICE drop -> Reconnecting -> restart, give up, decline, ringing catch-up, camera blocked -> audio only, mic blocked, missed call RPC, out of minutes, every track stopped | `node --import ./e2e/offline-browser.mjs e2e/calls-e2e.mjs SHOTS http://127.0.0.1:4173` |
 | `calls-phone-line-pages.mjs` | Calls (Phone Line pages) | voice recorder (WAV 16 kHz upload, mic released on stop / leaving / 90 s limit, mic blocked), Voice profile save rules (age from birth date, Save draft writes no status, banned stays banned, new greeting before older ones are switched off), hub statuses + link my phone (IVR card), Browse (audio stops on leaving, reply recorder, load error + Try again), Voice inbox, staff review queue (play, approve, reject + reason), in-app calls list | build with `VITE_PHONE_LINE_NUMBER="+1 514 555 0100"`, then `node --import ./e2e/offline-browser.mjs e2e/calls-phone-line-pages.mjs SHOTS http://127.0.0.1:4173` |
 | `calls-twilio-test.mjs` | Calls (Phone Line by phone) | the three Twilio webhooks run in Node against an in-memory Supabase (no browser, no network): signature over the public URL (Twilio's test vector, wrong account, internal URL refused), well-formed escaped TwiML, caller by verified number + 18+ birth date, one session per CallSid, menu keys, silence -> hang up, browse (blocked / shadow-banned left out, WAV/MP3 played from a signed URL, other formats read by headline), status callback -> `apply_twilio_call_status`, 500 on a database error | `node --experimental-strip-types --no-warnings --import ./e2e/calls-twilio-loader.mjs e2e/calls-twilio-test.mjs` |
+| `trust-e2e.mjs` | Trust | block/report (RPCs, sign-in guard, own profile), 404 EN/FR, EN/FR button, Help search, guest ticket tracking, assistant (streamed answer, member handoff to a person, guest sign-in/ticket), moderator (staff home, member sheet: suspend/warn/shadow ban/verify, reports, photo and voice queues, live chat accept/send/close, support portal tabs), admin (revenue, ticket reply with a saved reply, audit log, roles); no direct write of profiles/reports/warnings/tickets/roles/blocks | `E2E_BASE=http://127.0.0.1:4173 node --import ./e2e/offline-browser.mjs e2e/trust-e2e.mjs` |
 | `rewards-e2e.mjs` | Rewards | payments not configured / paused / test mode, checkout bodies (no amounts) and return, promo only with the coupon, My Subscription plan sources, Boosts use/buy, credits to minutes, Loyalty, referral link, Restore purchases, Redeem code, wallet balances, sign-in guards, no browser write of protected data | `E2E_BASE=http://127.0.0.1:4173 node --import ./e2e/offline-browser.mjs e2e/rewards-e2e.mjs` |
 
 Broad smoke scripts (print a log to read; they stop with an error if a step cannot run):
@@ -62,7 +63,8 @@ every other network import).
 SQL is checked separately on a throwaway local Postgres 16, like the CI
 `migrations` job: `scripts/isexy/test/v1-mock.sql`, `scripts/isexy/migrate.sh`
 (dry run, `--apply`, re-run), then `scripts/isexy/test/0013-smoke.sql`,
-`calls-smoke.sql` (part D), `rewards-smoke.sql` (part R) and
-`security-smoke.sql` (0014), each inside BEGIN/ROLLBACK with
+`calls-smoke.sql` (part D), `rewards-smoke.sql` (part R),
+`security-smoke.sql` (0014), `live-functions-compat.sql` and
+`trust-smoke.sql` (0015), each inside BEGIN/ROLLBACK with
 `psql -v ON_ERROR_STOP=1` (instructions at the top of each file; CI runs the
 same loop). Never point these at V1.
