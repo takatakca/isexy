@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { blockMember, blockReportErrorText, fetchHiddenMemberIds } from "@/lib/blocks";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,11 +86,15 @@ export default function PhoneLineInbox() {
         setLoading(false);
         return;
       }
+      // Members blocked either way are left out of both lists.
+      const hidden = await fetchHiddenMemberIds(profile.id);
+      const recVisible = (rec ?? []).filter((r) => !hidden.has(r.from_profile_id));
+      const sntVisible = (snt ?? []).filter((r) => !hidden.has(r.to_profile_id));
 
       const otherIds = Array.from(
         new Set([
-          ...(rec ?? []).map((r) => r.from_profile_id),
-          ...(snt ?? []).map((r) => r.to_profile_id),
+          ...recVisible.map((r) => r.from_profile_id),
+          ...sntVisible.map((r) => r.to_profile_id),
         ])
       );
       const nameMap = new Map<string, { first_name: string | null; city: string | null }>();
@@ -104,14 +109,14 @@ export default function PhoneLineInbox() {
       }
 
       setReceived(
-        (rec ?? []).map((r) => ({
+        recVisible.map((r) => ({
           ...r,
           other_first_name: nameMap.get(r.from_profile_id)?.first_name ?? "Someone",
           other_city: nameMap.get(r.from_profile_id)?.city ?? null,
         }))
       );
       setSent(
-        (snt ?? []).map((r) => ({
+        sntVisible.map((r) => ({
           ...r,
           other_first_name: nameMap.get(r.to_profile_id)?.first_name ?? "Someone",
           other_city: nameMap.get(r.to_profile_id)?.city ?? null,
@@ -168,10 +173,11 @@ export default function PhoneLineInbox() {
 
   const blockSender = async (r: ReplyRow) => {
     if (!profile?.id) return;
-    const { error } = await supabase
-      .from("blocks")
-      .insert({ blocker_id: profile.id, blocked_id: r.from_profile_id });
-    if (error) return toast.error(error.message);
+    try {
+      await blockMember(profile.id, r.from_profile_id);
+    } catch (e) {
+      return toast.error(blockReportErrorText(e));
+    }
     stopAudio();
     toast.success("User blocked");
     setReceived((prev) => prev.filter((x) => x.from_profile_id !== r.from_profile_id));
@@ -236,7 +242,7 @@ export default function PhoneLineInbox() {
               size="sm"
               variant="ghost"
               className="gap-1 rounded-full text-muted-foreground"
-              onClick={() => navigate(`/block-report/${r.from_profile_id}`)}
+              onClick={() => navigate(`/block-report/${r.from_profile_id}`, { state: { source: "phone_line" } })}
             >
               <Flag className="h-3.5 w-3.5" /> Report
             </Button>

@@ -14,6 +14,36 @@ export type Database = {
   }
   isexy: {
     Tables: {
+      staff_actions: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_profile_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_profile_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_profile_id?: string | null
+        }
+        Relationships: []
+      }
       takatak_identity_links: {
         Row: {
           created_at: string
@@ -1566,6 +1596,7 @@ export type Database = {
       live_chat_sessions: {
         Row: {
           agent_id: string | null
+          chatbot_conversation_id: string | null
           created_at: string
           ended_at: string | null
           id: string
@@ -1577,6 +1608,7 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
+          chatbot_conversation_id?: string | null
           created_at?: string
           ended_at?: string | null
           id?: string
@@ -1588,6 +1620,7 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
+          chatbot_conversation_id?: string | null
           created_at?: string
           ended_at?: string | null
           id?: string
@@ -2526,6 +2559,10 @@ export type Database = {
           reason: string
           reported_id: string
           reporter_id: string
+          resolution_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string | null
           status: string | null
         }
         Insert: {
@@ -2535,6 +2572,10 @@ export type Database = {
           reason: string
           reported_id: string
           reporter_id: string
+          resolution_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string | null
           status?: string | null
         }
         Update: {
@@ -2544,6 +2585,10 @@ export type Database = {
           reason?: string
           reported_id?: string
           reporter_id?: string
+          resolution_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string | null
           status?: string | null
         }
         Relationships: [
@@ -3134,6 +3179,9 @@ export type Database = {
           id: string
           is_permanent_ban: boolean | null
           issued_by: string | null
+          lift_reason: string | null
+          lifted_at: string | null
+          lifted_by: string | null
           profile_id: string
           warning_level: number
           warning_type: string
@@ -3145,6 +3193,9 @@ export type Database = {
           id?: string
           is_permanent_ban?: boolean | null
           issued_by?: string | null
+          lift_reason?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
           profile_id: string
           warning_level?: number
           warning_type: string
@@ -3156,6 +3207,9 @@ export type Database = {
           id?: string
           is_permanent_ban?: boolean | null
           issued_by?: string | null
+          lift_reason?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
           profile_id?: string
           warning_level?: number
           warning_type?: string
@@ -3311,6 +3365,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      block_member: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
+      end_my_live_chat: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       get_my_conversations: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3328,6 +3390,33 @@ export type Database = {
           unread_count: number
         }[]
       }
+      get_my_hidden_member_ids: {
+        Args: never
+        Returns: string[]
+      }
+      get_my_moderation_status: {
+        Args: never
+        Returns: Json
+      }
+      get_ticket_status: {
+        Args: { p_email: string; p_ticket_number: string }
+        Returns: {
+          ticket_number: string
+          subject: string
+          category: string
+          priority: string
+          status: string
+          message: string
+          response: string | null
+          responded_at: string | null
+          created_at: string
+          updated_at: string
+        }[]
+      }
+      is_staff: {
+        Args: never
+        Returns: boolean
+      }
       mark_messages_read: {
         Args: { p_match_id: string }
         Returns: number
@@ -3342,10 +3431,22 @@ export type Database = {
       get_my_wallet: { Args: Record<PropertyKey, never>; Returns: Json }
       get_my_referral_code: { Args: Record<PropertyKey, never>; Returns: string }
       get_my_loyalty: { Args: Record<PropertyKey, never>; Returns: Json }
+      my_blocker_ids: {
+        Args: never
+        Returns: string[]
+      }
+      record_contact_sharing: {
+        Args: { p_excerpt?: string; p_match_id?: string | null; p_types: string[] }
+        Returns: Json
+      }
       record_daily_visit: { Args: Record<PropertyKey, never>; Returns: Json }
       redeem_loyalty_reward: { Args: { p_reward: string }; Returns: Json }
       convert_credits_to_minutes: {
         Args: { p_credits: number; p_type: string }
+        Returns: Json
+      }
+      report_member: {
+        Args: { p_block?: boolean; p_details?: string | null; p_reason: string; p_reported_id: string; p_source?: string | null }
         Returns: Json
       }
       request_star_cashout: {
@@ -3356,9 +3457,83 @@ export type Database = {
         Args: { p_is_cuban?: boolean }
         Returns: undefined
       }
+      staff_accept_live_chat: {
+        Args: { p_session_id: string }
+        Returns: {
+          agent_id: string | null
+          chatbot_conversation_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          started_at: string
+          status: string
+          ticket_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+      }
+      staff_bulk_update_tickets: {
+        Args: { p_assigned_to?: string | null; p_change_assignee?: boolean; p_status?: string | null; p_ticket_ids: string[] }
+        Returns: Json
+      }
+      staff_close_live_chat: {
+        Args: { p_session_id: string }
+        Returns: {
+          agent_id: string | null
+          chatbot_conversation_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          started_at: string
+          status: string
+          ticket_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+      }
+      staff_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      staff_get_live_chat_transcript: {
+        Args: { p_session_id: string }
+        Returns: { role: string; content: string; created_at: string }[]
+      }
+      staff_grant_role: {
+        Args: { p_role: Database["isexy"]["Enums"]["app_role"]; p_user_id: string }
+        Returns: Json
+      }
+      staff_issue_warning: {
+        Args: { p_note?: string | null; p_profile_id: string; p_restriction?: string; p_warning_type: string }
+        Returns: Json
+      }
+      staff_lift_restrictions: {
+        Args: { p_profile_id: string; p_reason?: string | null }
+        Returns: number
+      }
+      staff_list_roles: {
+        Args: { p_user_ids: string[] }
+        Returns: { role: Database["isexy"]["Enums"]["app_role"]; user_id: string }[]
+      }
+      staff_resolve_report: {
+        Args: { p_note?: string | null; p_report_id: string; p_status: string }
+        Returns: Json
+      }
+      staff_set_account_active: {
+        Args: { p_active: boolean; p_profile_id: string; p_reason?: string | null }
+        Returns: Json
+      }
       staff_set_profile_verified: {
         Args: { p_profile_id: string; p_verified: boolean }
         Returns: undefined
+      }
+      staff_set_shadow_ban: {
+        Args: { p_banned: boolean; p_profile_id: string; p_reason?: string | null }
+        Returns: Json
+      }
+      staff_update_profile: {
+        Args: { p_bio?: string | null; p_first_name?: string | null; p_profile_id: string; p_reason?: string | null }
+        Returns: Json
       }
       get_discover_feed: {
         Args: {
@@ -3432,6 +3607,10 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: undefined
+      }
+      staff_update_ticket: {
+        Args: { p_assigned_to?: string | null; p_change_assignee?: boolean; p_note?: string | null; p_response?: string | null; p_status?: string | null; p_ticket_id: string }
+        Returns: Json
       }
       track_events: {
         Args: { p_events: Json }

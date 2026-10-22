@@ -16,6 +16,7 @@ import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUpload } from "@/components/FileUpload";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Send, 
   Mail, 
@@ -50,10 +51,23 @@ const ContactUs = () => {
   const [attachments, setAttachments] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const { user, profile } = useAuth();
+  /** The last ticket sent from this page (shown until the next one). */
+  const [sent, setSent] = useState<{ number: string; email: string; emailed: boolean } | null>(null);
+  const [uploadKey, setUploadKey] = useState(0);
 
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Signed in: fill in the name and the sign-in e-mail (still editable).
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || profile?.first_name || "",
+      email: prev.email || user?.email || "",
+    }));
+  }, [user?.email, profile?.first_name]);
 
   const fetchCategories = async () => {
     const { data } = await supabase
@@ -69,7 +83,7 @@ const ContactUs = () => {
 
   const generateTicketNumber = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "CD-";
+    let result = "IS-";
     for (let i = 0; i < 6; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -121,7 +135,7 @@ const ContactUs = () => {
       }
 
       // Confirmation is optional; ticket persistence is the source of truth.
-      let confirmationSent = false;
+      let emailed = false;
       try {
         const { data: emailResult, error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
           body: {
@@ -138,29 +152,27 @@ const ContactUs = () => {
         if (emailError || !emailResult?.success) {
           console.error("Email confirmation not sent:", emailError ?? emailResult?.error);
         } else {
-          confirmationSent = true;
+          emailed = true;
         }
       } catch (emailErr) {
         console.error("Email function error:", emailErr);
         // Continue - ticket was still created
       }
       
-      toast.success(
-        confirmationSent
-          ? `Ticket #${ticketNumber} created. Confirmation email sent.`
-          : `Ticket #${ticketNumber} created. Email confirmation is unavailable; save this number to track your request.`,
-        { duration: 8000 }
-      );
-      
-      setFormData({
-        name: "",
-        email: "",
+      const sentTo = formData.email.trim().toLowerCase();
+      toast.success(`Ticket #${ticketNumber} created.`, { duration: 6000 });
+      setSent({ number: ticketNumber, email: sentTo, emailed });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      setFormData((prev) => ({
+        ...prev,
         category: "",
         subject: "",
         message: "",
         priority: "medium"
-      });
+      }));
       setAttachments([]);
+      setUploadKey((k) => k + 1);
     } catch (error: any) {
       console.error("Error submitting ticket:", error);
       toast.error(error.message || "Failed to submit ticket. Please try again.");
@@ -184,6 +196,21 @@ const ContactUs = () => {
             We're here to help. Send us a message and we'll respond as soon as possible.
           </p>
         </div>
+
+        {sent && (
+          <div role="status" className="mb-6 rounded-xl border border-green-500/40 bg-green-500/10 p-4 text-sm text-foreground">
+            <p className="font-semibold">Ticket #{sent.number} sent</p>
+            <p className="text-muted-foreground mt-1">
+              {sent.emailed
+                ? `A confirmation was sent to ${sent.email}. `
+                : "Keep this number: "}
+              Track it any time with the number and {sent.email}.
+            </p>
+            <Link to="/ticket-tracking" className="mt-2 inline-block font-medium text-primary underline">
+              Track this ticket
+            </Link>
+          </div>
+        )}
 
         {/* Ticket Tracking Link */}
         <Link 
@@ -361,14 +388,23 @@ const ContactUs = () => {
             {/* File Attachments */}
             <div className="space-y-2">
               <Label className="text-foreground">Attachments (Optional)</Label>
-              <FileUpload 
-                onFilesUploaded={setAttachments}
-                maxFiles={5}
-                maxSizeMB={10}
-              />
-              <p className="text-xs text-muted-foreground">
-                Upload screenshots or documents to help us understand your issue better.
-              </p>
+              {user ? (
+                <>
+                  <FileUpload
+                    key={uploadKey}
+                    onFilesUploaded={setAttachments}
+                    maxFiles={5}
+                    maxSizeMB={10}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Upload screenshots or documents to help us understand your issue better.
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  <Link to="/auth" className="text-primary underline">Sign in</Link> to attach screenshots, or describe the issue below.
+                </p>
+              )}
             </div>
 
             {/* Submit Button */}

@@ -1,635 +1,226 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
+  AlertTriangle,
   ArrowLeft,
-  Users,
+  BookOpen,
+  Camera,
+  CheckCircle,
+  Coins,
+  Crown,
+  DollarSign,
+  EyeOff,
+  Headphones,
   Heart,
   MessageCircle,
+  Mic,
+  RefreshCw,
   Shield,
-  TrendingUp,
-  Search,
-  Ban,
-  Eye,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  BookOpen,
+  ShieldAlert,
   TicketIcon,
-  Coins,
+  TrendingUp,
+  Users,
   Video,
-  DollarSign,
-  Crown,
 } from "lucide-react";
 import { format } from "date-fns";
-import { toast } from "sonner";
 import {
-  BarChart,
-  Bar,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
+import { StaffMemberSearch } from "@/components/admin/StaffMemberSearch";
+import { StaffReportsList } from "@/components/admin/StaffReportsList";
+import { fetchDashboardStats, staffErrorText, useStaffRole, type DashboardStats } from "@/lib/staff";
+import { goBack } from "@/lib/navigation";
 
-interface UserStats {
-  total: number;
-  active: number;
-  premium: number;
-  verified: number;
-  newToday: number;
-  newThisWeek: number;
-}
-
-interface Profile {
-  id: string;
-  first_name: string;
-  gender: string;
-  country: string;
-  is_verified: boolean;
-  is_premium: boolean;
-  is_active: boolean;
-  created_at: string;
-  user_id: string;
-}
-
-interface Report {
-  id: string;
-  reporter_id: string;
-  reported_id: string;
-  reason: string;
-  description: string | null;
-  status: string | null;
-  created_at: string;
-  reporter?: { first_name: string };
-  reported?: { first_name: string };
-}
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#22c55e", "#ef4444"];
 
+/**
+ * Staff home (/admin, admins and moderators). Numbers come from
+ * staff_dashboard_stats (one RPC: no profile rows in the browser; revenue and
+ * tickets for admins only); members are searched on the server and every
+ * action on a member opens MemberModerationSheet (staff RPCs).
+ */
 export default function AdminDashboardFull() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<UserStats>({
-    total: 0,
-    active: 0,
-    premium: 0,
-    verified: 0,
-    newToday: 0,
-    newThisWeek: 0,
-  });
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [signupData, setSignupData] = useState<{ date: string; count: number }[]>([]);
-  const [genderData, setGenderData] = useState<{ name: string; value: number }[]>([]);
-  const [revenueStats, setRevenueStats] = useState({ credits: 0, subscriptions: 0, videoCalls: 0 });
-  const [tierDistribution, setTierDistribution] = useState<{ name: string; value: number }[]>([]);
-  const [revenueTimeline, setRevenueTimeline] = useState<{ date: string; amount: number }[]>([]);
+  const role = useStaffRole();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
-  useEffect(() => {
-    checkAdminAndFetch();
+  const loadStats = useCallback(async () => {
+    try {
+      setStats(await fetchDashboardStats());
+      setStatsError(null);
+    } catch (e) {
+      setStatsError(staffErrorText(e));
+    }
   }, []);
 
-  const checkAdminAndFetch = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
 
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .in("role", ["admin", "moderator"])
-        .single();
-
-      if (!roleData) {
-        navigate("/");
-        return;
-      }
-
-      await Promise.all([
-        fetchStats(),
-        fetchUsers(),
-        fetchReports(),
-        fetchSignupTrends(),
-        fetchRevenueStats(),
-      ]);
-    } catch (error) {
-      console.error("Error:", error);
-      navigate("/");
-    } finally {
-      setLoading(false);
-    }
+  const [membersKey, setMembersKey] = useState(0);
+  const refresh = () => {
+    void loadStats();
+    setMembersKey((n) => n + 1);
   };
 
-  const fetchStats = async () => {
-    const { data: profiles } = await supabase.from("profiles").select("*");
-    if (!profiles) return;
+  const m = stats?.members;
+  const queues = stats?.queues;
+  const signupData = (stats?.signups_14d ?? []).map((d) => ({ date: format(new Date(`${d.day}T12:00:00`), "MMM d"), count: d.count }));
+  const genderData = Object.entries(stats?.by_gender ?? {}).map(([name, value]) => ({ name, value }));
+  const tierData = Object.entries(stats?.by_tier ?? {}).map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const queueTiles = [
+    { label: "Reports to review", value: queues?.pending_reports, icon: AlertTriangle, to: "/admin/moderation" },
+    { label: "Restricted members", value: queues?.active_restrictions, icon: ShieldAlert, to: "/admin/moderation" },
+    { label: "Photo checks", value: queues?.pending_photo_checks, icon: Camera, to: "/admin/verifications" },
+    { label: "Voice greetings", value: queues?.pending_voice_greetings, icon: Mic, to: "/admin/moderation" },
+    { label: "Waiting live chats", value: queues?.waiting_live_chats, icon: Headphones, to: "/admin/agent" },
+    ...(role.isAdmin ? [{ label: "Open tickets", value: queues?.open_tickets ?? 0, icon: TicketIcon, to: "/admin/tickets" }] : []),
+  ];
 
-    const genderCounts: Record<string, number> = {};
-    profiles.forEach((p) => {
-      const g = p.gender || "Unknown";
-      genderCounts[g] = (genderCounts[g] || 0) + 1;
-    });
-
-    setGenderData(Object.entries(genderCounts).map(([name, value]) => ({ name, value })));
-
-    setStats({
-      total: profiles.length,
-      active: profiles.filter((p) => p.is_active).length,
-      premium: profiles.filter((p) => p.is_premium).length,
-      verified: profiles.filter((p) => p.is_verified).length,
-      newToday: profiles.filter((p) => new Date(p.created_at) >= today).length,
-      newThisWeek: profiles.filter((p) => new Date(p.created_at) >= weekAgo).length,
-    });
-  };
-
-  const fetchUsers = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    setUsers(data || []);
-  };
-
-  const fetchReports = async () => {
-    const { data } = await supabase
-      .from("reports")
-      .select(`
-        *,
-        reporter:profiles!reports_reporter_id_fkey(first_name),
-        reported:profiles!reports_reported_id_fkey(first_name)
-      `)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    setReports(data || []);
-  };
-
-  const fetchSignupTrends = async () => {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("created_at")
-      .gte("created_at", new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString());
-
-    const dailyCounts: Record<string, number> = {};
-    for (let i = 13; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
-      dailyCounts[dateStr] = 0;
-    }
-
-    profiles?.forEach((p) => {
-      const dateStr = p.created_at.split("T")[0];
-      if (dailyCounts[dateStr] !== undefined) {
-        dailyCounts[dateStr]++;
-      }
-    });
-
-    setSignupData(
-      Object.entries(dailyCounts).map(([date, count]) => ({
-        date: format(new Date(date), "MMM d"),
-        count,
-      }))
-    );
-  };
-
-  const fetchRevenueStats = async () => {
-    const [credits, videoSessions, profiles, chatSubs] = await Promise.all([
-      supabase.from("credit_transactions").select("amount, created_at").eq("type", "purchase"),
-      supabase.from("video_call_sessions").select("credits_used"),
-      supabase.from("profiles").select("subscription_tier, is_premium"),
-      supabase.from("chat_subscriptions").select("status").eq("status", "active"),
-    ]);
-
-    setRevenueStats({
-      credits: credits.data?.reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0,
-      subscriptions: chatSubs.data?.length || 0,
-      videoCalls: videoSessions.data?.reduce((sum, s) => sum + (s.credits_used || 0), 0) || 0,
-    });
-
-    // Tier distribution
-    const tiers: Record<string, number> = { free: 0, plus: 0, gold: 0, platinum: 0 };
-    profiles.data?.forEach((p: any) => {
-      const tier = p.is_premium ? (p.subscription_tier || "plus") : "free";
-      tiers[tier] = (tiers[tier] || 0) + 1;
-    });
-    setTierDistribution(Object.entries(tiers).map(([name, value]) => ({ 
-      name: name.charAt(0).toUpperCase() + name.slice(1), value 
-    })));
-
-    // Revenue timeline (credit purchases over last 14 days)
-    const dailyRevenue: Record<string, number> = {};
-    for (let i = 13; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      dailyRevenue[date.toISOString().split("T")[0]] = 0;
-    }
-    credits.data?.forEach((t: any) => {
-      const dateStr = t.created_at?.split("T")[0];
-      if (dateStr && dailyRevenue[dateStr] !== undefined) {
-        dailyRevenue[dateStr] += Math.abs(t.amount);
-      }
-    });
-    setRevenueTimeline(
-      Object.entries(dailyRevenue).map(([date, amount]) => ({
-        date: format(new Date(date), "MMM d"),
-        amount,
-      }))
-    );
-  };
-
-  const handleBanUser = async (userId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_active: !currentStatus })
-      .eq("id", userId);
-
-    if (error) {
-      toast.error("Failed to update user status");
-    } else {
-      toast.success(currentStatus ? "User banned" : "User unbanned");
-      fetchUsers();
-    }
-  };
-
-  const handleReportAction = async (reportId: string, action: "resolved" | "dismissed") => {
-    const { error } = await supabase
-      .from("reports")
-      .update({ status: action })
-      .eq("id", reportId);
-
-    if (error) {
-      toast.error("Failed to update report");
-    } else {
-      toast.success(`Report ${action}`);
-      fetchReports();
-    }
-  };
-
-  const filteredUsers = users.filter(
-    (u) =>
-      u.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.country?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
+  const tools = [
+    { label: "Moderation", icon: AlertTriangle, to: "/admin/moderation", admin: false },
+    { label: "Verifications", icon: Shield, to: "/admin/verifications", admin: false },
+    { label: "Live chat", icon: MessageCircle, to: "/admin/agent", admin: false },
+    { label: "Support portal", icon: Headphones, to: "/support", admin: false },
+    { label: "Support tickets", icon: TicketIcon, to: "/admin/tickets", admin: true },
+    { label: "Roles & VIP codes", icon: Users, to: "/admin/users", admin: true },
+    { label: "Knowledge base", icon: BookOpen, to: "/admin/knowledge-base", admin: true },
+    { label: "Email templates", icon: MessageCircle, to: "/admin/email-templates", admin: true },
+    { label: "Ticket categories", icon: Coins, to: "/admin/categories", admin: true },
+    { label: "Full analytics", icon: TrendingUp, to: "/admin/analytics", admin: true },
+    { label: "Calls & voice tests", icon: Video, to: "/admin/call-tests", admin: true },
+    { label: "Payment checks", icon: DollarSign, to: "/admin/payment-tests", admin: true },
+  ].filter((t) => role.isAdmin || !t.admin);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-card border-b border-border px-4 py-4">
+    <div className="min-h-screen bg-background pb-12">
+      <div className="bg-card border-b border-border px-4 py-3">
         <div className="flex items-center gap-3 max-w-7xl mx-auto">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => goBack(navigate, "/settings")} aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold text-foreground">Admin Control Panel</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-foreground">Staff</h1>
+            <p className="text-xs text-muted-foreground">{role.isAdmin ? "Admin" : "Moderator"}</p>
+          </div>
+          <Button variant="outline" size="icon" onClick={refresh} aria-label="Refresh">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-4 space-y-6">
-        {/* Stats Cards */}
+        {statsError && <p className="text-sm text-destructive" role="alert">{statsError}</p>}
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground">Total Users</p>
+          {[
+            { icon: Users, value: m?.total, label: "Members", tone: "text-primary" },
+            { icon: TrendingUp, value: m?.new_today, label: "New today", tone: "text-green-500" },
+            { icon: CheckCircle, value: m?.active, label: "Active", tone: "text-blue-500" },
+            { icon: Shield, value: m?.verified, label: "Verified", tone: "text-cyan-500" },
+            { icon: Heart, value: m?.premium, label: "Premium", tone: "text-primary" },
+            { icon: EyeOff, value: (m?.suspended ?? 0) + (m?.shadow_banned ?? 0), label: "Suspended / shadow", tone: "text-destructive" },
+          ].map(({ icon: Icon, value, label, tone }) => (
+            <Card key={label}>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                  <Icon className={`w-5 h-5 shrink-0 ${tone}`} />
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold">{stats ? value ?? 0 : "–"}</p>
+                    <p className="text-xs text-muted-foreground leading-tight">{label}</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.newToday}</p>
-                  <p className="text-xs text-muted-foreground">New Today</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-blue-500" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.active}</p>
-                  <p className="text-xs text-muted-foreground">Active</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-cyan-500" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.verified}</p>
-                  <p className="text-xs text-muted-foreground">Verified</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Heart className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{stats.premium}</p>
-                  <p className="text-xs text-muted-foreground">Premium</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Video className="w-5 h-5 text-purple-500" />
-                <div>
-                  <p className="text-2xl font-bold">{revenueStats.videoCalls}</p>
-                  <p className="text-xs text-muted-foreground">Call Credits</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        <Tabs defaultValue="users" className="w-full">
-          <TabsList className="w-full grid grid-cols-5">
-            <TabsTrigger value="users">Users</TabsTrigger>
+        <section aria-label="Waiting for staff" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {queueTiles.map(({ label, value, icon: Icon, to }) => (
+            <button
+              key={label}
+              onClick={() => navigate(to)}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-left hover:border-primary/50"
+            >
+              <Icon className="h-5 w-5 shrink-0 text-primary" />
+              <span className="min-w-0">
+                <span className="block text-lg font-bold text-foreground">{stats ? value ?? 0 : "–"}</span>
+                <span className="block text-xs leading-tight text-muted-foreground">{label}</span>
+              </span>
+            </button>
+          ))}
+        </section>
+
+        <Tabs defaultValue="members" className="w-full">
+          <TabsList className="flex w-full overflow-x-auto justify-start">
+            <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="revenue">Revenue</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            {role.isAdmin && <TabsTrigger value="revenue">Revenue</TabsTrigger>}
+            <TabsTrigger value="analytics">Signups</TabsTrigger>
             <TabsTrigger value="tools">Tools</TabsTrigger>
           </TabsList>
 
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+          <TabsContent value="members">
+            <StaffMemberSearch key={membersKey} onChanged={() => void loadStats()} />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <StaffReportsList onChanged={() => void loadStats()} />
+          </TabsContent>
+
+          {role.isAdmin && (
+            <TabsContent value="revenue" className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { icon: DollarSign, value: stats?.revenue?.credit_purchases, label: "Credit purchases" },
+                  { icon: Coins, value: stats?.revenue?.credits_purchased, label: "Credits bought" },
+                  { icon: Crown, value: stats?.revenue?.active_subscriptions, label: "Active plans (Stripe)" },
+                  { icon: MessageCircle, value: stats?.revenue?.active_chat_subscriptions, label: "Chat subscriptions" },
+                  { icon: Video, value: stats?.revenue?.call_credits_used, label: "Call minutes used" },
+                  {
+                    icon: TrendingUp,
+                    value: m && m.total > 0 ? `${((m.premium / m.total) * 100).toFixed(1)}%` : "0%",
+                    label: "Members on a paid plan",
+                  },
+                ].map(({ icon: Icon, value, label }) => (
+                  <Card key={label}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-5 h-5 shrink-0 text-green-500" />
+                        <div className="min-w-0">
+                          <p className="text-2xl font-bold">{stats ? value ?? 0 : "–"}</p>
+                          <p className="text-xs text-muted-foreground leading-tight">{label}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </div>
-
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.slice(0, 20).map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{user.first_name}</span>
-                            {user.is_verified && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Shield className="w-3 h-3 mr-1" />
-                                Verified
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.country || "N/A"}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.is_active ? "default" : "destructive"}>
-                            {user.is_active ? "Active" : "Banned"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{format(new Date(user.created_at), "MMM d, yyyy")}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => navigate(`/web-profile/${user.id}`)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={user.is_active ? "destructive" : "default"}
-                              onClick={() => handleBanUser(user.id, user.is_active || false)}
-                            >
-                              <Ban className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Reports Tab */}
-          <TabsContent value="reports" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                  User Reports
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Reporter</TableHead>
-                      <TableHead>Reported</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell>{(report.reporter as any)?.first_name || "Unknown"}</TableCell>
-                        <TableCell>{(report.reported as any)?.first_name || "Unknown"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{report.reason}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              report.status === "resolved"
-                                ? "default"
-                                : report.status === "dismissed"
-                                ? "secondary"
-                                : "destructive"
-                            }
-                          >
-                            {report.status || "pending"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{format(new Date(report.created_at), "MMM d")}</TableCell>
-                        <TableCell>
-                          {!report.status && (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleReportAction(report.id, "resolved")}
-                              >
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleReportAction(report.id, "dismissed")}
-                              >
-                                <XCircle className="w-4 h-4 text-muted-foreground" />
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Revenue Tab */}
-          <TabsContent value="revenue" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-green-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{revenueStats.credits}</p>
-                      <p className="text-xs text-muted-foreground">Credit Purchases</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Crown className="w-5 h-5 text-amber-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{revenueStats.subscriptions}</p>
-                      <p className="text-xs text-muted-foreground">Active Subscriptions</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Video className="w-5 h-5 text-purple-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{revenueStats.videoCalls}</p>
-                      <p className="text-xs text-muted-foreground">Call Credits Used</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Revenue Timeline (14 days)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={revenueTimeline}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "8px",
-                          }}
-                        />
-                        <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Credits" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Subscription Tier Distribution</CardTitle>
+                  <CardTitle className="text-base">Plans</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie
-                          data={tierDistribution}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`}
-                        >
-                          {tierDistribution.map((_, index) => (
+                        <Pie data={tierData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={5} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                          {tierData.map((_, index) => (
                             <Cell key={`tier-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -639,45 +230,14 @@ export default function AdminDashboardFull() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </TabsContent>
+          )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Key Metrics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-foreground">
-                      {stats.total > 0 ? ((stats.premium / stats.total) * 100).toFixed(1) : 0}%
-                    </p>
-                    <p className="text-xs text-muted-foreground">Conversion Rate</p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-foreground">
-                      ${stats.premium > 0 ? (revenueStats.credits / Math.max(stats.total, 1)).toFixed(2) : "0.00"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">ARPU</p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-foreground">{stats.premium}</p>
-                    <p className="text-xs text-muted-foreground">Paying Users</p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <p className="text-2xl font-bold text-foreground">{stats.newThisWeek}</p>
-                    <p className="text-xs text-muted-foreground">New This Week</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">User Signups (14 days)</CardTitle>
+                  <CardTitle className="text-base">Sign-ups (14 days)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
@@ -685,45 +245,23 @@ export default function AdminDashboardFull() {
                       <LineChart data={signupData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "8px",
-                          }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="count"
-                          stroke="hsl(var(--primary))"
-                          strokeWidth={2}
-                          name="Signups"
-                        />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} allowDecimals={false} />
+                        <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                        <Line type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} name="Sign-ups" />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Gender Distribution</CardTitle>
+                  <CardTitle className="text-base">Gender</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie
-                          data={genderData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`}
-                        >
+                        <Pie data={genderData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={5} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                           {genderData.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
@@ -737,93 +275,19 @@ export default function AdminDashboardFull() {
             </div>
           </TabsContent>
 
-          {/* Tools Tab */}
-          <TabsContent value="tools" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/tickets")}
-              >
-                <TicketIcon className="w-6 h-6" />
-                <span>Support Tickets</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/verifications")}
-              >
-                <Shield className="w-6 h-6" />
-                <span>Verifications</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/knowledge-base")}
-              >
-                <BookOpen className="w-6 h-6" />
-                <span>Knowledge Base</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/email-templates")}
-              >
-                <MessageCircle className="w-6 h-6" />
-                <span>Email Templates</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/analytics")}
-              >
-                <TrendingUp className="w-6 h-6" />
-                <span>Full Analytics</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/moderation")}
-              >
-                <AlertTriangle className="w-6 h-6" />
-                <span>Content Moderation</span>
-              </Button>
-             <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/categories")}
-              >
-                <Coins className="w-6 h-6" />
-                <span>Categories</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/users")}
-              >
-                <Users className="w-6 h-6" />
-                <span>User Management</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/agent")}
-              >
-                <MessageCircle className="w-6 h-6" />
-                <span>Agent Dashboard</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                onClick={() => navigate("/admin/call-tests")}
-              >
-                <Video className="w-6 h-6" />
-                <span>Calls &amp; voice review</span>
-              </Button>
+          <TabsContent value="tools">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {tools.map(({ label, icon: Icon, to }) => (
+                <Button key={to} variant="outline" className="h-20 flex flex-col gap-2 whitespace-normal text-center" onClick={() => navigate(to)}>
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs">{label}</span>
+                </Button>
+              ))}
             </div>
           </TabsContent>
         </Tabs>
       </div>
+
     </div>
   );
 }

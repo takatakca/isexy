@@ -7,9 +7,11 @@ what production runs) is merged in** (`docs/handoff/merge-main.md`: map of
 main's changes and every merge decision). Our migrations were renumbered
 **0013_app_completion** and **0014_security_and_performance** (they were 0004
 and 0005 on this branch; main's 0004-0012 are applied on V1). **The trust
-area is still to do** (`wf/trust` is a local, unverified WIP branch, see
-[Still to do](#still-to-do-trust-area)). **Nothing of this branch is
-deployed**: see [Production state and deploy plan](#production-state-and-deploy-plan).
+area is done on `wf/trust`** (local, not pushed, on top of this branch's
+head 092107f: `0015_trust_and_moderation.sql` + 3 functions + client, tested
+and reviewed adversarially; see [Trust area](#trust-area-wftrust)); it goes
+out **after** this PR. **Nothing
+of this branch is deployed**: see [Production state and deploy plan](#production-state-and-deploy-plan).
 Details per area: the tables below, [docs/handoff/accounts.md](handoff/accounts.md),
 [docs/handoff/chat.md](handoff/chat.md), [docs/handoff/calls.md](handoff/calls.md),
 [docs/handoff/rewards.md](handoff/rewards.md), [docs/handoff/security.md](handoff/security.md),
@@ -20,7 +22,7 @@ integration notes [docs/handoff/integration-a.md](handoff/integration-a.md),
 `docs/DECISIONS.md` (permanent decisions: they apply to this branch too).
 
 Contents: [Production state and deploy plan](#production-state-and-deploy-plan) ·
-[Done](#done) · [Still to do](#still-to-do-trust-area) · [Left](#left-ordered-by-member-impact) ·
+[Done](#done) · [Trust area](#trust-area-wftrust) · [Left](#left-ordered-by-member-impact) ·
 [Needs the owner](#needs-the-owner) · [How to run](#how-to-run-the-checks) ·
 [Security and DB performance (0014)](#security-and-db-performance-0014)
 
@@ -213,36 +215,53 @@ first pass), every e2e below passes.
 - Pass A (discover + accounts + chat): see `integration-a.md` (Matches.tsx,
   ContactMethodModal, push files, `pb-40` on member pages, live-chat topic).
 
-## Still to do: trust area
+## Trust area (wf/trust)
 
-`wf/trust` (moderation, reports, blocks, staff tools, tickets) exists only as
-a local branch/worktree (`.claude/worktrees/trust`, head `d590d26` "WIP trust
-area (agent stopped at weekly limit; unverified)"): not pushed, not merged,
-not verified. Whoever finishes it must start from this branch (after the
-main merge): its SQL goes into `0013_app_completion.sql` while 0013 is
-unapplied (or a new `0015_*.sql` once 0013 is on V1); its support-ticket
-changes must keep main's 0009 trigger (members change only `message`,
-`attachments`) and 0010 policies (no `auth.users` reads). Keep SECURITY
-DEFINER + pinned search_path + REVOKE/GRANT, write new policies with
-`(select auth.uid())`, and re-run every SQL test. **If it changes or adds
-any isexy policy, 0014 part C2 stops on purpose** ("C2: ... fingerprint"):
-regenerate it with `ISEXY_DB_URL=<throwaway 0001-0013 db> scripts/isexy/gen-rls-initplan.sh`,
-review the diff, re-run the migration test (`docs/handoff/security.md` › C2).
-0014 B2 also alters the `content_violations` INSERT policy and adds guards on
-`scheduled_calls`/`double_date_pairs`: reconcile if trust touches those. Waiting for it:
+Branch `wf/trust` (worktree `.claude/worktrees/trust`), local and not
+pushed: PR #2's heads 30caf62 and 092107f merged in, the trust work finished,
+tested (2026-10-22) and reviewed as a malicious member and a malicious
+moderator. Details, defect list, decisions, adversarial review:
+[docs/handoff/trust.md](handoff/trust.md).
 
-- Photo verification requests wait forever (no staff screen). The RPC
-  `review_photo_verification` and the staff RLS are in 0013: list
-  `photo_verifications` where `status='pending'`, selfie via
-  `storage.from("isexy-photo-verifications").createSignedUrl(path, 600)`,
-  approve/reject with `rpc("review_photo_verification", { p_request_id, p_approve, p_reason })`.
-- Voice greetings can only be reviewed by admins (`/admin/call-tests`); the
-  RPCs `get_voice_greetings_for_review` / `review_voice_greeting` already
-  accept moderators. If moderators review voices, add the same queue (plus
-  `isexy-get-voice-greeting-url`) to the moderator dashboard.
-- Account deletion is a support ticket; staff delete by hand.
-- `AdminDashboardFull.tsx` has 4 old `no-explicit-any` lint errors and
-  updates `profiles.is_active` directly (staff RLS, not a protected column).
+| Fix | Verified by |
+|---|---|
+| Chat no longer refuses ordinary messages (contact-details patterns with word boundaries); contact-sharing strikes recorded on the server (24 h, 7 days, permanent) and enforced by the messages trigger, which also refuses suspended accounts | `trust-smoke.sql` T1, T6 |
+| Block and report through RPCs (idempotent block, one pending report per pair, 20 a day, no self-report); blocked members hidden both ways (profile rows of people who blocked you, Likes sent, group chat, chat links, web profile, forum, Phone Line voice inbox) | trust-smoke T2, T5; `e2e/trust-e2e.mjs` A1-A4 |
+| Every staff action is a SECURITY DEFINER RPC checking has_role and writing the audit log: warnings + messaging restriction, lift, shadow ban, suspend/reinstate, verify (`staff_set_profile_verified`), name/bio edit, report review, roles (grant/list, admin only), tickets (admin only, main's 0009 rule), live chat accept/close | trust-smoke T3-T6; trust-e2e B3-B9, C2-C4 (no direct write of profiles/reports/warnings/tickets/roles/blocks) |
+| Staff pages: `/admin` (one stats RPC, revenue/tickets admin only), `/admin/moderation` (reports, restrictions, attempts, photo checks, voice greetings), `/admin/verifications` (photo checks; Cuban ID on hold, admin only), `/admin/agent` (live chat, phone layout), `/support` (real tabs, saved replies, audit log); moderators admitted where the RPCs allow them; a moderator on an admin-only page lands on `/admin` | trust-e2e B1-B8, C1-C4 |
+| Tickets: guests track by number + e-mail (`get_ticket_status`); ticket e-mails from `ISEXY_RESEND_FROM`; status e-mail function admin only | trust-smoke T3; trust-e2e A8, C2 |
+| Assistant: streamed answers (last line read without a newline); members reach a person inside the widget; guests are offered sign-in or a ticket | trust-e2e A9 |
+| 404 branded EN/FR with in-app links; EN/FR button shows EN/FR and has a name; Help search opens the Help Centre; back buttons stay in ISEXY; bottom-nav tab stays highlighted on nested pages | trust-e2e A5-A7 |
+| Adversarial pass (proven first: 33 T9 checks failed on the WIP 0015): moderators no longer write warnings, live chat sessions or their own plan/limits/badge directly; never act on themselves (reports about them, own verification, photo check, voice greeting); reports about staff for admins only; a suspended staff account loses every staff tool; reporters do not read reviewed reports; the blocker's photos, Phone Line profile and greeting are hidden from the blocked member, photos signed-in only; a member's live chat can only carry their own assistant chat | trust-smoke T9 (78 checks); security-smoke A |
+| Member-written HTML/script (reports, chat attempts, tickets, audit reasons) renders as text on the staff pages; Cuban ID evidence (on hold) opens through signed URLs, other schemes never opened | trust-e2e D1-D5 |
+
+**Deploy (after this PR's steps 1-3, in this order):**
+
+1. `scripts/isexy/migrate.sh` dry run must list exactly
+   `0015_trust_and_moderation.sql`, end with "isexy guard: V1 objects
+   unchanged" and "Dry run OK: 1 migration(s)"; then `--apply`, then a
+   re-run says "up to date" (`schema_migrations`: 15 rows). Tested locally
+   on 0001-0014 (and on 0001-0012 → 0013-0015, and from scratch), with every
+   SQL test file CI runs (trust-smoke: 203 checks).
+2. Functions (`verify_jwt = false` for all three, as in `supabase/config.toml`):
+   `isexy-ai-chat` (handoff for members only, one open chat per member),
+   `isexy-send-ticket-confirmation` and `isexy-send-ticket-status-update`
+   (sender `ISEXY_RESEND_FROM`; status e-mail reads the ticket from the
+   database, admins only). **Before** the two ticket functions: the owner
+   verifies the sending domain in Resend (default `notifications@isexy.ca`).
+3. Client: merge `wf/trust` (after PR #2 is merged). 0015 does not break
+   PR #2's client meanwhile (its admin ticket updates still pass main's
+   0009 rule; the policies 0015 tightens are not used by it except the
+   old Agent Dashboard's "system" lines, staff only; its direct warning and
+   live chat session writes still work for admins, the only role they ever
+   worked for (moderators' were already refused); every page reading photos
+   is signed in).
+
+Still open in the area: account deletion stays a ticket (staff delete by
+hand); Cuban ID review on hold (bug fix only: evidence links); staff pages
+English only; a ticket's owner can read its staff notes through the API
+(main's 0010 policy); shadow-ban flag/reason readable on profiles (security
+Left below). Full list: trust.md › Left.
 
 ## Left (ordered by member impact)
 
@@ -337,7 +356,7 @@ domain for `ISEXY_RESEND_FROM`.
 6. May the push function delete subscriptions whose endpoint answers 404/410 (kept today: no-delete rule)?
 7. Old WebM/MP4 voice greetings and replies: ask members to re-record, or transcode server-side?
 8. French wording for the phone menu (IVR).
-9. Should moderators (not only admins) review voice greetings, and in which dashboard?
+9. Moderators review voice greetings and photo checks and answer live chats on wf/trust (`/admin/moderation`, `/admin/agent`); tickets stay admin only (main's 0009). Keep or narrow?
 10. Keep the Premium 30-minute promo countdown (device only)? Delete `PromoOfferBanner.tsx`?
 11. Explore category wording; hero/OG image; Cuba items stay on hold (Cuban Rewards has no backend).
 
@@ -361,7 +380,7 @@ scripts/isexy/migrate.sh && scripts/isexy/migrate.sh --apply && scripts/isexy/mi
 for t in adult-profiles allowance-rpc-permissions privileged-rpc-permissions support-ticket-staff-fields atomic-credit-checkout atomic-boost-checkout; do
   psql "$ISEXY_DB_URL" -X -v ON_ERROR_STOP=1 -f scripts/isexy/test/$t.sql   # main's assertions (each rolls back)
 done
-for t in 0013-smoke calls-smoke rewards-smoke security-smoke; do
+for t in 0013-smoke calls-smoke rewards-smoke security-smoke live-functions-compat trust-smoke; do
   printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' $t | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
 done   # -v ON_ERROR_STOP=1: without it psql exits 0 even when a smoke file fails (CI runs the same loop)
 ```
@@ -406,12 +425,12 @@ Left (not changed here; details in security.md › Looked at and left alone):
 
 | What | Next step |
 |---|---|
-| Staff ban button (`AdminDashboardFull` → `profiles.is_active`) changes nothing: no staff UPDATE policy on `profiles` | Trust stage: staff RPC (the trigger already lets staff change protected columns) |
-| `useContentModeration` inserts `user_warnings` as the member (staff-only policy): progressive bans never record | Trust stage: move the warning/ban to an RPC or the server |
-| Reporter can set `reports.status` on INSERT | Trust stage: `AND coalesce(status, 'pending') = 'pending'` in the INSERT check |
-| Every member reads every column of every active profile (`blocked_contacts`, coarse location, plan, shadow ban) | Owner/next pass: a member-facing view or RPC with the public columns |
+| Staff ban button (`AdminDashboardFull` → `profiles.is_active`) changes nothing: no staff UPDATE policy on `profiles` | Done on wf/trust: `staff_set_account_active` (0015 E) |
+| `useContentModeration` inserts `user_warnings` as the member (staff-only policy): progressive bans never record | Done on wf/trust: `record_contact_sharing` + messages trigger (0015 C, D) |
+| Reporter can set `reports.status` on INSERT | Done on wf/trust: INSERT check pending/unreviewed/not self (0015 B4) |
+| Every member reads every column of every active profile (`blocked_contacts`, coarse location, plan, shadow ban and, since wf/trust's staff tool writes it, the shadow-ban reason) | Owner/next pass: a member-facing view or RPC with the public columns |
 | Chat unlock and Plus-only settings (Incognito, Recently Active) enforced in the UI only | After owner decision #1: `messages` INSERT check / settings RPC |
-| A policy added or changed later (trust work) makes 0014 C2 stop | Regenerate C2 (`scripts/isexy/gen-rls-initplan.sh` on a 0001-0013 copy), review, re-test |
+| A policy added or changed later makes 0014 C2 stop | Only if 0014 itself is edited: later migrations (0015) write policies in the `(select auth.uid())` form, and 0014 re-run after 0015 says "already applied" |
 
 (Fixed by main meanwhile, live: members could change `status`/`priority`/
 `assigned_to`/`response` of their own ticket, and the ticket policies read

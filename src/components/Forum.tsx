@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { fetchHiddenMemberIds } from "@/lib/blocks";
 
 interface ForumCategory {
   id: string;
@@ -56,10 +57,25 @@ export default function Forum() {
   const [newPostContent, setNewPostContent] = useState("");
   const [newReply, setNewReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  /** Members blocked either way: their posts and replies are not shown. */
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const visible = <T extends { author_id: string | null }>(rows: T[]) =>
+    rows.filter((r) => !r.author_id || !hidden.has(r.author_id));
 
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    let alive = true;
+    void fetchHiddenMemberIds(profile.id).then((ids) => {
+      if (alive) setHidden(ids);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [profile?.id]);
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -266,7 +282,7 @@ export default function Forum() {
           </button>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-foreground">{selectedCategory?.name}</h2>
-            <p className="text-sm text-muted-foreground">{posts.length} discussions</p>
+            <p className="text-sm text-muted-foreground">{visible(posts).length} discussions</p>
           </div>
           <Button
             onClick={() => setView("new-post")}
@@ -281,14 +297,14 @@ export default function Forum() {
           <div className="flex items-center justify-center py-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
-        ) : posts.length === 0 ? (
+        ) : visible(posts).length === 0 ? (
           <div className="text-center py-10">
             <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">No posts yet. Be the first to start a discussion!</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {posts.map((post) => (
+            {visible(posts).map((post) => (
               <button
                 key={post.id}
                 onClick={() => handlePostClick(post)}
@@ -400,7 +416,7 @@ export default function Forum() {
         {/* Replies */}
         <div className="space-y-3">
           <h3 className="font-semibold text-foreground">
-            {replies.length} {replies.length === 1 ? "Reply" : "Replies"}
+            {visible(replies).length} {visible(replies).length === 1 ? "Reply" : "Replies"}
           </h3>
 
           {loading ? (
@@ -408,7 +424,7 @@ export default function Forum() {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
             </div>
           ) : (
-            replies.map((reply) => (
+            visible(replies).map((reply) => (
               <div key={reply.id} className="bg-muted rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">

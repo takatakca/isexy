@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { fetchHiddenMemberIds } from "@/lib/blocks";
 
 interface Person {
   first_name: string;
@@ -63,11 +64,13 @@ export default function GroupChat() {
   const prevCountRef = useRef(0);
   const peopleRef = useRef(people);
   peopleRef.current = people;
+  /** Members blocked either way: their messages are not shown. */
+  const hiddenRef = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     if (!groupId || !myId) return;
     setLoadError(null);
-    const [groupRes, membersRes, messagesRes] = await Promise.all([
+    const [groupRes, membersRes, messagesRes, hidden] = await Promise.all([
       supabase.from("group_chats").select("name").eq("id", groupId).maybeSingle(),
       supabase.from("group_chat_members").select("profile_id").eq("group_chat_id", groupId),
       supabase
@@ -76,7 +79,9 @@ export default function GroupChat() {
         .eq("group_chat_id", groupId)
         .order("created_at", { ascending: false })
         .limit(HISTORY_LIMIT),
+      fetchHiddenMemberIds(myId),
     ]);
+    hiddenRef.current = hidden;
 
     if (groupRes.error || membersRes.error || messagesRes.error) {
       console.error("Group chat load failed:", groupRes.error ?? membersRes.error ?? messagesRes.error);
@@ -92,7 +97,7 @@ export default function GroupChat() {
     }
 
     const memberIds = (membersRes.data ?? []).map((m) => m.profile_id);
-    const history = (messagesRes.data ?? []).reverse();
+    const history = (messagesRes.data ?? []).reverse().filter((m) => !hidden.has(m.sender_id));
     const senderIds = [...new Set(history.map((m) => m.sender_id))];
     const map = await loadPeople([...new Set([...memberIds, ...senderIds])]);
 
@@ -117,6 +122,7 @@ export default function GroupChat() {
         { event: "INSERT", schema: "isexy", table: "group_messages", filter: `group_chat_id=eq.${groupId}` },
         async (payload) => {
           const incoming = payload.new as Message;
+          if (hiddenRef.current.has(incoming.sender_id)) return;
           setMessages((prev) => (prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]));
           if (!peopleRef.current.has(incoming.sender_id)) {
             const extra = await loadPeople([incoming.sender_id]);

@@ -203,7 +203,7 @@ const AdminTickets = () => {
 
       if (error) throw error;
       setTickets((data as SupportTicket[]) || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching tickets:", error);
       toast({ title: "Error", description: "Failed to load tickets", variant: "destructive" });
     } finally {
@@ -215,8 +215,10 @@ const AdminTickets = () => {
     try {
       const { data, error } = await supabase.rpc("get_admin_users");
       if (error) throw error;
-      setAdminUsers((data as AdminUser[]) || []);
-    } catch (error: any) {
+      // Tickets are assigned to admins only (staff_update_ticket checks it; main's 0009 rule).
+      const admins = ((data as AdminUser[]) || []).filter((a) => a.role === "admin");
+      setAdminUsers(admins.filter((a, i) => admins.findIndex((b) => b.user_id === a.user_id) === i));
+    } catch (error: unknown) {
       console.error("Error fetching admin users:", error);
     }
   };
@@ -252,58 +254,60 @@ const AdminTickets = () => {
     setFilteredTickets(filtered);
   };
 
+  /** Attachments are paths in the private bucket (older tickets: full signed URLs). */
+  const openAttachment = async (ref: string) => {
+    if (/^https?:\/\//.test(ref)) {
+      window.open(ref, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const win = window.open("", "_blank");
+    const { data, error } = await supabase.storage.from("isexy-ticket-attachments").createSignedUrl(ref, 600);
+    if (error || !data?.signedUrl) {
+      win?.close();
+      toast({ title: "Can't open the file", description: error?.message ?? "Not found", variant: "destructive" });
+      return;
+    }
+    if (win) win.location.href = data.signedUrl;
+    else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  /** Status mail for one ticket (the function reads the ticket back; staff only). */
+  const sendStatusEmail = async (ticketId: string, withResponse: boolean) => {
+    try {
+      const { error } = await supabase.functions.invoke("isexy-send-ticket-status-update", {
+        body: { ticketId, withResponse },
+      });
+      if (error) throw error;
+    } catch (emailError) {
+      console.error("Error sending status update email:", emailError);
+    }
+  };
+
+  // All staff changes go through staff_update_ticket (has_role checked on the server).
   const handleUpdateTicket = async () => {
     if (!selectedTicket) return;
 
     setIsUpdating(true);
     try {
-      const oldStatus = selectedTicket.status;
-      const updateData: any = {
-        updated_at: new Date().toISOString(),
-      };
-
-      if (newStatus && newStatus !== selectedTicket.status) {
-        updateData.status = newStatus;
-      }
-
-      if (responseText.trim()) {
-        updateData.response = responseText.trim();
-        updateData.responded_at = new Date().toISOString();
-      }
-
-      if (adminNotes.trim()) {
-        updateData.admin_notes = adminNotes.trim();
-      }
-
+      const statusChanged = !!newStatus && newStatus !== selectedTicket.status;
+      const response = responseText.trim();
+      const responseChanged = !!response && response !== (selectedTicket.response ?? "").trim();
       const newAssigneeId = selectedAssignee === "unassigned" ? null : selectedAssignee;
-      if (newAssigneeId !== selectedTicket.assigned_to) {
-        updateData.assigned_to = newAssigneeId;
-      }
+      const assigneeChanged = newAssigneeId !== selectedTicket.assigned_to;
 
-      const { error } = await supabase
-        .from("support_tickets")
-        .update(updateData)
-        .eq("id", selectedTicket.id);
+      const { data, error } = await supabase.rpc("staff_update_ticket", {
+        p_ticket_id: selectedTicket.id,
+        p_status: statusChanged ? newStatus : null,
+        p_response: responseChanged ? response : null,
+        p_note: adminNotes.trim() || null,
+        p_assigned_to: newAssigneeId,
+        p_change_assignee: assigneeChanged,
+      });
 
       if (error) throw error;
 
-      if (newStatus && newStatus !== oldStatus) {
-        try {
-          await supabase.functions.invoke("isexy-send-ticket-status-update", {
-            body: {
-              email: selectedTicket.email,
-              name: selectedTicket.name,
-              ticketNumber: selectedTicket.ticket_number,
-              subject: selectedTicket.subject,
-              oldStatus,
-              newStatus,
-              response: responseText.trim() || undefined,
-            }
-          });
-        } catch (emailError) {
-          console.error("Error sending status update email:", emailError);
-        }
-      }
+      const result = (data ?? {}) as { notify?: boolean; responded?: boolean };
+      if (result.notify) await sendStatusEmail(selectedTicket.id, !!result.responded);
 
       toast({ title: "Ticket updated", description: `Ticket #${selectedTicket.ticket_number} has been updated` });
       setSelectedTicket(null);
@@ -312,7 +316,7 @@ const AdminTickets = () => {
       setSelectedAssignee("unassigned");
       setAdminNotes("");
       fetchTickets();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating ticket:", error);
       toast({ title: "Error", description: "Failed to update ticket", variant: "destructive" });
     } finally {
@@ -350,45 +354,18 @@ const AdminTickets = () => {
 
     setIsBulkUpdating(true);
     try {
-      const updateData: any = {
-        updated_at: new Date().toISOString(),
-      };
-
-      if (bulkStatus) {
-        updateData.status = bulkStatus;
-      }
-
-      if (bulkAssignee) {
-        updateData.assigned_to = bulkAssignee === "unassigned" ? null : bulkAssignee;
-      }
-
-      const { error } = await supabase
-        .from("support_tickets")
-        .update(updateData)
-        .in("id", Array.from(selectedTickets));
+      const { data, error } = await supabase.rpc("staff_bulk_update_tickets", {
+        p_ticket_ids: Array.from(selectedTickets),
+        p_status: bulkStatus || null,
+        p_assigned_to: bulkAssignee && bulkAssignee !== "unassigned" ? bulkAssignee : null,
+        p_change_assignee: !!bulkAssignee,
+      });
 
       if (error) throw error;
 
-      // Send email notifications for status changes
-      if (bulkStatus) {
-        const ticketsToNotify = tickets.filter(t => selectedTickets.has(t.id) && t.status !== bulkStatus);
-        for (const ticket of ticketsToNotify) {
-          try {
-            await supabase.functions.invoke("isexy-send-ticket-status-update", {
-              body: {
-                email: ticket.email,
-                name: ticket.name,
-                ticketNumber: ticket.ticket_number,
-                subject: ticket.subject,
-                oldStatus: ticket.status,
-                newStatus: bulkStatus,
-              }
-            });
-          } catch (emailError) {
-            console.error("Error sending status update email:", emailError);
-          }
-        }
-      }
+      // Status mails only for the tickets whose status really changed.
+      const changed = ((data ?? {}) as { status_changed?: { ticket_id: string }[] }).status_changed ?? [];
+      for (const t of changed) await sendStatusEmail(t.ticket_id, false);
 
       toast({ 
         title: "Bulk update complete", 
@@ -400,7 +377,7 @@ const AdminTickets = () => {
       setBulkStatus("");
       setBulkAssignee("");
       fetchTickets();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error bulk updating tickets:", error);
       toast({ title: "Error", description: "Failed to update tickets", variant: "destructive" });
     } finally {
@@ -737,7 +714,7 @@ const AdminTickets = () => {
                         setNewStatus(ticket.status);
                         setResponseText(ticket.response || "");
                         setSelectedAssignee(ticket.assigned_to || "unassigned");
-                        setAdminNotes(ticket.admin_notes || "");
+                        setAdminNotes("");
                       }}
                     >
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -874,18 +851,17 @@ const AdminTickets = () => {
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">Attachments</p>
                     <div className="flex flex-wrap gap-2">
-                      {selectedTicket.attachments.map((url, i) => (
-                        <a
+                      {selectedTicket.attachments.map((ref, i) => (
+                        <button
                           key={i}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          type="button"
+                          onClick={() => void openAttachment(ref)}
                           className="flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm hover:bg-primary/20 transition-colors"
                         >
                           <Paperclip className="w-3 h-3" />
                           File {i + 1}
                           <ExternalLink className="w-3 h-3" />
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -956,9 +932,14 @@ const AdminTickets = () => {
 
                 {/* Admin Notes */}
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Admin Notes (Internal)</p>
+                  <p className="text-sm text-muted-foreground mb-2">Internal notes (not visible to the member)</p>
+                  {selectedTicket.admin_notes && (
+                    <p className="mb-2 max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-2 text-xs text-foreground">
+                      {selectedTicket.admin_notes}
+                    </p>
+                  )}
                   <Textarea
-                    placeholder="Internal notes not visible to user..."
+                    placeholder="Add a note (saved with your name and the time)..."
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     rows={2}

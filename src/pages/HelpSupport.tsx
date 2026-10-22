@@ -31,11 +31,7 @@ const HelpSupport = () => {
 
   const handleAction = (category: typeof helpCategories[0]) => {
     if (category.action === "reporting") setReportingOpen(true);
-    else if (category.action === "safety") {
-      // Open the AI chat with safety pre-selected
-      setReportingOpen(false);
-      navigate("/safety");
-    }
+    else if (category.action === "safety") navigate("/safety");
     else if (category.path) navigate(category.path);
   };
 
@@ -47,16 +43,27 @@ const HelpSupport = () => {
         <h1 className="text-3xl font-bold text-foreground mb-2 text-center">Get help</h1>
         <p className="text-muted-foreground text-sm mb-6 text-center">How can we help you today?</p>
 
-        {/* Search */}
-        <div className="relative w-full max-w-md mb-6">
+        {/* Search: opens the Help Centre with the results */}
+        <form
+          role="search"
+          className="relative w-full max-w-md mb-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = searchQuery.trim();
+            navigate(q ? `/knowledge-base?q=${encodeURIComponent(q)}` : "/knowledge-base");
+          }}
+        >
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
+            type="search"
             placeholder="Search for help..."
+            aria-label="Search the Help Centre"
+            enterKeyHint="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
-        </div>
+        </form>
 
         {/* Main Categories — Airbnb style list */}
         <div className="w-full max-w-md space-y-0 bg-card rounded-xl border border-border overflow-hidden mb-6">
@@ -129,7 +136,9 @@ const HelpSupport = () => {
             <SheetTitle className="text-xl font-bold text-left">How would you like to report?</SheetTitle>
           </SheetHeader>
           <p className="text-sm text-muted-foreground mt-2 mb-4">
-            Choose the best option so we can get you the right help.
+            <strong className="text-foreground">To report a member</strong>, open their profile or your chat with
+            them, tap the menu, then <strong className="text-foreground">Report</strong>. You can block them at the
+            same time; they are not told who reported them. For anything else, send us a ticket.
           </p>
           <div className="space-y-3">
             <Button
@@ -146,6 +155,14 @@ const HelpSupport = () => {
             >
               <MessageCircle className="w-5 h-5 mr-2" />
               Leave feedback
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => { setReportingOpen(false); navigate("/safety-tips"); }}
+              className="w-full py-5 text-base"
+            >
+              <Shield className="w-5 h-5 mr-2" />
+              Safety tips
             </Button>
           </div>
         </SheetContent>

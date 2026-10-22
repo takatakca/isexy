@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Search, Ticket, Clock, CheckCircle, AlertCircle, MessageSquare, RefreshCw, Bell, Paperclip, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,16 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { goBack } from "@/lib/navigation";
 
 interface SupportTicket {
-  id: string;
+  id?: string;
   ticket_number: string;
   subject: string;
   category: string;
   priority: string;
   status: string;
   message: string;
-  attachments: string[];
+  attachments?: string[];
   response: string | null;
   responded_at: string | null;
   created_at: string;
@@ -26,11 +28,19 @@ interface SupportTicket {
 
 const TicketTracking = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchEmail, setSearchEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [searchedTicket, setSearchedTicket] = useState<SupportTicket | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
+
+  // Signed in: the sign-in e-mail is the usual ticket address.
+  useEffect(() => {
+    if (user?.email) setSearchEmail((prev) => prev || user.email!);
+  }, [user?.email]);
 
   useEffect(() => {
     fetchUserTickets();
@@ -77,28 +87,35 @@ const TicketTracking = () => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (user) {
+        // Own tickets only (staff can read every ticket under RLS).
+        const email = user.email?.toLowerCase().replace(/"/g, "");
         const { data, error } = await supabase
           .from("support_tickets")
-          .select("*")
-          .order("created_at", { ascending: false });
+          .select("id, ticket_number, subject, category, priority, status, message, attachments, response, responded_at, created_at, updated_at")
+          .or(email ? `user_id.eq.${user.id},email.eq."${email}"` : `user_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(50);
 
         if (error) throw error;
         setTickets((data as SupportTicket[]) || []);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching tickets:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Number + the e-mail the ticket was sent from (works for guests too).
   const searchTicket = async () => {
-    if (!searchQuery.trim()) {
+    const number = searchQuery.trim().toUpperCase();
+    const email = searchEmail.trim();
+    if (!number || !email) {
       toast({
-        title: "Enter ticket number",
-        description: "Please enter a ticket number to search.",
+        title: "Ticket number and e-mail",
+        description: "Enter the ticket number and the e-mail address you used to send it.",
         variant: "destructive",
       });
       return;
@@ -106,25 +123,25 @@ const TicketTracking = () => {
 
     setIsSearching(true);
     try {
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .select("*")
-        .eq("ticket_number", searchQuery.trim().toUpperCase())
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_ticket_status", {
+        p_ticket_number: number,
+        p_email: email,
+      });
 
       if (error) throw error;
 
-      if (data) {
-        setSearchedTicket(data as SupportTicket);
+      const found = (data ?? [])[0] as SupportTicket | undefined;
+      if (found) {
+        setSearchedTicket(found);
       } else {
         toast({
           title: "Ticket not found",
-          description: "No ticket found with that number. Please check and try again.",
+          description: "No ticket matches this number and e-mail. Check both and try again.",
           variant: "destructive",
         });
         setSearchedTicket(null);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error searching ticket:", error);
       toast({
         title: "Search failed",
@@ -220,6 +237,15 @@ const TicketTracking = () => {
           {ticket.message}
         </p>
 
+        {ticket.response && (
+          <div className="mb-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
+            <p className="text-xs font-semibold text-foreground mb-1">
+              Reply from ISEXY Support{ticket.responded_at ? ` · ${formatDate(ticket.responded_at)}` : ""}
+            </p>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{ticket.response}</p>
+          </div>
+        )}
+
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="bg-muted/50 px-2 py-1 rounded">{ticket.category}</span>
           <span>{formatDate(ticket.created_at)}</span>
@@ -234,9 +260,9 @@ const TicketTracking = () => {
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
-            <Link to="/settings" className="p-2 hover:bg-muted rounded-full transition-colors">
+            <button onClick={() => goBack(navigate, "/help-support")} className="p-2 hover:bg-muted rounded-full transition-colors" aria-label="Back">
               <ArrowLeft className="w-5 h-5 text-foreground" />
-            </Link>
+            </button>
             <h1 className="text-xl font-bold text-foreground">Ticket Tracking</h1>
           </div>
           <Button
@@ -256,19 +282,29 @@ const TicketTracking = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
               <Search className="w-5 h-5 text-primary" />
-              Search by Ticket Number
+              Find a ticket
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
-                placeholder="Enter ticket number (e.g., CD-ABC123)"
+                placeholder="Ticket number (e.g. IS-ABC123)"
+                aria-label="Ticket number"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && searchTicket()}
                 className="font-mono"
               />
-              <Button onClick={searchTicket} disabled={isSearching}>
+              <Input
+                type="email"
+                placeholder="E-mail used for the ticket"
+                aria-label="E-mail used for the ticket"
+                autoComplete="email"
+                value={searchEmail}
+                onChange={(e) => setSearchEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && searchTicket()}
+              />
+              <Button onClick={searchTicket} disabled={isSearching} aria-label="Search">
                 {isSearching ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
@@ -339,9 +375,11 @@ const TicketTracking = () => {
             <Card className="bg-card/50 border-dashed">
               <CardContent className="p-8 text-center">
                 <Ticket className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">No tickets yet</h3>
+                <h3 className="font-semibold text-foreground mb-2">{user ? "No tickets yet" : "Sent a ticket as a guest?"}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  You haven't submitted any support tickets. Need help?
+                  {user
+                    ? "You haven't submitted any support tickets. Need help?"
+                    : "Find it above with its number and your e-mail, or sign in to see the tickets sent from your account."}
                 </p>
                 <Link to="/contact-us">
                   <Button>

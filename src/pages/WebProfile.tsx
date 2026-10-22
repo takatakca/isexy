@@ -397,7 +397,7 @@ function MemberProfile({ id }: { id: string }) {
             {isMe ? (
               <Button variant="outline" onClick={() => navigate("/edit-profile")}>Edit my profile</Button>
             ) : (
-              <button onClick={() => navigate(`/block-report/${member.id}`)} className="text-sm text-muted-foreground flex items-center justify-center gap-1 py-2">
+              <button onClick={() => navigate(`/block-report/${member.id}`, { state: { source: "profile" } })} className="text-sm text-muted-foreground flex items-center justify-center gap-1 py-2">
                 <Flag className="w-4 h-4" /> Report or block {member.first_name}
               </button>
             )}
