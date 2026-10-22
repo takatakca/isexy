@@ -1,3 +1,17 @@
+## Déploiement vérifié — 22 octobre 2026
+
+- `https://isexy.ca` et `https://www.isexy.ca` sont servis par Coolify
+  (app `vuvhnbmedq5gr4sajmsx2cg7`, branche `main`, Nixpacks, `/dist`).
+- DNS : apex A `31.220.96.134` ; `www` reste un CNAME vers l'apex.
+  `mail` et `ftp` sont des A vers `209.42.24.127`. MX `0 mail.isexy.ca`.
+  SPF n'autorise plus `+a` (sinon l'IP Coolify pourrait envoyer du courrier).
+- TLS Let's Encrypt émis pour `isexy.ca` et `www.isexy.ca`.
+- Auto-deploy : source GitHub App (installation privée), dépôt
+  `takatakca/isexy`, identifiant `1147646156`, branche `main`.
+  Un push sur `main` déploie. Render (`https://isexy.onrender.com`) reste le repli.
+- `/release.json` de ce build a `commit: null` (le SHA n'était pas injecté
+  au build). Les pages `/`, `/auth` et `/discover` répondent 200.
+
 ## Déploiement vérifié — 16 octobre 2026 (référence courante)
 
 - Run GitHub `38951304397` SUCCESS, Render `445fc829` LIVE.
@@ -230,7 +244,7 @@ on V1 itself as `ISEXY_*` names, not in GitHub: see `V1-MIGRATION.md` › 3.6.
 
 | Name | Value |
 | --- | --- |
-| `ISEXY_SITE_URL` | Public URL (default `https://isexy.onrender.com`; later `https://isexy.ca`) |
+| `ISEXY_SITE_URL` | Public URL. Live site is `https://isexy.ca`. Render fallback remains `https://isexy.onrender.com` |
 | `SUPABASE_PROJECT_REF` | default `pcjfahhlozsseqqevimi` |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` | defaults: V1 URL and anon key |
 | `VITE_GA4_ID` | *(optional)* Google Analytics 4 measurement ID |

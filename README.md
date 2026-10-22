@@ -9,8 +9,8 @@ Launching in Canada (English and French). Positioning and what changed:
 A GROUPE TAKATAK app: it runs on **TAKATAK V1** (Supabase project
 `pcjfahhlozsseqqevimi`, shared with takatak.ca) in its own `isexy` schema, and
 members sign in with **Takatak Auth**. Hosted on **Coolify** (coolify.takatak.ca,
-project ISEXY, auto-deployed from `main`); https://isexy.onrender.com (Render) is
-the fallback for now.
+project ISEXY, auto-deployed from `main`) at https://isexy.ca; https://isexy.onrender.com
+(Render) is the fallback.
 
 ## Stack
 
@@ -97,9 +97,8 @@ admin/moderator.
 - **One source of truth:** `src/seo/routes.json` (title, description, sitemap
   priority, indexability) feeds both the in-app `RouteSeo` tags and the
   build-time generator.
-- **Domain:** set `VITE_SITE_URL` (default `https://isexy.onrender.com`); switch
-  to `https://isexy.ca` and every canonical, social tag, sitemap and JSON-LD URL
-  follows.
+- **Domain:** `VITE_SITE_URL` is `https://isexy.ca`. Every canonical, social tag,
+  sitemap and JSON-LD URL follows that value.
 - `npm run build` runs `scripts/generate-seo.mjs`, which writes `sitemap.xml`
   (public pages + every published Help Center article), `robots.txt`
   (private app screens disallowed), `llms.txt`, and a pre-rendered `<head>` for
