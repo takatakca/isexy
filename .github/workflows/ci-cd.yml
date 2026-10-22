@@ -31,7 +31,7 @@ permissions:
 
 env:
   SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'pcjfahhlozsseqqevimi' }}
-  SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.onrender.com' }}
+  SITE_URL: ${{ vars.ISEXY_SITE_URL || 'https://isexy.ca' }}
 
 jobs:
   verify:
