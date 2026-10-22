@@ -222,15 +222,15 @@ const App = () => (
               <Route path="/contact-us" element={<ContactUs />} />
               <Route path="/ticket-tracking" element={<TicketTracking />} />
               <Route path="/admin/tickets" element={<AdminRoute><AdminTickets /></AdminRoute>} />
-              <Route path="/admin" element={<AdminRoute><AdminDashboardFull /></AdminRoute>} />
+              <Route path="/admin" element={<AdminRoute allowModerator><AdminDashboardFull /></AdminRoute>} />
               <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
               <Route path="/admin/email-templates" element={<AdminRoute><AdminEmailTemplates /></AdminRoute>} />
-              <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
+              <Route path="/admin/verifications" element={<AdminRoute allowModerator><AdminVerifications /></AdminRoute>} />
               <Route path="/admin/agent" element={<AdminRoute allowModerator><AgentDashboard /></AdminRoute>} />
               <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
               <Route path="/admin/knowledge-base" element={<AdminRoute><AdminKnowledgeBase /></AdminRoute>} />
-              <Route path="/admin/moderation" element={<AdminRoute><AdminModeration /></AdminRoute>} />
+              <Route path="/admin/moderation" element={<AdminRoute allowModerator><AdminModeration /></AdminRoute>} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/knowledge-base/:articleId" element={<KnowledgeBase />} />
               <Route path="/donate/:recipientId?" element={<CubanDonations />} />

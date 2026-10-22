@@ -14,6 +14,36 @@ export type Database = {
   }
   isexy: {
     Tables: {
+      staff_actions: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_profile_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_profile_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_profile_id?: string | null
+        }
+        Relationships: []
+      }
       takatak_identity_links: {
         Row: {
           created_at: string
@@ -1566,6 +1596,7 @@ export type Database = {
       live_chat_sessions: {
         Row: {
           agent_id: string | null
+          chatbot_conversation_id: string | null
           created_at: string
           ended_at: string | null
           id: string
@@ -1577,6 +1608,7 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
+          chatbot_conversation_id?: string | null
           created_at?: string
           ended_at?: string | null
           id?: string
@@ -1588,6 +1620,7 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
+          chatbot_conversation_id?: string | null
           created_at?: string
           ended_at?: string | null
           id?: string
@@ -2526,6 +2559,9 @@ export type Database = {
           reason: string
           reported_id: string
           reporter_id: string
+          resolution_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           source: string | null
           status: string | null
         }
@@ -2536,6 +2572,10 @@ export type Database = {
           reason: string
           reported_id: string
           reporter_id: string
+          resolution_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string | null
           status?: string | null
         }
         Update: {
@@ -2545,6 +2585,9 @@ export type Database = {
           reason?: string
           reported_id?: string
           reporter_id?: string
+          resolution_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           source?: string | null
           status?: string | null
         }
@@ -3448,13 +3491,49 @@ export type Database = {
           user_id: string | null
         }
       }
+      staff_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       staff_get_live_chat_transcript: {
         Args: { p_session_id: string }
         Returns: { role: string; content: string; created_at: string }[]
       }
+      staff_grant_role: {
+        Args: { p_role: Database["isexy"]["Enums"]["app_role"]; p_user_id: string }
+        Returns: Json
+      }
+      staff_issue_warning: {
+        Args: { p_note?: string | null; p_profile_id: string; p_restriction?: string; p_warning_type: string }
+        Returns: Json
+      }
+      staff_lift_restrictions: {
+        Args: { p_profile_id: string; p_reason?: string | null }
+        Returns: number
+      }
+      staff_list_roles: {
+        Args: { p_user_ids: string[] }
+        Returns: { role: Database["isexy"]["Enums"]["app_role"]; user_id: string }[]
+      }
+      staff_resolve_report: {
+        Args: { p_note?: string | null; p_report_id: string; p_status: string }
+        Returns: Json
+      }
+      staff_set_account_active: {
+        Args: { p_active: boolean; p_profile_id: string; p_reason?: string | null }
+        Returns: Json
+      }
       staff_set_profile_verified: {
         Args: { p_profile_id: string; p_verified: boolean }
         Returns: undefined
+      }
+      staff_set_shadow_ban: {
+        Args: { p_banned: boolean; p_profile_id: string; p_reason?: string | null }
+        Returns: Json
+      }
+      staff_update_profile: {
+        Args: { p_bio?: string | null; p_first_name?: string | null; p_profile_id: string; p_reason?: string | null }
+        Returns: Json
       }
       get_discover_feed: {
         Args: {

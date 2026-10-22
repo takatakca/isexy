@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { staff, staffErrorText } from "@/lib/staff";
 import { format } from "date-fns";
 
 interface UserProfile {
@@ -139,20 +140,18 @@ export default function AdminUserManagement() {
     if (profiles) {
       setUsers(profiles);
       
-      // Fetch roles for all users
+      // Roles of the listed accounts: admin-only RPC (members read only their own roles).
       const userIds = profiles.map(p => p.user_id);
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .in("user_id", userIds);
-
-      if (roles) {
+      try {
+        const roles = userIds.length ? await staff.listRoles(userIds) : [];
         const roleMap: Record<string, string[]> = {};
         roles.forEach(r => {
           if (!roleMap[r.user_id]) roleMap[r.user_id] = [];
           roleMap[r.user_id].push(r.role);
         });
         setUserRoles(roleMap);
+      } catch (error) {
+        toast.error(staffErrorText(error));
       }
     }
   };
@@ -180,15 +179,7 @@ export default function AdminUserManagement() {
         return;
       }
 
-      const roleToInsert = selectedRole as "admin" | "moderator" | "user";
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: selectedUser.user_id,
-          role: roleToInsert,
-        });
-
-      if (error) throw error;
+      await staff.grantRole(selectedUser.user_id, selectedRole as "admin" | "moderator");
 
       toast.success(`${selectedRole} role assigned to ${selectedUser.first_name}`);
       setRoleDialogOpen(false);
@@ -197,29 +188,7 @@ export default function AdminUserManagement() {
       await fetchUsers();
     } catch (error: any) {
       console.error("Error assigning role:", error);
-      toast.error(error.message || "Failed to assign role");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleRemoveRole = async (userId: string, role: string) => {
-    setUpdating(true);
-    try {
-      const roleToDelete = role as "admin" | "moderator" | "user";
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("role", roleToDelete);
-
-      if (error) throw error;
-
-      toast.success(`${role} role removed`);
-      await fetchUsers();
-    } catch (error: any) {
-      console.error("Error removing role:", error);
-      toast.error(error.message || "Failed to remove role");
+      toast.error(staffErrorText(error));
     } finally {
       setUpdating(false);
     }
@@ -366,11 +335,8 @@ export default function AdminUserManagement() {
                                 <Badge
                                   key={role}
                                   variant={role === "admin" ? "default" : "secondary"}
-                                  className="cursor-pointer"
-                                  onClick={() => handleRemoveRole(user.user_id, role)}
                                 >
                                   {role}
-                                  <span className="ml-1 opacity-60">×</span>
                                 </Badge>
                               ))}
                               {roles.length === 0 && (
@@ -480,7 +446,9 @@ export default function AdminUserManagement() {
           <DialogHeader>
             <DialogTitle>Assign Role to {selectedUser?.first_name}</DialogTitle>
             <DialogDescription>
-              Select a role to assign to this user. Roles grant access to different parts of the admin panel.
+              Moderators handle reports, restrictions, photo and voice checks and live chat. Admins also
+              answer tickets and manage roles, codes and content. Removing a role is done by the owner in
+              the database (nothing is deleted from the app).
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -492,7 +460,7 @@ export default function AdminUserManagement() {
                 <SelectItem value="moderator">
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4" />
-                    Moderator - Can manage tickets and verifications
+                    Moderator - Moderation, verifications, live chat
                   </div>
                 </SelectItem>
                 <SelectItem value="admin">

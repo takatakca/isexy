@@ -215,7 +215,9 @@ const AdminTickets = () => {
     try {
       const { data, error } = await supabase.rpc("get_admin_users");
       if (error) throw error;
-      setAdminUsers((data as AdminUser[]) || []);
+      // Tickets are assigned to admins only (staff_update_ticket checks it; main's 0009 rule).
+      const admins = ((data as AdminUser[]) || []).filter((a) => a.role === "admin");
+      setAdminUsers(admins.filter((a, i) => admins.findIndex((b) => b.user_id === a.user_id) === i));
     } catch (error: unknown) {
       console.error("Error fetching admin users:", error);
     }

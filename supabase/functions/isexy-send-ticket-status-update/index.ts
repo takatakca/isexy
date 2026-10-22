@@ -128,7 +128,7 @@ function escapeHtml(value: unknown): string {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-/** Admins/moderators (or internal service-role calls) only. */
+/** Admins (or internal service-role calls) only: tickets are admin-only (main's 0009 rule, 0015 F). */
 async function isStaff(req: Request): Promise<boolean> {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -137,7 +137,7 @@ async function isStaff(req: Request): Promise<boolean> {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, { auth: { persistSession: false } });
   const { data: auth } = await admin.auth.getUser(token);
   if (!auth?.user) return false;
-  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", auth.user.id).in("role", ["admin", "moderator"]);
+  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", auth.user.id).eq("role", "admin");
   return (roles?.length ?? 0) > 0;
 }
 

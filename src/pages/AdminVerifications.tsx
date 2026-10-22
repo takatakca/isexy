@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { PhotoVerificationQueue } from "@/components/admin/PhotoVerificationQueue";
+import { useStaffRole } from "@/lib/staff";
+import { goBack } from "@/lib/navigation";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -67,38 +70,19 @@ export default function AdminVerifications() {
   const [processing, setProcessing] = useState(false);
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
 
+  const role = useStaffRole();
+  const [section, setSection] = useState<"photos" | "cuban">("photos");
+
+  // AdminRoute admits admins and moderators. Photo checks: both. Cuban ID
+  // checks (on hold, admins only, cuban_verifications RLS): unchanged.
   useEffect(() => {
-    checkAdminAndFetch();
-  }, []);
-
-  const checkAdminAndFetch = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-
-      if (!roleData) {
-        navigate('/');
-        return;
-      }
-
-      await fetchVerifications();
-    } catch (error) {
-      console.error('Error:', error);
-      navigate('/');
-    } finally {
+    if (role.loading) return;
+    if (!role.isAdmin) {
       setLoading(false);
+      return;
     }
-  };
+    void fetchVerifications().finally(() => setLoading(false));
+  }, [role.loading, role.isAdmin]);
 
   const fetchVerifications = async () => {
     const { data, error } = await supabase
@@ -198,16 +182,36 @@ export default function AdminVerifications() {
       {/* Header */}
       <div className="bg-card border-b border-border px-4 py-4">
         <div className="flex items-center gap-3 max-w-7xl mx-auto">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/dashboard')}>
+          <Button variant="ghost" size="icon" onClick={() => goBack(navigate, '/admin')} aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold text-foreground">Cuban Verifications</h1>
-          <Button variant="ghost" size="icon" onClick={fetchVerifications} className="ml-auto">
-            <RefreshCw className="h-5 w-5" />
-          </Button>
+          <h1 className="text-xl font-bold text-foreground">Verifications</h1>
+          {section === "cuban" && (
+            <Button variant="ghost" size="icon" onClick={fetchVerifications} className="ml-auto" aria-label="Refresh">
+              <RefreshCw className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
 
+      {role.isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <Tabs value={section} onValueChange={(v) => setSection(v as "photos" | "cuban")}>
+            <TabsList className="w-full">
+              <TabsTrigger value="photos" className="flex-1">Photo checks</TabsTrigger>
+              <TabsTrigger value="cuban" className="flex-1">Cuban ID (on hold)</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+
+      {section === "photos" && (
+        <div className="max-w-7xl mx-auto p-4">
+          <PhotoVerificationQueue />
+        </div>
+      )}
+
+      {section === "cuban" && role.isAdmin && (
       <div className="max-w-7xl mx-auto p-4 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
@@ -307,6 +311,7 @@ export default function AdminVerifications() {
           )}
         </div>
       </div>
+      )}
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedVerification} onOpenChange={() => setSelectedVerification(null)}>

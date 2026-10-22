@@ -75,6 +75,16 @@
 --    posts only as "user" in their own open chat, an agent only as "agent"
 --    in an active chat assigned to them, nobody posts "system" messages
 --    directly (the RPCs do), sender_id is always the caller.
+-- H. staff_dashboard_stats(): the staff home page's numbers in one call
+--    (the page loaded every profile row into the browser, and its revenue
+--    cards summed tables admins cannot read in full, so they showed the
+--    admin's own purchases). Members and moderation queues for staff; open
+--    tickets and revenue for admins only.
+-- I. Admins read the payment ledgers (credit_transactions, boost_transactions,
+--    gift_transactions, subscriptions, chat_subscriptions) for the payment
+--    check page: each table only had "own rows" policies, so the page counted
+--    the admin's own purchases. Read only; writes stay with the RPCs and the
+--    service role.
 
 -- =====================================================================
 -- A1. is_staff()
@@ -1122,3 +1132,91 @@ END;
 $$;
 REVOKE ALL ON FUNCTION isexy.staff_get_live_chat_transcript(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION isexy.staff_get_live_chat_transcript(uuid) TO authenticated;
+
+-- =====================================================================
+-- H. Staff home page numbers
+-- =====================================================================
+CREATE OR REPLACE FUNCTION isexy.staff_dashboard_stats()
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_admin boolean;
+  v_today timestamptz := date_trunc('day', now() AT TIME ZONE 'America/Toronto') AT TIME ZONE 'America/Toronto';
+  v_result jsonb;
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Staff only' USING ERRCODE = '42501';
+  END IF;
+  v_admin := isexy.has_role(auth.uid(), 'admin');
+
+  SELECT jsonb_build_object(
+    'members', (SELECT jsonb_build_object(
+        'total', count(*),
+        'active', count(*) FILTER (WHERE is_active),
+        'suspended', count(*) FILTER (WHERE NOT coalesce(is_active, true)),
+        'shadow_banned', count(*) FILTER (WHERE coalesce(shadow_banned, false)),
+        'premium', count(*) FILTER (WHERE coalesce(is_premium, false)),
+        'verified', count(*) FILTER (WHERE coalesce(is_verified, false)),
+        'new_today', count(*) FILTER (WHERE created_at >= v_today),
+        'new_week', count(*) FILTER (WHERE created_at >= v_today - interval '6 days'))
+      FROM isexy.profiles),
+    'by_gender', coalesce((SELECT jsonb_object_agg(g, n) FROM (
+        SELECT coalesce(nullif(gender, ''), 'unknown') AS g, count(*) AS n FROM isexy.profiles GROUP BY 1) x), '{}'::jsonb),
+    'by_tier', coalesce((SELECT jsonb_object_agg(t, n) FROM (
+        SELECT CASE WHEN coalesce(is_premium, false) THEN coalesce(nullif(subscription_tier, ''), 'plus') ELSE 'free' END AS t,
+               count(*) AS n
+          FROM isexy.profiles GROUP BY 1) x), '{}'::jsonb),
+    'signups_14d', (SELECT jsonb_agg(jsonb_build_object('day', d::date, 'count',
+        (SELECT count(*) FROM isexy.profiles p
+          WHERE p.created_at >= d AND p.created_at < d + interval '1 day')) ORDER BY d)
+      FROM generate_series(v_today - interval '13 days', v_today, interval '1 day') AS d),
+    'queues', jsonb_build_object(
+      'pending_reports', (SELECT count(*) FROM isexy.reports WHERE coalesce(status, 'pending') IN ('pending', 'reviewing')),
+      'active_restrictions', (SELECT count(DISTINCT profile_id) FROM isexy.user_warnings
+                               WHERE lifted_at IS NULL AND (is_permanent_ban IS TRUE OR ban_until > now())),
+      'pending_photo_checks', (SELECT count(*) FROM isexy.photo_verifications WHERE status = 'pending'),
+      'waiting_live_chats', (SELECT count(*) FROM isexy.live_chat_sessions WHERE status = 'waiting'),
+      'pending_voice_greetings', (SELECT count(*) FROM isexy.voice_greetings
+                                   WHERE is_active AND (moderation_status = 'pending' OR report_count > 0)),
+      'open_tickets', CASE WHEN v_admin THEN (SELECT count(*) FROM isexy.support_tickets WHERE status IN ('open', 'in_progress')) END),
+    'revenue', CASE WHEN v_admin THEN jsonb_build_object(
+      'credits_purchased', (SELECT coalesce(sum(abs(amount)), 0) FROM isexy.credit_transactions WHERE type = 'purchase'),
+      'credit_purchases', (SELECT count(*) FROM isexy.credit_transactions WHERE type = 'purchase'),
+      'active_subscriptions', (SELECT count(*) FROM isexy.subscriptions WHERE status IN ('active', 'trialing')),
+      'active_chat_subscriptions', (SELECT count(*) FROM isexy.chat_subscriptions WHERE status = 'active'),
+      'call_credits_used', (SELECT coalesce(sum(credits_used), 0) FROM isexy.video_call_sessions)) END,
+    'is_admin', v_admin
+  ) INTO v_result;
+  RETURN v_result;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_dashboard_stats() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_dashboard_stats() TO authenticated;
+
+-- =====================================================================
+-- I. Admins read the payment ledgers
+-- =====================================================================
+DROP POLICY IF EXISTS "Admins read all credit transactions" ON isexy.credit_transactions;
+CREATE POLICY "Admins read all credit transactions" ON isexy.credit_transactions
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.has_role((SELECT auth.uid()), 'admin'::isexy.app_role)));
+DROP POLICY IF EXISTS "Admins read all boost transactions" ON isexy.boost_transactions;
+CREATE POLICY "Admins read all boost transactions" ON isexy.boost_transactions
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.has_role((SELECT auth.uid()), 'admin'::isexy.app_role)));
+DROP POLICY IF EXISTS "Admins read all gift transactions" ON isexy.gift_transactions;
+CREATE POLICY "Admins read all gift transactions" ON isexy.gift_transactions
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.has_role((SELECT auth.uid()), 'admin'::isexy.app_role)));
+DROP POLICY IF EXISTS "Admins read all subscriptions" ON isexy.subscriptions;
+CREATE POLICY "Admins read all subscriptions" ON isexy.subscriptions
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.has_role((SELECT auth.uid()), 'admin'::isexy.app_role)));
+DROP POLICY IF EXISTS "Admins read all chat subscriptions" ON isexy.chat_subscriptions;
+CREATE POLICY "Admins read all chat subscriptions" ON isexy.chat_subscriptions
+  FOR SELECT TO authenticated
+  USING ((SELECT isexy.has_role((SELECT auth.uid()), 'admin'::isexy.app_role)));

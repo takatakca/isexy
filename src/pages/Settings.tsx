@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useStaffRole } from "@/lib/staff";
 import { supabase } from "@/integrations/supabase/client";
 import { openConsentSettings } from "@/lib/consent";
 import { AuthLayout } from "@/components/AuthLayout";
@@ -68,6 +69,7 @@ function canonicalDiscovery(d: Discovery = {}): Discovery {
 export default function Settings() {
   const navigate = useNavigate();
   const { user, profile, signOut, refreshProfile } = useAuth();
+  const staffRole = useStaffRole();
   // Discovery toggles and "who I'd like to see" filters have no profile
   // column: they are private member settings (see useMemberSettings).
   const { settings, loading: settingsLoading, save: saveSettings } = useMemberSettings();
@@ -809,6 +811,7 @@ export default function Settings() {
             <SettingRow label="Contact Us" onClick={() => navigate("/contact-us")} />
             <SettingRow label="Track Your Tickets" onClick={() => navigate("/ticket-tracking")} />
             <SettingRow label="Report a problem" onClick={() => navigate("/help-support")} />
+            {staffRole.isStaff && <SettingRow label="Staff tools" onClick={() => navigate("/admin")} />}
           </SettingCard>
         </section>
 

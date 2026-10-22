@@ -622,7 +622,7 @@ INSERT INTO results SELECT 'T6 every new function pins search_path and is SECURI
                      'assert_staff_may_act_on', 'staff_issue_warning', 'staff_lift_restrictions', 'staff_set_shadow_ban',
                      'staff_set_account_active', 'staff_resolve_report', 'staff_update_profile', 'staff_list_roles', 'staff_grant_role',
                      'get_ticket_status', 'staff_update_ticket', 'staff_bulk_update_tickets', 'staff_accept_live_chat',
-                     'staff_close_live_chat', 'end_my_live_chat', 'staff_get_live_chat_transcript');
+                     'staff_close_live_chat', 'end_my_live_chat', 'staff_get_live_chat_transcript', 'staff_dashboard_stats');
 INSERT INTO results SELECT 'T6 anon can run none of them except get_ticket_status',
   bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE')), string_agg(p.proname, ',') FILTER (WHERE has_function_privilege('anon', p.oid, 'EXECUTE'))
   FROM pg_proc p
@@ -632,12 +632,55 @@ INSERT INTO results SELECT 'T6 anon can run none of them except get_ticket_statu
                      'assert_staff_may_act_on', 'staff_issue_warning', 'staff_lift_restrictions', 'staff_set_shadow_ban',
                      'staff_set_account_active', 'staff_resolve_report', 'staff_update_profile', 'staff_list_roles', 'staff_grant_role',
                      'staff_update_ticket', 'staff_bulk_update_tickets', 'staff_accept_live_chat',
-                     'staff_close_live_chat', 'end_my_live_chat', 'staff_get_live_chat_transcript');
+                     'staff_close_live_chat', 'end_my_live_chat', 'staff_get_live_chat_transcript', 'staff_dashboard_stats');
 INSERT INTO results SELECT 'T6 internal helpers are not callable by members',
   NOT has_function_privilege('authenticated', 'isexy.log_staff_action(text,uuid,uuid,jsonb)', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'isexy.active_restriction(uuid)', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'isexy.assert_staff_may_act_on(uuid)', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'isexy.validate_message_allowed()', 'EXECUTE'), NULL;
+
+-- T7 staff home numbers -----------------------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+DO $$ BEGIN
+  PERFORM isexy.staff_dashboard_stats();
+  INSERT INTO results VALUES ('T7 members cannot read the staff numbers', false, 'call succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T7 members cannot read the staff numbers', true, SQLERRM);
+END $$;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator
+INSERT INTO results SELECT 'T7 moderator gets members and queues, no revenue or tickets',
+  (r -> 'members' ->> 'total')::int >= 6 AND (r -> 'revenue') = 'null'::jsonb AND (r -> 'queues' -> 'open_tickets') = 'null'::jsonb
+    AND jsonb_array_length(r -> 'signups_14d') = 14 AND NOT (r ->> 'is_admin')::boolean, r::text
+  FROM (SELECT isexy.staff_dashboard_stats() AS r) s;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');  -- admin
+INSERT INTO results SELECT 'T7 admin also gets revenue and open tickets',
+  (r -> 'revenue' ->> 'credit_purchases') IS NOT NULL AND (r -> 'queues' ->> 'open_tickets') IS NOT NULL AND (r ->> 'is_admin')::boolean, r::text
+  FROM (SELECT isexy.staff_dashboard_stats() AS r) s;
+RESET ROLE;
+
+-- T8 admins read the payment ledgers, members only their own -------------------------
+INSERT INTO isexy.credit_transactions (profile_id, amount, type, description)
+VALUES ('dddddddd-0000-0000-0000-00000000000a', 30, 'purchase', 'trust smoke'),
+       ('dddddddd-0000-0000-0000-00000000000b', 65, 'purchase', 'trust smoke');
+SET ROLE authenticated;
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000a');
+INSERT INTO results SELECT 'T8 a member reads only their own credit rows', count(*) = 1, count(*)::text
+  FROM isexy.credit_transactions WHERE description = 'trust smoke';
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');
+INSERT INTO results SELECT 'T8 a moderator does not read the ledgers', count(*) = 0, count(*)::text
+  FROM isexy.credit_transactions WHERE description = 'trust smoke';
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000e');
+INSERT INTO results SELECT 'T8 an admin reads every credit row', count(*) = 2, count(*)::text
+  FROM isexy.credit_transactions WHERE description = 'trust smoke';
+DO $$ BEGIN
+  INSERT INTO isexy.credit_transactions (profile_id, amount, type, description)
+  VALUES ('dddddddd-0000-0000-0000-00000000000e', 1000, 'bonus', 'self-granted');
+  INSERT INTO results VALUES ('T8 admins still cannot write the ledger', false, 'insert succeeded');
+EXCEPTION WHEN insufficient_privilege THEN
+  INSERT INTO results VALUES ('T8 admins still cannot write the ledger', true, SQLERRM);
+END $$;
+RESET ROLE;
 
 -- @@PARTS@@
 
