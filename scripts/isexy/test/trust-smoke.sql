@@ -904,6 +904,212 @@ INSERT INTO results SELECT 'T9e reinstated: the staff tools work again', (r -> '
   FROM (SELECT isexy.staff_dashboard_stats() AS r) s;
 RESET ROLE;
 
+-- T10 privacy follow-ups (0015 K, wf/followups) ----------------------------------
+-- K1 a ticket's staff notes are for admins only (the owner read them through
+-- the API); K2 a signed-in member files tickets under their own sign-in
+-- e-mail only, and tracking by number + e-mail shows a guest ticket's status,
+-- never its content (and a member's ticket only to its owner); K3 nobody but
+-- staff reads shadow bans (every member read who is shadow-banned, also
+-- their own status, and could probe it with a no-op UPDATE).
+INSERT INTO auth.users (id, email, phone) VALUES
+ ('dddddddd-0000-0000-0000-000000000010', 'th@test.ca', '+15145551010'),
+ ('dddddddd-0000-0000-0000-000000000011', 'ti@test.ca', '+15145551011'),
+ ('dddddddd-0000-0000-0000-000000000012', NULL, '+15145551012');
+INSERT INTO isexy.profiles (user_id, first_name, birth_date, gender, interested_in, is_active, bio) VALUES
+ ('dddddddd-0000-0000-0000-000000000010', 'Hana', '1991-06-01', 'woman', ARRAY['everyone'], true, 'hiking'),
+ ('dddddddd-0000-0000-0000-000000000011', 'Ivo',  '1991-06-01', 'man',   ARRAY['everyone'], true, 'chess'),
+ ('dddddddd-0000-0000-0000-000000000012', 'Pia',  '1992-06-01', 'woman', ARRAY['everyone'], true, 'jazz');
+INSERT INTO isexy.profile_photos (profile_id, photo_url, position) VALUES
+ ('dddddddd-0000-0000-0000-000000000010', 'dddddddd-0000-0000-0000-000000000010/a.jpg', 0),
+ ('dddddddd-0000-0000-0000-000000000011', 'dddddddd-0000-0000-0000-000000000011/a.jpg', 0);
+INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message) VALUES
+ ('IS-HANA01', 'dddddddd-0000-0000-0000-000000000010', 'Hana', 'th@test.ca', 'My refund', 'billing', 'high', 'card 4242 charged twice');
+CREATE OR REPLACE FUNCTION pg_temp.as_phone_user(p_uid text) RETURNS void LANGUAGE sql AS $$
+  SELECT set_config('request.jwt.claim.sub', p_uid, false),
+         set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated', 'email', '', 'phone', '15145551012')::text, false),
+         set_config('request.jwt.claim.role', 'authenticated', false);
+$$;
+
+-- K1 staff notes -------------------------------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000e', 'tx@test.ca');  -- admin writes a note
+INSERT INTO results SELECT 'T10 K1 admin adds a staff note', (r ->> 'ticket_number') = 'IS-HANA01', r::text
+  FROM (SELECT isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-HANA01'),
+          'in_progress', NULL, 'refund fraud suspected, do not tell the member', NULL, false) AS r) s;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-000000000010', 'th@test.ca');  -- Hana, the ticket's owner
+INSERT INTO results SELECT 'T10 K1 the owner still reads her ticket (safe columns)', count(*) = 1 AND max(status) = 'in_progress', count(*)::text
+  FROM (SELECT id, ticket_number, subject, status, message, response, responded_at, created_at, updated_at
+          FROM isexy.support_tickets WHERE ticket_number = 'IS-HANA01') t;
+SELECT pg_temp.refused('T10 K1 the owner cannot read the staff notes of her ticket',
+  $q$SELECT admin_notes FROM isexy.support_tickets WHERE ticket_number = 'IS-HANA01'$q$);
+SELECT pg_temp.refused('T10 K1 select * no longer carries the staff notes (refused)',
+  $q$SELECT * FROM isexy.support_tickets WHERE ticket_number = 'IS-HANA01'$q$);
+SELECT pg_temp.refused('T10 K1 the owner cannot filter on the staff notes (no guessing)',
+  $q$SELECT id FROM isexy.support_tickets WHERE admin_notes LIKE '%fraud%'$q$);
+SELECT pg_temp.refused('T10 K1 no-op write of the notes refused (no oracle)',
+  $q$UPDATE isexy.support_tickets SET admin_notes = admin_notes WHERE ticket_number = 'IS-HANA01'$q$);
+SELECT pg_temp.refused('T10 K1 cannot probe for empty notes with SET NULL',
+  $q$UPDATE isexy.support_tickets SET admin_notes = NULL WHERE ticket_number = 'IS-HANA01'$q$);
+UPDATE isexy.support_tickets SET message = 'card 4242 charged twice, here is the receipt' WHERE ticket_number = 'IS-HANA01';
+INSERT INTO results SELECT 'T10 K1 the owner still adds details (main''s 0009)', count(*) = 1, count(*)::text
+  FROM isexy.support_tickets WHERE ticket_number = 'IS-HANA01' AND message LIKE '%receipt%';
+SELECT pg_temp.refused('T10 K1 members cannot list tickets with notes (staff_list_tickets)',
+  $q$SELECT * FROM isexy.staff_list_tickets(50)$q$);
+SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');  -- moderator: tickets stay admin only
+SELECT pg_temp.refused('T10 K1 a moderator cannot list tickets with notes',
+  $q$SELECT * FROM isexy.staff_list_tickets(50)$q$);
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000e', 'tx@test.ca');  -- admin
+INSERT INTO results SELECT 'T10 K1 the admin reads the notes through staff_list_tickets',
+  bool_or(ticket_number = 'IS-HANA01' AND admin_notes LIKE '%Xan] refund fraud suspected%'), count(*)::text
+  FROM isexy.staff_list_tickets(50);
+INSERT INTO results SELECT 'T10 K1 the admin still reads the safe columns directly', count(*) = 1, count(*)::text
+  FROM (SELECT id, status, email FROM isexy.support_tickets WHERE ticket_number = 'IS-HANA01') t;
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+SELECT pg_temp.refused('T10 K1 anon cannot list tickets with notes', $q$SELECT * FROM isexy.staff_list_tickets(50)$q$);
+RESET ROLE;
+INSERT INTO results SELECT 'T10 K1 column privileges: notes for nobody but the service role',
+  NOT has_column_privilege('authenticated', 'isexy.support_tickets', 'admin_notes', 'SELECT')
+  AND NOT has_column_privilege('anon', 'isexy.support_tickets', 'admin_notes', 'SELECT')
+  AND NOT has_column_privilege('authenticated', 'isexy.support_tickets', 'admin_notes', 'UPDATE')
+  AND has_column_privilege('service_role', 'isexy.support_tickets', 'admin_notes', 'SELECT')
+  AND has_column_privilege('authenticated', 'isexy.support_tickets', 'message', 'UPDATE')
+  AND has_table_privilege('anon', 'isexy.support_tickets', 'INSERT'), NULL;
+INSERT INTO results SELECT 'T10 K1 every other ticket column stays readable',
+  count(*) FILTER (WHERE NOT has_column_privilege('authenticated', 'isexy.support_tickets', attname, 'SELECT')) = 1,
+  string_agg(attname, ',') FILTER (WHERE NOT has_column_privilege('authenticated', 'isexy.support_tickets', attname, 'SELECT'))
+  FROM pg_attribute WHERE attrelid = 'isexy.support_tickets'::regclass AND attnum > 0 AND NOT attisdropped;
+INSERT INTO results SELECT 'T10 K1 the note is kept (no data lost)', count(*) = 1, NULL
+  FROM isexy.support_tickets WHERE ticket_number = 'IS-HANA01' AND admin_notes LIKE '%refund fraud suspected%';
+
+-- K2 tickets under someone else's e-mail ----------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-000000000011', 'ti@test.ca');  -- Ivo
+SELECT pg_temp.refused('T10 K2 a member cannot file a ticket under someone else''s e-mail',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
+     VALUES ('IS-IVO666', 'dddddddd-0000-0000-0000-000000000011', 'Hana', 'th@test.ca', 'Reset my account', 'account', 'high', 'x')$q$);
+SELECT pg_temp.refused('T10 K2 ... nor as an anonymous ticket while signed in',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
+     VALUES ('IS-IVO667', NULL, 'Hana', 'victim@example.com', 'Reset my account', 'account', 'high', 'x')$q$);
+INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
+VALUES ('IS-IVO001', 'dddddddd-0000-0000-0000-000000000011', 'Ivo', ' TI@Test.CA ', 'Question', 'account', 'low', 'hello');
+INSERT INTO results SELECT 'T10 K2 a member files under their sign-in e-mail (case and spaces ignored)', count(*) = 1, string_agg(email, ',')
+  FROM isexy.support_tickets WHERE ticket_number = 'IS-IVO001' AND email = 'ti@test.ca';
+SELECT pg_temp.as_phone_user('dddddddd-0000-0000-0000-000000000012');  -- Pia, phone sign-in, no e-mail
+SELECT pg_temp.refused('T10 K2 a member without an e-mail cannot file under an e-mail address',
+  $q$INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
+     VALUES ('IS-PIA666', 'dddddddd-0000-0000-0000-000000000012', 'Pia', 'th@test.ca', 'Help', 'account', 'low', 'x')$q$);
+INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
+VALUES ('IS-PIA001', 'dddddddd-0000-0000-0000-000000000012', 'Pia', '+15145551012', 'Delete my account', 'Account Issues', 'high', 'please');
+INSERT INTO results SELECT 'T10 K2 a phone-only member files with her phone as the contact (Delete Account)', count(*) = 1, NULL
+  FROM isexy.support_tickets WHERE ticket_number = 'IS-PIA001';
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000e', 'tx@test.ca');  -- admin, on behalf of a member
+INSERT INTO isexy.support_tickets (ticket_number, name, email, subject, category, priority, message)
+VALUES ('IS-ADM001', 'Hana', 'th@test.ca', 'Called us', 'account', 'medium', 'phoned in');
+INSERT INTO results SELECT 'T10 K2 an admin may still file for a member', count(*) = 1, NULL
+  FROM isexy.support_tickets WHERE ticket_number = 'IS-ADM001';
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+-- A guest plants a ticket under Hana's e-mail (guests cannot be checked)...
+INSERT INTO isexy.support_tickets (ticket_number, name, email, subject, category, priority, message)
+VALUES ('IS-EVE001', 'Hana', 'th@test.ca', 'Change my e-mail', 'account', 'high', 'new address: eve@evil.example');
+INSERT INTO results SELECT 'T10 K2 guests can still send tickets', true, NULL;
+RESET ROLE;
+SET ROLE authenticated;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000e', 'tx@test.ca');
+SELECT isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-EVE001'),
+  'in_progress', 'Hana, your account th@test.ca: your phone on file ends in 1010.', NULL, NULL, false);
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+INSERT INTO results SELECT 'T10 K2 ...tracking it shows the status, not the staff reply or the content',
+  count(*) = 1 AND max(status) = 'in_progress' AND bool_and(response IS NULL AND message IS NULL AND subject IS NULL) AND bool_and(responded_at IS NOT NULL),
+  string_agg(coalesce(response, '(no reply text)'), ',')
+  FROM isexy.get_ticket_status('IS-EVE001', 'th@test.ca');
+INSERT INTO results SELECT 'T10 K2 a guest cannot read a member''s ticket with its number + e-mail', count(*) = 0, count(*)::text
+  FROM isexy.get_ticket_status('IS-HANA01', 'th@test.ca');
+INSERT INTO results SELECT 'T10 K2 a guest still tracks a guest ticket''s status', count(*) = 1 AND max(status) = 'resolved', max(status)
+  FROM isexy.get_ticket_status('IS-GUEST1', 'guest@example.ca');
+RESET ROLE;
+SET ROLE authenticated;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000c', 'tc@test.ca');  -- Cleo, another member
+INSERT INTO results SELECT 'T10 K2 another member cannot read it either', count(*) = 0, count(*)::text
+  FROM isexy.get_ticket_status('IS-HANA01', 'th@test.ca');
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-000000000010', 'th@test.ca');  -- Hana
+INSERT INTO results SELECT 'T10 K2 the owner tracks her ticket in full', count(*) = 1 AND bool_and(message LIKE '%receipt%' AND subject = 'My refund'), count(*)::text
+  FROM isexy.get_ticket_status('IS-HANA01', 'th@test.ca');
+INSERT INTO results SELECT 'T10 K2 signed in with that e-mail, the guest ticket opens in full', count(*) = 1 AND bool_and(response LIKE 'Hana, your account%'), count(*)::text
+  FROM isexy.get_ticket_status('IS-EVE001', 'TH@test.ca');
+RESET ROLE;
+
+-- K3 shadow bans ---------------------------------------------------------------------
+SET ROLE authenticated;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000d', 'tm@test.ca');  -- moderator
+INSERT INTO results SELECT 'T10 K3 a moderator shadow-bans Hana', (r ->> 'shadow_banned')::boolean, r::text
+  FROM (SELECT isexy.staff_set_shadow_ban('dddddddd-0000-0000-0000-000000000010', true, 'spam links') AS r) s;
+INSERT INTO results SELECT 'T10 K3 staff see the shadow ban (staff_get_shadow_bans)',
+  count(*) = 1 AND bool_and(shadow_banned_reason = 'spam links' AND shadow_banned_at IS NOT NULL), count(*)::text
+  FROM isexy.staff_get_shadow_bans(ARRAY['dddddddd-0000-0000-0000-000000000010', 'dddddddd-0000-0000-0000-000000000011']::uuid[]);
+INSERT INTO results SELECT 'T10 K3 staff list every shadow-banned member', bool_or(profile_id = 'dddddddd-0000-0000-0000-000000000010'), count(*)::text
+  FROM isexy.staff_get_shadow_bans(NULL);
+INSERT INTO results SELECT 'T10 K3 staff still read suspended and active profiles (safe columns)', count(*) = 1, NULL
+  FROM (SELECT id, first_name, is_active, is_verified FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-000000000010') p;
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000a', 'ta@test.ca');  -- Ana, a member
+SELECT pg_temp.refused('T10 K3 a member cannot read who is shadow-banned',
+  $q$SELECT shadow_banned FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-000000000010'$q$);
+SELECT pg_temp.refused('T10 K3 ...nor the staff reason',
+  $q$SELECT shadow_banned_reason, shadow_banned_at FROM isexy.profiles$q$);
+SELECT pg_temp.refused('T10 K3 ...nor filter on it',
+  $q$SELECT id FROM isexy.profiles WHERE shadow_banned$q$);
+SELECT pg_temp.refused('T10 K3 select * no longer carries it (refused)',
+  $q$SELECT * FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-000000000011'$q$);
+SELECT pg_temp.refused('T10 K3 members cannot use staff_get_shadow_bans',
+  $q$SELECT * FROM isexy.staff_get_shadow_bans(NULL)$q$);
+INSERT INTO results SELECT 'T10 K3 members still read other profiles (public columns)', count(*) = 2, string_agg(first_name, ',')
+  FROM (SELECT id, first_name, bio, city, is_verified FROM isexy.profiles
+         WHERE id IN ('dddddddd-0000-0000-0000-000000000010', 'dddddddd-0000-0000-0000-000000000011')) p;
+INSERT INTO results SELECT 'T10 K3 Discover still leaves the shadow-banned member out',
+  bool_or(id = 'dddddddd-0000-0000-0000-000000000011') AND NOT coalesce(bool_or(id = 'dddddddd-0000-0000-0000-000000000010'), false),
+  string_agg(first_name, ',')
+  FROM isexy.get_discover_feed(30, '{}', false, NULL);
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-000000000010', 'th@test.ca');  -- Hana herself
+INSERT INTO results SELECT 'T10 K3 the shadow-banned member still reads her own profile', count(*) = 1, NULL
+  FROM (SELECT id, first_name, bio, is_active, subscription_tier FROM isexy.profiles WHERE user_id = 'dddddddd-0000-0000-0000-000000000010') p;
+SELECT pg_temp.refused('T10 K3 ...but not her own shadow-ban status',
+  $q$SELECT shadow_banned FROM isexy.profiles WHERE user_id = 'dddddddd-0000-0000-0000-000000000010'$q$);
+SELECT pg_temp.refused('T10 K3 no-op write cannot probe her own status (banned)',
+  $q$UPDATE isexy.profiles SET shadow_banned = true WHERE user_id = 'dddddddd-0000-0000-0000-000000000010'$q$);
+UPDATE isexy.profiles SET bio = 'hiking and lakes' WHERE user_id = 'dddddddd-0000-0000-0000-000000000010';
+INSERT INTO results SELECT 'T10 K3 the shadow-banned member still edits her profile', count(*) = 1, NULL
+  FROM isexy.profiles WHERE user_id = 'dddddddd-0000-0000-0000-000000000010' AND bio = 'hiking and lakes';
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-000000000011', 'ti@test.ca');  -- Ivo, not banned
+SELECT pg_temp.refused('T10 K3 no-op write cannot probe the status (not banned)',
+  $q$UPDATE isexy.profiles SET shadow_banned = false WHERE user_id = 'dddddddd-0000-0000-0000-000000000011'$q$);
+RESET ROLE;
+SET ROLE anon;
+SELECT pg_temp.as_anon();
+SELECT pg_temp.refused('T10 K3 anon cannot use staff_get_shadow_bans', $q$SELECT * FROM isexy.staff_get_shadow_bans(NULL)$q$);
+INSERT INTO results SELECT 'T10 K3 anon reads no profiles (no error either)', count(*) = 0, NULL
+  FROM (SELECT id, first_name FROM isexy.profiles) p;
+RESET ROLE;
+INSERT INTO results SELECT 'T10 K3 column privileges: the 3 shadow-ban columns, and only them, are hidden',
+  string_agg(attname, ',' ORDER BY attname) = 'shadow_banned,shadow_banned_at,shadow_banned_reason',
+  string_agg(attname, ',' ORDER BY attname)
+  FROM pg_attribute
+ WHERE attrelid = 'isexy.profiles'::regclass AND attnum > 0 AND NOT attisdropped
+   AND (NOT has_column_privilege('authenticated', 'isexy.profiles', attname, 'SELECT')
+        OR NOT has_column_privilege('anon', 'isexy.profiles', attname, 'SELECT'));
+INSERT INTO results SELECT 'T10 K3 ...not writable either; the service role keeps everything; signup insert unchanged',
+  NOT has_column_privilege('authenticated', 'isexy.profiles', 'shadow_banned', 'UPDATE')
+  AND NOT has_column_privilege('authenticated', 'isexy.profiles', 'shadow_banned_reason', 'UPDATE')
+  AND has_column_privilege('authenticated', 'isexy.profiles', 'bio', 'UPDATE')
+  AND has_column_privilege('service_role', 'isexy.profiles', 'shadow_banned', 'SELECT,UPDATE')
+  AND has_table_privilege('authenticated', 'isexy.profiles', 'INSERT'), NULL;
+INSERT INTO results SELECT 'T10 K3 the ban itself is kept', shadow_banned AND shadow_banned_reason = 'spam links', NULL
+  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-000000000010';
+
 -- @@PARTS@@
 
 -- Report ---------------------------------------------------------------------
