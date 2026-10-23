@@ -36,6 +36,27 @@ function adsensePlugin(env: Record<string, string>): Plugin {
   };
 }
 
+/**
+ * Google Search Console ownership check, only when VITE_GOOGLE_SITE_VERIFICATION
+ * is set at build (docs/DEPLOYMENT.md › Google Search Console): the token of
+ * Search Console's "HTML tag" method becomes <meta name="google-site-verification">
+ * in index.html (every pre-rendered page copies it). The whole pasted tag is
+ * accepted too. Unset or malformed: nothing is written.
+ */
+function searchConsolePlugin(env: Record<string, string>): Plugin {
+  const raw = (env.VITE_GOOGLE_SITE_VERIFICATION || "").trim();
+  const pasted = raw.match(/content\s*=\s*["']([^"']*)["']/i)?.[1]?.trim() ?? raw;
+  const token = /^[A-Za-z0-9_-]{10,100}$/.test(pasted) ? pasted : null;
+  if (raw && !token) {
+    console.warn(`[search-console] VITE_GOOGLE_SITE_VERIFICATION must be the token of Search Console's HTML tag (letters, digits, - and _): no verification tag written.`);
+  }
+  return {
+    name: "isexy-search-console",
+    transformIndexHtml: (html) =>
+      token ? html.replace("</head>", `  <meta name="google-site-verification" content="${token}" />\n  </head>`) : html,
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -46,6 +67,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     siteUrlPlugin(loadEnv(mode, process.cwd(), "")),
     adsensePlugin(loadEnv(mode, process.cwd(), "")),
+    searchConsolePlugin(loadEnv(mode, process.cwd(), "")),
   ],
   build: {
     chunkSizeWarningLimit: 700,
