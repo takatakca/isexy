@@ -15,33 +15,37 @@ type Lang = "en" | "es" | "fr";
 const COPY: Record<Lang, {
   title: string; body: string; accept: string; reject: string; customize: string; save: string;
   necessary: string; necessaryDesc: string; analytics: string; analyticsDesc: string;
-  marketing: string; marketingDesc: string; policy: string; always: string;
+  marketing: string; marketingDesc: string; advertising: string; advertisingDesc: string;
+  policy: string; always: string;
 }> = {
   en: {
     title: "Your privacy, your choice",
-    body: "We use essential cookies to keep you signed in and safe. With your permission we'd also like to measure how ISEXY is used, to improve it, and to measure our ads.",
+    body: "We use essential cookies to keep you signed in and safe. With your permission we'd also like to measure how ISEXY is used, to improve it, to measure our ads and to personalize the ads free members see.",
     accept: "Accept all", reject: "Essential only", customize: "Customize", save: "Save choices",
     necessary: "Essential", necessaryDesc: "Sign-in, security, language and your choices here. Always on.",
     analytics: "Analytics", analyticsDesc: "Anonymous usage statistics and performance (first-party, optional Google Analytics).",
     marketing: "Marketing", marketingDesc: "Measure the effectiveness of our ads (e.g. Meta).",
+    advertising: "Advertising", advertisingDesc: "Personalized ads for free members (Google AdSense cookies, local TAKATAK ads near your city). Off: ads are not personalized. Paying members see no ads.",
     policy: "Cookie Policy", always: "Always on",
   },
   es: {
     title: "Tu privacidad, tu decisión",
-    body: "Usamos cookies esenciales para mantener tu sesión y tu seguridad. Con tu permiso, también mediremos cómo se usa ISEXY para mejorarlo y medir nuestros anuncios.",
+    body: "Usamos cookies esenciales para mantener tu sesión y tu seguridad. Con tu permiso, también mediremos cómo se usa ISEXY para mejorarlo, medir nuestros anuncios y personalizar los anuncios que ven los miembros gratuitos.",
     accept: "Aceptar todo", reject: "Solo esenciales", customize: "Personalizar", save: "Guardar",
     necessary: "Esenciales", necessaryDesc: "Inicio de sesión, seguridad, idioma y estas preferencias. Siempre activas.",
     analytics: "Analítica", analyticsDesc: "Estadísticas de uso anónimas y rendimiento.",
     marketing: "Marketing", marketingDesc: "Medir la eficacia de nuestros anuncios (p. ej. Meta).",
+    advertising: "Publicidad", advertisingDesc: "Anuncios personalizados para miembros gratuitos (cookies de Google AdSense, anuncios locales TAKATAK cerca de tu ciudad). Desactivado: anuncios no personalizados. Los miembros que pagan no ven anuncios.",
     policy: "Política de cookies", always: "Siempre activas",
   },
   fr: {
     title: "Votre vie privée, votre choix",
-    body: "Nous utilisons des témoins essentiels pour garder votre session active et sécuritaire. Avec votre permission, nous mesurerons aussi l'utilisation d'ISEXY pour l'améliorer et évaluer nos publicités.",
+    body: "Nous utilisons des témoins essentiels pour garder votre session active et sécuritaire. Avec votre permission, nous mesurerons aussi l'utilisation d'ISEXY pour l'améliorer, évaluer nos publicités et personnaliser les publicités affichées aux membres gratuits.",
     accept: "Tout accepter", reject: "Essentiels seulement", customize: "Personnaliser", save: "Enregistrer",
     necessary: "Essentiels", necessaryDesc: "Connexion, sécurité, langue et ces préférences. Toujours actifs.",
     analytics: "Analytique", analyticsDesc: "Statistiques d'utilisation anonymes et performance.",
     marketing: "Marketing", marketingDesc: "Mesurer l'efficacité de nos publicités (ex. Meta).",
+    advertising: "Publicité", advertisingDesc: "Publicités personnalisées pour les membres gratuits (témoins Google AdSense, publicités locales TAKATAK près de votre ville). Désactivé : publicités non personnalisées. Les membres payants ne voient aucune publicité.",
     policy: "Politique sur les témoins", always: "Toujours actifs",
   },
 };
@@ -55,18 +59,20 @@ export function ConsentBanner() {
   const [customizing, setCustomizing] = useState(false);
   const [analytics, setAnalytics] = useState(() => getConsent().analytics);
   const [marketing, setMarketing] = useState(() => getConsent().marketing);
+  const [advertising, setAdvertising] = useState(() => getConsent().advertising);
 
   useEffect(() => onOpenConsentSettings(() => {
     const current = getConsent();
     setAnalytics(current.analytics);
     setMarketing(current.marketing);
+    setAdvertising(current.advertising);
     setCustomizing(true);
     setOpen(true);
   }), []);
 
   if (!open) return null;
 
-  const decide = (choice: { analytics: boolean; marketing: boolean }) => {
+  const decide = (choice: { analytics: boolean; marketing: boolean; advertising: boolean }) => {
     setConsent(choice);
     setOpen(false);
     setCustomizing(false);
@@ -106,33 +112,34 @@ export function ConsentBanner() {
             <ConsentRow title={t.necessary} description={t.necessaryDesc} badge={t.always} />
             <ConsentRow title={t.analytics} description={t.analyticsDesc} checked={analytics} onChange={setAnalytics} />
             <ConsentRow title={t.marketing} description={t.marketingDesc} checked={marketing} onChange={setMarketing} />
+            <ConsentRow title={t.advertising} description={t.advertisingDesc} checked={advertising} onChange={setAdvertising} />
           </div>
         )}
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
           {customizing ? (
             <>
-              <button onClick={() => decide({ analytics: false, marketing: false })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
+              <button onClick={() => decide({ analytics: false, marketing: false, advertising: false })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
                 {t.reject}
               </button>
-              <button onClick={() => decide({ analytics, marketing })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
+              <button onClick={() => decide({ analytics, marketing, advertising })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
                 {t.save}
               </button>
             </>
           ) : (
             <>
-              <button onClick={() => decide({ analytics: false, marketing: false })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
+              <button onClick={() => decide({ analytics: false, marketing: false, advertising: false })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
                 {t.reject}
               </button>
               <button
-                onClick={() => { setMarketing(!noTracking && marketing); setCustomizing(true); }}
+                onClick={() => { setMarketing(!noTracking && marketing); setAdvertising(!noTracking && advertising); setCustomizing(true); }}
                 className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted"
               >
                 {t.customize}
               </button>
             </>
           )}
-          <button onClick={() => decide({ analytics: true, marketing: true })} className="h-11 rounded-full gradient-primary text-white font-bold text-sm">
+          <button onClick={() => decide({ analytics: true, marketing: true, advertising: true })} className="h-11 rounded-full gradient-primary text-white font-bold text-sm">
             {t.accept}
           </button>
         </div>

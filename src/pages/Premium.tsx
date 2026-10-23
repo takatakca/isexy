@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Check, Loader2, Crown, Sparkles, ShieldCheck, Lock } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { X, Check, Loader2, Crown, Sparkles, ShieldCheck } from "lucide-react";
 import { subscriptionTiers, SubscriptionTier, Duration } from "@/lib/subscriptionTiers";
 import { toast } from "sonner";
-import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { PaymentsNotice } from "@/components/PaymentsNotice";
+import { usePaymentsGate, blockedLabel } from "@/hooks/usePaymentsGate";
+import { useWallet } from "@/hooks/useWallet";
+import { useCheckoutReturn } from "@/hooks/useCheckoutReturn";
+import { cad, startCheckout } from "@/lib/payments";
+import { goBack } from "@/lib/navigation";
 import { track } from "@/lib/analytics";
+import { AD_FREE_DAYS_AFTER_PAYMENT } from "@/lib/ads";
 
 const tierMeta: Record<SubscriptionTier, { label: string; headline: string; icon: React.ReactNode }> = {
   plus: {
@@ -28,9 +33,20 @@ const tierMeta: Record<SubscriptionTier, { label: string; headline: string; icon
 export default function Premium() {
   const navigate = useNavigate();
   const gate = usePaymentsGate();
+  const { wallet } = useWallet();
   const [activeTier, setActiveTier] = useState<SubscriptionTier>("gold");
   const [selectedDuration, setSelectedDuration] = useState<Duration>("week");
   const [loading, setLoading] = useState(false);
+
+  useCheckoutReturn();
+
+  // No countdown or discount banner (main 62ca7c1, decision 19): an offer the
+  // payment server does not enforce is never shown.
+  // A member who already pays through Stripe changes plan in Stripe's billing
+  // page: a second checkout would start a second subscription.
+  const paysWithStripe = wallet?.plan_source === "stripe";
+  // Fail closed: null (still checking) or an unreadable status blocks checkout.
+  const blocked = blockedLabel(gate);
 
   const tierData = subscriptionTiers[activeTier];
   const plans = tierData.plans;
@@ -38,26 +54,22 @@ export default function Premium() {
   const selectedPlan = plans.find((p) => p.duration === selectedDuration)!;
 
   const handleSubscribe = async () => {
-    if (!gate || gate.blocked) {
+    if (paysWithStripe) {
+      navigate("/my-subscription");
+      return;
+    }
+    if (blocked) {
       toast.error("Subscription availability could not be confirmed. Please retry later.");
       return;
     }
     setLoading(true);
-    try {
-      track("checkout_started", { product: "Premium" });
-      const { data, error } = await supabase.functions.invoke("isexy-create-checkout", {
-        body: { tier: activeTier, duration: selectedDuration },
-      });
-      if (error || data?.error) throw error ?? new Error(String(data.error));
-      if (typeof data?.url !== "string") throw new Error("Checkout session is unavailable");
-      const checkout = new URL(data.url);
-      if (checkout.protocol !== "https:" || checkout.hostname !== "checkout.stripe.com") {
-        throw new Error("Unexpected payment provider URL");
-      }
-      window.location.assign(checkout.toString());
-    } catch (err: any) {
-      toast.error(err.message || "Failed to start checkout");
-    } finally {
+    track("checkout_started", { product: "Premium" });
+    const result = await startCheckout("isexy-create-checkout", {
+      tier: activeTier,
+      duration: selectedDuration,
+    });
+    if (!result.ok) {
+      toast.error(result.message);
       setLoading(false);
     }
   };
@@ -69,7 +81,7 @@ export default function Premium() {
         <div className="absolute inset-0 bg-gradient-to-b from-primary/25 via-primary/5 to-transparent" aria-hidden />
         <div className="relative">
           <div className="flex items-center justify-between p-4">
-            <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-muted/50" aria-label="Close">
+            <button onClick={() => goBack(navigate, "/discover")} className="p-2 rounded-full hover:bg-muted/50" aria-label="Close">
               <X className="w-6 h-6 text-foreground" />
             </button>
             <div className="flex items-center gap-1 glass-card rounded-full p-1">
@@ -124,7 +136,7 @@ export default function Premium() {
                   </span>
                 )}
                 <p className="text-sm font-bold text-foreground">{plan.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">${plan.weeklyPrice.toFixed(2)}/wk</p>
+                <p className="text-xs text-muted-foreground mt-1">{cad(plan.weeklyPrice)}/wk</p>
                 {plan.savings && (
                   <span className="inline-block mt-2 text-[10px] font-bold text-primary">Save {plan.savings}%</span>
                 )}
@@ -157,22 +169,26 @@ export default function Premium() {
               </div>
             ))}
           </div>
+          <p className="mt-4 text-xs text-muted-foreground text-center">
+            Any purchase, even one pack of Super Likes, also removes ads for {AD_FREE_DAYS_AFTER_PAYMENT} days.
+          </p>
         </div>
 
         {/* Trust strip */}
         <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground justify-center">
           <ShieldCheck className="w-4 h-4 text-primary" />
-          Secure checkout powered by Stripe
+          Secure checkout by Stripe · prices in CAD
         </div>
       </div>
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
-        {(!gate || gate.blocked) && (
-          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
-            <Lock className="w-3.5 h-3.5" />
-            {!gate ? "Checking payment availability…" : "Subscriptions are currently unavailable"}
-          </div>
+        {paysWithStripe ? (
+          <p className="text-xs text-center text-foreground" role="status">
+            You have ISEXY {wallet?.tier ? wallet.tier.charAt(0).toUpperCase() + wallet.tier.slice(1) : ""}. Change or cancel it in My Subscription.
+          </p>
+        ) : (
+          <PaymentsNotice gate={gate} />
         )}
         <button
           onClick={() => navigate("/compare-plans")}
@@ -181,18 +197,22 @@ export default function Premium() {
           Compare all plans →
         </button>
         <button
-          onClick={handleSubscribe}
-          disabled={loading || !gate || gate.blocked}
-          className="cta-primary w-full text-base"
+          onClick={() => handleSubscribe()}
+          disabled={loading || (!paysWithStripe && !!blocked)}
+          className="cta-primary w-full text-base disabled:opacity-60"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
+          ) : paysWithStripe ? (
+            <>Manage my plan</>
+          ) : blocked ? (
+            <>{blocked}</>
           ) : (
-            <>Continue {tierMeta[activeTier].label} · {selectedPlan.label} — ${selectedPlan.totalPrice.toFixed(2)}</>
+            <>Continue {tierMeta[activeTier].label} · {selectedPlan.label} — {cad(selectedPlan.totalPrice)} CAD</>
           )}
         </button>
         <p className="text-[10px] text-muted-foreground text-center leading-snug">
-          Subscription renews automatically until cancelled. Cancel anytime in Settings. Purchases apply after successful payment.
+          Renews automatically until cancelled. Cancel anytime in My Subscription. Your plan starts once Stripe confirms the payment.
         </p>
       </div>
     </div>

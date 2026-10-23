@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeGender } from "@/lib/discoverFeed";
 import { toast } from "sonner";
 
 interface DiscoverFiltersProps {
@@ -31,29 +32,50 @@ export function DiscoverFilters({
   setShowVerifiedOnly 
 }: DiscoverFiltersProps) {
   const navigate = useNavigate();
-  const { profile } = useAuth();
-  
+  const { profile, refreshProfile } = useAuth();
+
+  // Profiles store "women" / "men" (ProfileSetup), older rows "female",
+  // "male" or "everyone": normalize so the switches show what is saved.
+  const prefs = (profile?.interested_in ?? []).map(normalizeGender);
+  const wantsEveryone = prefs.length === 0 || prefs.includes("everyone");
+
   const [isOpen, setIsOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [distance, setDistance] = useState(profile?.distance_preference || 50);
   const [ageRange, setAgeRange] = useState<[number, number]>([
     profile?.age_min || 18,
     profile?.age_max || 45,
   ]);
-  const [showMen, setShowMen] = useState(
-    profile?.interested_in?.includes('male') ?? true
-  );
-  const [showWomen, setShowWomen] = useState(
-    profile?.interested_in?.includes('female') ?? true
-  );
+  const [showMen, setShowMen] = useState(wantsEveryone || prefs.includes("men"));
+  const [showWomen, setShowWomen] = useState(wantsEveryone || prefs.includes("women"));
   const [globalMode, setGlobalMode] = useState(false);
-  
+
+  // Re-read the saved values each time the sheet opens (Settings may have changed them).
+  const onOpenChange = (open: boolean) => {
+    if (open && profile) {
+      setDistance(profile.distance_preference || 50);
+      setAgeRange([profile.age_min || 18, profile.age_max || 45]);
+      setShowMen(wantsEveryone || prefs.includes("men"));
+      setShowWomen(wantsEveryone || prefs.includes("women"));
+    }
+    setIsOpen(open);
+  };
+
   const handleApply = async () => {
-    if (!profile) return;
-    
-    const interestedIn: string[] = [];
-    if (showMen) interestedIn.push('male');
-    if (showWomen) interestedIn.push('female');
-    
+    if (!profile || saving) return;
+    if (!showMen && !showWomen) {
+      toast.error("Pick at least one: Women or Men.");
+      return;
+    }
+
+    // Keep any other saved preference (e.g. "nonbinary"); "everyone" stays
+    // "everyone" while both switches are on.
+    const others = prefs.filter((p) => !["men", "women", "everyone"].includes(p));
+    const interestedIn = showMen && showWomen && prefs.includes("everyone")
+      ? ["everyone", ...others]
+      : [...(showWomen ? ["women"] : []), ...(showMen ? ["men"] : []), ...others];
+
+    setSaving(true);
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -63,14 +85,16 @@ export function DiscoverFilters({
         interested_in: interestedIn,
       })
       .eq('id', profile.id);
-    
+    setSaving(false);
+
     if (error) {
       toast.error("Failed to update preferences");
       return;
     }
-    
+
     toast.success("Preferences updated!");
     setIsOpen(false);
+    await refreshProfile?.();
     onFiltersChange?.();
   };
   
@@ -80,14 +104,15 @@ export function DiscoverFilters({
       <button 
         onClick={() => navigate("/safety-tips")}
         className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+        aria-label="Safety tips"
       >
         <BadgeCheck className="w-6 h-6 text-cyan-500" />
       </button>
 
       {/* Filters Sheet */}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetTrigger asChild>
-          <button className="p-2 hover:bg-muted/50 rounded-full transition-colors">
+          <button className="p-2 hover:bg-muted/50 rounded-full transition-colors" aria-label="Discovery settings">
             <Sliders className="w-6 h-6 text-foreground" />
           </button>
         </SheetTrigger>
@@ -194,8 +219,8 @@ export function DiscoverFilters({
                 Cancel
               </Button>
             </SheetClose>
-            <Button onClick={handleApply} className="flex-1 gradient-primary">
-              Apply
+            <Button onClick={handleApply} disabled={saving} className="flex-1 gradient-primary">
+              {saving ? "Saving…" : "Apply"}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -205,6 +230,7 @@ export function DiscoverFilters({
       <button 
         onClick={() => navigate("/get-boosts")} 
         className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+        aria-label="Get Boosts"
       >
         <Zap className="w-6 h-6 text-purple-500 fill-purple-500" />
       </button>

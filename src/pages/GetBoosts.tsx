@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Zap, Timer, Sparkles, Crown, Loader2, ShieldCheck, Lock, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { X, Zap, Timer, Sparkles, Crown, Loader2, ShieldCheck, Check, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { usePaymentsGate, blockedLabel } from "@/hooks/usePaymentsGate";
+import { useWallet } from "@/hooks/useWallet";
+import { useCheckoutReturn } from "@/hooks/useCheckoutReturn";
+import { PaymentsNotice } from "@/components/PaymentsNotice";
+import { activateBoost, boostEndsLabel, type BoostKind } from "@/lib/boosts";
+import { cad, startCheckout } from "@/lib/payments";
+import { goBack } from "@/lib/navigation";
 import { track } from "@/lib/analytics";
 
 type BoostType = "boost" | "primetime" | "super";
@@ -46,21 +51,21 @@ const boostTypeConfig: Record<BoostType, {
 }> = {
   boost: {
     title: "Boost",
-    description: "Be a top profile in your area for 30 minutes — get more Likes, faster.",
+    description: "Be a top profile in your area for 30 minutes, so more people see you and say hi.",
     icon: <Zap className="w-6 h-6 text-primary-foreground" />,
     packages: boostPackages,
     goldUpsell: "1 free Boost a month",
   },
   primetime: {
     title: "Primetime Boost",
-    description: "We boost you when the most users are active so more people see your profile.",
+    description: "A 30-minute Boost for the busiest hours: start it in the evening, when the most members are online.",
     icon: <Timer className="w-6 h-6 text-primary-foreground" />,
     packages: primetimePackages,
     goldUpsell: "1 free Boost a month",
   },
   super: {
     title: "Super Boost",
-    description: "Stay front-and-center for hours, with more opportunities to connect.",
+    description: "Stay at the very top of Discover for hours. All your Super Boost hours run in one go when you start it.",
     icon: <Sparkles className="w-6 h-6 text-primary-foreground" />,
     packages: superBoostPackages,
     goldUpsell: "Subscriber benefit",
@@ -69,86 +74,70 @@ const boostTypeConfig: Record<BoostType, {
 
 export default function GetBoosts() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const gate = usePaymentsGate();
+  const { wallet, refresh } = useWallet();
   const [activeType, setActiveType] = useState<BoostType>("boost");
   const [selectedPackage, setSelectedPackage] = useState<string>("10");
   const [loading, setLoading] = useState(false);
-  const [wallet, setWallet] = useState<{ boosts: number; primetime: number; superHours: number; monthlyAvail: boolean } | null>(null);
+  const [using, setUsing] = useState<BoostKind | null>(null);
 
-  useEffect(() => {
-    const fetch = async () => {
-      if (!profile?.id) return;
-      const { data } = await supabase
-        .from("boost_wallet" as any)
-        .select("boosts, primetime_boosts, super_boost_hours, monthly_boost_available")
-        .eq("profile_id", profile.id)
-        .maybeSingle();
-      if (data) {
-        setWallet({
-          boosts: (data as any).boosts ?? 0,
-          primetime: (data as any).primetime_boosts ?? 0,
-          superHours: (data as any).super_boost_hours ?? 0,
-          monthlyAvail: !!(data as any).monthly_boost_available,
-        });
-      }
-    };
-    fetch();
-  }, [profile?.id]);
+  useCheckoutReturn(refresh, "Payment received. Your Boosts will appear in a few seconds.");
 
   const config = boostTypeConfig[activeType];
   const packages = config.packages;
   const selected = packages.find((p) => p.id === selectedPackage) || packages[1];
-
   const total = activeType === "super" ? selected.pricePerItem : selected.quantity * selected.pricePerItem;
+  const blocked = blockedLabel(gate);
 
   const handleTypeChange = (type: BoostType) => {
     setActiveType(type);
-    const defaultId = type === "super" ? "6h" : type === "primetime" ? "3" : "10";
-    setSelectedPackage(defaultId);
+    setSelectedPackage(type === "super" ? "6h" : type === "primetime" ? "3" : "10");
   };
 
   const handlePurchase = async () => {
+    const productId =
+      activeType === "boost" ? `boost_${selected.quantity}`
+      : activeType === "primetime" ? `primetime_${selected.quantity}`
+      : `superboost_${selected.quantity}h`;
     setLoading(true);
-    try {
-      let productId: string | null = null;
-      if (activeType === "boost") productId = `boost_${selected.quantity}`;
-      else if (activeType === "primetime") productId = `primetime_${selected.quantity}`;
-      else if (activeType === "super") productId = `superboost_${selected.quantity}h`;
-
-      if (!productId) {
-        toast.error("Unknown package");
-        return;
-      }
-
-      track("checkout_started", { product: "GetBoosts" });
-
-      const { data, error } = await supabase.functions.invoke("isexy-create-one-time-payment", {
-        body: {
-          productId,
-          metadata: {
-            type: activeType,
-            ...(activeType === "super" ? { hours: String(selected.quantity) } : { quantity: String(selected.quantity) }),
-            ...(activeType === "primetime" ? { schedule_peak: "true" } : {}),
-          },
-        },
-      });
-
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (error) {
-      console.error("Purchase error:", error);
-      toast.error("Failed to start checkout. Please try again.");
-    } finally {
+    track("checkout_started", { product: "GetBoosts" });
+    const result = await startCheckout("isexy-create-one-time-payment", { productId });
+    if (!result.ok) {
+      toast.error(result.message);
       setLoading(false);
     }
   };
+
+  const use = async (kind: BoostKind) => {
+    if (!profile?.id || using) return;
+    setUsing(kind);
+    const result = await activateBoost(profile.id, kind);
+    setUsing(null);
+    if (result.ok) {
+      toast.success(kind === "super" ? `Super Boost on for ${result.hours} hours 🚀` : "Boost on: you're at the top of Discover for 30 minutes 🚀");
+      refresh();
+      refreshProfile?.();
+    } else {
+      toast.error(result.message);
+      if (result.reason !== "error") refresh();
+    }
+  };
+
+  const running = wallet?.boost_active_until && new Date(wallet.boost_active_until).getTime() > Date.now();
+  const walletRows: { kind: BoostKind; label: string; count: string; icon: React.ReactNode; canUse: boolean }[] = wallet
+    ? [
+        { kind: "boost", label: "Boosts", count: String(wallet.boosts), icon: <Zap className="w-4 h-4 text-primary" />, canUse: wallet.boosts > 0 },
+        { kind: "primetime", label: "Primetime", count: String(wallet.primetime_boosts), icon: <Timer className="w-4 h-4 text-primary" />, canUse: wallet.primetime_boosts > 0 },
+        { kind: "super", label: "Super Boost", count: `${wallet.super_boost_hours}h`, icon: <Sparkles className="w-4 h-4 text-primary" />, canUse: wallet.super_boost_hours > 0 },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-muted/50">
+        <button onClick={() => goBack(navigate, "/discover")} className="p-2 rounded-full hover:bg-muted/50" aria-label="Close">
           <X className="w-6 h-6 text-foreground" />
         </button>
         <h1 className="font-bold text-base text-foreground">Choose your Boost</h1>
@@ -157,37 +146,53 @@ export default function GetBoosts() {
 
       {/* Wallet */}
       {wallet && (
-        <div className="px-4 mb-3">
-          <div className="glass-card rounded-2xl p-3 grid grid-cols-3 gap-2 text-center">
-            <div>
-              <Zap className="w-4 h-4 text-primary mx-auto mb-1" />
-              <p className="text-lg font-extrabold text-foreground">{wallet.boosts}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Boosts</p>
+        <section className="px-4 mb-3" aria-label="Your Boosts">
+          <div className="glass-card rounded-2xl p-3 space-y-2">
+            {running && (
+              <p className="text-xs font-semibold text-primary text-center" role="status">{boostEndsLabel(wallet.boost_active_until)}</p>
+            )}
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {walletRows.map((row) => (
+                <div key={row.kind} className="flex flex-col items-center gap-1">
+                  {row.icon}
+                  <p className="text-lg font-extrabold text-foreground tabular-nums">{row.count}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">{row.label}</p>
+                  <button
+                    onClick={() => use(row.kind)}
+                    disabled={!row.canUse || !!using}
+                    className="mt-1 px-3 py-1 rounded-full text-xs font-semibold gradient-primary text-primary-foreground disabled:opacity-40"
+                    aria-label={`Use ${row.label}`}
+                  >
+                    {using === row.kind ? <Loader2 className="w-3 h-3 animate-spin" /> : "Use"}
+                  </button>
+                </div>
+              ))}
             </div>
-            <div>
-              <Timer className="w-4 h-4 text-primary mx-auto mb-1" />
-              <p className="text-lg font-extrabold text-foreground">{wallet.primetime}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Primetime</p>
-            </div>
-            <div>
-              <Sparkles className="w-4 h-4 text-primary mx-auto mb-1" />
-              <p className="text-lg font-extrabold text-foreground">{wallet.superHours}h</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Super</p>
-            </div>
+            {wallet.monthly_boost_available && (
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                <p className="text-xs text-foreground flex items-center gap-1.5">
+                  <Gift className="w-4 h-4 text-primary" /> Your free monthly Boost is ready
+                </p>
+                <button
+                  onClick={() => use("monthly")}
+                  disabled={!!using}
+                  className="px-3 py-1 rounded-full text-xs font-semibold gradient-primary text-primary-foreground disabled:opacity-40"
+                >
+                  {using === "monthly" ? <Loader2 className="w-3 h-3 animate-spin" /> : "Use"}
+                </button>
+              </div>
+            )}
           </div>
-          {wallet.monthlyAvail && (
-            <p className="text-[11px] text-primary text-center mt-2 font-semibold">
-              ✨ You have 1 free monthly Boost available
-            </p>
-          )}
-        </div>
+        </section>
       )}
 
       {/* Type tabs */}
-      <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+      <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide" role="tablist">
         {(["boost", "primetime", "super"] as BoostType[]).map((type) => (
           <button
             key={type}
+            role="tab"
+            aria-selected={activeType === type}
             onClick={() => handleTypeChange(type)}
             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
               activeType === type
@@ -203,7 +208,7 @@ export default function GetBoosts() {
       {/* Boost info card */}
       <div className="mx-4 p-4 rounded-2xl gradient-primary text-primary-foreground glow-primary">
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm shrink-0">
             {config.icon}
           </div>
           <div className="flex-1">
@@ -214,7 +219,7 @@ export default function GetBoosts() {
       </div>
 
       {/* Packages */}
-      <div className="flex-1 px-4 py-5 pb-44">
+      <div className="flex-1 px-4 py-5 pb-56">
         <div className="space-y-3">
           {packages.map((pkg) => {
             const isSel = selectedPackage === pkg.id;
@@ -222,6 +227,7 @@ export default function GetBoosts() {
               <button
                 key={pkg.id}
                 onClick={() => setSelectedPackage(pkg.id)}
+                aria-pressed={isSel}
                 className={`w-full p-4 rounded-2xl border transition-all relative ${
                   isSel
                     ? "border-primary bg-primary/10 ring-coral"
@@ -241,14 +247,14 @@ export default function GetBoosts() {
                         : `${pkg.quantity} ${pkg.quantity === 1 ? config.title : config.title + "s"}`}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right pr-6">
                     {pkg.savings && (
                       <span className="inline-block px-2 py-0.5 bg-primary/15 rounded-full text-[10px] font-bold text-primary mb-1">
                         Save {pkg.savings}%
                       </span>
                     )}
                     <p className="text-base font-bold text-foreground">
-                      ${pkg.pricePerItem.toFixed(2)}{activeType !== "super" && "/ea"}
+                      {cad(pkg.pricePerItem)}{activeType !== "super" && "/ea"}
                     </p>
                   </div>
                   {isSel && (
@@ -284,16 +290,12 @@ export default function GetBoosts() {
 
       {/* Bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
-        {gate?.blocked && (
-          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
-            <Lock className="w-3.5 h-3.5" /> Live payments disabled during testing
-          </div>
-        )}
+        <PaymentsNotice gate={gate} />
         <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
-          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout powered by Stripe
+          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout by Stripe · prices in CAD
         </div>
-        <button onClick={handlePurchase} disabled={loading} className="cta-primary w-full">
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : `Continue — $${total.toFixed(2)} CAD`}
+        <button onClick={handlePurchase} disabled={loading || !!blocked} className="cta-primary w-full disabled:opacity-60">
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : blocked ?? `Continue — ${cad(total)} CAD`}
         </button>
       </div>
     </div>

@@ -11,14 +11,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/**
+ * Staff only. The ticket is read back from the database (by id, or by number
+ * for older callers): the browser no longer decides the address or wording.
+ * withResponse: include the stored staff reply (set when this update added one).
+ */
 interface StatusUpdateRequest {
-  email: string;
-  name: string;
-  ticketNumber: string;
-  subject: string;
-  oldStatus: string;
-  newStatus: string;
-  response?: string;
+  ticketId?: string;
+  ticketNumber?: string;
+  withResponse?: boolean;
 }
 
 const getStatusLabel = (status: string): string => {
@@ -127,7 +128,7 @@ function escapeHtml(value: unknown): string {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-/** Admins/moderators (or internal service-role calls) only. */
+/** Admins (or internal service-role calls) only: tickets are admin-only (main's 0009 rule, 0015 F). */
 async function isStaff(req: Request): Promise<boolean> {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -136,7 +137,7 @@ async function isStaff(req: Request): Promise<boolean> {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, { auth: { persistSession: false } });
   const { data: auth } = await admin.auth.getUser(token);
   if (!auth?.user) return false;
-  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", auth.user.id).in("role", ["admin", "moderator"]);
+  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", auth.user.id).eq("role", "admin");
   return (roles?.length ?? 0) > 0;
 }
 
@@ -157,19 +158,27 @@ const handler = async (req: Request): Promise<Response> => {
     if (!(await isStaff(req))) {
       return new Response(JSON.stringify({ error: "Staff only" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
-    const raw: StatusUpdateRequest = await req.json();
-    const email = raw.email;
-    const name = escapeHtml(raw.name);
-    const ticketNumber = escapeHtml(raw.ticketNumber);
-    const subject = escapeHtml(raw.subject);
-    const oldStatus = escapeHtml(raw.oldStatus);
-    const newStatus = escapeHtml(raw.newStatus);
-    const response = raw.response ? escapeHtml(raw.response) : undefined;
-
-    console.log(`Sending status update email to ${email} for ticket ${ticketNumber}`);
-
+    const raw = (await req.json().catch(() => ({}))) as StatusUpdateRequest;
     // Initialize Supabase client
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+    const byId = typeof raw.ticketId === "string" && /^[0-9a-f-]{36}$/i.test(raw.ticketId);
+    const byNumber = typeof raw.ticketNumber === "string" && raw.ticketNumber.trim().length > 0;
+    if (!byId && !byNumber) {
+      return new Response(JSON.stringify({ error: "ticketId is required" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    const lookup = supabase.from("support_tickets").select("email, name, ticket_number, subject, status, response");
+    const { data: ticket } = await (byId ? lookup.eq("id", raw.ticketId!) : lookup.eq("ticket_number", raw.ticketNumber!.trim())).maybeSingle();
+    if (!ticket) {
+      return new Response(JSON.stringify({ error: "Ticket not found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    const email: string = ticket.email;
+    const name = escapeHtml(ticket.name);
+    const ticketNumber = escapeHtml(ticket.ticket_number);
+    const subject = escapeHtml(ticket.subject);
+    const newStatus = escapeHtml(ticket.status);
+    const response = raw.withResponse && ticket.response ? escapeHtml(ticket.response) : undefined;
+
+    console.log(`Sending status update email for ticket ${ticketNumber}`);
 
     // Try to get email template from database
     let emailSubject: string;
@@ -214,7 +223,8 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "ISEXY Support <onboarding@resend.dev>",
+        // Resend's onboarding@resend.dev sender only delivers to the Resend account owner.
+        from: isexyEnv("RESEND_FROM") ?? "ISEXY <notifications@isexy.ca>",
         to: [email],
         subject: emailSubject,
         html: emailHtml,

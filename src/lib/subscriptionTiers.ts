@@ -13,7 +13,7 @@ export const subscriptionTiers = {
       "Unlimited Rewinds",
       "Passport Mode",
       "Control who you see",
-      "Hide ads",
+      "No ads",
     ],
   },
   gold: {
@@ -29,6 +29,7 @@ export const subscriptionTiers = {
       "Top Picks",
       "5 Super Likes per week",
       "1 Boost per month",
+      "No ads",
     ],
   },
   platinum: {
@@ -40,16 +41,16 @@ export const subscriptionTiers = {
     ],
     features: [
       "Everything in Gold",
+      "Unlimited Super Likes",
+      "Message before matching: 3 First Impressions a week",
       "Priority Likes",
-      // TODO: verify fulfillment of "Message before matching" feature
-      "Message before matching",
-      "More profile visibility",
       "Premium discovery priority",
+      "No ads",
     ],
   },
 } as const;
 
-// Boost packages with pricing from screenshots
+// Prices in CAD. Boost packages
 export const boostPackages = [
   { id: "1", quantity: 1, pricePerItem: 6.49 },
   { id: "10", quantity: 10, pricePerItem: 3.29, popular: true, savings: 49 },

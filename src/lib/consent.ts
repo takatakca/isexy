@@ -4,12 +4,20 @@
  * - "necessary" is always on (sign-in session, security, language).
  * - "analytics" (first-party product analytics, GA4) and "marketing"
  *   (Meta Pixel / ad measurement) are OFF until the visitor opts in.
+ * - "advertising" (personalized ads in the app: Google AdSense personalization,
+ *   local TAKATAK ads using the city on the profile) is OFF until the visitor
+ *   opts in; without it free members still see ads, non-personalized
+ *   (src/lib/ads.ts). Paying members see no ads at all.
  * - Global Privacy Control (navigator.globalPrivacyControl) is honoured: the
- *   banner never pre-selects marketing for those visitors.
+ *   banner never pre-selects marketing or advertising for those visitors.
+ *
+ * Choices saved before "advertising" existed keep version 1: the missing
+ * field reads as false (non-personalized), so nobody is opted in silently.
  */
 export interface ConsentState {
   analytics: boolean;
   marketing: boolean;
+  advertising: boolean;
   /** ISO timestamp of the visitor's choice; null = not decided yet. */
   decidedAt: string | null;
   version: number;
@@ -20,7 +28,7 @@ const STORAGE_KEY = "isexy_consent";
 const CHANGE_EVENT = "isexy:consent-changed";
 const OPEN_EVENT = "isexy:open-consent";
 
-const DEFAULT: ConsentState = { analytics: false, marketing: false, decidedAt: null, version: CONSENT_VERSION };
+const DEFAULT: ConsentState = { analytics: false, marketing: false, advertising: false, decidedAt: null, version: CONSENT_VERSION };
 
 export function getConsent(): ConsentState {
   try {
@@ -29,14 +37,20 @@ export function getConsent(): ConsentState {
     const parsed = JSON.parse(raw) as ConsentState;
     // A new consent version (new purposes) asks again.
     if (parsed.version !== CONSENT_VERSION) return DEFAULT;
-    return { ...DEFAULT, ...parsed };
+    return { ...DEFAULT, ...parsed, advertising: parsed.advertising === true };
   } catch {
     return DEFAULT;
   }
 }
 
-export function setConsent(choice: { analytics: boolean; marketing: boolean }) {
-  const next: ConsentState = { ...choice, decidedAt: new Date().toISOString(), version: CONSENT_VERSION };
+export function setConsent(choice: { analytics: boolean; marketing: boolean; advertising?: boolean }) {
+  const next: ConsentState = {
+    analytics: choice.analytics,
+    marketing: choice.marketing,
+    advertising: choice.advertising === true,
+    decidedAt: new Date().toISOString(),
+    version: CONSENT_VERSION,
+  };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {

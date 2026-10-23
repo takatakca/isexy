@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Video, Check, Sparkles, Loader2, ShieldCheck, Lock, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { Phone, Video, Check, Sparkles, Loader2, ShieldCheck, EyeOff, Coins } from "lucide-react";
 import { toast } from "sonner";
-import { usePaymentsGate } from "@/hooks/usePaymentsGate";
+import { usePaymentsGate, blockedLabel } from "@/hooks/usePaymentsGate";
+import { useWallet } from "@/hooks/useWallet";
+import { useCheckoutReturn } from "@/hooks/useCheckoutReturn";
+import { PaymentsNotice } from "@/components/PaymentsNotice";
+import { cad, startCheckout } from "@/lib/payments";
 import { track } from "@/lib/analytics";
 
 interface MinutePackage {
@@ -32,52 +34,24 @@ const videoPackages: MinutePackage[] = [
 
 export default function BuyMinutes() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { profile } = useAuth();
   const gate = usePaymentsGate();
+  const { wallet, refresh } = useWallet();
   const [selectedPackage, setSelectedPackage] = useState<string>("phone_150");
   const [isLoading, setIsLoading] = useState(false);
-  const [phoneBalance, setPhoneBalance] = useState(0);
-  const [videoBalance, setVideoBalance] = useState(0);
   const [activeTab, setActiveTab] = useState("phone");
 
-  useEffect(() => {
-    if (searchParams.get("success") === "true") toast.success("Purchase successful! Minutes added.");
-    if (searchParams.get("canceled") === "true") toast.error("Purchase was canceled.");
-  }, [searchParams]);
+  useCheckoutReturn(refresh, "Payment received. Your minutes will appear in a few seconds.");
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (!profile?.id) return;
-      const { data } = await supabase
-        .from("user_credits")
-        .select("phone_minutes, video_minutes")
-        .eq("profile_id", profile.id)
-        .maybeSingle();
-      if (data) {
-        setPhoneBalance(data.phone_minutes || 0);
-        setVideoBalance(data.video_minutes || 0);
-      }
-    };
-    fetchBalance();
-  }, [profile?.id]);
+  const phoneBalance = wallet?.phone_minutes ?? 0;
+  const videoBalance = wallet?.video_minutes ?? 0;
+  const blocked = blockedLabel(gate);
 
   const handlePurchase = async () => {
-    if (!profile) {
-      navigate("/auth");
-      return;
-    }
     setIsLoading(true);
-    try {
-      track("checkout_started", { product: "BuyMinutes" });
-      const { data, error } = await supabase.functions.invoke("isexy-create-minute-purchase", {
-        body: { packageId: selectedPackage },
-      });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to initiate purchase");
-    } finally {
+    track("checkout_started", { product: "BuyMinutes" });
+    const result = await startCheckout("isexy-create-minute-purchase", { packageId: selectedPackage });
+    if (!result.ok) {
+      toast.error(result.message);
       setIsLoading(false);
     }
   };
@@ -105,7 +79,7 @@ export default function BuyMinutes() {
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">${pkg.price.toFixed(2)} · {pkg.perMinute}/min</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{cad(pkg.price)} · {pkg.perMinute}/min</p>
             </div>
             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSel ? "border-primary bg-primary" : "border-muted-foreground"}`}>
               {isSel && <Check className="w-4 h-4 text-primary-foreground" />}
@@ -139,6 +113,16 @@ export default function BuyMinutes() {
             <p className="text-xs text-muted-foreground">Video min</p>
           </div>
         </div>
+
+        {!!wallet?.credits && (
+          <button
+            onClick={() => navigate("/buy-credits")}
+            className="w-full glass-card rounded-2xl p-3 flex items-center gap-2 text-left text-xs text-foreground"
+          >
+            <Coins className="w-4 h-4 text-primary shrink-0" />
+            <span>You have <strong>{wallet.credits} credits</strong>: use them as call minutes (1 credit = 1 minute).</span>
+          </button>
+        )}
 
         <Tabs
           value={activeTab}
@@ -178,21 +162,17 @@ export default function BuyMinutes() {
         </Tabs>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
-          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout powered by Stripe
+          <ShieldCheck className="w-4 h-4 text-primary" /> Secure checkout by Stripe · prices in CAD
         </div>
       </div>
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
-        {gate?.blocked && (
-          <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5 justify-center">
-            <Lock className="w-3.5 h-3.5" /> Live payments disabled during testing
-          </div>
-        )}
-        <button onClick={handlePurchase} disabled={isLoading} className="cta-primary w-full">
-          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : currentPkg ? `Buy ${currentPkg.minutes} minutes — $${currentPkg.price.toFixed(2)}` : "Purchase"}
+        <PaymentsNotice gate={gate} />
+        <button onClick={handlePurchase} disabled={isLoading || !!blocked} className="cta-primary w-full disabled:opacity-60">
+          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : blocked ?? (currentPkg ? `Buy ${currentPkg.minutes} minutes — ${cad(currentPkg.price)} CAD` : "Purchase")}
         </button>
-        <p className="text-[10px] text-muted-foreground text-center">Minutes never expire. Applied after successful payment.</p>
+        <p className="text-[10px] text-muted-foreground text-center">Minutes never expire. Added once Stripe confirms the payment.</p>
       </div>
     </AuthLayout>
   );

@@ -16,6 +16,8 @@ import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUpload } from "@/components/FileUpload";
+import { useAuth } from "@/hooks/useAuth";
+import { memberTicketContact } from "@/lib/supportTickets";
 import { 
   Send, 
   Mail, 
@@ -50,10 +52,25 @@ const ContactUs = () => {
   const [attachments, setAttachments] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const { user, profile } = useAuth();
+  // Signed in: the ticket goes under the sign-in e-mail (the database refuses
+  // another one, 0015 K2); a phone-only account files with its phone number.
+  const account = user ? memberTicketContact(user) : null;
+  /** The last ticket sent from this page (shown until the next one). */
+  const [sent, setSent] = useState<{ number: string; email: string; emailed: boolean } | null>(null);
+  const [uploadKey, setUploadKey] = useState(0);
 
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Signed in: fill in the name (the e-mail is the account's, see `account`).
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || profile?.first_name || "",
+    }));
+  }, [profile?.first_name]);
 
   const fetchCategories = async () => {
     const { data } = await supabase
@@ -69,7 +86,7 @@ const ContactUs = () => {
 
   const generateTicketNumber = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "CD-";
+    let result = "IS-";
     for (let i = 0; i < 6; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -79,14 +96,15 @@ const ContactUs = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.category || !formData.subject || !formData.message) {
+    const contact = account ? account.contact : formData.email.trim().toLowerCase();
+    if (!formData.name || !contact || !formData.category || !formData.subject || !formData.message) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Basic email validation
+    // Basic email validation (guests type their address; members use their account's)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (!account && !emailRegex.test(contact)) {
       toast.error("Please enter a valid email address");
       return;
     }
@@ -106,7 +124,7 @@ const ContactUs = () => {
           ticket_number: ticketNumber,
           user_id: user?.id || null,
           name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
+          email: contact,
           subject: formData.subject.trim(),
           category: formData.category,
           priority: formData.priority,
@@ -121,46 +139,47 @@ const ContactUs = () => {
       }
 
       // Confirmation is optional; ticket persistence is the source of truth.
-      let confirmationSent = false;
-      try {
-        const { data: emailResult, error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
-          body: {
-            name: formData.name.trim(),
-            email: formData.email.trim().toLowerCase(),
-            ticketNumber,
-            subject: formData.subject.trim(),
-            category: formData.category,
-            priority: formData.priority,
-            message: formData.message.trim()
-          }
-        });
+      // The function sends only to a member's own sign-in e-mail (guest tickets: staff only).
+      let emailed = false;
+      if (!account || account.isEmail) {
+        try {
+          const { data: emailResult, error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
+            body: {
+              name: formData.name.trim(),
+              email: contact,
+              ticketNumber,
+              subject: formData.subject.trim(),
+              category: formData.category,
+              priority: formData.priority,
+              message: formData.message.trim()
+            }
+          });
 
-        if (emailError || !emailResult?.success) {
-          console.error("Email confirmation not sent:", emailError ?? emailResult?.error);
-        } else {
-          confirmationSent = true;
+          if (emailError || !emailResult?.success) {
+            console.error("Email confirmation not sent:", emailError ?? emailResult?.error);
+          } else {
+            emailed = true;
+          }
+        } catch (emailErr) {
+          console.error("Email function error:", emailErr);
+          // Continue - ticket was still created
         }
-      } catch (emailErr) {
-        console.error("Email function error:", emailErr);
-        // Continue - ticket was still created
       }
       
-      toast.success(
-        confirmationSent
-          ? `Ticket #${ticketNumber} created. Confirmation email sent.`
-          : `Ticket #${ticketNumber} created. Email confirmation is unavailable; save this number to track your request.`,
-        { duration: 8000 }
-      );
-      
-      setFormData({
-        name: "",
-        email: "",
+      const sentTo = contact;
+      toast.success(`Ticket #${ticketNumber} created.`, { duration: 6000 });
+      setSent({ number: ticketNumber, email: sentTo, emailed });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      setFormData((prev) => ({
+        ...prev,
         category: "",
         subject: "",
         message: "",
         priority: "medium"
-      });
+      }));
       setAttachments([]);
+      setUploadKey((k) => k + 1);
     } catch (error: any) {
       console.error("Error submitting ticket:", error);
       toast.error(error.message || "Failed to submit ticket. Please try again.");
@@ -184,6 +203,23 @@ const ContactUs = () => {
             We're here to help. Send us a message and we'll respond as soon as possible.
           </p>
         </div>
+
+        {sent && (
+          <div role="status" className="mb-6 rounded-xl border border-green-500/40 bg-green-500/10 p-4 text-sm text-foreground">
+            <p className="font-semibold">Ticket #{sent.number} sent</p>
+            <p className="text-muted-foreground mt-1">
+              {sent.emailed
+                ? `A confirmation was sent to ${sent.email}. `
+                : "Keep this number: "}
+              {account
+                ? "It is listed under your tickets on Ticket Tracking."
+                : `Track it any time with the number and ${sent.email}.`}
+            </p>
+            <Link to="/ticket-tracking" className="mt-2 inline-block font-medium text-primary underline">
+              Track this ticket
+            </Link>
+          </div>
+        )}
 
         {/* Ticket Tracking Link */}
         <Link 
@@ -263,17 +299,26 @@ const ContactUs = () => {
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">
-                Email Address <span className="text-destructive">*</span>
+                {account && !account.isEmail ? "Contact" : "Email Address"} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="email"
-                type="email"
+                type={account && !account.isEmail ? "text" : "email"}
                 placeholder="Enter your email address"
-                value={formData.email}
+                value={account ? account.contact : formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                className="bg-background"
+                readOnly={!!account}
+                aria-describedby={account ? "email-account-note" : undefined}
+                className={account ? "bg-muted text-muted-foreground" : "bg-background"}
                 maxLength={255}
               />
+              {account && (
+                <p id="email-account-note" className="text-xs text-muted-foreground">
+                  {account.isEmail
+                    ? "Signed in: we reply to your account e-mail. To write from another address, sign out first."
+                    : "Your account has no e-mail address: our reply will appear in Ticket Tracking."}
+                </p>
+              )}
             </div>
 
             {/* Category */}
@@ -361,14 +406,23 @@ const ContactUs = () => {
             {/* File Attachments */}
             <div className="space-y-2">
               <Label className="text-foreground">Attachments (Optional)</Label>
-              <FileUpload 
-                onFilesUploaded={setAttachments}
-                maxFiles={5}
-                maxSizeMB={10}
-              />
-              <p className="text-xs text-muted-foreground">
-                Upload screenshots or documents to help us understand your issue better.
-              </p>
+              {user ? (
+                <>
+                  <FileUpload
+                    key={uploadKey}
+                    onFilesUploaded={setAttachments}
+                    maxFiles={5}
+                    maxSizeMB={10}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Upload screenshots or documents to help us understand your issue better.
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  <Link to="/auth" className="text-primary underline">Sign in</Link> to attach screenshots, or describe the issue below.
+                </p>
+              )}
             </div>
 
             {/* Submit Button */}

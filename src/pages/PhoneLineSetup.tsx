@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVoiceRecorder, voiceIssueText } from "@/hooks/useVoiceRecorder";
+import { ageFrom } from "@/lib/discoverFeed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,15 +21,15 @@ import {
   CheckCircle2,
   Clock,
   PauseCircle,
+  Loader2,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const MAX_SECONDS = 90;
 
-// Production-safe: greetings save as `pending` and only show publicly once approved.
-// To re-enable auto-approve for staging, set VITE_AUTO_APPROVE_VOICE_GREETINGS=true.
-const AUTO_APPROVE_VOICE_GREETINGS =
-  import.meta.env.VITE_AUTO_APPROVE_VOICE_GREETINGS === "true";
+// Every new greeting is saved as `pending` by the server (owners cannot set
+// moderation_status) and is heard on the phone line once staff approve it.
 
 interface PLProfile {
   id: string;
@@ -47,6 +49,7 @@ interface Greeting {
   duration_seconds: number;
   is_active: boolean;
   moderation_status?: string;
+  rejected_reason?: string | null;
 }
 
 export default function PhoneLineSetup() {
@@ -66,14 +69,12 @@ export default function PhoneLineSetup() {
   const [gender, setGender] = useState("");
   const [headline, setHeadline] = useState("");
 
-  // recorder
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<number | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+  // recorder (releases the microphone when it stops and when leaving the page)
+  const recorder = useVoiceRecorder(MAX_SECONDS);
+  const recording = recorder.state === "recording" || recorder.state === "starting";
+  const processing = recorder.state === "processing";
+  const recorded = recorder.recording;
+  const elapsed = recorded ? recorded.seconds : recorder.elapsed;
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -90,17 +91,19 @@ export default function PhoneLineSetup() {
         .eq("profile_id", profile.id)
         .maybeSingle();
 
+      // The age callers hear always comes from the birth date (the server sets it too).
+      const birthAge = profile.birth_date ? ageFrom(profile.birth_date) : null;
       if (pl) {
         setPlProfile(pl as PLProfile);
         setDisplayName(pl.display_name);
-        setAge(pl.age);
+        setAge(birthAge ?? pl.age);
         setCity(pl.city ?? "");
         setGender(pl.gender ?? "");
         setHeadline(pl.headline ?? "");
 
         const { data: g } = await supabase
           .from("voice_greetings")
-          .select("id, audio_url, duration_seconds, is_active, moderation_status")
+          .select("id, audio_url, duration_seconds, is_active, moderation_status, rejected_reason")
           .eq("phone_line_profile_id", pl.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -114,12 +117,7 @@ export default function PhoneLineSetup() {
         }
       } else {
         setDisplayName(profile.first_name ?? "");
-        if (profile.birth_date) {
-          const yrs = Math.floor(
-            (Date.now() - new Date(profile.birth_date).getTime()) / (365.25 * 24 * 3600 * 1000)
-          );
-          setAge(yrs);
-        }
+        if (birthAge !== null) setAge(birthAge);
         setCity(profile.city ?? "");
         setGender(profile.gender ?? "");
       }
@@ -137,139 +135,121 @@ export default function PhoneLineSetup() {
   const ageOk = typeof age === "number" && age >= 18;
   const profileComplete = !!profile?.first_name && !!profile?.birth_date && !!profile?.gender;
   const hasPhoto = photoCount > 0;
-  const canActivate = ageOk && profileComplete && hasPhoto;
+  const banned = plProfile?.status === "banned";
+  const canActivate = ageOk && profileComplete && hasPhoto && !banned;
 
   // -------- recording --------
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setRecordedBlob(blob);
-        if (recordedUrl) URL.revokeObjectURL(recordedUrl);
-        setRecordedUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach((t) => t.stop());
-      };
-      mr.start();
-      mediaRecorderRef.current = mr;
-      setRecording(true);
-      setElapsed(0);
-      timerRef.current = window.setInterval(() => {
-        setElapsed((s) => {
-          const next = s + 1;
-          if (next >= MAX_SECONDS) {
-            stopRecording();
-          }
-          return next;
-        });
-      }, 1000);
-    } catch (e) {
-      toast.error("Microphone permission denied");
-    }
+  const startRecording = () => {
+    setPlaying(false);
+    void recorder.start();
   };
 
-  const stopRecording = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    setRecording(false);
-  };
+  const stopRecording = () => recorder.stop();
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
     if (playing) {
-      audioRef.current.pause();
+      audio.pause();
       setPlaying(false);
     } else {
-      audioRef.current.play();
-      setPlaying(true);
+      audio.play().then(
+        () => setPlaying(true),
+        () => toast.error("Could not play the recording"),
+      );
     }
   };
 
   const reRecord = () => {
-    setRecordedBlob(null);
-    if (recordedUrl) URL.revokeObjectURL(recordedUrl);
-    setRecordedUrl(null);
-    setElapsed(0);
+    audioRef.current?.pause();
+    setPlaying(false);
+    recorder.reset();
   };
 
   // -------- save --------
   const saveProfile = async (activate: boolean) => {
     if (!profile?.id || !user) return;
+    if (banned) return toast.error("This voice profile was removed by moderation.");
     if (!displayName.trim()) return toast.error("Display name is required");
     if (!ageOk) return toast.error("You must be 18 or older");
     if (activate && !canActivate)
       return toast.error("Complete your main profile and add a photo first");
+    if (recording || processing) return toast.error("Stop the recording first");
 
     setSaving(true);
     try {
-      const status = activate ? "active" : plProfile?.status === "active" ? "active" : "draft";
-      const payload = {
-        profile_id: profile.id,
+      const fields = {
         display_name: displayName.trim(),
         age: age as number,
         city: city.trim() || null,
         gender: gender || null,
         headline: headline.trim() || null,
-        status,
-        is_public: activate ? true : plProfile?.is_public ?? false,
-        last_active_at: activate ? new Date().toISOString() : plProfile?.last_active_at ?? null,
       };
+      // "Save draft" never changes whether the line is live or paused.
+      const liveFields = activate
+        ? { status: "active", is_public: true, last_active_at: new Date().toISOString() }
+        : {};
 
       let plId = plProfile?.id;
       if (plId) {
-        const { error } = await supabase.from("phone_line_profiles").update(payload).eq("id", plId);
+        const { error } = await supabase
+          .from("phone_line_profiles")
+          .update({ ...fields, ...liveFields })
+          .eq("id", plId);
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from("phone_line_profiles")
-          .insert(payload)
+          .insert({ profile_id: profile.id, status: "draft", is_public: false, ...fields, ...liveFields })
           .select("id")
           .single();
         if (error) throw error;
         plId = data.id;
       }
 
-      if (recordedBlob && plId) {
-        const path = `${user.id}/${plId}-${Date.now()}.webm`;
+      if (recorded && plId) {
+        const path = `${user.id}/${plId}-${Date.now()}.${recorded.ext}`;
         const { error: upErr } = await supabase.storage
           .from("isexy-voice-greetings")
-          .upload(path, recordedBlob, { contentType: "audio/webm", upsert: false });
+          .upload(path, recorded.blob, { contentType: recorded.mime, upsert: false });
         if (upErr) throw upErr;
 
-        await supabase
+        // New greeting first, then switch the older ones off: a failed save
+        // never leaves the member without a greeting.
+        const { data: newGreeting, error: insErr } = await supabase
+          .from("voice_greetings")
+          .insert({
+            phone_line_profile_id: plId,
+            profile_id: profile.id,
+            audio_url: path,
+            duration_seconds: recorded.seconds,
+            is_active: true,
+          })
+          .select("id")
+          .single();
+        if (insErr) throw insErr;
+
+        const { error: offErr } = await supabase
           .from("voice_greetings")
           .update({ is_active: false })
-          .eq("phone_line_profile_id", plId);
-
-        const { error: insErr } = await supabase.from("voice_greetings").insert({
-          phone_line_profile_id: plId,
-          profile_id: profile.id,
-          audio_url: path,
-          duration_seconds: Math.max(1, Math.min(elapsed || 1, MAX_SECONDS)),
-          is_active: true,
-          moderation_status: AUTO_APPROVE_VOICE_GREETINGS ? "approved" : "pending",
-        });
-        if (insErr) throw insErr;
+          .eq("phone_line_profile_id", plId)
+          .neq("id", newGreeting.id);
+        if (offErr) console.warn("[PhoneLineSetup] older greetings still active:", offErr.message);
       }
 
-      if (recordedBlob && !AUTO_APPROVE_VOICE_GREETINGS) {
-        toast.success("Your greeting was saved and is pending review.");
+      if (recorded) {
+        toast.success(
+          activate
+            ? "You're live. Your new greeting is heard once it's approved (usually within 24 hours)."
+            : "Saved. Your new greeting is waiting for review.",
+        );
       } else {
-        toast.success(activate ? "Your greeting is live." : "Saved as draft.");
+        toast.success(activate ? "Your voice profile is live." : "Saved.");
       }
+      recorder.reset();
       navigate("/phone-line");
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to save");
+    } catch (e) {
+      toast.error((e as { message?: string })?.message ?? "Failed to save");
     } finally {
       setSaving(false);
     }
@@ -297,7 +277,14 @@ export default function PhoneLineSetup() {
   // ---- moderation banner ----
   const modStatus = greeting?.moderation_status;
   let modBanner: { icon: typeof CheckCircle2; tone: string; label: string; desc: string } | null = null;
-  if (greeting) {
+  if (banned) {
+    modBanner = {
+      icon: ShieldAlert,
+      tone: "border-destructive/40 bg-destructive/10 text-destructive",
+      label: "Removed by moderation",
+      desc: "This voice profile breaks our community guidelines and can't be heard on the phone line. Contact support if you think this is a mistake.",
+    };
+  } else if (greeting) {
     if (plProfile?.status === "paused") {
       modBanner = {
         icon: PauseCircle,
@@ -317,7 +304,9 @@ export default function PhoneLineSetup() {
         icon: AlertTriangle,
         tone: "border-destructive/40 bg-destructive/10 text-destructive",
         label: "Rejected",
-        desc: "This greeting wasn't approved. Please re-record following the guidelines.",
+        desc: greeting.rejected_reason
+          ? `This greeting wasn't approved (reason: ${greeting.rejected_reason}). Please record a new one.`
+          : "This greeting wasn't approved. Please re-record following the guidelines.",
       };
     } else if (modStatus === "approved" && plProfile?.status === "active") {
       modBanner = {
@@ -343,7 +332,7 @@ export default function PhoneLineSetup() {
       </header>
 
       <main className="mx-auto max-w-2xl space-y-5 p-4 pb-10">
-        {!canActivate && (
+        {!canActivate && !banned && (
           <Card className="flex items-start gap-3 rounded-2xl border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <span>
@@ -383,8 +372,15 @@ export default function PhoneLineSetup() {
                 min={18}
                 max={120}
                 value={age}
+                readOnly={!!profile?.birth_date}
+                aria-describedby={profile?.birth_date ? "age-hint" : undefined}
                 onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
               />
+              {profile?.birth_date && (
+                <p id="age-hint" className="text-[11px] text-muted-foreground">
+                  From your birth date
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="city">City</Label>
@@ -420,7 +416,7 @@ export default function PhoneLineSetup() {
             <span className="text-xs text-muted-foreground">max {MAX_SECONDS}s</span>
           </div>
 
-          {greeting && !recordedBlob && signedAudioUrl && (
+          {greeting && !recorded && signedAudioUrl && (
             <div className="relative rounded-xl border border-border/60 bg-background/40 p-3">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Current greeting · {greeting.duration_seconds}s
@@ -438,27 +434,37 @@ export default function PhoneLineSetup() {
               <button
                 type="button"
                 onClick={recording ? stopRecording : startRecording}
-                disabled={!!recordedBlob}
+                disabled={!!recorded || processing || banned || recorder.state === "starting"}
                 aria-label={recording ? "Stop recording" : "Start recording"}
                 className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-transform active:scale-95 ${
                   recording
                     ? "bg-destructive text-white"
-                    : recordedBlob
+                    : recorded || processing || banned
                     ? "bg-muted text-muted-foreground"
                     : "bg-primary text-primary-foreground glow-primary"
                 } disabled:cursor-not-allowed`}
               >
-                {recording ? <Square className="h-9 w-9" /> : <Mic className="h-9 w-9" />}
+                {processing ? (
+                  <Loader2 className="h-9 w-9 animate-spin" />
+                ) : recording ? (
+                  <Square className="h-9 w-9" />
+                ) : (
+                  <Mic className="h-9 w-9" />
+                )}
               </button>
             </div>
             <div className="text-center">
               <div className="font-mono text-2xl font-bold tabular-nums">
                 {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")}
               </div>
-              <div className="text-xs text-muted-foreground">
-                {recording
-                  ? "Recording…"
-                  : recordedBlob
+              <div className="text-xs text-muted-foreground" data-testid="recorder-status">
+                {recorder.state === "starting"
+                  ? "Allow microphone access…"
+                  : recording
+                  ? "Recording… tap to stop"
+                  : processing
+                  ? "Preparing your recording…"
+                  : recorded
                   ? "Preview your recording"
                   : greeting
                   ? "Tap to re-record"
@@ -475,7 +481,20 @@ export default function PhoneLineSetup() {
             </div>
           </div>
 
-          {!recording && recordedBlob && (
+          {recorder.issue && (
+            <div
+              role="alert"
+              className="relative flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <div>
+                <div className="font-semibold">{voiceIssueText(recorder.issue).title}</div>
+                <div className="opacity-90">{voiceIssueText(recorder.issue).detail}</div>
+              </div>
+            </div>
+          )}
+
+          {recorded && (
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button onClick={togglePlay} variant="secondary" className="gap-2 rounded-full">
                 {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -487,10 +506,10 @@ export default function PhoneLineSetup() {
             </div>
           )}
 
-          {recordedUrl && (
+          {recorded && (
             <audio
               ref={audioRef}
-              src={recordedUrl}
+              src={recorded.url}
               onEnded={() => setPlaying(false)}
               className="hidden"
             />
@@ -498,22 +517,23 @@ export default function PhoneLineSetup() {
         </Card>
 
         {/* Actions */}
-        <div className="sticky bottom-0 -mx-4 border-t border-border/60 bg-background/85 px-4 py-3 backdrop-blur-xl safe-bottom">
+        {/* pr-20 below lg: the floating assistant button sits over the right end of this bar. */}
+        <div className="sticky bottom-0 -mx-4 border-t border-border/60 bg-background/85 py-3 pl-4 pr-20 backdrop-blur-xl safe-bottom lg:px-4">
           <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={() => saveProfile(false)}
               variant="outline"
-              disabled={saving}
+              disabled={saving || banned || recording || processing}
               className="flex-1 gap-2 rounded-full"
             >
               <Save className="h-4 w-4" /> Save draft
             </Button>
             <Button
               onClick={() => saveProfile(true)}
-              disabled={saving || !canActivate}
+              disabled={saving || !canActivate || recording || processing}
               className="flex-1 gap-2 rounded-full bg-primary text-primary-foreground hover:brightness-110"
             >
-              <Mic className="h-4 w-4" /> Go live
+              <Mic className="h-4 w-4" /> {plProfile?.status === "active" ? "Save & stay live" : "Go live"}
             </Button>
             {plProfile?.status === "active" && (
               <Button

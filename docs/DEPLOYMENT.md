@@ -249,8 +249,53 @@ on V1 itself as `ISEXY_*` names, not in GitHub: see `V1-MIGRATION.md` › 3.6.
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` | defaults: V1 URL and anon key |
 | `VITE_GA4_ID` | *(optional)* Google Analytics 4 measurement ID |
 | `VITE_META_PIXEL_ID` | *(optional)* Meta Pixel ID |
-| `VITE_TURN_URLS` | *(recommended)* comma-separated TURN URLs, e.g. `turn:turn.isexy.ca:3478,turns:turn.isexy.ca:5349` — needed for calls on strict mobile NAT (Cuba) |
+| `VITE_TURN_URL` | *(recommended)* comma-separated TURN URLs, e.g. `turn:turn.isexy.ca:3478?transport=udp,turns:turn.isexy.ca:5349?transport=tcp` — needed for calls on strict mobile NAT (Cuba); the older name `VITE_TURN_URLS` is still read |
 | `VITE_TURN_USERNAME` | *(recommended)* TURN username |
+| `VITE_STUN_URL` | *(optional)* comma-separated STUN URLs; default Google public STUN |
+| `VITE_PHONE_LINE_NUMBER` | *(optional)* the Twilio number members call for the phone line by phone, as shown, e.g. `+1 514 555 0100`; without it the app hides the "Use the phone line by phone" card |
+| `VITE_TURN_RELAY_ONLY` | *(optional, testing)* `true` sends every call through TURN (proves TURN works); leave unset in production |
+| `VITE_TAKATAK_ADS_URL` | *(optional)* TAKATAK ad server origin, default `https://takatak.ca` (https only) |
+| `VITE_TAKATAK_ADS_PUBLISHER` | *(optional)* TAKATAK publisher code, default `isexy` |
+| `VITE_TAKATAK_ADS_ENABLED` | *(optional)* `false` turns TAKATAK ads off (AdSense, then the house banner, still show); default on |
+| `VITE_ADSENSE_CLIENT` | *(optional)* Google AdSense publisher id `ca-pub-…`; when set the build also writes `<meta name="google-adsense-account">` and `/ads.txt` (needed for the AdSense review). Unset: no Google script at all |
+| `VITE_ADSENSE_SLOT_DISCOVER` / `_LIST` / `_FEED` / `_PROFILE` / `_CONTENT` | *(optional, after AdSense approval)* the ad unit id (digits) of each placement; a placement without one never asks AdSense |
+| `VITE_GOOGLE_SITE_VERIFICATION` | *(optional)* Google Search Console token (the `content` of its "HTML tag"; the whole pasted tag works too); when set the build writes `<meta name="google-site-verification">` on every page. Unset or malformed: no tag. See [Google Search Console](#google-search-console) |
+
+**Ads** (free members only, `docs/ADS.md`): Coolify and Render build the site
+themselves, so the `VITE_TAKATAK_ADS_*` / `VITE_ADSENSE_*` values must be in
+**their** build environment (Coolify → ISEXY → Environment Variables, "Build
+variable" ticked; Render → Environment), not only in GitHub variables (those
+feed the CI build). Changing one needs a rebuild. No Content-Security-Policy is
+set anywhere (`index.html`, `vercel.json`, Coolify): if one is ever added, it
+must allow the AdSense hosts and the TAKATAK origin listed in `docs/ADS.md`.
+
+## Google Search Console
+
+Owner steps (nothing here needs a code change):
+
+1. [Search Console](https://search.google.com/search-console) → **Add
+   property** → **URL prefix** → `https://isexy.ca/`. (A **Domain** property
+   `isexy.ca` also covers `www` and `http`, but it is verified by a DNS TXT
+   record at the DNS host, MochaHost, instead of the tag below.)
+2. Verification method **HTML tag**: copy the `content="…"` value (or the
+   whole tag) into `VITE_GOOGLE_SITE_VERIFICATION` as a **build variable** in
+   Coolify (ISEXY → Environment Variables, "Build variable" ticked), on Render
+   and as a GitHub variable (CI build), then redeploy. Check that
+   `view-source:https://isexy.ca/` shows
+   `<meta name="google-site-verification" content="…">` in the `<head>`, then
+   press **Verify** in Search Console. Keep the variable set afterwards:
+   Google re-checks the tag, and removing it un-verifies the property.
+3. **Sitemaps** → submit `https://isexy.ca/sitemap.xml`. It is written at
+   build by `scripts/generate-seo.mjs` (public pages + published Help Centre
+   articles), and `https://isexy.ca/robots.txt` already points at it
+   (`Sitemap: https://isexy.ca/sitemap.xml`, from `VITE_SITE_URL`, which
+   `.env` sets to `https://isexy.ca`); private app screens are `Disallow`ed
+   there and carry `noindex`.
+
+Calls without TURN still connect on most home Wi-Fi, but two phones on mobile
+data often never do. With TURN set, Phone Line calls (people who are not
+matched) always go through TURN so neither side learns the other's IP
+address. Details: `src/lib/iceServers.ts`.
 
 ## Database migrations by hand
 

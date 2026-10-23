@@ -10,11 +10,13 @@ import { TopPicksCarousel } from "@/components/TopPicksCarousel";
 import { SwipeSurgeNotification, useSwipeSurge } from "@/components/SwipeSurgeNotification";
 import { ConsistencyChallengeModal, useStreakTracker } from "@/components/ConsistencyChallengeModal";
 import { MatchCelebration } from "@/components/MatchCelebration";
-import { ContactMethodModal } from "@/components/ContactMethodModal";
 import { FirstImpressionModal } from "@/components/FirstImpressionModal";
 import { SwipeDeck, type SwipeDeckHandle } from "@/components/SwipeDeck";
+import { AdSlot } from "@/components/AdSlot";
 import { useDiscoverDeck, type SwipeAction, type SwipeOutcome } from "@/hooks/useDiscoverDeck";
+import { useChatOpener } from "@/hooks/useChatOpener";
 import { toCardProfile, type FeedProfile } from "@/lib/discoverFeed";
+import { sendFirstImpression } from "@/lib/likes";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,10 +37,13 @@ export default function Discover() {
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [detailFor, setDetailFor] = useState<FeedProfile | null>(null);
-  const [contactModal, setContactModal] = useState<{ matchId: string; otherName: string; otherPhotoUrl?: string } | null>(null);
+  const { openChat, contactModal, contactOpen } = useChatOpener();
   const [firstImpressionFor, setFirstImpressionFor] = useState<FeedProfile | null>(null);
+  const [impressionsLeft, setImpressionsLeft] = useState(3);
   const [boosting, setBoosting] = useState(false);
   const pendingImpression = useRef<{ profileId: string; message: string } | null>(null);
+  // People swiped this session (deck or Top Picks): hidden from Top Picks.
+  const [pickedIds, setPickedIds] = useState<ReadonlySet<string>>(new Set());
 
   // ---- Bio translation (cards on top of the stack only, each bio once) -----
   const [translated, setTranslated] = useState<Record<string, string>>({});
@@ -64,13 +69,25 @@ export default function Discover() {
 
   // ---- Server verdicts ----------------------------------------------------------
   const onSwiped = useCallback((action: SwipeAction, profile: FeedProfile, settled: Promise<SwipeOutcome>) => {
+    setPickedIds((prev) => new Set(prev).add(profile.id));
     settled.then(async (outcome) => {
+      if (outcome.status !== "ok") {
+        setPickedIds((prev) => { const next = new Set(prev); next.delete(profile.id); return next; });
+      }
       if (outcome.status === "ok") {
         const pending = pendingImpression.current;
-        if (action === "super_like" && pending?.profileId === profile.id && me) {
+        if (action === "super_like" && pending?.profileId === profile.id) {
           pendingImpression.current = null;
-          await supabase.from("swipes").update({ message: pending.message }).eq("swiper_id", me.id).eq("swiped_id", profile.id);
-          toast.success("First Impression sent! 💫");
+          const sent = await sendFirstImpression(profile.id, pending.message);
+          if (sent.status === "ok") {
+            if (sent.remaining != null) setImpressionsLeft(sent.remaining);
+            toast.success("First Impression sent! 💫");
+          } else if (sent.status === "no_first_impressions") {
+            setImpressionsLeft(0);
+            toast.error(`Super Like sent to ${profile.first_name}, but you have no First Impressions left this week.`);
+          } else {
+            toast.error(`Super Like sent to ${profile.first_name}, but your message couldn't be delivered.`);
+          }
         }
         return;
       }
@@ -90,13 +107,47 @@ export default function Discover() {
           toast.error(`Couldn't save that swipe — ${profile.first_name} is back on top.`);
       }
     });
-  }, [me, navigate]);
+  }, [navigate]);
 
   const onSuperLikeRequest = useCallback((profile: FeedProfile) => {
     if (me?.subscription_tier !== "platinum") return false;
     setFirstImpressionFor(profile);
     return true;
   }, [me?.subscription_tier]);
+
+  // Platinum: how many First Impressions are left this week (allowances).
+  useEffect(() => {
+    if (!firstImpressionFor || !me) return;
+    supabase
+      .from("allowances")
+      .select("weekly_first_impressions")
+      .eq("profile_id", me.id)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setImpressionsLeft(data.weekly_first_impressions); });
+  }, [firstImpressionFor, me]);
+
+  /**
+   * Swipe a profile that may not be the top card. The top card flies out
+   * with the usual animation; a Top Pick (not on top) is sent directly.
+   */
+  const swipeProfile = useCallback((profile: FeedProfile, direction: "left" | "right" | "up") => {
+    if (deck.top?.id === profile.id) {
+      deckHandle.current?.swipe(direction);
+      return;
+    }
+    const action: SwipeAction = direction === "left" ? "pass" : direction === "right" ? "like" : "super_like";
+    const settled = deck.swipe(action, profile);
+    if (action !== "pass") toast.success(action === "super_like" ? `Super Liked ${profile.first_name} ⭐` : `Liked ${profile.first_name}`, { duration: 1200 });
+    onSwiped(action, profile, settled);
+  }, [deck, onSwiped]);
+
+  /** Like / pass / super like from the profile details. */
+  const actOn = (profile: FeedProfile, direction: "left" | "right" | "up") => {
+    setDetailFor(null);
+    if (direction === "up" && onSuperLikeRequest(profile)) return;
+    swipeProfile(profile, direction);
+  };
+  const superLike = (profile: FeedProfile) => swipeProfile(profile, "up");
 
   const activateBoost = async () => {
     if (!me || boosting) return;
@@ -126,7 +177,7 @@ export default function Discover() {
     }
   };
 
-  const modalOpen = showPaywall || !!deck.match || !!contactModal || !!firstImpressionFor || !!detailFor || showModal;
+  const modalOpen = showPaywall || !!deck.match || contactOpen || !!firstImpressionFor || !!detailFor || showModal;
 
   const header = (
     <header className="flex items-center justify-between px-4 py-3 z-20 border-b border-border/50">
@@ -165,7 +216,7 @@ export default function Discover() {
   return (
     <div className="h-[100dvh] overflow-hidden bg-background flex flex-col" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
       {showPaywall && (
-        <div role="dialog" aria-modal="true" aria-labelledby="paywall-title" className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowPaywall(false)}>
+        <div role="dialog" aria-modal="true" aria-labelledby="paywall-title" className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onClick={() => setShowPaywall(false)}>
           <div className="bg-card rounded-3xl p-6 max-w-sm w-full shadow-xl animate-fade-in" onClick={(e) => e.stopPropagation()}>
             <div className="text-center">
               <Heart className="w-16 h-16 text-primary mx-auto mb-4" />
@@ -187,38 +238,31 @@ export default function Discover() {
           onChatNow={() => {
             const m = deck.match!;
             deck.clearMatch();
-            setContactModal({ matchId: m.matchId, otherName: m.name, otherPhotoUrl: m.photoUrl });
+            openChat({ matchId: m.matchId, otherName: m.name, otherPhotoUrl: m.photoUrl });
           }}
           matchName={deck.match.name}
           matchPhotoUrl={deck.match.photoUrl}
         />
       )}
 
-      {contactModal && (
-        <ContactMethodModal
-          isOpen
-          onClose={() => setContactModal(null)}
-          matchId={contactModal.matchId}
-          otherName={contactModal.otherName}
-          otherPhotoUrl={contactModal.otherPhotoUrl}
-        />
-      )}
+      {contactModal}
 
       {firstImpressionFor && (
         <FirstImpressionModal
           isOpen
+          onCancel={() => setFirstImpressionFor(null)}
           onClose={() => {
             setFirstImpressionFor(null);
-            deckHandle.current?.swipe("up");
+            superLike(firstImpressionFor);
           }}
           onSend={(message) => {
             pendingImpression.current = { profileId: firstImpressionFor.id, message };
             setFirstImpressionFor(null);
-            deckHandle.current?.swipe("up");
+            superLike(firstImpressionFor);
           }}
           targetName={firstImpressionFor.first_name}
           targetPhotoUrl={firstImpressionFor.photos[0]}
-          remainingImpressions={3}
+          remainingImpressions={impressionsLeft}
         />
       )}
 
@@ -226,12 +270,9 @@ export default function Discover() {
         <ProfileDetail
           profile={{ ...toCardProfile(detailFor, translated[detailFor.id]), interests: detailFor.interests ?? undefined }}
           onClose={() => setDetailFor(null)}
-          onLike={() => { setDetailFor(null); deckHandle.current?.swipe("right"); }}
-          onPass={() => { setDetailFor(null); deckHandle.current?.swipe("left"); }}
-          onSuperLike={() => {
-            setDetailFor(null);
-            if (!onSuperLikeRequest(detailFor)) deckHandle.current?.swipe("up");
-          }}
+          onLike={() => actOn(detailFor, "right")}
+          onPass={() => actOn(detailFor, "left")}
+          onSuperLike={() => actOn(detailFor, "up")}
         />
       )}
 
@@ -239,10 +280,13 @@ export default function Discover() {
       <ConsistencyChallengeModal isOpen={showModal} onClose={() => setShowModal(false)} currentStreak={currentStreak} />
 
       {header}
-      {/* On short phones the card gets the room; promos show from 700px tall. */}
-      <div className="hidden [@media(min-height:700px)]:block shrink-0">
+      {/* The card gets the room on phones: a compact Top Picks strip from
+          760px tall, the promo banner only on tall (tablet / desktop) screens. */}
+      <div className="hidden [@media(min-height:1000px)]:block shrink-0">
         <DiscoverCampaigns className="py-2" />
-        <TopPicksCarousel className="py-2" />
+      </div>
+      <div className="hidden [@media(min-height:760px)]:block shrink-0">
+        <TopPicksCarousel className="py-2" compact onSelect={setDetailFor} hiddenIds={pickedIds} />
       </div>
 
       <main className="flex-1 min-h-0 flex flex-col items-center px-3 pt-2">
@@ -292,6 +336,9 @@ export default function Discover() {
           </div>
         )}
       </main>
+
+      {/* Free members: a slim banner in the flow above the nav (the card area shrinks; never on top of it). */}
+      <AdSlot placement="isexy-discover-banner" className="shrink-0 mx-auto mt-2 mb-2 w-[calc(100%-1.5rem)] max-w-sm" />
 
       <BottomNav />
     </div>

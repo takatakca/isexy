@@ -102,7 +102,8 @@ export default function AdminAnalytics() {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Fetch profiles
-    const { data: profiles } = await supabase.from('profiles').select('*');
+    // Named columns: select('*') on profiles is refused since 0015 K3 (shadow bans are staff-only).
+    const { data: profiles } = await supabase.from('profiles').select('created_at, is_active, is_premium, is_verified, gender, country');
     const { data: matches } = await supabase.from('matches').select('*');
     const { data: messages } = await supabase.from('messages').select('*');
     const { data: subscriptions } = await supabase.from('subscriptions').select('*').eq('status', 'active');

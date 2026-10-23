@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { goBack } from "@/lib/navigation";
 import { 
   ArrowLeft, Shield, AlertTriangle, Users, MapPin, Phone, DollarSign, 
   Heart, Eye, Lock, MessageCircle, Flag, Ban, Camera, Globe, 
@@ -171,7 +172,7 @@ export default function Safety() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button onClick={() => goBack(navigate, "/help-support")} className="p-2 -ml-2" aria-label="Back">
             <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="text-xl font-bold text-foreground">Safety Center</h1>

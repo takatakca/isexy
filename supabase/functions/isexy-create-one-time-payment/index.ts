@@ -3,16 +3,14 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { ensureStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
 import { safeCheckoutMetadata } from "../_shared/checkout-metadata.ts";
 import { isexyAppUrl } from "../_shared/app-url.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Server-side authoritative catalog. Client sends only `productId`.
-type CatalogItem = { name: string; description?: string; amountCents: number; currency: "usd" | "cad" };
+// Server-side authoritative catalog. Client sends only `productId` (+ gift or
+// donation details). What a product gives is decided by
+// isexy.fulfill_stripe_payment when Stripe confirms the payment.
+type CatalogItem = { name: string; amountCents: number; currency: "usd" | "cad" };
 const CATALOG: Record<string, CatalogItem> = {
   // Super Likes
   super_likes_3:  { name: "3 Super Likes",  amountCents: 1197, currency: "cad" },
@@ -47,118 +45,89 @@ const CATALOG: Record<string, CatalogItem> = {
   food_100: { name: "Food Package - Premium", amountCents: 10000, currency: "usd" },
 };
 
+// The only details a member may attach (gift recipient and note, donation
+// recipient) are picked by _shared/checkout-metadata.ts safeCheckoutMetadata
+// (main 830c106): payer, product and package always come from the server.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function defaultReturnPath(productId: string): string {
+  if (productId.startsWith("super_likes_")) return "/get-super-likes";
+  if (/^(boost|primetime|superboost)_/.test(productId)) return "/get-boosts";
+  if (/^(donation|topup|food)_/.test(productId)) return "/donate";
+  return "/discover";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabaseAuth = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing Authorization header");
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseAuth.auth.getUser(token);
-    const user = data.user;
-    if (!user?.id) throw new Error("User not authenticated");
+    const refused = gateRefusal();
+    if (refused) return refused;
+
+    const member = await signedInMember(req);
+    if (!member) return json({ error: "Not authenticated" }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const productId: string | undefined = body?.productId;
-    const clientMetadata: unknown = body?.metadata;
+    const productId: string = typeof body?.productId === "string" ? body.productId : "";
+    const isGift = productId.startsWith("gift_");
+    if (!isGift && !CATALOG[productId]) return json({ error: "Invalid productId" }, 400);
 
-    let item: CatalogItem | null = null;
-    let resolvedName: string | undefined;
-
-    // Gifts: priced from gift_packages DB row (server-trusted)
-    if (productId?.startsWith("gift_")) {
-      const giftPackageId = productId.slice(5);
-      const { data: pkg, error: pkgErr } = await supabaseAdmin
-        .from("gift_packages")
-        .select("id,name,price_usd,is_active")
-        .eq("id", giftPackageId)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (pkgErr || !pkg) {
-        return new Response(JSON.stringify({ error: "Invalid gift package" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      item = {
-        name: `Gift: ${pkg.name}`,
-        amountCents: Math.round(Number(pkg.price_usd) * 100),
-        currency: "usd",
-      };
-      resolvedName = item.name;
-
-    } else if (productId && CATALOG[productId]) {
-      item = CATALOG[productId];
-
-    }
-
-    if (!item || !productId) {
-      return new Response(JSON.stringify({ error: "Invalid productId" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const stripeKey = isexyEnv("STRIPE_SECRET_KEY") || "";
-    const liveEnabled = (isexyEnv("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
-    if (!liveEnabled && !stripeKey.startsWith("sk_test_")) {
-      return new Response(JSON.stringify({ error: "Live payments are disabled until testing is complete." }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    const stripeCustomerId = await ensureStripeCustomerId(stripe, user);
-    const customerId = stripeCustomerId;
-
-    // Untrusted client metadata must never select a different payer,
-    // product, account, entitlement or fulfillment branch.
-    let safeMeta: Record<string, string>;
+    // Untrusted client metadata never selects a different payer, product,
+    // account, entitlement or fulfilment branch.
+    let meta: Record<string, string>;
     try {
-      safeMeta = safeCheckoutMetadata(
-        productId, clientMetadata, user.id,
-        productId.startsWith("gift_") ? productId.slice(5) : undefined,
-      );
+      meta = safeCheckoutMetadata(productId, body?.metadata, member.id, isGift ? productId.slice(5) : undefined);
     } catch (error) {
-      return new Response(JSON.stringify({
-        error: error instanceof Error ? error.message : "Invalid checkout metadata",
-      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return json({ error: error instanceof Error ? error.message : "Invalid checkout metadata" }, 400);
     }
+
+    let item: CatalogItem;
+    if (isGift) {
+      // Gifts: priced from the gift_packages row (server-trusted), to an active member other than the sender.
+      const giftPackageId = productId.slice(5);
+      if (!UUID.test(giftPackageId) || meta.recipient_profile_id === member.id) {
+        return json({ error: "Invalid gift" }, 400);
+      }
+      const [{ data: pkg }, { data: recipient }] = await Promise.all([
+        supabaseAdmin.from("gift_packages").select("id,name,price_usd,is_active").eq("id", giftPackageId).eq("is_active", true).maybeSingle(),
+        supabaseAdmin.from("profiles").select("id").eq("id", meta.recipient_profile_id).eq("is_active", true).maybeSingle(),
+      ]);
+      if (!pkg || !recipient) return json({ error: "Invalid gift package" }, 400);
+      item = { name: `Gift: ${pkg.name}`, amountCents: Math.round(Number(pkg.price_usd) * 100), currency: "usd" };
+    } else {
+      item = CATALOG[productId];
+    }
+
+    const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
+    const customerId = await ensureStripeCustomerId(stripe, member);
+
+    // An internal path of this site only; the host comes from ISEXY_APP_URL
+    // (isexyAppUrl), never from the request.
+    const requested = typeof body?.returnPath === "string" ? body.returnPath : "";
+    const returnPath = /^\/(?!\/)[A-Za-z0-9/_-]{0,120}$/.test(requested) ? requested : defaultReturnPath(productId);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email ?? undefined,
       line_items: [{
-        price_data: {
-          currency: item.currency,
-          product_data: { name: resolvedName ?? item.name },
-          unit_amount: item.amountCents,
-        },
+        price_data: { currency: item.currency, product_data: { name: item.name }, unit_amount: item.amountCents },
         quantity: 1,
       }],
       mode: "payment",
-      success_url: isexyAppUrl("/discover?purchase=success"),
-      cancel_url: isexyAppUrl("/discover?purchase=cancelled"),
-      metadata: safeMeta,
+      success_url: isexyAppUrl(`${returnPath}?checkout=success`),
+      cancel_url: isexyAppUrl(`${returnPath}?checkout=cancelled`),
+      metadata: meta,
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json({ url: session.url });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("[CREATE-ONE-TIME-PAYMENT]", errorMessage);
+    return json({ error: errorMessage }, 500);
   }
 });

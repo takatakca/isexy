@@ -3,7 +3,8 @@
 # Every push / PR:
 #   verify      install → typecheck → build → type-check every isexy-* edge function → lint report
 #   migrations  apply supabase/isexy-migrations to a Postgres stand-in of V1 (dry run, apply,
-#               re-run) with the guard that proves V1's public/auth/storage objects never change
+#               re-run) with the guard that proves V1's public/auth/storage objects never change,
+#               then every SQL smoke test in scripts/isexy/test (each rolled back)
 #   rules       fail if anything could touch V1 outside ISEXY's lane (db push, bare functions deploy)
 # Every push to main (after the above are green), each stage switching itself on once its
 # secrets exist (GitHub → Settings → Secrets and variables → Actions):
@@ -60,9 +61,25 @@ jobs:
           VITE_SITE_URL: ${{ env.SITE_URL }}
           VITE_GA4_ID: ${{ vars.VITE_GA4_ID }}
           VITE_META_PIXEL_ID: ${{ vars.VITE_META_PIXEL_ID }}
+          VITE_TURN_URL: ${{ vars.VITE_TURN_URL }}
           VITE_TURN_URLS: ${{ vars.VITE_TURN_URLS }}
+          VITE_STUN_URL: ${{ vars.VITE_STUN_URL }}
+          VITE_TURN_RELAY_ONLY: ${{ vars.VITE_TURN_RELAY_ONLY }}
+          VITE_PHONE_LINE_NUMBER: ${{ vars.VITE_PHONE_LINE_NUMBER }}
           VITE_TURN_USERNAME: ${{ vars.VITE_TURN_USERNAME }}
           VITE_TURN_CREDENTIAL: ${{ secrets.VITE_TURN_CREDENTIAL }}
+          # Ads (docs/ADS.md): all optional; unset = TAKATAK defaults, no AdSense.
+          VITE_TAKATAK_ADS_URL: ${{ vars.VITE_TAKATAK_ADS_URL }}
+          VITE_TAKATAK_ADS_PUBLISHER: ${{ vars.VITE_TAKATAK_ADS_PUBLISHER }}
+          VITE_TAKATAK_ADS_ENABLED: ${{ vars.VITE_TAKATAK_ADS_ENABLED }}
+          VITE_ADSENSE_CLIENT: ${{ vars.VITE_ADSENSE_CLIENT }}
+          VITE_ADSENSE_SLOT_DISCOVER: ${{ vars.VITE_ADSENSE_SLOT_DISCOVER }}
+          VITE_ADSENSE_SLOT_LIST: ${{ vars.VITE_ADSENSE_SLOT_LIST }}
+          VITE_ADSENSE_SLOT_FEED: ${{ vars.VITE_ADSENSE_SLOT_FEED }}
+          VITE_ADSENSE_SLOT_PROFILE: ${{ vars.VITE_ADSENSE_SLOT_PROFILE }}
+          VITE_ADSENSE_SLOT_CONTENT: ${{ vars.VITE_ADSENSE_SLOT_CONTENT }}
+          # Google Search Console (optional): token of the "HTML tag" method -> <meta name="google-site-verification">.
+          VITE_GOOGLE_SITE_VERIFICATION: ${{ vars.VITE_GOOGLE_SITE_VERIFICATION }}
         run: npm run build
 
       - name: Lint (report only — legacy findings are being paid down)
@@ -141,6 +158,17 @@ jobs:
 
       - name: Re-run is a no-op
         run: scripts/isexy/migrate.sh | tee /tmp/rerun.txt && grep -q "up to date" /tmp/rerun.txt
+
+      - name: Smoke tests (each in a rolled-back transaction)
+        run: |
+          for t in 0013-smoke calls-smoke rewards-smoke security-smoke live-functions-compat trust-smoke; do
+            echo "::group::$t"
+            printf 'BEGIN;\n\\i scripts/isexy/test/%s.sql\nROLLBACK;\n' "$t" | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
+            echo "::endgroup::"
+          done
+
+      - name: Ads smoke test (0016 get_my_ad_status, rolled back)
+        run: printf 'BEGIN;\n\\i scripts/isexy/test/ads-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
 
   rules:
     name: V1 safety rules

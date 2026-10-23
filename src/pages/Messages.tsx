@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Fragment, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { Shield, Search, Smile, X, CreditCard, Smartphone, AlertTriangle, CheckCheck, Lock, BadgeCheck, RefreshCw } from "lucide-react";
@@ -11,6 +11,8 @@ import { ScheduledCallsList } from "@/components/ScheduledCallsList";
 import { MissedCallBanner } from "@/components/MissedCallBanner";
 import { ContactMethodModal } from "@/components/ContactMethodModal";
 import { fetchInbox, relativeTime, type Conversation } from "@/lib/inbox";
+import { AdSlot } from "@/components/AdSlot";
+import { listAdAfterIndex } from "@/lib/ads";
 
 const SAFETY_SEEN_KEY = "cubadate_safety_seen";
 
@@ -85,7 +87,7 @@ export default function Messages() {
       refreshTimer.current = window.setTimeout(load, 400);
     };
     const channel = supabase
-      .channel(`inbox-${profile.id}`)
+      .channel(`inbox-${profile.id}-${Math.random().toString(36).slice(2, 8)}`)
       .on("postgres_changes", { event: "*", schema: "isexy", table: "messages" }, schedule)
       .on("postgres_changes", { event: "*", schema: "isexy", table: "matches" }, schedule)
       .subscribe();
@@ -104,6 +106,8 @@ export default function Messages() {
   }, [conversations, query]);
   const newMatches = filtered.filter((c) => !c.last_message_preview);
   const threads = filtered.filter((c) => c.last_message_preview);
+  // Free members: one banner after the 3rd chat, or at the top of a shorter list.
+  const adAfter = listAdAfterIndex(threads.length);
   const totalUnread = conversations.reduce((n, c) => n + c.unread_count, 0);
 
   const open = (c: Conversation) => {
@@ -159,17 +163,18 @@ export default function Messages() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-40">
       {/* Safety Modal */}
       {showSafetyModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-3xl max-w-sm w-full p-6 relative">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-background rounded-3xl max-w-sm w-full p-6 relative" role="dialog" aria-modal="true" aria-label="Stay safe">
             <button
               onClick={() => {
                 try { localStorage.setItem(SAFETY_SEEN_KEY, "true"); } catch { /* ignore */ }
                 setShowSafetyModal(false);
               }}
               className="absolute top-4 right-4 p-2"
+              aria-label="Close"
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -252,6 +257,9 @@ export default function Messages() {
       </div>
 
       <div className="flex-1 px-4">
+        {!loading && !(loadError && conversations.length === 0) && adAfter < 0 && (
+          <AdSlot placement="isexy-list-banner" className="mt-3" />
+        )}
         {loading ? (
           <div className="space-y-2 mt-4" aria-busy="true">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -313,9 +321,9 @@ export default function Messages() {
               <section className="mt-3" aria-label="Messages">
                 {newMatches.length > 0 && <h2 className="text-sm font-bold text-foreground mb-2">Messages</h2>}
                 <div className="space-y-2">
-                  {threads.map((c) => (
+                  {threads.map((c, i) => (
+                    <Fragment key={c.match_id}>
                     <button
-                      key={c.match_id}
                       onClick={() => open(c)}
                       className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 active:scale-[0.99] transition-all"
                     >
@@ -358,6 +366,8 @@ export default function Messages() {
                         </div>
                       </div>
                     </button>
+                    {i === adAfter && <AdSlot placement="isexy-list-banner" />}
+                    </Fragment>
                   ))}
                 </div>
               </section>

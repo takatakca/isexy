@@ -1,73 +1,38 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Check } from "lucide-react";
 
-type ThemeMode = "system" | "light" | "dark";
-
+/**
+ * ISEXY ships one theme: dark (deep navy). There is no light palette yet, so
+ * this page says so instead of offering choices that would only break colours.
+ */
 export default function DarkMode() {
-  const navigate = useNavigate();
-  const [selectedMode, setSelectedMode] = useState<ThemeMode>("system");
-
   useEffect(() => {
-    const saved = localStorage.getItem("theme-mode") as ThemeMode;
-    if (saved) {
-      setSelectedMode(saved);
+    // Older versions saved "light"/"system" here and toggled the `dark` class; undo that.
+    try {
+      localStorage.removeItem("theme-mode");
+    } catch {
+      /* storage blocked: nothing to clean up */
     }
   }, []);
-
-  const handleSelect = (mode: ThemeMode) => {
-    setSelectedMode(mode);
-    localStorage.setItem("theme-mode", mode);
-    
-    const root = document.documentElement;
-    
-    if (mode === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark);
-    } else {
-      root.classList.toggle("dark", mode === "dark");
-    }
-  };
-
-  const options = [
-    {
-      id: "system" as ThemeMode,
-      label: "Use System Setting",
-    },
-    {
-      id: "light" as ThemeMode,
-      label: "Light Mode",
-    },
-    {
-      id: "dark" as ThemeMode,
-      label: "Dark Mode",
-    },
-  ];
 
   return (
     <AuthLayout showBack variant="white">
       <h1 className="text-2xl font-bold text-foreground mb-6">Dark Mode</h1>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        {options.map((option, index) => (
-          <button
-            key={option.id}
-            onClick={() => handleSelect(option.id)}
-            className={`w-full flex items-center justify-between p-4 ${
-              index !== options.length - 1 ? "border-b border-border" : ""
-            }`}
-          >
-            <span className="text-foreground">{option.label}</span>
-            {selectedMode === option.id && (
-              <Check className="w-5 h-5 text-primary" />
-            )}
-          </button>
-        ))}
+        <div className="w-full flex items-center justify-between p-4 border-b border-border">
+          <span className="text-foreground">Dark Mode</span>
+          <Check className="w-5 h-5 text-primary" aria-label="Selected" />
+        </div>
+        <div className="w-full flex items-center justify-between p-4 text-muted-foreground">
+          <span>Light Mode</span>
+          <span className="text-xs font-semibold uppercase tracking-wide">Coming soon</span>
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground mt-4 px-2">
-        Using the system setting will automatically adjust ISEXY's appearance to match your device's system settings.
+        ISEXY uses a dark theme on every device, designed to be easy on the eyes day and night.
       </p>
     </AuthLayout>
   );

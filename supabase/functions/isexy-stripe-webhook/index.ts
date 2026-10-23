@@ -2,528 +2,300 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
+import { subscriptionPeriod } from "../_shared/payments.ts";
 import { checkoutOwnerId } from "../_shared/stripe-identity.ts";
-import { activeSubscriptionTier } from "../_shared/subscription-entitlement.ts";
+
+// Stripe -> ISEXY. Every balance and plan change happens in one SQL function
+// (isexy.fulfill_stripe_payment, apply_stripe_subscription,
+// apply_chat_subscription): atomic, and idempotent per Stripe session or
+// subscription, so a retried or duplicated event never credits twice. What a
+// product gives is decided by the SQL catalog, never by the session metadata.
+//
+// Kept from main (live webhook v6): the member is only the TAKATAK user id
+// the checkout function wrote in the metadata, and it must agree with the
+// Stripe customer's isexy_user_id tag (never an email lookup); one-time
+// payments are credited only once paid (async_payment_succeeded handled);
+// Premium only for active/trialing subscriptions (in SQL: refresh_member_plan);
+// an event is acknowledged only after it was really processed: a delivery of
+// an event another delivery is still processing answers 503, every write
+// error fails the event. A failed event answers 500 and the next delivery
+// processes it again: that is safe because every effect is one idempotent SQL
+// transaction (the atomic recovery path main's decision 22 asked for).
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+const logStep = (step: string, details?: unknown) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
-// Authoritative server-side credit catalog (must match BuyCredits.tsx)
-const CREDIT_PACKAGES: Record<string, { credits: number }> = {
-  credits_10: { credits: 10 },
-  credits_25: { credits: 30 },   // 25 + 5 bonus
-  credits_50: { credits: 65 },   // 50 + 15 bonus
-  credits_100: { credits: 140 }, // 100 + 40 bonus
-};
+const reply = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-// Authoritative server-side minute catalog (must match create-minute-purchase)
-const MINUTE_PACKAGES: Record<string, { minutes: number; type: "phone" | "video" }> = {
-  phone_20: { minutes: 20, type: "phone" },
-  phone_150: { minutes: 150, type: "phone" },
-  phone_450: { minutes: 450, type: "phone" },
-  video_20: { minutes: 20, type: "video" },
-  video_150: { minutes: 150, type: "video" },
-  video_450: { minutes: 450, type: "video" },
-};
+const VALID_TIERS = ["plus", "gold", "platinum"];
+/** An unfinished delivery younger than this is still running elsewhere: answer 503 and let Stripe retry. */
+const IN_FLIGHT_MS = 5 * 60 * 1000;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const stripeKey = isexyEnv("STRIPE_SECRET_KEY");
+  const webhookSecret = isexyEnv("STRIPE_WEBHOOK_SECRET");
+  if (!stripeKey || !webhookSecret) {
+    logStep("Stripe key or webhook secret not configured: refusing event");
+    return reply({ error: "Webhook not configured" }, 500);
+  }
+
+  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+  const body = await req.text();
+  const signature = req.headers.get("stripe-signature");
+  if (!signature) return reply({ error: "Missing stripe-signature" }, 400);
+
+  let event: Stripe.Event;
   try {
-    logStep("Webhook received");
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+  } catch (err) {
+    logStep("Signature verification failed", { error: err instanceof Error ? err.message : String(err) });
+    return reply({ error: "Invalid signature" }, 400);
+  }
 
-    const stripeKey = isexyEnv("STRIPE_SECRET_KEY");
-    const webhookSecret = isexyEnv("STRIPE_WEBHOOK_SECRET");
+  const db = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
 
-    if (!stripeKey) {
-      throw new Error("STRIPE_SECRET_KEY not configured");
-    }
-    if (!webhookSecret) {
-      logStep("STRIPE_WEBHOOK_SECRET not configured — refusing event");
-      return new Response(JSON.stringify({ error: "Webhook secret not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    const body = await req.text();
-    const signature = req.headers.get("stripe-signature");
-
-    if (!signature) {
-      return new Response(JSON.stringify({ error: "Missing stripe-signature" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    let event: Stripe.Event;
-    try {
-      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-      logStep("Webhook signature verified");
-    } catch (err) {
-      const errMessage = err instanceof Error ? err.message : String(err);
-      logStep("Webhook signature verification failed", { error: errMessage });
-      return new Response(JSON.stringify({ error: "Invalid signature" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    logStep("Processing event", { type: event.type, id: event.id });
-
-    // ---- Webhook event logging + duplicate guard ----
-    const sessionIdForLog =
-      (event.data.object as any)?.id && event.type.startsWith("checkout.")
-        ? (event.data.object as any).id
-        : null;
-
-    const { data: insertedLog, error: logInsertError } = await supabaseClient
+  // ---- Event log: acknowledge an event only once it was processed ----
+  // deno-lint-ignore no-explicit-any
+  const obj = event.data.object as any;
+  const sessionIdForLog = event.type.startsWith("checkout.") ? obj?.id ?? null : null;
+  const { data: seen, error: seenError } = await db
+    .from("stripe_webhook_events")
+    .select("id, processing_status, created_at")
+    .eq("stripe_event_id", event.id)
+    .maybeSingle();
+  if (seenError) {
+    logStep("Event log unreadable", { error: seenError.message });
+    return reply({ error: "event log unavailable" }, 500);
+  }
+  let logRowId: string | null = seen?.id ?? null;
+  if (seen && seen.processing_status === "processed") {
+    logStep("Already processed", { eventId: event.id });
+    return reply({ received: true, duplicate: true });
+  }
+  if (seen && seen.processing_status === "received" &&
+      Date.now() - new Date(seen.created_at).getTime() < IN_FLIGHT_MS) {
+    // Another delivery is processing it right now: never acknowledge it here.
+    logStep("Event in flight elsewhere", { eventId: event.id });
+    return reply({ error: "Event is being processed" }, 503);
+  }
+  if (!seen) {
+    const { data: inserted, error: insertError } = await db
       .from("stripe_webhook_events")
-      .insert({
-        stripe_event_id: event.id,
-        event_type: event.type,
-        stripe_session_id: sessionIdForLog,
-        processing_status: "received",
-      })
+      .insert({ stripe_event_id: event.id, event_type: event.type, stripe_session_id: sessionIdForLog, processing_status: "received" })
       .select("id")
       .maybeSingle();
-
-    if (logInsertError) {
-      // A duplicate is successful only after the original event was actually
-      // processed. Never acknowledge failed/in-flight Stripe events as paid.
-      if ((logInsertError as { code?: string }).code === "23505") {
-        const { data: prior, error: priorError } = await supabaseClient
-          .from("stripe_webhook_events")
-          .select("processing_status")
-          .eq("stripe_event_id", event.id)
-          .maybeSingle();
-        if (!priorError && prior?.processing_status === "processed") {
-          logStep("Already processed event", { eventId: event.id });
-          return new Response(JSON.stringify({ received: true, duplicate: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        // Requires manual reconciliation if a previous attempt failed or
-        // partially applied effects; never double-grant by blind retries.
-        logStep("Webhook event pending reconciliation", { eventId: event.id });
-        return new Response(JSON.stringify({ error: "Event requires reconciliation" }), {
-          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    if (insertError) {
+      // 23505: another delivery of the same event started a moment ago.
+      if ((insertError as { code?: string }).code === "23505") {
+        logStep("Event in flight elsewhere", { eventId: event.id });
+        return reply({ error: "Event is being processed" }, 503);
       }
-      throw new Error("Unable to record Stripe webhook event before fulfillment");
+      logStep("Event log insert failed", { error: insertError.message });
+      return reply({ error: "event log unavailable" }, 500);
     }
-    const logRowId = insertedLog?.id ?? null;
+    if (!inserted?.id) return reply({ error: "event log unavailable" }, 500);
+    logRowId = inserted.id;
+  } else {
+    // A failed event, or one whose delivery died midway: process it again
+    // (every effect below is idempotent).
+    logStep("Retrying event", { eventId: event.id, previous: seen.processing_status });
+  }
 
-    async function markProcessed() {
-      if (!logRowId) throw new Error("Webhook event log not recorded");
-      const { error } = await supabaseClient
-        .from("stripe_webhook_events")
-        .update({ processing_status: "processed", processed_at: new Date().toISOString() })
-        .eq("id", logRowId);
-      if (error) throw new Error("Unable to finalize Stripe webhook audit record");
+  const mark = async (status: "processed" | "failed", error?: string) => {
+    if (!logRowId) throw new Error("Webhook event log not recorded");
+    const { error: updateError } = await db.from("stripe_webhook_events").update({
+      processing_status: status,
+      error_message: error ? error.slice(0, 2000) : null,
+      processed_at: new Date().toISOString(),
+    }).eq("id", logRowId);
+    if (updateError) throw new Error("Unable to finalize Stripe webhook audit record");
+  };
+
+  // deno-lint-ignore no-explicit-any
+  const rpc = async (fn: string, args: Record<string, unknown>): Promise<any> => {
+    const { data, error } = await db.rpc(fn, args);
+    if (error) throw new Error(`${fn}: ${error.message}`);
+    return data;
+  };
+
+  /** Metadata of the Stripe customer (its isexy_user_id tag), or null when the object has no customer. */
+  const customerMetadata = async (customer: unknown): Promise<Record<string, string> | null> => {
+    const customerId = typeof customer === "string" ? customer : (customer as { id?: string } | null)?.id;
+    if (!customerId) return null;
+    const c = await stripe.customers.retrieve(customerId);
+    if ((c as { deleted?: boolean }).deleted) throw new Error("Stripe checkout customer was deleted");
+    return ((c as Stripe.Customer).metadata ?? {}) as Record<string, string>;
+  };
+
+  /**
+   * The ISEXY member a checkout belongs to: the TAKATAK user id written by our
+   * checkout function, matching the customer's tag and an existing profile.
+   * No email lookup: a wrong account must never be credited.
+   */
+  const checkoutMember = async (meta: Record<string, string>, customer: unknown): Promise<string> => {
+    const userId = checkoutOwnerId(meta, await customerMetadata(customer));
+    const { data, error } = await db
+      .from("profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("id", userId)
+      .maybeSingle();
+    if (error || !data?.id) {
+      throw new Error("ISEXY checkout account not found: manual reconciliation required");
     }
-    async function markFailed(errMsg: string) {
-      if (!logRowId) return;
-      await supabaseClient
-        .from("stripe_webhook_events")
-        .update({
-          processing_status: "failed",
-          error_message: errMsg.slice(0, 2000),
-          processed_at: new Date().toISOString(),
-        })
-        .eq("id", logRowId);
+    return data.id;
+  };
+
+  const tierOf = (...metas: (Record<string, string> | null | undefined)[]): string | null => {
+    for (const m of metas) if (m?.tier && VALID_TIERS.includes(m.tier)) return m.tier;
+    return null;
+  };
+
+  const isChatSub = (meta: Record<string, string> | null | undefined) =>
+    meta?.type === "chat_sub" || meta?.package_id === "chat_1mo";
+
+  async function fulfilPayment(session: Stripe.Checkout.Session) {
+    if (session.payment_status !== "paid") {
+      // Async methods complete the checkout before the money settles.
+      logStep("Payment not settled yet, waiting for async_payment_succeeded", { sessionId: session.id, status: session.payment_status });
+      return;
     }
-
-    try {
-
-    const VALID_TIERS = ["free", "plus", "gold", "platinum"];
-    const VALID_DURATIONS = ["week", "month", "six_months"];
-
-    async function resolveProfileId(
-      checkoutMeta: Record<string, string>,
-      customerMeta?: Record<string, string> | null,
-    ): Promise<string> {
-      // No search by email: Stripe and TAKATAK can both have duplicate or
-      // recycled email addresses. Never credit the wrong account.
-      const userId = checkoutOwnerId(checkoutMeta, customerMeta);
-      const { data, error } = await supabaseClient
-        .from("profiles")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("id", userId)
-        .maybeSingle();
-      if (error || !data?.id) {
-        throw new Error("ISEXY checkout account not found: manual reconciliation required");
-      }
-      return data.id;
+    const meta = (session.metadata ?? {}) as Record<string, string>;
+    const product = meta.product_id || meta.package_id || "";
+    const profileId = await checkoutMember(meta, session.customer);
+    if (!product) throw new Error(`payment ${session.id}: product missing`);
+    const result = await rpc("fulfill_stripe_payment", {
+      p_session_id: session.id,
+      p_profile_id: profileId,
+      p_product: product,
+      p_amount_cents: session.amount_total ?? null,
+      p_currency: session.currency ?? null,
+      p_meta: meta,
+    });
+    if (result?.error === "unknown_product") {
+      // As main's v6: not an ISEXY catalog product (the Stripe account may be
+      // shared with other TAKATAK products). Logged for reconciliation.
+      logStep("Unrecognized one-time product", { sessionId: session.id, product });
+      return;
     }
+    // Paid but not credited (e.g. bad gift details): never acknowledge it.
+    if (!result?.success) throw new Error(`payment ${session.id}: ${result?.error ?? "not fulfilled"} (${product})`);
+    logStep(result.already_fulfilled ? "Payment already fulfilled" : "Payment fulfilled", { sessionId: session.id, product });
+  }
 
-    function tierFromMetadata(meta: Record<string, string> | null | undefined): string | null {
-      const t = meta?.tier;
-      if (t && VALID_TIERS.includes(t)) return t;
-      return null;
+  /**
+   * A subscription's current state (fetched again from Stripe, so a retried
+   * or late event never applies an older state). The member comes from the
+   * subscription's metadata when it has one (checked against the customer
+   * tag); otherwise only an existing row with that Stripe id is updated.
+   */
+  async function applySubscription(subId: string, fallbackMeta: Record<string, string> = {}) {
+    const sub = await stripe.subscriptions.retrieve(subId);
+    const meta = { ...fallbackMeta, ...((sub.metadata ?? {}) as Record<string, string>) };
+    const period = subscriptionPeriod(sub);
+    const profileId = meta.user_id ? await checkoutMember(meta, sub.customer) : null;
+    if (isChatSub(meta)) {
+      const result = await rpc("apply_chat_subscription", {
+        p_profile_id: profileId,
+        p_subscription_id: sub.id,
+        p_session_id: null,
+        p_status: sub.status,
+        p_expires_at: period.end,
+        p_plan_months: parseInt(meta.plan_months || "1", 10) || 1,
+      });
+      logStep("Chat subscription", { subscriptionId: sub.id, status: sub.status, result });
+      return;
     }
+    const result = await rpc("apply_stripe_subscription", {
+      p_profile_id: profileId,
+      p_customer_id: typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null,
+      p_subscription_id: sub.id,
+      p_tier: tierOf(meta),
+      p_status: sub.status,
+      p_period_start: period.start,
+      p_period_end: period.end,
+    });
+    // unknown_subscription: not an ISEXY plan subscription (no row, no member).
+    logStep("Subscription", { subscriptionId: sub.id, status: sub.status, result });
+  }
 
-    function normalizeDuration(d: string | undefined | null): string | null {
-      if (!d) return null;
-      if (d === "6months") return "six_months";
-      return VALID_DURATIONS.includes(d) ? d : null;
-    }
-
+  try {
+    logStep("Processing", { type: event.type, id: event.id });
     switch (event.type) {
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
-        logStep("Checkout event", { sessionId: session.id, mode: session.mode, paymentStatus: session.payment_status });
-
-        if (session.mode === "payment" && session.payment_status !== "paid") {
-          // Async methods can emit checkout.session.completed before funds
-          // settle. Fulfill only on a later async_payment_succeeded event.
-          logStep("Payment not settled; awaiting Stripe success event", { sessionId: session.id });
-          break;
-        }
-
+        const meta = (session.metadata ?? {}) as Record<string, string>;
         if (session.mode === "subscription") {
-          const customerId = session.customer as string;
-          const subscriptionId = session.subscription as string;
-          const meta = (session.metadata ?? {}) as Record<string, string>;
-
-          const customer = await stripe.customers.retrieve(customerId);
-          if (customer.deleted) throw new Error("Stripe checkout customer was deleted");
-          const profileId = await resolveProfileId(meta, customer.metadata);
-
-          // ---- Chat subscription (chat_1mo) ----
-          if (meta.type === "chat_sub" || meta.package_id === "chat_1mo") {
-            if (session.payment_status !== "paid" &&
-                session.payment_status !== "no_payment_required") {
+          if (event.type !== "checkout.session.completed" || !session.subscription) break;
+          const subId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
+          const sub = await stripe.subscriptions.retrieve(subId);
+          const checkoutCustomer = typeof session.customer === "string" ? session.customer : session.customer?.id;
+          const subCustomer = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+          if (subCustomer !== checkoutCustomer) {
+            throw new Error("Subscription customer does not match checkout customer");
+          }
+          const profileId = await checkoutMember(meta, session.customer);
+          if (isChatSub(meta) || isChatSub(sub.metadata as Record<string, string>)) {
+            if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
               logStep("Chat checkout awaiting payment", { sessionId: session.id });
               break;
             }
-            const months = parseInt(meta.plan_months || "1", 10) || 1;
-            const { data: existingChatSub } = await supabaseClient
-              .from("chat_subscriptions").select("id")
-              .eq("stripe_session_id", session.id).maybeSingle();
-            if (existingChatSub) {
-              logStep("Chat sub already fulfilled", { sessionId: session.id });
-              break;
+            const result = await rpc("apply_chat_subscription", {
+              p_profile_id: profileId,
+              p_subscription_id: sub.id,
+              p_session_id: session.id,
+              p_status: sub.status,
+              p_expires_at: subscriptionPeriod(sub).end,
+              p_plan_months: parseInt(meta.plan_months || "1", 10) || 1,
+            });
+            if (!result?.success) throw new Error(`chat subscription ${sub.id}: ${result?.error ?? "not applied"}`);
+            logStep("Chat subscription started", { sessionId: session.id, result });
+          } else {
+            if (!tierOf(sub.metadata as Record<string, string>, meta)) {
+              throw new Error("Paid subscription missing its authoritative tier metadata");
             }
-            const expiresAt = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
-            const { error: chatInsertError } = await supabaseClient.from("chat_subscriptions").insert({
-              profile_id: profileId,
-              plan_months: months,
-              status: "active",
-              expires_at: expiresAt,
-              stripe_session_id: session.id,
-            });
-            if (chatInsertError) throw new Error("Unable to record chat subscription");
-            const { error: chatLedgerError } = await supabaseClient.from("credit_transactions").insert({
-              profile_id: profileId, amount: 0, type: "purchase", category: "chat_sub",
-              description: `Chat subscription ${months} month(s)`,
-              stripe_session_id: session.id,
-            });
-            if (chatLedgerError) throw new Error("Unable to record chat subscription ledger");
-            logStep("Chat subscription fulfilled", { profileId, months });
-            break;
+            await applySubscription(sub.id, { ...meta, user_id: profileId });
           }
-
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const subMeta = (subscription.metadata ?? {}) as Record<string, string>;
-          const appTier = tierFromMetadata(subMeta) ?? tierFromMetadata(meta);
-          const duration = normalizeDuration(subMeta.duration ?? meta.duration);
-
-          if (!appTier || appTier === "free") {
-            throw new Error("Paid subscription missing its authoritative tier metadata");
-          }
-          if (subscription.customer !== customerId) {
-            throw new Error("Subscription customer does not match checkout customer");
-          }
-
-          const subRow: Record<string, unknown> = {
-            profile_id: profileId,
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subscriptionId,
-            status: subscription.status,
-            tier: appTier,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          };
-          const { error: subWriteError } = await supabaseClient
-            .from("subscriptions").upsert(subRow, { onConflict: "profile_id" });
-          if (subWriteError) throw new Error("Unable to record Stripe subscription");
-
-          // Stripe may complete checkout while the subscription remains unpaid.
-          // Save the Stripe status, but never grant premium entitlement yet.
-          if (!activeSubscriptionTier(subscription.status)) {
-            logStep("Subscription not yet eligible for premium", {
-              subscriptionId, status: subscription.status,
-            });
-            break;
-          }
-
-          const { error: profileWriteError } = await supabaseClient
-            .from("profiles")
-            .update({
-              is_premium: true,
-              subscription_tier: appTier,
-              subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString(),
-              first_purchase_promo_used: true,
-            })
-            .eq("id", profileId);
-          if (profileWriteError) throw new Error("Unable to activate premium profile");
-
-          const { error: entitlementError } = await supabaseClient
-            .rpc("sync_entitlements", { p_profile_id: profileId });
-          if (entitlementError) throw new Error("Unable to synchronize premium entitlements");
-
-          logStep("Subscription activated", { profileId, tier: appTier, duration });
         } else if (session.mode === "payment") {
-          const customerId = session.customer as string | null;
-          const customer = customerId ? await stripe.customers.retrieve(customerId) : null;
-          if (customer?.deleted) throw new Error("Stripe checkout customer was deleted");
-          const meta = (session.metadata ?? {}) as Record<string, string>;
-          const productId = meta.product_id || "";
-          const packageId = meta.package_id;
-
-          const profileId = await resolveProfileId(
-            meta, customer ? (customer as Stripe.Customer).metadata : null,
-          );
-
-          // ---- Credits and phone/video minutes ----
-          // All wallet and ledger writes happen in a single SQL transaction,
-          // serialized by Stripe session ID. A retry cannot double-credit.
-          if (packageId && (CREDIT_PACKAGES[packageId] || MINUTE_PACKAGES[packageId])) {
-            const { data: credited, error: grantError } = await supabaseClient.rpc(
-              "fulfill_stripe_credit_purchase",
-              {
-                p_profile_id: profileId,
-                p_stripe_session_id: session.id,
-                p_package_id: packageId,
-              },
-            );
-            if (grantError) throw new Error("Unable to atomically fulfill Stripe credit purchase");
-            logStep(credited ? "Paid package granted" : "Paid package already fulfilled", {
-              sessionId: session.id, packageId,
-            });
-            break;
-          }
-
-          if (productId.startsWith("gift_") || meta.type === "gift") {
-            const giftPackageId = meta.gift_package_id || productId.replace(/^gift_/, "");
-            const recipientId = meta.recipient_profile_id;
-            const amountUsd = (session.amount_total ?? 0) / 100;
-            // Idempotency
-            const { data: existingGift } = await supabaseClient
-              .from("gift_transactions").select("id,status")
-              .eq("stripe_session_id", session.id).maybeSingle();
-            if (existingGift) {
-              if (existingGift.status !== "completed") {
-                await supabaseClient.from("gift_transactions")
-                  .update({ status: "completed", completed_at: new Date().toISOString() })
-                  .eq("id", existingGift.id);
-              }
-              logStep("Gift already recorded", { sessionId: session.id });
-              break;
-            }
-            if (recipientId && giftPackageId) {
-              await supabaseClient.from("gift_transactions").insert({
-                sender_profile_id: profileId,
-                receiver_profile_id: recipientId,
-                gift_package_id: giftPackageId,
-                amount_usd: amountUsd,
-                message: meta.message ?? null,
-                status: "completed",
-                stripe_session_id: session.id,
-                completed_at: new Date().toISOString(),
-              });
-              logStep("Gift fulfilled", { profileId, recipientId, amountUsd });
-            } else {
-              logStep("Missing gift fulfillment metadata", { recipientId, giftPackageId });
-            }
-            break;
-          }
-
-          // ---- Donation / topup / food fulfillment ----
-          if (productId.startsWith("donation_") || productId.startsWith("topup_") || productId.startsWith("food_")) {
-            const amountUsd = (session.amount_total ?? 0) / 100;
-            // Idempotency
-            const { data: existingDon } = await supabaseClient
-              .from("donations").select("id,status")
-              .eq("stripe_session_id", session.id).maybeSingle();
-            if (existingDon) {
-              if (existingDon.status !== "completed") {
-                await supabaseClient.from("donations")
-                  .update({ status: "completed", completed_at: new Date().toISOString() })
-                  .eq("id", existingDon.id);
-              }
-              logStep("Donation already recorded", { sessionId: session.id });
-              break;
-            }
-            const donationType = productId.startsWith("topup_") ? "topup"
-              : productId.startsWith("food_") ? "food" : "cash";
-            await supabaseClient.from("donations").insert({
-              donor_profile_id: profileId,
-              recipient_profile_id: meta.recipient_profile_id ?? null,
-              amount_usd: amountUsd,
-              donation_type: donationType,
-              phone_number: meta.phone_number ?? null,
-              recipient_name: meta.recipient_name ?? null,
-              status: "completed",
-              stripe_session_id: session.id,
-              completed_at: new Date().toISOString(),
-            });
-            logStep("Donation fulfilled", { profileId, amountUsd, donationType });
-            break;
-          }
-
-          // ---- Boosts / Super Likes / Primetime / Super Boosts ----
-          // A single SQL transaction both increments the balance and records
-          // the Stripe session, so retries and concurrent hooks cannot double grant.
-          if (/^(super_likes_|boost_|primetime_|superboost_)/.test(productId)) {
-            const { data: granted, error: boostError } = await supabaseClient.rpc(
-              "fulfill_stripe_boost_purchase",
-              {
-                p_profile_id: profileId,
-                p_stripe_session_id: session.id,
-                p_product_id: productId,
-              },
-            );
-            if (boostError) throw new Error("Unable to atomically fulfill Stripe boost purchase");
-            logStep(granted ? "Boost package granted" : "Boost package already fulfilled", {
-              sessionId: session.id, productId,
-            });
-            break;
-          }
-
-          logStep("Unrecognized one-time product_id", { productId });
+          await fulfilPayment(session);
         }
         break;
       }
-
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
-        logStep("Subscription updated", { subscriptionId: subscription.id, status: subscription.status });
-
-        const subMeta = (subscription.metadata ?? {}) as Record<string, string>;
-        const appTier = tierFromMetadata(subMeta);
-        const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
-
-        const { error } = await supabaseClient
-          .from("subscriptions")
-          .update({
-            status: subscription.status,
-            tier: appTier ?? undefined,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: periodEnd,
-          })
-          .eq("stripe_subscription_id", subscription.id);
-
-        if (error) throw new Error("Unable to update Stripe subscription state");
-
-        const { data: sub } = await supabaseClient
-          .from("subscriptions")
-          .select("profile_id")
-          .eq("stripe_subscription_id", subscription.id)
-          .single();
-
-        if (sub && appTier) {
-          const isActive = ["active", "trialing"].includes(subscription.status);
-          const { error: profileUpdateError } = await supabaseClient
-            .from("profiles")
-            .update({
-              is_premium: isActive,
-              subscription_tier: isActive ? appTier : "free",
-              subscription_expires_at: isActive ? periodEnd : null,
-            })
-            .eq("id", sub.profile_id);
-          if (profileUpdateError) throw new Error("Unable to update subscription entitlements");
-          const { error: syncError } = await supabaseClient
-            .rpc("sync_entitlements", { p_profile_id: sub.profile_id });
-          if (syncError) throw new Error("Unable to synchronize subscription entitlements");
-        }
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted":
+        await applySubscription((event.data.object as Stripe.Subscription).id);
         break;
-      }
-
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
-        logStep("Subscription cancelled", { subscriptionId: subscription.id });
-
-        const { error: cancelError } = await supabaseClient
-          .from("subscriptions")
-          .update({ status: "canceled" })
-          .eq("stripe_subscription_id", subscription.id);
-        if (cancelError) throw new Error("Unable to record canceled subscription");
-
-        const { data: sub } = await supabaseClient
-          .from("subscriptions")
-          .select("profile_id")
-          .eq("stripe_subscription_id", subscription.id)
-          .single();
-
-        if (sub) {
-          const { error: revokeError } = await supabaseClient
-            .from("profiles")
-            .update({
-              is_premium: false,
-              subscription_tier: "free",
-              subscription_expires_at: null,
-            })
-            .eq("id", sub.profile_id);
-          if (revokeError) throw new Error("Unable to revoke canceled premium access");
-          const { error: syncError } = await supabaseClient
-            .rpc("sync_entitlements", { p_profile_id: sub.profile_id });
-          if (syncError) throw new Error("Unable to synchronize canceled subscription access");
-        }
-        break;
-      }
-
-      case "invoice.payment_succeeded":
-      case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
-        logStep("Invoice event", { invoiceId: invoice.id, type: event.type });
-        break;
-      }
-
       default:
         logStep("Unhandled event type", { type: event.type });
     }
-
-    await markProcessed();
-
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-    } catch (innerErr) {
-      const msg = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      logStep("Error during event processing", { error: msg });
-      await markFailed(msg);
-      return new Response(JSON.stringify({ error: msg }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    await mark("processed");
+    return reply({ received: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logStep("Event failed (Stripe will retry)", { error: msg });
+    try {
+      await mark("failed", msg);
+    } catch (markError) {
+      logStep("Could not record the failure", { error: markError instanceof Error ? markError.message : String(markError) });
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("Error processing webhook", { error: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return reply({ error: msg }, 500);
   }
 });

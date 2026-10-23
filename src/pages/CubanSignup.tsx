@@ -6,6 +6,7 @@ import { AuthInput } from "@/components/AuthInput";
 import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { MEMBER_PROFILE_COLUMNS } from "@/lib/profileStatus";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Check, Phone, CreditCard, Video, Mic, Shield, Upload, Camera, X } from "lucide-react";
@@ -38,6 +39,7 @@ export default function CubanSignup() {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   
@@ -56,6 +58,14 @@ export default function CubanSignup() {
       setStep("whatsapp");
     }
   }, [user, loading]);
+
+  // Live camera preview while recording (the <video> exists only in that state).
+  useEffect(() => {
+    if (isRecordingVideo && videoRef.current && videoStreamRef.current) {
+      videoRef.current.srcObject = videoStreamRef.current;
+      videoRef.current.play().catch(() => undefined);
+    }
+  }, [isRecordingVideo]);
 
   const handleSendWhatsAppCode = async () => {
     const result = whatsappSchema.safeParse(whatsappNumber);
@@ -145,10 +155,8 @@ export default function CubanSignup() {
   const startVideoRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
+      // The <video> preview only renders while recording; the effect below attaches it.
+      videoStreamRef.current = stream;
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -270,12 +278,12 @@ export default function CubanSignup() {
     try {
       const userId = user.id;
 
-      // First ensure we have a profile - create one if needed
+      // A profile with the member's real birth date must exist (made in profile setup).
       let currentProfile = profile;
       if (!currentProfile) {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("*")
+          .select(MEMBER_PROFILE_COLUMNS) // not "*": refused for members since 0015 K3
           .eq("user_id", userId)
           .maybeSingle();
 
@@ -330,11 +338,8 @@ export default function CubanSignup() {
 
       setUploadProgress(85);
 
-      // Update profile as Cuban
-      const { error: countryUpdateError } = await supabase
-        .from("profiles")
-        .update({ is_cuban: true } as any)
-        .eq("id", profileId);
+      // Mark the profile as Cuban (server-side: is_cuban is not member-writable).
+      const { error: countryUpdateError } = await supabase.rpc("set_my_cuban_flag", { p_is_cuban: true });
       if (countryUpdateError) throw countryUpdateError;
 
       // Submit verification

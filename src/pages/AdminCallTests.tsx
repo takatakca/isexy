@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, AlertTriangle, RefreshCw, Loader2, Phone } from "lucide-react";
+import { VoiceGreetingReviewQueue } from "@/components/admin/VoiceGreetingReviewQueue";
+import {
+  ArrowLeft,
+  AlertTriangle,
+  RefreshCw,
+  Loader2,
+  Phone,
+  Video,
+} from "lucide-react";
 
 interface CallRow {
   id: string;
@@ -21,6 +29,21 @@ interface CallRow {
   end_reason: string | null;
   started_at: string;
   ended_at: string | null;
+}
+
+interface InAppCallRow {
+  id: string;
+  match_id: string;
+  caller_id: string;
+  receiver_id: string;
+  call_type: string;
+  status: string;
+  created_at: string;
+  connected_at: string | null;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  credits_used: number | null;
+  end_reason: string | null;
 }
 
 interface MinTxnRow {
@@ -39,7 +62,9 @@ export default function AdminCallTests() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [calls, setCalls] = useState<CallRow[]>([]);
+  const [inAppCalls, setInAppCalls] = useState<InAppCallRow[]>([]);
   const [txns, setTxns] = useState<MinTxnRow[]>([]);
+  const [reviewRefresh, setReviewRefresh] = useState(0);
   const [phoneInput, setPhoneInput] = useState("");
   const [linking, setLinking] = useState(false);
   const [linkedPhone, setLinkedPhone] = useState<string | null>(null);
@@ -75,12 +100,14 @@ export default function AdminCallTests() {
       .eq("user_id", userId)
       .maybeSingle();
     if (!prof) return;
-    const { data: pln } = await supabase
+    const { data: numbers } = await supabase
       .from("phone_line_numbers")
-      .select("phone_number_e164, phone_verified")
+      .select("phone_number_e164")
       .eq("profile_id", prof.id)
-      .maybeSingle();
-    if (pln?.phone_verified) setLinkedPhone(pln.phone_number_e164);
+      .eq("phone_verified", true)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (numbers?.[0]) setLinkedPhone(numbers[0].phone_number_e164);
   };
 
   const linkPhone = async () => {
@@ -104,11 +131,17 @@ export default function AdminCallTests() {
 
   const fetchAll = async () => {
     setRefreshing(true);
-    const [c, t] = await Promise.all([
+    setReviewRefresh((n) => n + 1);
+    const [c, v, t] = await Promise.all([
       supabase
         .from("call_sessions")
         .select("*")
         .order("started_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("video_call_sessions")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(50),
       supabase
         .from("call_minute_transactions")
@@ -117,8 +150,21 @@ export default function AdminCallTests() {
         .limit(50),
     ]);
     setCalls((c.data as CallRow[]) ?? []);
+    setInAppCalls((v.data as InAppCallRow[]) ?? []);
     setTxns((t.data as MinTxnRow[]) ?? []);
     setRefreshing(false);
+  };
+
+  const flagsForInApp = (c: InAppCallRow): string[] => {
+    const flags: string[] = [];
+    if ((c.credits_used ?? 0) > 0 && !c.connected_at) flags.push("charged_without_connect");
+    if (["ended", "missed", "declined"].includes(c.status) && !c.ended_at) flags.push("missing_ended_at");
+    if (["ringing", "connecting", "connected"].includes(c.status) && Date.now() - new Date(c.created_at).getTime() > 3 * 3600_000) {
+      flags.push("stale_open_call");
+    }
+    const maxAllowed = Math.ceil((c.duration_seconds || 0) / 60) + 1;
+    if ((c.credits_used ?? 0) > maxAllowed) flags.push("overcharged_vs_duration");
+    return flags;
   };
 
   const flagsForCall = (c: CallRow): string[] => {
@@ -163,6 +209,8 @@ export default function AdminCallTests() {
       </header>
 
       <main className="mx-auto max-w-5xl space-y-6 p-4">
+        <VoiceGreetingReviewQueue refreshKey={reviewRefresh} />
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -199,7 +247,7 @@ export default function AdminCallTests() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent call sessions ({calls.length})</CardTitle>
+            <CardTitle>Recent Phone Line calls ({calls.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {calls.length === 0 && (
@@ -230,6 +278,46 @@ export default function AdminCallTests() {
                     <div>end_reason: {c.end_reason ?? "—"}</div>
                     <div>ended_at: {c.ended_at ?? "—"}</div>
                     {c.provider_call_sid && <div className="sm:col-span-2">CallSid: {c.provider_call_sid}</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Video className="h-4 w-4" /> Recent in-app calls ({inAppCalls.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {inAppCalls.length === 0 && (
+              <div className="text-sm text-muted-foreground">No in-app calls yet.</div>
+            )}
+            {inAppCalls.map((c) => {
+              const flags = flagsForInApp(c);
+              return (
+                <div key={c.id} className="rounded border p-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{c.call_type}</Badge>
+                    <Badge>{c.status}</Badge>
+                    <span className="text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                    {flags.map((f) => (
+                      <Badge key={f} variant="destructive" className="gap-1">
+                        <AlertTriangle className="h-3 w-3" /> {f}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="mt-1 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                    <div>caller: {c.caller_id}</div>
+                    <div>receiver: {c.receiver_id}</div>
+                    <div>duration: {c.duration_seconds ?? 0}s</div>
+                    <div>charged: {c.credits_used ?? 0} min</div>
+                    <div>connected_at: {c.connected_at ?? "—"}</div>
+                    <div>ended_at: {c.ended_at ?? "—"}</div>
+                    <div>end_reason: {c.end_reason ?? "—"}</div>
+                    <div>match: {c.match_id}</div>
                   </div>
                 </div>
               );

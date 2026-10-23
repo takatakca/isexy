@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
-import { mayConfirmTicket } from "../_shared/ticket-confirmation-auth.ts";
+import { mayConfirmTicket, mayEmailTicketAddress } from "../_shared/ticket-confirmation-auth.ts";
 
 const RESEND_API_KEY = isexyEnv("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -187,7 +187,8 @@ const handler = async (req: Request): Promise<Response> => {
     if (ticketError) throw new Error("Could not read ticket");
     // Never use ticket number or email as proof of account ownership.
     const trustedStaff = isService || await isStaff(req);
-    if (ticket && !mayConfirmTicket(ticket.user_id, authData?.user?.id ?? null, trustedStaff)) {
+    if (ticket && (!mayConfirmTicket(ticket.user_id, authData?.user?.id ?? null, trustedStaff)
+      || !mayEmailTicketAddress(ticket.email, authData?.user?.email ?? null, trustedStaff))) {
       return new Response(JSON.stringify({ error: "Ticket not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -253,7 +254,8 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "ISEXY Support <onboarding@resend.dev>",
+        // Resend's onboarding@resend.dev sender only delivers to the Resend account owner.
+        from: isexyEnv("RESEND_FROM") ?? "ISEXY <notifications@isexy.ca>",
         to: [email],
         subject: emailSubject,
         html: emailHtml,
