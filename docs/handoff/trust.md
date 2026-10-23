@@ -15,7 +15,7 @@ All SQL is in **`supabase/isexy-migrations/0015_trust_and_moderation.sql`**
 branch history only (marked FOLDED, do not apply). Tests:
 `scripts/isexy/test/trust-smoke.sql` (253 checks, T1-T10, in the CI smoke loop;
 T10 = the privacy follow-ups, [0015 K](#privacy-follow-ups-0015-k-wffollowups-2026-10-23))
-and `e2e/trust-e2e.mjs` (@@TRUSTE2E@@ checks, A-D).
+and `e2e/trust-e2e.mjs` (97 checks, A-D).
 
 ## Defect list (found by reading every page/function in the area and the
 ## 0001-0004 schema on the local copy), most member-visible first
@@ -206,6 +206,19 @@ is defence in depth rather than a proven exploit).
       timing flake on the first run, passes on re-run), …); deno check of the
       27 functions + main's 14 Deno tests
 - [x] adversarial pass (above): T9 78 checks, trust-e2e D1-D5
+- [x] privacy follow-ups (0015 K, wf/followups, 2026-10-23; [above](#privacy-follow-ups-0015-k-wffollowups-2026-10-23)):
+      T10 failed 27 of 50 without K, all pass with it; migrations from
+      scratch (0001-0016: dry run, apply, re-run "up to date", guard silent,
+      16 rows) and production simulation (0001-0012, then only 0013-0016
+      pending); main's 6 assertions, smoke 0013 34, calls 101, rewards 95,
+      security 135, live-functions-compat 54, trust 253, ads 33 in both;
+      typecheck clean, build OK, lint 98 errors / 32 warnings (none new);
+      deno check of the 27 functions + the 5 Deno test files (16 tests); every
+      e2e: accounts 28/33/24/54/26, ads 106 + 26, calls 62, phone line pages
+      53, Twilio 43, chat 38 + 20, discover 36, rewards 96, trust 97, smokes
+      clean, no request the database would refuse. The same trust and rewards
+      e2e on the previous client (0c3f5c0) stop at the first page: its
+      `select("*")` profile read is refused
 
 ## Privacy follow-ups (0015 K, wf/followups, 2026-10-23)
 
