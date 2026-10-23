@@ -90,10 +90,11 @@ export function MemberModerationSheet({
   const load = useCallback(async (id: string) => {
     setLoading(true);
     setLoadError(null);
-    const [m, w, r] = await Promise.all([
+    // Shadow bans are staff-only columns (0015 K3): read through staff_get_shadow_bans.
+    const [m, w, r, ban] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id, user_id, first_name, bio, city, country, is_active, is_verified, shadow_banned, shadow_banned_reason, created_at")
+        .select("id, user_id, first_name, bio, city, country, is_active, is_verified, created_at")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -108,14 +109,16 @@ export function MemberModerationSheet({
         .eq("reported_id", id)
         .order("created_at", { ascending: false })
         .limit(20),
+      staff.shadowBans([id]).then((rows) => ({ rows, error: null }), (error: unknown) => ({ rows: [], error })),
     ]);
     setLoading(false);
-    if (m.error || !m.data) {
-      setLoadError(m.error ? staffErrorText(m.error) : "This member could not be found.");
+    if (m.error || !m.data || ban.error) {
+      setLoadError(m.error || ban.error ? staffErrorText(m.error ?? ban.error) : "This member could not be found.");
       setMember(null);
       return;
     }
-    setMember(m.data as MemberRow);
+    const shadow = ban.rows.find((b) => b.profile_id === id);
+    setMember({ ...(m.data as Omit<MemberRow, "shadow_banned" | "shadow_banned_reason">), shadow_banned: !!shadow, shadow_banned_reason: shadow?.shadow_banned_reason ?? null });
     setWarnings((w.data as WarningRow[] | null) ?? []);
     setReports((r.data as unknown as ReportRow[] | null) ?? []);
   }, []);

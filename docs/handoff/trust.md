@@ -13,8 +13,9 @@ and an adversarial pass closed 9 more hole classes ([below](#adversarial-review-
 All SQL is in **`supabase/isexy-migrations/0015_trust_and_moderation.sql`**
 (runs after 0014; not applied anywhere). `docs/handoff/trust.sql` is the
 branch history only (marked FOLDED, do not apply). Tests:
-`scripts/isexy/test/trust-smoke.sql` (203 checks, T1-T9, in the CI smoke loop)
-and `e2e/trust-e2e.mjs` (79 checks, A-D).
+`scripts/isexy/test/trust-smoke.sql` (253 checks, T1-T10, in the CI smoke loop;
+T10 = the privacy follow-ups, [0015 K](#privacy-follow-ups-0015-k-wffollowups-2026-10-23))
+and `e2e/trust-e2e.mjs` (97 checks, A-D).
 
 ## Defect list (found by reading every page/function in the area and the
 ## 0001-0004 schema on the local copy), most member-visible first
@@ -205,6 +206,48 @@ is defence in depth rather than a proven exploit).
       timing flake on the first run, passes on re-run), …); deno check of the
       27 functions + main's 14 Deno tests
 - [x] adversarial pass (above): T9 78 checks, trust-e2e D1-D5
+- [x] privacy follow-ups (0015 K, wf/followups, 2026-10-23; [above](#privacy-follow-ups-0015-k-wffollowups-2026-10-23)):
+      T10 failed 27 of 50 without K, all pass with it; migrations from
+      scratch (0001-0016: dry run, apply, re-run "up to date", guard silent,
+      16 rows) and production simulation (0001-0012, then only 0013-0016
+      pending); main's 6 assertions, smoke 0013 34, calls 101, rewards 95,
+      security 135, live-functions-compat 54, trust 253, ads 33 in both;
+      typecheck clean, build OK, lint 98 errors / 32 warnings (none new);
+      deno check of the 27 functions + the 5 Deno test files (16 tests); every
+      e2e: accounts 28/33/24/54/26, ads 106 + 26, calls 62, phone line pages
+      53, Twilio 43, chat 38 + 20, discover 36, rewards 96, trust 97, smokes
+      clean, no request the database would refuse. The same trust and rewards
+      e2e on the previous client (0c3f5c0) stop at the first page: its
+      `select("*")` profile read is refused
+
+## Privacy follow-ups (0015 K, wf/followups, 2026-10-23)
+
+The three privacy holes left open above, closed in a new part **K appended to
+`0015_trust_and_moderation.sql`** (0015 is not applied anywhere, so the
+deploy stays 4 migrations; 0013, 0014 and 0016 are byte-identical; 0016 needs
+nothing from K and K needs nothing from 0016). Proven first:
+`trust-smoke.sql` **T10** (50 checks) failed **27** on 0001-0016 without K
+(log of that run in the commit message of `ca46c55`); all pass with K.
+
+| Hole (proven) | Design chosen | Why this one | Checks |
+|---|---|---|---|
+| A ticket's owner read `support_tickets.admin_notes` (REST, realtime payload), filtered on it, and confirmed a guess with a no-op `UPDATE` (or `SET admin_notes = NULL`: "has staff written a note?") | **K1 column privileges**: `anon`/`authenticated` keep `SELECT` and `UPDATE` on every other column, not on `admin_notes`; admins read notes through **`staff_list_tickets(limit)`** (SECURITY DEFINER, `is_admin()`); `staff_update_ticket` still writes them | RLS cannot hide a column; column privileges also cover GraphQL and, as far as Supabase Realtime filters payload columns by the subscriber's privileges, realtime (to confirm after deploying, Left). No data moves and no row changes (moving the notes to a staff table would have meant clearing the old column). Only three client reads used `*` (Support Portal, Admin Tickets, Admin Dashboard): now the RPC or named columns. Members' Ticket Tracking already named its columns | T10 K1 (13), T3 (notes now read through the RPC); trust-e2e C2 |
+| A signed-in member filed a ticket under someone else's e-mail (with or without their user id): it showed in the victim's list and the confirmation e-mail went to the victim | **K2 BEFORE INSERT guard** `isexy_support_tickets_sender_email_guard` (fires after 0014 D2's): a signed-in member's ticket uses their JWT e-mail (stored lower-case); a phone-only account (no e-mail claim) may not use an e-mail address (Delete Account files with the phone); admins and the service role may file for anyone. `isexy-send-ticket-confirmation` also sends only to the caller's own sign-in e-mail (`mayEmailTicketAddress`, covers older tickets) | Smallest rule matching the account's verified identity (main's 0010 already trusts the JWT e-mail). Contact Us shows the account e-mail read-only; Restore Purchase puts the other account's e-mail in the message | T10 K2 (9), security-smoke D2; Deno `ticket-confirmation-auth` (+2); trust-e2e A10; rewards-e2e restore |
+| A guest read someone else's ticket with its number + e-mail (`get_ticket_status` returned subject, message and the staff reply): e.g. plant a ticket under a member's e-mail, wait for staff to answer it, read the answer; or read a member's ticket whose number leaked | **K2 `get_ticket_status`** (same signature): subject, message and reply only to the ticket's owner or someone signed in with its e-mail; anyone else with number + e-mail gets a **guest** ticket's status, category, priority and dates; a **member's** ticket (user id set) answers its owner only. Ticket Tracking shows "We replied by e-mail on …, sign in with that address to read it" | Guests cannot be verified, and guest confirmation e-mails stay staff-only (main's decision, `mayConfirmTicket`), so the e-mail inbox is the only proof: staff replies already go there (status-update function). Guest support keeps working: file, track the status, read the reply in the inbox or after signing in | T10 K2 (8), T3; trust-e2e A8, A11, A12 |
+| Every member read `profiles.shadow_banned`, `_at`, `_reason` of anyone (their own status too) and could probe their own status with a no-op `UPDATE` (0014's trigger refused it or not) | **K3 column privileges**: `anon`/`authenticated` keep `SELECT` and `UPDATE` on every other profiles column; staff read bans through **`staff_get_shadow_bans(ids or NULL)`** (`is_staff()`); Discover, likes, badges, referrals (SECURITY DEFINER) and the Phone Line by phone (service role) keep filtering | No UI shows members their status (only the staff sheet and member search). Every member read path was checked: `useAuth` and Cuban signup read `MEMBER_PROFILE_COLUMNS` (`src/lib/profileStatus.ts`, equals the grants), Profile setup / Tourist signup return `id`, Admin Analytics names its columns, staff search and sheet use the RPC; no edge function reads profiles with a member token; the invoker triggers read only id/user_id/first_name/birth_date. The legacy Discover query (`.neq("shadow_banned")`) only runs without 0013 | T10 K3 (17), T6; trust-e2e B3; every e2e suite (privilege watch) |
+
+Since K, `select *` on `profiles` and `support_tickets` is refused for
+members (`42501`) and **a column added to either table later is not readable
+or writable by members until granted** (`GRANT SELECT (col), UPDATE (col) ON
+isexy.<table> TO anon, authenticated;`; T10 lists the hidden columns and fails
+on any other). The e2e mocks now answer like the database: `accounts-mockdb`
+(accounts, rewards, trust suites) refuses `*`, hidden columns and other-address
+tickets, and `offline-browser.mjs` reports such requests from every suite as a
+FAIL line.
+
+Expected test changes: T3 (Ben's JWT carries his e-mail; notes read through
+`staff_list_tickets`), T6 (ban fields through `staff_get_shadow_bans`),
+security-smoke D2 (the member's JWT carries `a@sec.test`).
 
 ## Owner decisions taken here (easy to revert)
 
@@ -230,9 +273,13 @@ is defence in depth rather than a proven exploit).
 | Knowledge base / categories admin pages delete rows (admin content tools) | Owner: keep, or switch to unpublish |
 | Staff UI is English only | i18n pass (HANDOFF Left #26) |
 | A blocked member can work out who blocked them (`get_my_hidden_member_ids` minus their own blocks; the same signal as 0014's `blocked_with_me` and as probing a profile id) | Accepted for now: pages filter people in the browser. A server-side filter in each list RPC would remove the need for the id list |
-| A ticket's owner can read its `admin_notes` (staff notes) through the API and the realtime payload (main's 0010 SELECT policy; no member page shows them) | Move staff notes to a staff-only table (e.g. `support_ticket_notes`, admin RLS) written by `staff_update_ticket` and read by the Support Portal; or column grants + a staff ticket RPC |
-| Anyone can file a ticket under someone else's e-mail; it then shows in that member's ticket list (main's 0010 policy matches the sign-in e-mail) | Owner call: list only `user_id` tickets for members, or mark tickets whose e-mail was not verified |
-| `shadow_banned` and the staff's `shadow_banned_reason` are readable by every member on any active profile (security.md: every member reads every column of `profiles`) | Member-facing profile view/RPC with the public columns (security.md › Left) |
+| ~~A ticket's owner can read its `admin_notes`~~ | Done: 0015 K1 (above) |
+| ~~Anyone can file a ticket under someone else's e-mail~~ | Done for members (0015 K2). A **guest** can still send a ticket from any address (it cannot be checked): it shows, marked "Sent without signing in", in the list of the member who owns that e-mail, and its content and our reply open only to that member or in that inbox. Owner call: keep, or list only `user_id` tickets for members |
+| ~~`shadow_banned` and `shadow_banned_reason` readable by every member~~ | Done: 0015 K3. The rest of the profile row stays readable by every member (`blocked_contacts`, coarse location, plan: security.md › Left) |
+| Since 0015 K a new column of `profiles` or `support_tickets` is hidden from members until granted | Add `GRANT SELECT (col), UPDATE (col) ON isexy.<table> TO anon, authenticated;` in the migration that adds it (T10 fails otherwise) |
+| Realtime column filtering (K1: a ticket's realtime payload without `admin_notes`) relies on Supabase Realtime honouring column privileges; the local Postgres has no Realtime | After deploying: update a ticket as an admin while its owner has Ticket Tracking open, and check the payload in the browser has no `admin_notes` |
+| A shadow-banned member can still notice the ban from a second account (they are missing from Discover/Phone Line; their referral code reads as invalid) | Inherent to shadow bans; nothing on the member's own account reveals it |
+| The status-update e-mail of a phone-only member's ticket has no address (the function answers 500, the Support Portal logs it) | Low: the reply is in their Ticket Tracking; skip the e-mail when the contact has no `@` |
 | A suspended **admin** keeps the reads gated by `has_role(admin)` policies (payment ledgers, audit log, tickets); the 0015 staff RPCs refuse (`is_staff()`/`is_admin()`) | Only an admin can suspend an admin; switch those policies to `is_admin()` if the owner wants suspension to cut reads too |
 | Members can add "assistant" lines to their own assistant chat (direct insert); staff read them in the handoff transcript | Low: only misleads staff about that member's own chat; a role check on `chatbot_messages` INSERT would close it |
 | Cuban ID video/audio are stored as bucket paths, so they do not play in `AdminVerifications` (Cuba on hold) | Sign the two paths when a case is opened, as the ID images now are |

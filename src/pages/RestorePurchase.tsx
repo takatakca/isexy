@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { readInvokeError } from "@/lib/payments";
+import { memberTicketContact } from "@/lib/supportTickets";
 
 /** Answer of isexy-check-subscription with { restore: true }. */
 interface RestoreAnswer {
@@ -83,14 +84,14 @@ const RestorePurchase = () => {
     event.preventDefault();
     const confirmation = confirmationNumber.trim();
     const contactName = name.trim();
-    const contactEmail = email.trim().toLowerCase();
+    const purchaseEmail = email.trim().toLowerCase();
 
-    if (!confirmation || !contactName || !contactEmail) {
+    if (!confirmation || !contactName || !purchaseEmail) {
       toast.error("Please complete all the fields.");
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-      toast.error("Enter a valid contact email address.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(purchaseEmail)) {
+      toast.error("Enter the email address used for that purchase.");
       return;
     }
     if (confirmation.length > 150) {
@@ -106,15 +107,17 @@ const RestorePurchase = () => {
       }
 
       const newTicket = `RP-${crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+      // The ticket goes under this account's sign-in e-mail (0015 K2 refuses another);
+      // the other account's address only helps staff find the payment.
       const { error: insertError } = await supabase.from("support_tickets").insert({
         ticket_number: newTicket,
         user_id: user.id,
         name: contactName,
-        email: contactEmail,
+        email: memberTicketContact(user).contact,
         subject: "Purchase restoration review",
         category: "Payments",
         priority: "medium",
-        message: `Please verify my earlier purchase and advise on transfer to my current account. Confirmation reference: ${confirmation}`,
+        message: `Please verify my earlier purchase and advise on transfer to my current account. Confirmation reference: ${confirmation}. Email used for that purchase: ${purchaseEmail}`,
         status: "open",
       });
       if (insertError) throw insertError;
@@ -189,7 +192,7 @@ const RestorePurchase = () => {
                 <p className="text-xs text-muted-foreground">
                   Purchases stay with the account that paid. Sign in to your current ISEXY account and
                   send your receipt reference: a support agent verifies it with the payment provider
-                  before any transfer.
+                  before any transfer, and replies to this account's email.
                 </p>
                 <form onSubmit={handleReviewRequest} className="space-y-3">
                   <Input
@@ -210,8 +213,8 @@ const RestorePurchase = () => {
                   />
                   <Input
                     type="email"
-                    placeholder="Contact email address"
-                    aria-label="Contact email address"
+                    placeholder="Email used for that purchase"
+                    aria-label="Email used for that purchase"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     maxLength={255}

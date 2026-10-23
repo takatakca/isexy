@@ -195,6 +195,11 @@ with a direct link and no counting.
      https://policies.google.com/technologies/partner-sites, opting out at
      https://adssettings.google.com), section 12, EN + FR.
 
+**Google Search Console** (separate from AdSense, same kind of build tag):
+`VITE_GOOGLE_SITE_VERIFICATION` writes `<meta name="google-site-verification">`
+on every page; owner steps (add the `https://isexy.ca/` property, verify, submit
+`https://isexy.ca/sitemap.xml`) in `docs/DEPLOYMENT.md` › Google Search Console.
+
 ## Consent and privacy
 
 - The cookie banner and `/cookie-policy` have an **Advertising** choice (off
@@ -231,11 +236,13 @@ Locally, on a mocked backend (nothing reaches TAKATAK, Google or V1):
 # SQL (throwaway Postgres 16 with v1-mock + every migration applied, as CI):
 printf 'BEGIN;\n\\i scripts/isexy/test/ads-smoke.sql\nROLLBACK;\n' | psql "$ISEXY_DB_URL" -X -q -v ON_ERROR_STOP=1
 
-# Browser, configured build (TAKATAK on a test host + AdSense stub, 5 slot ids):
+# Browser, configured build (TAKATAK on a test host + AdSense stub, 5 slot ids,
+# a Search Console test token for check I3):
 NODE_OPTIONS="--import=./e2e/no-network.mjs" VITE_TAKATAK_ADS_URL=https://ads.takatak.test \
   VITE_ADSENSE_CLIENT=ca-pub-1234567890123456 VITE_ADSENSE_SLOT_DISCOVER=1111111111 \
   VITE_ADSENSE_SLOT_LIST=2222222222 VITE_ADSENSE_SLOT_FEED=3333333333 \
   VITE_ADSENSE_SLOT_PROFILE=4444444444 VITE_ADSENSE_SLOT_CONTENT=5555555555 \
+  VITE_GOOGLE_SITE_VERIFICATION=isexyTestToken_0123456789-abcdefXYZ \
   npx vite build --outDir /tmp/isexy-dist-ads
 npx vite preview --outDir /tmp/isexy-dist-ads --port 4410 --strictPort --host 127.0.0.1 &
 E2E_ADS_MODE=configured E2E_BASE=http://127.0.0.1:4410 node --experimental-strip-types --no-warnings \

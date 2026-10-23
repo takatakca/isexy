@@ -3402,11 +3402,12 @@ export type Database = {
         Args: { p_email: string; p_ticket_number: string }
         Returns: {
           ticket_number: string
-          subject: string
+          /** null when the caller has not proven the ticket's e-mail (0015 K2): status only */
+          subject: string | null
           category: string
           priority: string
           status: string
-          message: string
+          message: string | null
           response: string | null
           responded_at: string | null
           created_at: string
@@ -3499,6 +3500,14 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: { role: string; content: string; created_at: string }[]
       }
+      staff_get_shadow_bans: {
+        Args: { p_profile_ids?: string[] | null }
+        Returns: {
+          profile_id: string
+          shadow_banned_at: string | null
+          shadow_banned_reason: string | null
+        }[]
+      }
       staff_grant_role: {
         Args: { p_role: Database["isexy"]["Enums"]["app_role"]; p_user_id: string }
         Returns: Json
@@ -3514,6 +3523,10 @@ export type Database = {
       staff_list_roles: {
         Args: { p_user_ids: string[] }
         Returns: { role: Database["isexy"]["Enums"]["app_role"]; user_id: string }[]
+      }
+      staff_list_tickets: {
+        Args: { p_limit?: number }
+        Returns: Database["isexy"]["Tables"]["support_tickets"]["Row"][]
       }
       staff_resolve_report: {
         Args: { p_note?: string | null; p_report_id: string; p_status: string }

@@ -6,6 +6,40 @@ import { readFileSync } from "node:fs";
 export const PNG = readFileSync(new URL("../public/apple-touch-icon.png", import.meta.url));
 export const SB = "https://pcjfahhlozsseqqevimi.supabase.co";
 
+// Column privileges of 0015 K: members (anon/authenticated) cannot read or
+// write these columns, so PostgREST refuses a request that selects "*" (the
+// default select), names one of them, filters on one or writes one. Every
+// such request is answered like the database would (42501) and listed here;
+// a run that made any prints a FAIL line at exit (deniedRequests() for checks).
+export const HIDDEN_COLUMNS = {
+  profiles: ["shadow_banned", "shadow_banned_at", "shadow_banned_reason"],
+  support_tickets: ["admin_notes"],
+};
+const denied = [];
+export const deniedRequests = () => [...denied];
+process.on("exit", () => {
+  if (denied.length) console.log(`FAIL column privileges (0015 K): ${denied.length} request(s) the database refuses: ${denied.slice(0, 5).join(" | ")}`);
+});
+
+function privilegeProblem(table, url, method, prefer, body) {
+  const hidden = HIDDEN_COLUMNS[table];
+  if (!hidden) return null;
+  const sel = url.searchParams.get("select");
+  const reads = method === "GET" || method === "HEAD" || prefer.includes("return=representation");
+  if (reads) {
+    // Top-level columns only ("alias:column", "column::cast"; embedded resources are other tables).
+    const top = (sel ?? "*").replace(/\([^()]*\)/g, "").split(",").map((c) => c.split("::")[0].split(":").pop().trim());
+    if (top.some((c) => c === "*" || hidden.includes(c))) return `select=${sel ?? "(default *)"}`;
+  }
+  for (const [k, v] of url.searchParams) {
+    if (hidden.includes(k)) return `filter ${k}`;
+    if ((k === "or" || k === "and") && hidden.some((c) => v.includes(`${c}.`))) return `filter ${v}`;
+  }
+  const items = Array.isArray(body) ? body : body ? [body] : [];
+  if ((method === "PATCH" || method === "POST") && items.some((it) => it && hidden.some((c) => c in it && (method === "PATCH" || it[c] != null)))) return "writes a hidden column";
+  return null;
+}
+
 let seq = 1;
 const uuid = () => `00000000-0000-4000-8000-${String(seq++).padStart(12, "0")}`;
 
@@ -138,6 +172,12 @@ export async function installMock(ctx, state, { user } = {}) {
       const key = `${method} ${table}`;
       state.log.push(`${key} ${url.search.slice(0, 160)}`);
       if (state.delays?.[key]) await new Promise((r) => setTimeout(r, state.delays[key]));
+      const problem = privilegeProblem(table, url, method, prefer, ["POST", "PATCH"].includes(method) ? JSON.parse(req.postData() || "null") : null);
+      if (problem) {
+        denied.push(`${key} ${problem}`);
+        state.log.push(`DENIED ${key} ${problem}`);
+        return json({ code: "42501", message: `permission denied for table ${table}`, details: null, hint: null }, user ? 403 : 401);
+      }
       if (state.failures[key]) return json(state.failures[key].body, state.failures[key].status);
       if (!Array.isArray(rows)) return json(method === "GET" ? [] : null);
       const missing = state.missingColumns[table] ?? [];
@@ -160,6 +200,17 @@ export async function installMock(ctx, state, { user } = {}) {
       const touchesMissing = (obj) => missing.some((c) => obj && c in obj);
       if (method === "POST") {
         const items = Array.isArray(body) ? body : [body];
+        // 0015 K2: a signed-in member files tickets under their sign-in e-mail
+        // (an account without one: no e-mail address at all).
+        if (table === "support_tickets" && user?.id && !state.staffAdmin) {
+          const own = String(user.email ?? "").trim().toLowerCase();
+          const bad = items.find((it) => { const e = String(it?.email ?? "").trim().toLowerCase(); return own ? e !== own : e.includes("@"); });
+          if (bad) {
+            denied.push(`POST support_tickets under ${bad.email} (signed in as ${own || "a phone-only account"})`);
+            state.log.push(`DENIED POST support_tickets email ${bad.email}`);
+            return json({ code: "42501", message: "A signed-in member writes to support from their sign-in e-mail" }, 403);
+          }
+        }
         if (items.some(touchesMissing)) return json({ code: "PGRST204", message: `Could not find the '${missing[0]}' column of '${table}' in the schema cache` }, 400);
         const created = [];
         for (const item of items) {

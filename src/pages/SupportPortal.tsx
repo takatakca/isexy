@@ -168,11 +168,8 @@ function TicketsPanel({ onCounts }: { onCounts: () => void }) {
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("support_tickets")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    // Staff notes are admin-only (0015 K1): tickets with notes come from staff_list_tickets.
+    const { data } = await supabase.rpc("staff_list_tickets", { p_limit: 200 });
     setTickets((data as Ticket[] | null) ?? []);
     setLoading(false);
   }, []);

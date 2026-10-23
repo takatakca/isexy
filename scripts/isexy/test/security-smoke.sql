@@ -420,6 +420,8 @@ SELECT pg_temp.rows('D2 anon can still open a plain ticket (Contact page)',
 RESET ROLE;
 SET ROLE authenticated;
 SELECT pg_temp.as_user('5ec00000-0000-4000-8000-00000000000a');
+-- A signed-in member's JWT carries their sign-in e-mail (tickets use it since 0015 K2).
+SELECT set_config('request.jwt.claims', json_build_object('sub', '5ec00000-0000-4000-8000-00000000000a', 'role', 'authenticated', 'email', 'a@sec.test')::text, false);
 SELECT pg_temp.refused('D1 member cannot call verify_otp',
   $q$SELECT isexy.verify_otp('whatsapp:+15145550123', '000000', 'whatsapp')$q$);
 SELECT pg_temp.refused('D2 member cannot open a ticket already assigned / answered',

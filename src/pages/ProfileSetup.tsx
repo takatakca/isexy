@@ -193,7 +193,7 @@ export default function ProfileSetup() {
           .from("profiles")
           .update(baseFields)
           .eq("user_id", userId)
-          .select()
+          .select("id")
           .single();
         if (updateError) throw updateError;
         profileId = updatedProfile.id;
@@ -201,7 +201,7 @@ export default function ProfileSetup() {
         const { data: newProfile, error: insertError } = await supabase
           .from("profiles")
           .insert({ user_id: userId, ...baseFields })
-          .select()
+          .select("id")
           .single();
         if (insertError) {
           // A row exists that this member can't read: the profile is paused or suspended.

@@ -87,8 +87,8 @@ export default function TouristSignup() {
       // profiles.id is set to the auth user id by the database (Takatak identity).
       // A member who already started a profile (another signup flow) gets it updated, not a duplicate.
       const { data: profile, error: profileError } = existingProfile
-        ? await supabase.from("profiles").update(fields).eq("id", existingProfile.id).select().single()
-        : await supabase.from("profiles").insert({ user_id: user.id, ...fields }).select().single();
+        ? await supabase.from("profiles").update(fields).eq("id", existingProfile.id).select("id").single()
+        : await supabase.from("profiles").insert({ user_id: user.id, ...fields }).select("id").single();
 
       if (profileError) throw profileError;
       // is_cuban (default false) is not member-writable: a profile started in the Cuban signup is switched server-side.

@@ -8,6 +8,7 @@
 //       VITE_ADSENSE_CLIENT=ca-pub-1234567890123456 VITE_ADSENSE_SLOT_DISCOVER=1111111111 \
 //       VITE_ADSENSE_SLOT_LIST=2222222222 VITE_ADSENSE_SLOT_FEED=3333333333 \
 //       VITE_ADSENSE_SLOT_PROFILE=4444444444 VITE_ADSENSE_SLOT_CONTENT=5555555555 \
+//       VITE_GOOGLE_SITE_VERIFICATION=isexyTestToken_0123456789-abcdefXYZ \
 //       npx vite build --outDir /tmp/isexy-dist-ads
 //     npx vite preview --outDir /tmp/isexy-dist-ads --port 4410 --strictPort --host 127.0.0.1 &
 //     E2E_ADS_MODE=configured E2E_BASE=http://127.0.0.1:4410 node --experimental-strip-types --no-warnings \
@@ -33,6 +34,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const ADS_HOST = MODE === "configured" ? "https://ads.takatak.test" : "https://takatak.ca";
 const CLIENT = "ca-pub-1234567890123456";
+const SITE_VERIFICATION = "isexyTestToken_0123456789-abcdefXYZ"; // Search Console token of the configured build
 const SLOT_IDS = {
   "isexy-discover-banner": "1111111111", "isexy-list-banner": "2222222222", "isexy-feed-inline": "3333333333",
   "isexy-profile-banner": "4444444444", "isexy-content-inline": "5555555555",
@@ -612,6 +614,10 @@ if (MODE === "configured") {
     const adsTxt = await (await fetch(base + "/ads.txt")).text();
     check("I1 built index.html carries <meta name=google-adsense-account> with the client id", html.includes(`<meta name="google-adsense-account" content="${CLIENT}" />`));
     check("I2 /ads.txt authorizes the publisher id", adsTxt.trim() === "google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0", adsTxt.slice(0, 80));
+    // Google Search Console (VITE_GOOGLE_SITE_VERIFICATION), written by the same build step.
+    check("I3 built index.html carries <meta name=google-site-verification> with the token, once",
+      html.split(`<meta name="google-site-verification" content="${SITE_VERIFICATION}" />`).length === 2
+        && html.indexOf("google-site-verification") < html.indexOf("</head>"));
   }
 
   // ---- J. Privacy and Cookie policies: Advertising section (EN + FR), real consent toggles
@@ -693,6 +699,7 @@ if (MODE === "configured") {
     const body = await res.text();
     check("P6 no AdSense meta tag and no ads.txt when VITE_ADSENSE_CLIENT is unset",
       !html.includes("google-adsense-account") && !body.includes("google.com, pub-"), `ads.txt status ${res.status}`);
+    check("P7 no Search Console tag when VITE_GOOGLE_SITE_VERIFICATION is unset", !html.includes("google-site-verification"));
   }
 }
 

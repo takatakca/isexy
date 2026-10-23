@@ -78,6 +78,8 @@ jobs:
           VITE_ADSENSE_SLOT_FEED: ${{ vars.VITE_ADSENSE_SLOT_FEED }}
           VITE_ADSENSE_SLOT_PROFILE: ${{ vars.VITE_ADSENSE_SLOT_PROFILE }}
           VITE_ADSENSE_SLOT_CONTENT: ${{ vars.VITE_ADSENSE_SLOT_CONTENT }}
+          # Google Search Console (optional): token of the "HTML tag" method -> <meta name="google-site-verification">.
+          VITE_GOOGLE_SITE_VERIFICATION: ${{ vars.VITE_GOOGLE_SITE_VERIFICATION }}
         run: npm run build
 
       - name: Lint (report only — legacy findings are being paid down)

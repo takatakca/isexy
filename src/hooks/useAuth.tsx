@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { MEMBER_PROFILE_COLUMNS } from "@/lib/profileStatus";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -42,7 +43,6 @@ interface Profile {
   drinking?: string;
   smoking?: string;
   workout?: string;
-  shadow_banned?: boolean;
   first_purchase_promo_used?: boolean;
   promo_expires_at?: string;
   relationship_type?: string | null;
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string): Promise<{ profile: Profile | null; failed: boolean }> => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select(MEMBER_PROFILE_COLUMNS) // not "*": shadow-ban columns are staff-only (0015 K3)
       .eq("user_id", userId)
       .maybeSingle();
 

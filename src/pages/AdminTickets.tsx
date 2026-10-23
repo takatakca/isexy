@@ -182,7 +182,8 @@ const AdminTickets = () => {
             setTickets(prev => [payload.new as SupportTicket, ...prev]);
             toast({ title: "New ticket received", description: `Ticket #${(payload.new as SupportTicket).ticket_number}` });
           } else if (payload.eventType === 'UPDATE') {
-            setTickets(prev => prev.map(t => t.id === payload.new.id ? payload.new as SupportTicket : t));
+            // Realtime rows carry no staff notes (0015 K1): keep the ones already loaded.
+            setTickets(prev => prev.map(t => t.id === payload.new.id ? { ...t, ...(payload.new as Partial<SupportTicket>) } : t));
           }
         }
       )
@@ -196,10 +197,8 @@ const AdminTickets = () => {
   const fetchTickets = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Staff notes are admin-only (0015 K1): tickets with notes come from staff_list_tickets.
+      const { data, error } = await supabase.rpc("staff_list_tickets", { p_limit: 1000 });
 
       if (error) throw error;
       setTickets((data as SupportTicket[]) || []);
