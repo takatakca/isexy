@@ -120,7 +120,20 @@ export const staff = {
     call<{ user_id: string; role: string }[]>("staff_list_roles", { p_user_ids: userIds }),
   grantRole: (userId: string, role: "admin" | "moderator") =>
     call<{ already?: boolean }>("staff_grant_role", { p_user_id: userId, p_role: role }),
+  /**
+   * Shadow bans of these members (or, without ids, every shadow-banned member,
+   * newest first, 500 at most). Members cannot read shadow bans (0015 K3), so
+   * staff pages read them here instead of from profiles.
+   */
+  shadowBans: (profileIds?: string[]) =>
+    call<ShadowBan[] | null>("staff_get_shadow_bans", { p_profile_ids: profileIds ?? null }).then((rows) => rows ?? []),
 };
+
+export interface ShadowBan {
+  profile_id: string;
+  shadow_banned_at: string | null;
+  shadow_banned_reason: string | null;
+}
 
 export interface DashboardStats {
   members: {

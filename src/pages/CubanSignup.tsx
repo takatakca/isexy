@@ -6,6 +6,7 @@ import { AuthInput } from "@/components/AuthInput";
 import { AuthButton } from "@/components/AuthButton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { MEMBER_PROFILE_COLUMNS } from "@/lib/profileStatus";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Check, Phone, CreditCard, Video, Mic, Shield, Upload, Camera, X } from "lucide-react";
@@ -282,7 +283,7 @@ export default function CubanSignup() {
       if (!currentProfile) {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("*")
+          .select(MEMBER_PROFILE_COLUMNS) // not "*": refused for members since 0015 K3
           .eq("user_id", userId)
           .maybeSingle();
 

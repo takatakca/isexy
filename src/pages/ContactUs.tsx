@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUpload } from "@/components/FileUpload";
 import { useAuth } from "@/hooks/useAuth";
+import { memberTicketContact } from "@/lib/supportTickets";
 import { 
   Send, 
   Mail, 
@@ -52,6 +53,9 @@ const ContactUs = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const { user, profile } = useAuth();
+  // Signed in: the ticket goes under the sign-in e-mail (the database refuses
+  // another one, 0015 K2); a phone-only account files with its phone number.
+  const account = user ? memberTicketContact(user) : null;
   /** The last ticket sent from this page (shown until the next one). */
   const [sent, setSent] = useState<{ number: string; email: string; emailed: boolean } | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
@@ -60,14 +64,13 @@ const ContactUs = () => {
     fetchCategories();
   }, []);
 
-  // Signed in: fill in the name and the sign-in e-mail (still editable).
+  // Signed in: fill in the name (the e-mail is the account's, see `account`).
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
       name: prev.name || profile?.first_name || "",
-      email: prev.email || user?.email || "",
     }));
-  }, [user?.email, profile?.first_name]);
+  }, [profile?.first_name]);
 
   const fetchCategories = async () => {
     const { data } = await supabase
@@ -93,14 +96,15 @@ const ContactUs = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.category || !formData.subject || !formData.message) {
+    const contact = account ? account.contact : formData.email.trim().toLowerCase();
+    if (!formData.name || !contact || !formData.category || !formData.subject || !formData.message) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Basic email validation
+    // Basic email validation (guests type their address; members use their account's)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (!account && !emailRegex.test(contact)) {
       toast.error("Please enter a valid email address");
       return;
     }
@@ -120,7 +124,7 @@ const ContactUs = () => {
           ticket_number: ticketNumber,
           user_id: user?.id || null,
           name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
+          email: contact,
           subject: formData.subject.trim(),
           category: formData.category,
           priority: formData.priority,
@@ -135,31 +139,34 @@ const ContactUs = () => {
       }
 
       // Confirmation is optional; ticket persistence is the source of truth.
+      // The function sends only to a member's own sign-in e-mail (guest tickets: staff only).
       let emailed = false;
-      try {
-        const { data: emailResult, error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
-          body: {
-            name: formData.name.trim(),
-            email: formData.email.trim().toLowerCase(),
-            ticketNumber,
-            subject: formData.subject.trim(),
-            category: formData.category,
-            priority: formData.priority,
-            message: formData.message.trim()
-          }
-        });
+      if (!account || account.isEmail) {
+        try {
+          const { data: emailResult, error: emailError } = await supabase.functions.invoke("isexy-send-ticket-confirmation", {
+            body: {
+              name: formData.name.trim(),
+              email: contact,
+              ticketNumber,
+              subject: formData.subject.trim(),
+              category: formData.category,
+              priority: formData.priority,
+              message: formData.message.trim()
+            }
+          });
 
-        if (emailError || !emailResult?.success) {
-          console.error("Email confirmation not sent:", emailError ?? emailResult?.error);
-        } else {
-          emailed = true;
+          if (emailError || !emailResult?.success) {
+            console.error("Email confirmation not sent:", emailError ?? emailResult?.error);
+          } else {
+            emailed = true;
+          }
+        } catch (emailErr) {
+          console.error("Email function error:", emailErr);
+          // Continue - ticket was still created
         }
-      } catch (emailErr) {
-        console.error("Email function error:", emailErr);
-        // Continue - ticket was still created
       }
       
-      const sentTo = formData.email.trim().toLowerCase();
+      const sentTo = contact;
       toast.success(`Ticket #${ticketNumber} created.`, { duration: 6000 });
       setSent({ number: ticketNumber, email: sentTo, emailed });
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -204,7 +211,9 @@ const ContactUs = () => {
               {sent.emailed
                 ? `A confirmation was sent to ${sent.email}. `
                 : "Keep this number: "}
-              Track it any time with the number and {sent.email}.
+              {account
+                ? "It is listed under your tickets on Ticket Tracking."
+                : `Track it any time with the number and ${sent.email}.`}
             </p>
             <Link to="/ticket-tracking" className="mt-2 inline-block font-medium text-primary underline">
               Track this ticket
@@ -290,17 +299,26 @@ const ContactUs = () => {
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">
-                Email Address <span className="text-destructive">*</span>
+                {account && !account.isEmail ? "Contact" : "Email Address"} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="email"
-                type="email"
+                type={account && !account.isEmail ? "text" : "email"}
                 placeholder="Enter your email address"
-                value={formData.email}
+                value={account ? account.contact : formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                className="bg-background"
+                readOnly={!!account}
+                aria-describedby={account ? "email-account-note" : undefined}
+                className={account ? "bg-muted text-muted-foreground" : "bg-background"}
                 maxLength={255}
               />
+              {account && (
+                <p id="email-account-note" className="text-xs text-muted-foreground">
+                  {account.isEmail
+                    ? "Signed in: we reply to your account e-mail. To write from another address, sign out first."
+                    : "Your account has no e-mail address: our reply will appear in Ticket Tracking."}
+                </p>
+              )}
             </div>
 
             {/* Category */}

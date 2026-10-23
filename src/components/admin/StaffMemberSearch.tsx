@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Loader2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { staff } from "@/lib/staff";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +15,10 @@ interface MemberRow {
   country: string | null;
   is_verified: boolean | null;
   is_active: boolean | null;
-  shadow_banned: boolean | null;
   created_at: string;
 }
+
+type MemberListRow = MemberRow & { shadow_banned: boolean };
 
 export type MemberFilter = "all" | "suspended" | "shadow" | "verified";
 
@@ -29,11 +31,12 @@ const FILTERS: [MemberFilter, string][] = [
 
 /**
  * Member search for staff: profiles are read on the server through the staff
- * SELECT policy (suspended members included, 0015 A3), 50 at a time; a tap
- * opens every staff action for that member.
+ * SELECT policy (suspended members included, 0015 A3), 50 at a time; shadow
+ * bans come from staff_get_shadow_bans (members cannot read them, 0015 K3);
+ * a tap opens every staff action for that member.
  */
 export function StaffMemberSearch({ initialFilter = "all", onChanged }: { initialFilter?: MemberFilter; onChanged?: () => void }) {
-  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [members, setMembers] = useState<MemberListRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
@@ -42,20 +45,38 @@ export function StaffMemberSearch({ initialFilter = "all", onChanged }: { initia
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = supabase
-      .from("profiles")
-      .select("id, first_name, city, country, is_verified, is_active, shadow_banned, created_at")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    const term = query.trim().replace(/[%_,()*"\\]/g, " ").trim(); // PostgREST or() syntax characters
-    if (term) q = q.or(`first_name.ilike.%${term}%,city.ilike.%${term}%`);
-    if (filter === "suspended") q = q.eq("is_active", false);
-    if (filter === "shadow") q = q.eq("shadow_banned", true);
-    if (filter === "verified") q = q.eq("is_verified", true);
-    const { data, error: e } = await q;
-    setError(!!e);
-    setMembers((data as MemberRow[] | null) ?? []);
-    setLoading(false);
+    try {
+      // "Shadow banned": the banned ids first (staff RPC), then their profiles.
+      const shadowIds = filter === "shadow" ? (await staff.shadowBans()).map((b) => b.profile_id) : null;
+      if (shadowIds && shadowIds.length === 0) {
+        setError(false);
+        setMembers([]);
+        return;
+      }
+      let q = supabase
+        .from("profiles")
+        .select("id, first_name, city, country, is_verified, is_active, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const term = query.trim().replace(/[%_,()*"\\]/g, " ").trim(); // PostgREST or() syntax characters
+      if (term) q = q.or(`first_name.ilike.%${term}%,city.ilike.%${term}%`);
+      if (filter === "suspended") q = q.eq("is_active", false);
+      if (shadowIds) q = q.in("id", shadowIds.slice(0, 150)); // newest bans first; keeps the URL short
+      if (filter === "verified") q = q.eq("is_verified", true);
+      const { data, error: e } = await q;
+      if (e) throw e;
+      const rows = (data as MemberRow[] | null) ?? [];
+      const banned = shadowIds
+        ? new Set(shadowIds)
+        : new Set(rows.length ? (await staff.shadowBans(rows.map((r) => r.id))).map((b) => b.profile_id) : []);
+      setError(false);
+      setMembers(rows.map((r) => ({ ...r, shadow_banned: banned.has(r.id) })));
+    } catch {
+      setError(true);
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
   }, [query, filter]);
 
   useEffect(() => {

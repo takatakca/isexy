@@ -143,6 +143,8 @@ async function legacyFeed({ viewer, limit = 30, exclude = [], verifiedOnly, inte
     .from("profiles")
     .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, super_boost_until")
     .eq("is_active", true)
+    // Only runs without get_discover_feed (a database before 0013), where members
+    // can still read shadow_banned; from 0015 K3 on it is staff-only.
     .neq("shadow_banned", true)
     .not("first_name", "is", null)
     .lte("birth_date", maxBirth)

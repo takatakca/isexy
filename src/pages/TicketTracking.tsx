@@ -13,12 +13,15 @@ import { goBack } from "@/lib/navigation";
 
 interface SupportTicket {
   id?: string;
+  /** null: sent without signing in (shown in the list of the member who owns that e-mail) */
+  user_id?: string | null;
   ticket_number: string;
-  subject: string;
+  /** subject and message are null when tracked by number + e-mail without proof of the e-mail (0015 K2) */
+  subject: string | null;
   category: string;
   priority: string;
   status: string;
-  message: string;
+  message: string | null;
   attachments?: string[];
   response: string | null;
   responded_at: string | null;
@@ -93,7 +96,7 @@ const TicketTracking = () => {
         const email = user.email?.toLowerCase().replace(/"/g, "");
         const { data, error } = await supabase
           .from("support_tickets")
-          .select("id, ticket_number, subject, category, priority, status, message, attachments, response, responded_at, created_at, updated_at")
+          .select("id, user_id, ticket_number, subject, category, priority, status, message, attachments, response, responded_at, created_at, updated_at")
           .or(email ? `user_id.eq.${user.id},email.eq."${email}"` : `user_id.eq.${user.id}`)
           .order("created_at", { ascending: false })
           .limit(50);
@@ -108,7 +111,9 @@ const TicketTracking = () => {
     }
   };
 
-  // Number + the e-mail the ticket was sent from (works for guests too).
+  // Number + the e-mail the ticket was sent from (works for guests too). The
+  // server shows the content and our reply only to someone signed in with that
+  // e-mail (or the member who sent it); anyone else gets the status (0015 K2).
   const searchTicket = async () => {
     const number = searchQuery.trim().toUpperCase();
     const email = searchEmail.trim();
@@ -229,13 +234,27 @@ const TicketTracking = () => {
           </div>
         </div>
 
-        <h3 className="font-semibold text-foreground mb-2 line-clamp-1">
-          {ticket.subject}
-        </h3>
+        {ticket.message === null ? (
+          <div className="mb-3 space-y-1 text-sm text-muted-foreground" data-testid="ticket-status-only">
+            <p>The details of this ticket and our replies go to the e-mail address it was sent from.</p>
+            {ticket.responded_at && <p className="text-foreground">We replied by e-mail on {formatDate(ticket.responded_at)}.</p>}
+            <p>Sign in with that address to read them here.</p>
+          </div>
+        ) : (
+          <>
+            <h3 className="font-semibold text-foreground mb-2 line-clamp-1">
+              {ticket.subject}
+            </h3>
 
-        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-          {ticket.message}
-        </p>
+            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+              {ticket.message}
+            </p>
+          </>
+        )}
+
+        {ticket.user_id === null && ticket.message !== null && (
+          <p className="mb-3 text-xs text-muted-foreground">Sent without signing in, from your e-mail address.</p>
+        )}
 
         {ticket.response && (
           <div className="mb-3 rounded-lg border border-green-500/30 bg-green-500/10 p-3">

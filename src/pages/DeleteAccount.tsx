@@ -18,6 +18,7 @@ import {
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { memberTicketContact } from "@/lib/supportTickets";
 import { useAuth } from "@/hooks/useAuth";
 import { useMemberSettings } from "@/hooks/useMemberSettings";
 
@@ -61,8 +62,8 @@ const DeleteAccount = () => {
     setIsDeleting(true);
     const reason = deleteReasons.find((r) => r.id === selectedReason)?.label ?? selectedReason;
     const number = ticketNumber();
-    // support_tickets needs a contact (3+ characters); phone-only members have no email.
-    const contact = user.email || (user.phone ? `+${user.phone.replace(/^\+/, "")}` : "no-email-on-file");
+    // The sign-in e-mail, or the phone for a phone-only account (0015 K2 refuses any other).
+    const { contact } = memberTicketContact(user);
     const { error } = await supabase.from("support_tickets").insert({
       ticket_number: number,
       user_id: user.id,
