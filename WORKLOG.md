@@ -3,7 +3,7 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
-- 2026-10-23 | cursor | cursor/isexy-release-live-3bc7 → PR #8 | PR #8 | isexy.ca answered HTTP 200 and the homepage rendered, but Chrome can stay stuck on yesterday's broken HTTP/3; the site now sends Alt-Svc clear and the proxy generator will not turn HTTP/3 back on | next: hard-refresh https://isexy.ca
+- 2026-10-23 | cursor | cursor/isexy-release-live-3bc7 → PR #9 | PR #9 | isexy.ca answered HTTP 200 and the homepage rendered, but Chrome can stay stuck on yesterday's broken HTTP/3; the site now sends Alt-Svc clear and the proxy generator will not turn HTTP/3 back on | next: hard-refresh https://isexy.ca
 
 - 2026-10-22 | cursor | cursor/isexy-release-live-3bc7 → PR #8 | done | Smoke test printed active=unknown because isexy.ca/release.json commit was null; Coolify had not published cb3965b, and the saved nginx config was plain text where Coolify stores base64, so the new container crash-looped | next: none
 
