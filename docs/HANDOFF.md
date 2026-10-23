@@ -1,4 +1,4 @@
-# ISEXY handoff (2026-10-22, trust area and ads merged)
+# ISEXY handoff (2026-10-23, trust area and ads merged, trust privacy follow-ups on wf/followups)
 
 Branch `claude/zealous-brown-kv2hmx` (PR #2): wf/discover, wf/accounts,
 wf/chat, wf/calls and wf/rewards are merged, the security + DB performance
@@ -8,7 +8,11 @@ area** (`wf/trust`: `0015_trust_and_moderation.sql`, staff tools, blocks and
 reports, tickets; [Trust area](#trust-area-wftrust)) and the **ads**
 (`wf/ads`: `0016_ads.sql`, TAKATAK ads then AdSense then a house banner for
 free members, ad-free for paying members; [Ads (0016)](#ads-0016)) are merged
-too. Our migrations are **0013_app_completion**, **0014_security_and_performance**,
+too. On 2026-10-23 `wf/followups` closed the trust area's last privacy holes in
+**part K of 0015** (ticket staff notes, tickets under someone else's e-mail,
+shadow bans readable by members; [Trust area](#trust-area-wftrust)) and added
+an optional Google Search Console tag (`VITE_GOOGLE_SITE_VERIFICATION`,
+`docs/DEPLOYMENT.md` › Google Search Console). Our migrations are **0013_app_completion**, **0014_security_and_performance**,
 **0015_trust_and_moderation**, **0016_ads** (main's 0001-0012 are applied on
 V1). **Nothing of this branch is deployed**: see
 [Production state and deploy plan](#production-state-and-deploy-plan).
@@ -84,7 +88,10 @@ client still served from main loses the writes they close (step 3).
    `isexy.schema_migrations` has 16 rows;
    `has_function_privilege('anon'|'authenticated', 'isexy.fulfill_stripe_payment(text,uuid,text,integer,text,jsonb)', 'EXECUTE')`
    false, `service_role` true; `has_function_privilege('anon', 'isexy.get_my_ad_status()', 'EXECUTE')`
-   false, `authenticated` true; the live webhook v6 keeps working in the gap
+   false, `authenticated` true; `has_column_privilege('authenticated', 'isexy.profiles', 'shadow_banned', 'SELECT')`
+   and `has_column_privilege('authenticated', 'isexy.support_tickets', 'admin_notes', 'SELECT')`
+   false (0015 K; K raises and the file rolls back if a grant made by
+   another role keeps them readable); the live webhook v6 keeps working in the gap
    (its two RPCs keep their signatures; merge-main.md §3). Rehearsed
    locally on 2026-10-22: production simulation (v1-mock + 0001-0012, then
    these 4 pending) and from scratch, with every SQL test CI runs.
@@ -115,7 +122,7 @@ client still served from main loses the writes they close (step 3).
    | `isexy-twilio-call-status` | false | `apply_twilio_call_status` |
    | `isexy-get-voice-greeting-url` | **true** (default) | staff review queue access |
    | `isexy-ai-chat` | false | trust: hand-off to a person for members only, one open chat per member |
-   | `isexy-send-ticket-confirmation` | false | trust: sender `ISEXY_RESEND_FROM` (verify the domain first) |
+   | `isexy-send-ticket-confirmation` | false | trust: sender `ISEXY_RESEND_FROM` (verify the domain first); only to the member's own sign-in e-mail (0015 K2, `_shared/ticket-confirmation-auth.ts`) |
    | `isexy-send-ticket-status-update` | false | trust: reads the ticket from the database, admins only, sender `ISEXY_RESEND_FROM` |
    | `isexy-send-verification-notification`, `isexy-send-whatsapp-otp` | false | only `_shared/env.ts` differs (`ISEXY_TWILIO_WEBHOOK_BASE` is ISEXY-only): no behaviour change, redeploy to keep the bundle equal to the repo |
 
@@ -135,8 +142,12 @@ client still served from main loses the writes they close (step 3).
    cash-out, Cuban signup flag, staff verified flag / Cuban review,
    scheduled calls, Double Hangout, forum posts. V1 has 0 member profiles
    (main's last count), so nobody is hit if the three steps follow each
-   other. 0015 does not break main's client either (trust.md); 0016 only
-   adds a function main's client never calls.
+   other. **0015 K breaks main's client harder**: it reads `profiles` and
+   `support_tickets` with `select("*")` (useAuth, Ticket Tracking, the staff
+   ticket pages), which members may no longer do (shadow-ban and staff-note
+   columns are hidden), so from `--apply` until this branch is live a signed-in
+   member of main's client gets "profile could not be loaded". Run step 3
+   right after step 1. 0016 only adds a function main's client never calls.
 4. **Owner secrets and accounts** (see [Needs the owner](#needs-the-owner)):
    Supabase function secrets: Stripe (test mode first) +
    `ISEXY_STRIPE_PRICE_CHAT_1MO`, `ISEXY_APP_URL`, VAPID, Resend
@@ -146,14 +157,19 @@ client still served from main loses the writes they close (step 3).
    and its 5 placements, then AdSense with `VITE_ADSENSE_CLIENT` in the
    Coolify/Render build environment (docs/ADS.md). Coolify build
    environment: `VITE_VAPID_PUBLIC_KEY`, TURN, `VITE_PHONE_LINE_NUMBER`,
-   ads variables.
+   ads variables, and `VITE_GOOGLE_SITE_VERIFICATION` for Google Search
+   Console (add `https://isexy.ca/`, verify, submit
+   `https://isexy.ca/sitemap.xml`: `docs/DEPLOYMENT.md` › Google Search
+   Console).
 5. **After deploying**: one Stripe test purchase per kind (plan, Boost, Super
    Likes, credits, minutes), resend one event (`stripe events resend`) and
    check nothing changes; the buyer's ads disappear (`get_my_ad_status`
    → `recent_payment` or `plan`); a call between two members; a push; the
    scheduler run answering 200; a report and a staff review on
    `/admin/moderation`; a free member sees the house banner (or a TAKATAK
-   ad) on `/discover`, none on a chat or `/premium`.
+   ad) on `/discover`, none on a chat or `/premium`; 0015 K: a member's
+   profile loads and an admin's ticket reply reaches the member's open Ticket
+   Tracking without `admin_notes` in the realtime payload (trust.md › Left).
 
 ## Done
 
@@ -266,11 +282,12 @@ moderator. Details, defect list, decisions, adversarial review:
 | Block and report through RPCs (idempotent block, one pending report per pair, 20 a day, no self-report); blocked members hidden both ways (profile rows of people who blocked you, Likes sent, group chat, chat links, web profile, forum, Phone Line voice inbox) | trust-smoke T2, T5; `e2e/trust-e2e.mjs` A1-A4 |
 | Every staff action is a SECURITY DEFINER RPC checking has_role and writing the audit log: warnings + messaging restriction, lift, shadow ban, suspend/reinstate, verify (`staff_set_profile_verified`), name/bio edit, report review, roles (grant/list, admin only), tickets (admin only, main's 0009 rule), live chat accept/close | trust-smoke T3-T6; trust-e2e B3-B9, C2-C4 (no direct write of profiles/reports/warnings/tickets/roles/blocks) |
 | Staff pages: `/admin` (one stats RPC, revenue/tickets admin only), `/admin/moderation` (reports, restrictions, attempts, photo checks, voice greetings), `/admin/verifications` (photo checks; Cuban ID on hold, admin only), `/admin/agent` (live chat, phone layout), `/support` (real tabs, saved replies, audit log); moderators admitted where the RPCs allow them; a moderator on an admin-only page lands on `/admin` | trust-e2e B1-B8, C1-C4 |
-| Tickets: guests track by number + e-mail (`get_ticket_status`); ticket e-mails from `ISEXY_RESEND_FROM`; status e-mail function admin only | trust-smoke T3; trust-e2e A8, C2 |
+| Tickets: guests track by number + e-mail (`get_ticket_status`; since 0015 K2 a guest ticket's status only, see the follow-ups row); ticket e-mails from `ISEXY_RESEND_FROM`; status e-mail function admin only | trust-smoke T3; trust-e2e A8, C2 |
 | Assistant: streamed answers (last line read without a newline); members reach a person inside the widget; guests are offered sign-in or a ticket | trust-e2e A9 |
 | 404 branded EN/FR with in-app links; EN/FR button shows EN/FR and has a name; Help search opens the Help Centre; back buttons stay in ISEXY; bottom-nav tab stays highlighted on nested pages | trust-e2e A5-A7 |
 | Adversarial pass (proven first: 33 T9 checks failed on the WIP 0015): moderators no longer write warnings, live chat sessions or their own plan/limits/badge directly; never act on themselves (reports about them, own verification, photo check, voice greeting); reports about staff for admins only; a suspended staff account loses every staff tool; reporters do not read reviewed reports; the blocker's photos, Phone Line profile and greeting are hidden from the blocked member, photos signed-in only; a member's live chat can only carry their own assistant chat | trust-smoke T9 (78 checks); security-smoke A |
 | Member-written HTML/script (reports, chat attempts, tickets, audit reasons) renders as text on the staff pages; Cuban ID evidence (on hold) opens through signed URLs, other schemes never opened | trust-e2e D1-D5 |
+| **Privacy follow-ups (0015 K, wf/followups, proven first: 27 T10 checks failed without K)**: ticket staff notes hidden from members by column privileges, admins read them through `staff_list_tickets`; a signed-in member files tickets under their sign-in e-mail only (phone-only: no e-mail address), confirmation e-mails only to that address; tracking by number + e-mail shows a guest ticket's status only (content and reply to the owner or someone signed in with that e-mail; a member's ticket to its owner only); shadow bans hidden from members by column privileges (no probing either), staff read them through `staff_get_shadow_bans`; the app names its profile and ticket columns (`MEMBER_PROFILE_COLUMNS`) | trust-smoke T10 (50), T3, T6; security-smoke D2; Deno `ticket-confirmation-auth`; trust-e2e A8, A10-A12, B3, C2; rewards-e2e restore; column-privilege watch in every e2e suite ([trust.md › Privacy follow-ups](handoff/trust.md#privacy-follow-ups-0015-k-wffollowups-2026-10-23)) |
 
 **Deploy:** part of the [deploy plan](#production-state-and-deploy-plan)
 above since the merge into this branch: 0015 in step 1 (with 0013, 0014,
@@ -282,9 +299,11 @@ branch was tested again (see the work log line of 2026-10-22).
 
 Still open in the area: account deletion stays a ticket (staff delete by
 hand); Cuban ID review on hold (bug fix only: evidence links); staff pages
-English only; a ticket's owner can read its staff notes through the API
-(main's 0010 policy); shadow-ban flag/reason readable on profiles (security
-Left below). Full list: trust.md › Left.
+English only; a guest can still send a ticket from a member's address (it is
+marked "Sent without signing in" in that member's list, content and replies
+stay with the address's owner); since 0015 K a new `profiles` or
+`support_tickets` column needs its own GRANT to be readable by members. Full
+list: trust.md › Left.
 
 ## Left (ordered by member impact)
 
@@ -364,7 +383,9 @@ WhatsApp secrets: unchanged, see `docs/V1-MIGRATION.md` §3.
 optional `VITE_STUN_URL`, `VITE_PHONE_LINE_NUMBER` (the Twilio number shown in
 the app). Ads (optional, [Ads (0016)](#ads-0016)): `VITE_ADSENSE_CLIENT`, then
 `VITE_ADSENSE_SLOT_*` after AdSense approval; `VITE_TAKATAK_ADS_*` only to
-change the defaults. Existing: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
+change the defaults. Google Search Console (optional): `VITE_GOOGLE_SITE_VERIFICATION`
+(the token of its "HTML tag" method), then submit `https://isexy.ca/sitemap.xml`
+(`docs/DEPLOYMENT.md` › Google Search Console). Existing: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
 `VITE_SITE_URL`. See `docs/DEPLOYMENT.md` › Variables and `.env.example`.
 
 **Dashboard**: none new for 0013 (the `isexy-photo-verifications` bucket and its
@@ -394,6 +415,7 @@ placement after approval, Privacy & messaging consent message.
 9. Moderators review voice greetings and photo checks and answer live chats on wf/trust (`/admin/moderation`, `/admin/agent`); tickets stay admin only (main's 0009). Keep or narrow?
 10. Keep the Premium 30-minute promo countdown (device only)? Delete `PromoOfferBanner.tsx`?
 11. Explore category wording; hero/OG image; Cuba items stay on hold (Cuban Rewards has no backend).
+12. Tickets a guest sends from a member's e-mail address: keep listing them (marked "Sent without signing in") for the member who owns that address, or list only the tickets a member sent signed in (0015 K2 already keeps their content and our replies with the address's owner)?
 
 ## How to run the checks
 
@@ -464,7 +486,7 @@ Left (not changed here; details in security.md › Looked at and left alone):
 | Staff ban button (`AdminDashboardFull` → `profiles.is_active`) changes nothing: no staff UPDATE policy on `profiles` | Done on wf/trust: `staff_set_account_active` (0015 E) |
 | `useContentModeration` inserts `user_warnings` as the member (staff-only policy): progressive bans never record | Done on wf/trust: `record_contact_sharing` + messages trigger (0015 C, D) |
 | Reporter can set `reports.status` on INSERT | Done on wf/trust: INSERT check pending/unreviewed/not self (0015 B4) |
-| Every member reads every column of every active profile (`blocked_contacts`, coarse location, plan, shadow ban and, since wf/trust's staff tool writes it, the shadow-ban reason) | Owner/next pass: a member-facing view or RPC with the public columns |
+| Every member reads every column of every active profile (`blocked_contacts`, coarse location, plan; the shadow ban and its reason are hidden since 0015 K3) | Owner/next pass: hide more columns the same way (column privileges, as 0015 K), or a member-facing view/RPC with the public columns |
 | Chat unlock and Plus-only settings (Incognito, Recently Active) enforced in the UI only | After owner decision #1: `messages` INSERT check / settings RPC |
 | A policy added or changed later makes 0014 C2 stop | Only if 0014 itself is edited: later migrations (0015) write policies in the `(select auth.uid())` form, and 0014 re-run after 0015 says "already applied" |
 
