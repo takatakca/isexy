@@ -243,7 +243,9 @@ INSERT INTO results SELECT 'T3 member reads tickets sent from their sign-in e-ma
   FROM isexy.support_tickets;
 RESET ROLE;
 SET ROLE authenticated;
-SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000b');
+-- A signed-in member's JWT carries their sign-in e-mail; since 0015 K2 their
+-- tickets must use it.
+SELECT pg_temp.as_user_email('dddddddd-0000-0000-0000-00000000000b', 'tb@test.ca');
 INSERT INTO isexy.support_tickets (ticket_number, user_id, name, email, subject, category, priority, message)
 VALUES ('IS-BEN001', 'dddddddd-0000-0000-0000-00000000000b', 'Ben', 'tb@test.ca', 'Billing', 'billing', 'high', 'charged twice');
 DO $$ BEGIN
@@ -279,10 +281,10 @@ INSERT INTO results SELECT 'T3 admin answers a ticket',
   (r ->> 'notify')::boolean AND r ->> 'old_status' = 'open' AND r ->> 'new_status' = 'in_progress' AND (r ->> 'responded')::boolean, r::text
   FROM (SELECT isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'),
           'in_progress', 'We are refunding the second charge.', 'checked Stripe', 'dddddddd-0000-0000-0000-00000000000e', true) AS r) s;
-INSERT INTO results SELECT 'T3 note, response and assignee saved',
+INSERT INTO results SELECT 'T3 note, response and assignee saved (notes read through staff_list_tickets, 0015 K1)',
   admin_notes LIKE '%Xan] checked Stripe' AND response LIKE 'We are refunding%' AND responded_at IS NOT NULL
     AND assigned_to = 'dddddddd-0000-0000-0000-00000000000e', admin_notes
-  FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001';
+  FROM isexy.staff_list_tickets(200) WHERE ticket_number = 'IS-BEN001';
 INSERT INTO results SELECT 'T3 a note alone does not notify', NOT (r ->> 'notify')::boolean, r::text
   FROM (SELECT isexy.staff_update_ticket((SELECT id FROM isexy.support_tickets WHERE ticket_number = 'IS-BEN001'),
           NULL, NULL, 'second note', NULL, false) AS r) s;
@@ -523,8 +525,9 @@ INSERT INTO results SELECT 'T6 after the lift the member can send', count(*) = 1
 SELECT pg_temp.as_user('dddddddd-0000-0000-0000-00000000000d');
 INSERT INTO results SELECT 'T6 shadow ban', (r ->> 'shadow_banned')::boolean, r::text
   FROM (SELECT isexy.staff_set_shadow_ban('dddddddd-0000-0000-0000-00000000000c', true, 'fake photos') AS r) s;
-INSERT INTO results SELECT 'T6 shadow ban fields set', shadow_banned AND shadow_banned_at IS NOT NULL AND shadow_banned_reason = 'fake photos', NULL
-  FROM isexy.profiles WHERE id = 'dddddddd-0000-0000-0000-00000000000c';
+INSERT INTO results SELECT 'T6 shadow ban fields set (read through staff_get_shadow_bans, 0015 K3)',
+  count(*) = 1 AND bool_and(shadow_banned_at IS NOT NULL AND shadow_banned_reason = 'fake photos'), count(*)::text
+  FROM isexy.staff_get_shadow_bans(ARRAY['dddddddd-0000-0000-0000-00000000000c']::uuid[]);
 DO $$ BEGIN
   PERFORM isexy.staff_set_account_active('dddddddd-0000-0000-0000-00000000000b', false, '  ');
   INSERT INTO results VALUES ('T6 suspension needs a reason', false, 'call succeeded');

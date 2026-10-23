@@ -100,6 +100,14 @@
 --    profile columns: direct writes by admins only (a moderator could give
 --    themselves a plan, likes or the badge). Staff report review follows E's
 --    rules too (nobody on a report about themselves).
+-- K. Privacy follow-ups: K1 ticket staff notes (admin_notes) hidden from
+--    members by column privileges, staff_list_tickets() for admins; K2 a
+--    signed-in member files tickets under their own sign-in e-mail only, and
+--    get_ticket_status shows guests a status, never a ticket's content; K3
+--    shadow bans hidden from members by column privileges (also no probing by
+--    a no-op UPDATE), staff_get_shadow_bans() for staff. Since K, members get
+--    "permission denied" for select * on profiles and support_tickets, and a
+--    column added to either table later needs its own GRANT (see K).
 
 -- =====================================================================
 -- A1. is_staff()
@@ -1524,3 +1532,212 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION isexy.profiles_protect_columns() FROM PUBLIC, anon, authenticated;
+
+-- =====================================================================
+-- K. Privacy follow-ups (wf/followups): what members could still read or
+--    probe through the API after J. Proven first: trust-smoke T10 (27 checks
+--    failed on 0001-0016 without this part).
+--    K1. Ticket staff notes. RLS shows a member their own tickets, so they
+--        read support_tickets.admin_notes too (REST, realtime payload). Column
+--        privileges: anon/authenticated keep SELECT and UPDATE on every other
+--        column, not on admin_notes (UPDATE too: a no-op write confirmed a
+--        guess, SET NULL told whether staff wrote a note). Admins read the
+--        notes through staff_list_tickets() (Support Portal, Admin Tickets);
+--        staff_update_ticket still writes them. No row changes, nothing moves.
+--    K2. Tickets under someone else's e-mail. A signed-in member files tickets
+--        under their sign-in e-mail only (a phone-only member: no e-mail
+--        address, the phone is the contact); admins and the service role may
+--        file for anyone. Guests cannot be checked, so get_ticket_status(number,
+--        e-mail) shows a guest ticket's status only: its subject, message and
+--        staff reply open to someone signed in with that e-mail (the reply is
+--        also e-mailed to that address), and a member's ticket opens to its
+--        owner only. Confirmation e-mails: isexy-send-ticket-confirmation
+--        sends to the member's own sign-in e-mail only.
+--    K3. Shadow bans. Every member read profiles.shadow_banned, _at and
+--        _reason of anyone (their own too) and could probe their own status
+--        with a no-op UPDATE (refused or not by 0014's trigger). Column
+--        privileges: anon/authenticated keep SELECT and UPDATE on every other
+--        profiles column. Staff read bans through staff_get_shadow_bans();
+--        Discover, likes, badges, referrals and the Phone Line by phone keep
+--        leaving shadow-banned members out (SECURITY DEFINER functions and the
+--        service role are not affected by these privileges).
+--    The column lists are read from the catalog when this part runs (every
+--    column but the hidden ones) and the result is checked. Since K, select *
+--    on profiles or support_tickets is refused for members (the app names its
+--    columns), and a column added to either table later is NOT readable by
+--    members until granted:
+--      GRANT SELECT (new_col), UPDATE (new_col) ON isexy.<table> TO anon, authenticated;
+-- =====================================================================
+
+-- K1. Ticket staff notes: admins only -----------------------------------
+DO $k1$
+DECLARE
+  v_cols text;
+BEGIN
+  SELECT string_agg(quote_ident(a.attname), ', ' ORDER BY a.attnum) INTO v_cols
+    FROM pg_attribute a
+   WHERE a.attrelid = 'isexy.support_tickets'::regclass AND a.attnum > 0 AND NOT a.attisdropped
+     AND a.attname <> 'admin_notes';
+  -- Revoking the table privilege also drops any column grant: re-running is safe.
+  REVOKE SELECT, UPDATE ON isexy.support_tickets FROM PUBLIC, anon, authenticated;
+  EXECUTE format('GRANT SELECT (%1$s), UPDATE (%1$s) ON isexy.support_tickets TO anon, authenticated', v_cols);
+  IF has_column_privilege('authenticated', 'isexy.support_tickets', 'admin_notes', 'SELECT')
+     OR has_column_privilege('anon', 'isexy.support_tickets', 'admin_notes', 'SELECT')
+     OR has_column_privilege('authenticated', 'isexy.support_tickets', 'admin_notes', 'UPDATE')
+     OR NOT has_column_privilege('authenticated', 'isexy.support_tickets', 'message', 'SELECT,UPDATE') THEN
+    RAISE EXCEPTION '0015 K1: support_tickets privileges not as expected (a grant made by another role?)';
+  END IF;
+END
+$k1$;
+
+-- Every ticket with its staff notes, newest first (admins only, like 0009).
+CREATE OR REPLACE FUNCTION isexy.staff_list_tickets(p_limit integer DEFAULT 200)
+RETURNS SETOF isexy.support_tickets
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  IF NOT isexy.is_admin() THEN
+    RAISE EXCEPTION 'Only ISEXY admins can read tickets with their staff notes' USING ERRCODE = '42501';
+  END IF;
+  RETURN QUERY
+    SELECT t.*
+      FROM isexy.support_tickets t
+     ORDER BY t.created_at DESC
+     LIMIT least(greatest(coalesce(p_limit, 200), 1), 1000);
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_list_tickets(integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_list_tickets(integer) TO authenticated;
+
+-- K2. Tickets: a member's own sign-in e-mail; tracking proves the e-mail --
+-- Direct client inserts only (SECURITY INVOKER: current_user is the client
+-- role). Fires after 0014 D2's isexy_support_ticket_staff_fields_insert_guard
+-- (triggers run in name order).
+CREATE OR REPLACE FUNCTION isexy.support_ticket_sender_email_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = isexy, extensions
+AS $$
+DECLARE
+  v_email text;
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') OR auth.uid() IS NULL THEN
+    -- Service role, migrations, SECURITY DEFINER code; guests (no account to
+    -- check against: get_ticket_status shows their tickets' status only).
+    RETURN NEW;
+  END IF;
+  IF isexy.is_admin() THEN
+    RETURN NEW;  -- an admin may open a ticket for a member (a phone call)
+  END IF;
+  v_email := nullif(lower(btrim(coalesce(auth.jwt() ->> 'email', ''))), '');
+  IF v_email IS NOT NULL THEN
+    IF lower(btrim(coalesce(NEW.email, ''))) IS DISTINCT FROM v_email THEN
+      RAISE EXCEPTION 'A signed-in member writes to support from their sign-in e-mail'
+        USING ERRCODE = '42501', HINT = 'Sign out to write from another address.';
+    END IF;
+    NEW.email := v_email;
+  ELSIF strpos(coalesce(NEW.email, ''), '@') > 0 THEN
+    RAISE EXCEPTION 'This account has no e-mail address: replies appear in Ticket Tracking'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.support_ticket_sender_email_guard() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS isexy_support_tickets_sender_email_guard ON isexy.support_tickets;
+CREATE TRIGGER isexy_support_tickets_sender_email_guard
+  BEFORE INSERT ON isexy.support_tickets
+  FOR EACH ROW EXECUTE FUNCTION isexy.support_ticket_sender_email_guard();
+
+-- Tracking by number + e-mail (F, same signature). Anyone with both sees the
+-- status of a guest ticket; subject, message and staff reply only when the
+-- caller is signed in with that e-mail or owns the ticket. A member's ticket
+-- (user_id set) answers its owner only.
+CREATE OR REPLACE FUNCTION isexy.get_ticket_status(p_ticket_number text, p_email text)
+RETURNS TABLE (
+  ticket_number text, subject text, category text, priority text, status text,
+  message text, response text, responded_at timestamptz, created_at timestamptz, updated_at timestamptz
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+  WITH me AS (
+    SELECT auth.uid() AS uid,
+           nullif(lower(btrim(coalesce(auth.jwt() ->> 'email', ''))), '') AS email
+  ), hit AS (
+    SELECT t.ticket_number, t.subject, t.category, t.priority, t.status, t.message, t.response,
+           t.responded_at, t.created_at, t.updated_at, t.user_id,
+           (me.uid IS NOT NULL
+            AND (t.user_id = me.uid OR (me.email IS NOT NULL AND lower(btrim(t.email)) = me.email))) AS proven
+      FROM isexy.support_tickets t, me
+     WHERE t.ticket_number = upper(btrim(p_ticket_number))
+       AND lower(t.email) = lower(btrim(p_email))
+       AND length(btrim(coalesce(p_email, ''))) >= 3
+  )
+  SELECT h.ticket_number,
+         CASE WHEN h.proven THEN h.subject END,
+         h.category, h.priority, h.status,
+         CASE WHEN h.proven THEN h.message END,
+         CASE WHEN h.proven THEN h.response END,
+         h.responded_at, h.created_at, h.updated_at
+    FROM hit h
+   WHERE h.proven OR h.user_id IS NULL
+   LIMIT 1
+$$;
+REVOKE ALL ON FUNCTION isexy.get_ticket_status(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION isexy.get_ticket_status(text, text) TO anon, authenticated;
+
+-- K3. Shadow bans: staff only ---------------------------------------------
+DO $k3$
+DECLARE
+  v_cols text;
+BEGIN
+  SELECT string_agg(quote_ident(a.attname), ', ' ORDER BY a.attnum) INTO v_cols
+    FROM pg_attribute a
+   WHERE a.attrelid = 'isexy.profiles'::regclass AND a.attnum > 0 AND NOT a.attisdropped
+     AND a.attname NOT IN ('shadow_banned', 'shadow_banned_at', 'shadow_banned_reason');
+  REVOKE SELECT, UPDATE ON isexy.profiles FROM PUBLIC, anon, authenticated;
+  EXECUTE format('GRANT SELECT (%1$s), UPDATE (%1$s) ON isexy.profiles TO anon, authenticated', v_cols);
+  IF EXISTS (
+       SELECT 1 FROM unnest(ARRAY['shadow_banned', 'shadow_banned_at', 'shadow_banned_reason']) c
+        WHERE has_column_privilege('authenticated', 'isexy.profiles', c, 'SELECT')
+           OR has_column_privilege('anon', 'isexy.profiles', c, 'SELECT')
+           OR has_column_privilege('authenticated', 'isexy.profiles', c, 'UPDATE'))
+     OR NOT has_column_privilege('authenticated', 'isexy.profiles', 'first_name', 'SELECT,UPDATE') THEN
+    RAISE EXCEPTION '0015 K3: profiles privileges not as expected (a grant made by another role?)';
+  END IF;
+END
+$k3$;
+
+-- Shadow bans for the staff pages (member search, member sheet): the given
+-- members, or (NULL) every shadow-banned member, newest first, 500 at most.
+CREATE OR REPLACE FUNCTION isexy.staff_get_shadow_bans(p_profile_ids uuid[] DEFAULT NULL)
+RETURNS TABLE (profile_id uuid, shadow_banned_at timestamptz, shadow_banned_reason text)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = isexy, extensions
+AS $$
+BEGIN
+  IF NOT isexy.is_staff() THEN
+    RAISE EXCEPTION 'Only ISEXY staff can read shadow bans' USING ERRCODE = '42501';
+  END IF;
+  IF coalesce(cardinality(p_profile_ids), 0) > 500 THEN
+    RAISE EXCEPTION 'At most 500 members at a time' USING ERRCODE = '22023';
+  END IF;
+  RETURN QUERY
+    SELECT p.id, p.shadow_banned_at, p.shadow_banned_reason
+      FROM isexy.profiles p
+     WHERE coalesce(p.shadow_banned, false)
+       AND (p_profile_ids IS NULL OR p.id = ANY (p_profile_ids))
+     ORDER BY p.shadow_banned_at DESC NULLS LAST, p.id
+     LIMIT 500;
+END;
+$$;
+REVOKE ALL ON FUNCTION isexy.staff_get_shadow_bans(uuid[]) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION isexy.staff_get_shadow_bans(uuid[]) TO authenticated;
