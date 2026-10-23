@@ -392,12 +392,14 @@ async function finish(t, label) {
   // Bought on another account (main ceeb511): a real review ticket, nothing granted.
   await t.page.getByLabel("Purchase confirmation number").fill("pi_test_123");
   await t.page.getByLabel("Your name").fill("Ana");
-  await t.page.getByLabel("Contact email address").fill("ana@example.com");
+  await t.page.getByLabel("Email used for that purchase").fill("old-account@example.com");
   await t.page.getByRole("button", { name: "Request purchase review" }).click();
   await settle(t.page, 900);
   const ticket = calls(t.s, "write").find((c) => c.name.startsWith("POST support_tickets"));
   const row = Array.isArray(ticket?.body) ? ticket.body[0] : ticket?.body;
   check("restore: other account opens a support ticket (RP-, payments, own user id)", !!row && /^RP-[0-9A-F]{12}$/.test(row.ticket_number) && row.category === "Payments" && row.user_id === ID && /pi_test_123/.test(row.message), JSON.stringify(row));
+  check("restore: the ticket uses this account's sign-in e-mail, the purchase e-mail goes in the message (0015 K2)",
+    !!row && row.email === "ana@example.com" && /old-account@example\.com/.test(row.message), JSON.stringify(row));
   check("restore: ticket number shown, nothing claimed restored", await t.page.getByText(/Review ticket created: RP-/).isVisible().catch(() => false) && await t.page.getByText(/has not been restored yet/).isVisible().catch(() => false));
   await finish(t, "restore");
 }

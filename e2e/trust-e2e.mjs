@@ -8,7 +8,7 @@
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? "/opt/node22/lib/node_modules/playwright/index.mjs");
-import { SB, newState, installMock, seedBrowser, makeUser, completeProfile } from "./accounts-mockdb.mjs";
+import { SB, newState, installMock, seedBrowser, makeUser, completeProfile, deniedRequests } from "./accounts-mockdb.mjs";
 
 const base = process.env.E2E_BASE ?? "http://127.0.0.1:4173";
 const out = process.env.E2E_SHOTS ?? `${tmpdir()}/isexy-trust-shots`;
@@ -61,11 +61,16 @@ function trustState() {
     knowledge_base: [],
     rpc: [],
   });
+  state.shadowBans = new Map(); // profile id -> reason, read through staff_get_shadow_bans (members cannot read bans, 0015 K3)
   completeProfile(state, ANA, { first_name: "Ana" });
   completeProfile(state, BEN, { first_name: "Ben", city: "Laval" });
   completeProfile(state, MOD, { first_name: "Mo" });
   completeProfile(state, ADM, { first_name: "Xan" });
-  state.support_tickets.push({ id: "tk000000-0000-4000-8000-000000000001", ticket_number: "IS-ABC123", user_id: null, name: "Guest", email: "guest@example.ca", subject: "Cannot sign in", category: "account", priority: "high", message: "help please", status: "open", response: null, admin_notes: null, assigned_to: null, created_at: now(), updated_at: now() });
+  state.support_tickets.push({ id: "tk000000-0000-4000-8000-000000000001", ticket_number: "IS-ABC123", user_id: null, name: "Guest", email: "guest@example.ca", subject: "Cannot sign in", category: "account", priority: "high", message: "help please", status: "open", response: "We reset your sign-in.", responded_at: now(), admin_notes: "[2026-10-22 10:00 Xan] called the guest back", assigned_to: null, created_at: now(), updated_at: now() });
+  // 0015 K2: a member's ticket (only its owner tracks it) and a ticket sent without signing in from Ana's e-mail.
+  state.support_tickets.push({ id: "tk000000-0000-4000-8000-000000000003", ticket_number: "IS-BEN001", user_id: BEN, name: "Ben", email: "ben@example.ca", subject: "Billing", category: "billing", priority: "high", message: "charged twice", status: "open", response: null, admin_notes: null, assigned_to: null, created_at: new Date(Date.now() - 120_000).toISOString(), updated_at: now() });
+  state.support_tickets.push({ id: "tk000000-0000-4000-8000-000000000004", ticket_number: "IS-ANA777", user_id: null, name: "Ana", email: "ana@example.com", subject: "Sent before signing in", category: "account", priority: "low", message: "hello from before", status: "resolved", response: "Welcome back, Ana.", responded_at: now(), admin_notes: null, assigned_to: null, created_at: new Date(Date.now() - 180_000).toISOString(), updated_at: now() });
+  state.ticket_categories = [{ id: "cat1", name: "Account", description: null, is_active: true }];
   state.support_tickets.push({ id: "tk000000-0000-4000-8000-000000000002", ticket_number: "IS-XSS001", user_id: null, name: XSS.ticketName, email: "x@example.ca", subject: XSS.ticketSubject, category: "other", priority: "low", message: XSS.ticketMessage, status: "open", response: null, admin_notes: null, assigned_to: null, attachments: ["javascript:window.__xss='attachment'"], created_at: new Date(Date.now() - 60_000).toISOString(), updated_at: now() });
   state.cuban_verifications = [{ id: "cu000000-0000-4000-8000-000000000001", profile_id: ANA, whatsapp_number: "+5355550000", whatsapp_verified: true, carnet_id: "90010112345", carnet_verified: false, carnet_front_url: "javascript:window.__xss='carnet'", carnet_back_url: `${ANA}/carnet-back.jpg`, video_verified: false, video_url: null, audio_verified: false, audio_url: null, verification_status: "pending", rejection_reason: null, submitted_at: now(), verified_at: null, profile: { first_name: "Ana", city: "Havana", country: "Cuba" } }];
   state.photo_verifications.push({ id: "pv000000-0000-4000-8000-000000000001", profile_id: BEN, selfie_path: `${BEN}/selfie.jpg`, status: "pending", submitted_at: now(), reviewed_at: null, rejection_reason: null });
@@ -90,8 +95,25 @@ async function installTrust(ctx, state) {
         return json(route, { blocked: true, already: false });
       case "report_member": return json(route, { report_id: "new", duplicate: false, blocked: !!body.p_block });
       case "get_ticket_status": {
+        // As 0015 K2: content and reply only for the owner or someone signed in with
+        // the ticket's e-mail; a guest ticket's status for anyone else; a member's
+        // ticket for nobody else.
         const t = state.support_tickets.find((x) => x.ticket_number === String(body.p_ticket_number).trim().toUpperCase() && x.email === String(body.p_email).trim().toLowerCase());
-        return json(route, t ? [{ ...t, response: "We reset your sign-in.", responded_at: now() }] : []);
+        if (!t) return json(route, []);
+        const me = state.user;
+        const proven = !!me && (t.user_id === me.id || (!!me.email && t.email === me.email.toLowerCase()));
+        if (!proven && t.user_id) return json(route, []);
+        const { ticket_number, category, priority, status, responded_at = null, created_at, updated_at } = t;
+        return json(route, [{ ticket_number, category, priority, status, responded_at, created_at, updated_at,
+          subject: proven ? t.subject : null, message: proven ? t.message : null, response: proven ? t.response : null }]);
+      }
+      case "staff_list_tickets":
+        state.ticketListCalls = (state.ticketListCalls ?? 0) + 1;
+        return json(route, [...state.support_tickets].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
+      case "staff_get_shadow_bans": {
+        const ids = body.p_profile_ids;
+        return json(route, [...state.shadowBans.entries()].filter(([id]) => !ids || ids.includes(id))
+          .map(([profile_id, reason]) => ({ profile_id, shadow_banned_at: now(), shadow_banned_reason: reason })));
       }
       case "staff_dashboard_stats": {
         const isAdmin = req.headers()["x-test-role"] === "admin" || state.as === ADM;
@@ -105,7 +127,10 @@ async function installTrust(ctx, state) {
           is_admin: isAdmin,
         });
       }
-      case "staff_set_account_active": case "staff_issue_warning": case "staff_set_shadow_ban": case "staff_lift_restrictions":
+      case "staff_set_shadow_ban":
+        if (body.p_banned) state.shadowBans.set(body.p_profile_id, body.p_reason); else state.shadowBans.delete(body.p_profile_id);
+        return json(route, { shadow_banned: !!body.p_banned });
+      case "staff_set_account_active": case "staff_issue_warning": case "staff_lift_restrictions":
       case "staff_update_profile": case "staff_set_profile_verified": case "staff_grant_role":
         return json(route, fn === "staff_lift_restrictions" ? 1 : { ok: true });
       case "staff_resolve_report": {
@@ -193,6 +218,7 @@ async function setup(user, state) {
   await installMock(ctx, state, { user });
   await installTrust(ctx, state);
   state.as = user?.id ?? null;
+  state.user = user ?? null;
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -295,6 +321,34 @@ const directWrites = (state, tables) => state.writes
   await page.waitForTimeout(400);
   check("A9 ending the chat uses end_my_live_chat", rpcCalls(state, "end_my_live_chat").length === 1);
   check("A9 assistant panel fits the phone", await noHScroll(page));
+
+  // A10 Contact Us, signed in: the ticket goes under the sign-in e-mail (0015 K2)
+  await page.goto(`${base}/contact-us`);
+  const emailBox = page.locator("#email");
+  await emailBox.waitFor();
+  check("A10 signed in: the e-mail is the account's, read-only", (await emailBox.inputValue()) === "ana@example.com" && (await emailBox.getAttribute("readonly")) !== null);
+  await page.locator("#name").fill("Ana");
+  await page.getByRole("combobox").filter({ hasText: "Select a category" }).click();
+  await page.getByRole("option", { name: "Account" }).click();
+  await page.locator("#subject").fill("Question about my plan");
+  await page.locator("#message").fill("Does Gold include Super Likes?");
+  await page.getByRole("button", { name: /Submit Ticket/ }).click();
+  await page.getByText(/Ticket #IS-[A-Z0-9]{6} sent/).waitFor({ timeout: 5000 });
+  const filed = state.writes.filter((w) => w.table === "support_tickets" && w.method === "POST").at(-1)?.body;
+  const filedRow = Array.isArray(filed) ? filed[0] : filed;
+  check("A10 the ticket is filed under the sign-in e-mail with the member's id", filedRow?.email === "ana@example.com" && filedRow?.user_id === ANA, JSON.stringify(filedRow));
+  check("A10 the confirmation is asked for (own address)", state.log.includes("fn isexy-send-ticket-confirmation"));
+
+  // A11 Ticket Tracking, signed in: a ticket sent without signing in from Ana's e-mail opens in full
+  await page.goto(`${base}/ticket-tracking`);
+  await page.getByLabel("Ticket number").fill("IS-ANA777");
+  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByText("Welcome back, Ana.").first().waitFor({ timeout: 5000 });
+  check("A11 signed in with the ticket's e-mail: content and reply shown", await page.getByText("hello from before").first().isVisible());
+  check("A11 the list marks a ticket sent without signing in", await page.getByText("Sent without signing in, from your e-mail address.").first().isVisible());
+  check("A11 the member's ticket list names its columns (no staff notes)",
+    state.log.filter((l) => l.startsWith("GET support_tickets")).every((l) => !/select=\*|admin_notes/.test(l)), state.log.filter((l) => l.startsWith("GET support_tickets")).join(" | "));
+  check("A no request the database would refuse (shadow-ban columns, staff notes, own e-mail, 0015 K)", deniedRequests().length === 0, deniedRequests().join(" | "));
   check("A members: no page errors", errors.length === 0, errors.join(" | "));
   await ctx.close();
 }
@@ -311,10 +365,33 @@ const directWrites = (state, tables) => state.writes
   await page.getByLabel("Ticket number").fill("is-abc123");
   await page.getByLabel("E-mail used for the ticket").fill("Guest@Example.ca");
   await page.getByRole("button", { name: "Search" }).click();
-  await page.getByText("We reset your sign-in.").waitFor({ timeout: 5000 });
-  check("A8 guest tracks a ticket by number + e-mail and sees the reply", true);
+  await page.getByTestId("ticket-status-only").waitFor({ timeout: 5000 });
+  check("A8 guest tracks a guest ticket by number + e-mail: its status", await page.getByText(/IS-ABC123/).first().isVisible() && await page.getByText(/We replied by e-mail on/).isVisible());
+  check("A8 ...but not its content or the staff reply (0015 K2: the e-mail is not proven)",
+    !(await page.getByText("We reset your sign-in.").isVisible()) && !(await page.getByText("help please").isVisible()));
   check("A8 tracking uses get_ticket_status (no table read)", rpcCalls(state, "get_ticket_status").length === 1 && !state.log.some((l) => l.startsWith("GET support_tickets")));
   check("A8 phone layout", await noHScroll(page));
+  await page.screenshot({ path: `${out}/ticket-status-only-390.png` });
+  await page.getByLabel("Ticket number").fill("IS-BEN001");
+  await page.getByLabel("E-mail used for the ticket").fill("ben@example.ca");
+  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByText("Ticket not found").first().waitFor({ timeout: 5000 });
+  check("A8 a member's ticket is not shown to a guest with its number + e-mail", !(await page.getByText("charged twice").isVisible()));
+
+  // A12 Contact Us as a guest: any address (cannot be checked), field editable
+  await page.goto(`${base}/contact-us`);
+  await page.locator("#email").waitFor();
+  check("A12 guest types an e-mail address", (await page.locator("#email").getAttribute("readonly")) === null);
+  await page.locator("#name").fill("Guest");
+  await page.locator("#email").fill("Someone@Example.ca");
+  await page.getByRole("combobox").filter({ hasText: "Select a category" }).click();
+  await page.getByRole("option", { name: "Account" }).click();
+  await page.locator("#subject").fill("Cannot sign in");
+  await page.locator("#message").fill("The code never arrives.");
+  await page.getByRole("button", { name: /Submit Ticket/ }).click();
+  await page.getByText(/Ticket #IS-[A-Z0-9]{6} sent/).waitFor({ timeout: 5000 });
+  const guestRow = state.support_tickets.at(-1);
+  check("A12 guest support still works (ticket stored, no account)", guestRow?.email === "someone@example.ca" && guestRow?.user_id === null, JSON.stringify(guestRow));
 
   await page.goto(`${base}/help-support`);
   await page.getByRole("button", { name: /^Open ISEXY Concierge/ }).click();
@@ -322,6 +399,7 @@ const directWrites = (state, tables) => state.writes
   await page.getByRole("link", { name: "sign in" }).waitFor();
   check("A9 guests are offered sign-in or a ticket (no dead queue)", await page.getByRole("link", { name: "send us a ticket" }).isVisible());
   check("A9 no handoff call for guests", !state.log.some((l) => l === "fn isexy-ai-chat handoff"));
+  check("A' no request the database would refuse (0015 K)", deniedRequests().length === 0, deniedRequests().join(" | "));
   check("A guests: no page errors", errors.length === 0, errors.join(" | "));
   await ctx.close();
 }
@@ -364,12 +442,22 @@ const directWrites = (state, tables) => state.writes
   await page.getByRole("button", { name: "Shadow ban" }).last().click();
   await page.waitForTimeout(500);
   check("B3 shadow ban through staff_set_shadow_ban", rpcCalls(state, "staff_set_shadow_ban").at(-1)?.body?.p_banned === true);
+  await page.getByTestId("member-sheet").getByText("Shadow banned").waitFor({ timeout: 5000 }).catch(() => {});
+  check("B3 the sheet shows the ban, read through staff_get_shadow_bans (0015 K3)",
+    await page.getByTestId("member-sheet").getByText("Shadow banned").isVisible()
+      && rpcCalls(state, "staff_get_shadow_bans").some((c) => JSON.stringify(c.body.p_profile_ids) === JSON.stringify([BEN])));
   await page.getByRole("button", { name: "Verify", exact: true }).click();
   await page.waitForTimeout(500);
   check("B3 verification through staff_set_profile_verified", rpcCalls(state, "staff_set_profile_verified").at(-1)?.body?.p_verified === true);
   await page.screenshot({ path: `${out}/member-sheet-390.png` });
   check("B3 member sheet fits the phone", await noHScroll(page));
   await page.keyboard.press("Escape");
+  await page.getByRole("group", { name: "Filter members" }).getByRole("button", { name: "Shadow banned" }).click();
+  await page.waitForTimeout(700);
+  const listed = await page.getByTestId("staff-member").allInnerTexts();
+  check("B3 'Shadow banned' filter lists the banned members (ids from staff_get_shadow_bans)",
+    listed.length === 1 && /Ben/.test(listed[0]) && /Shadow/.test(listed[0])
+      && rpcCalls(state, "staff_get_shadow_bans").some((c) => c.body.p_profile_ids === null), JSON.stringify(listed));
 
   // B4-B6 moderation page
   await page.goto(`${base}/admin/moderation`);
@@ -434,6 +522,7 @@ const directWrites = (state, tables) => state.writes
   check("B9 no direct write of profiles, reports, warnings or tickets by staff",
     directWrites(state, ["profiles", "reports", "user_warnings", "support_tickets", "user_roles", "blocks"]).length === 0,
     directWrites(state, ["profiles", "reports", "user_warnings", "support_tickets", "user_roles"]).join(" | "));
+  check("B no request the database would refuse (shadow-ban columns, staff notes, 0015 K)", deniedRequests().length === 0, deniedRequests().join(" | "));
   check("B moderator: no page errors", errors.length === 0, errors.join(" | "));
   await ctx.close();
 }
@@ -450,6 +539,14 @@ const directWrites = (state, tables) => state.writes
   await page.goto(`${base}/support`);
   await page.getByTestId("portal-ticket").first().waitFor();
   check("C2 admin portal opens on tickets", true);
+  check("C2 tickets with staff notes come from staff_list_tickets (0015 K1), not a table read",
+    (state.ticketListCalls ?? 0) >= 1 && !state.log.some((l) => /^GET support_tickets .*select=\*/.test(l)));
+  await page.getByTestId("portal-ticket").filter({ hasText: "IS-ABC123" }).first().click();
+  await page.getByText("called the guest back").first().waitFor({ timeout: 5000 });
+  check("C2 the admin still reads a ticket's staff notes", await page.getByText("called the guest back").first().isVisible());
+  await page.keyboard.press("Escape");
+  await page.goto(`${base}/support`);
+  await page.getByTestId("portal-ticket").first().waitFor();
   await page.getByTestId("portal-ticket").first().click();
   await page.locator("#saved-reply").selectOption("Account access");
   check("C2 saved reply inserted", (await page.getByPlaceholder(/Reply to the member/).inputValue()).startsWith("Thanks for reaching out."));
@@ -488,6 +585,7 @@ const directWrites = (state, tables) => state.writes
   await page.waitForTimeout(500);
   check("C4 roles listed through staff_list_roles", rpcCalls(state, "staff_list_roles").length >= 1 && await page.getByText("moderator", { exact: true }).first().isVisible());
   check("C admin: no direct write of tickets, roles or profiles", directWrites(state, ["support_tickets", "user_roles", "profiles"]).length === 0);
+  check("C no request the database would refuse (0015 K)", deniedRequests().length === 0, deniedRequests().join(" | "));
   check("C admin: no page errors", errors.length === 0, errors.join(" | "));
   await ctx.close();
 }
