@@ -3,7 +3,9 @@
 Newest first, one line per piece of work. Rule: `AGENTS.md` › Work log rule.
 Format: `YYYY-MM-DD | agent | branch → PR | status | what | next step`
 
-- 2026-10-22 | cursor | cursor/isexy-release-live-3bc7 → PR #8 | PR #8 | Smoke test printed active=unknown because isexy.ca/release.json commit was null; Coolify had not published cb3965b, and the saved nginx config was plain text where Coolify stores base64, so the new container crash-looped | next: re-run the failed smoke job; it now matches main
+- 2026-10-23 | cursor | cursor/isexy-release-live-3bc7 → PR #9 | PR #9 | isexy.ca answered HTTP 200 and the homepage rendered, but Chrome can stay stuck on yesterday's broken HTTP/3; the site now sends Alt-Svc clear and the proxy generator will not turn HTTP/3 back on | next: hard-refresh https://isexy.ca
+
+- 2026-10-22 | cursor | cursor/isexy-release-live-3bc7 → PR #8 | done | Smoke test printed active=unknown because isexy.ca/release.json commit was null; Coolify had not published cb3965b, and the saved nginx config was plain text where Coolify stores base64, so the new container crash-looped | next: none
 
 - 2026-10-22 | cursor | cursor/isexy-smoke-live-3bc7 → PR #7 | done | Smoke test failed waiting on Render for a4b70711 while isexy.ca is production and its release.json commit was null; point the check at isexy.ca, stamp the build SHA from git, and poll long enough for Coolify | next: none
 
