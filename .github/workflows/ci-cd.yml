@@ -242,7 +242,9 @@ jobs:
       - uses: supabase/setup-cli@v1
         if: steps.cfg.outputs.fn == 'true'
         with:
-          version: latest
+          # Keep the reviewed v2 command/config contract. CLI v3 changed hosted
+          # mutation confirmation and target selection on 2026-11-04.
+          version: 2.122.1
 
       - name: Deploy isexy-* edge functions by name
         if: steps.cfg.outputs.fn == 'true'
