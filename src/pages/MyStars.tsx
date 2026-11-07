@@ -57,7 +57,7 @@ export default function MyStars() {
         .from("user_stars")
         .select("*")
         .eq("profile_id", profile.id)
-        .single();
+        .maybeSingle();
 
       if (starsData) {
         setStarsBalance((starsData as any).stars_balance || 0);
@@ -106,18 +106,22 @@ export default function MyStars() {
 
     setProcessingCashout(true);
     try {
-      const { error } = await supabase.from("star_cashout_requests").insert({
-        profile_id: profile!.id,
-        stars_amount: amount,
-        usd_amount: amount * 0.01,
-        cashout_method: cashoutMethod,
-        cashout_details: {
-          method: cashoutMethod,
-          requestedAt: new Date().toISOString(),
-        },
+      // The server checks the balance (minus open requests) and computes the
+      // dollar amount; the browser only says how many stars and how.
+      const { data, error } = await supabase.rpc("request_star_cashout", {
+        p_stars: amount,
+        p_method: cashoutMethod,
       });
-
       if (error) throw error;
+      const result = data as { success?: boolean; error?: string; available?: number } | null;
+      if (!result?.success) {
+        toast.error(
+          result?.error === "invalid_amount"
+            ? `You can cash out up to ${result.available ?? 0} stars right now (minimum ${minCashout}).`
+            : "Failed to submit cashout request",
+        );
+        return;
+      }
 
       toast.success("Cashout request submitted! We'll process it within 3-5 business days.");
       setShowCashout(false);

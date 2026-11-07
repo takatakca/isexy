@@ -147,7 +147,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      {/* Phones: keep toasts above the bottom nav and bottom form buttons instead of covering them. */}
+      <Sonner mobileOffset={{ bottom: 96 }} />
       <BrowserRouter>
         <AuthProvider>
           <LanguageProvider>
@@ -196,8 +197,8 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/news" element={<News />} />
               <Route path="/matches-list" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
-              <Route path="/interests" element={<Interests />} />
-              <Route path="/block-contacts" element={<BlockContacts />} />
+              <Route path="/interests" element={<ProtectedRoute><Interests /></ProtectedRoute>} />
+              <Route path="/block-contacts" element={<ProtectedRoute><BlockContacts /></ProtectedRoute>} />
               <Route path="/dark-mode" element={<DarkMode />} />
               <Route path="/autoplay-videos" element={<AutoplayVideos />} />
               <Route path="/top-picks" element={<ProtectedRoute><TopPicks /></ProtectedRoute>} />
@@ -205,31 +206,31 @@ const App = () => (
               <Route path="/safety-tips" element={<SafetyTips />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
               <Route path="/swipe-surge" element={<SwipeSurge />} />
-              <Route path="/active-status" element={<ActiveStatus />} />
+              <Route path="/active-status" element={<ProtectedRoute><ActiveStatus /></ProtectedRoute>} />
               <Route path="/friends-in-common" element={<FriendsInCommon />} />
-              <Route path="/email-settings" element={<EmailSettings />} />
-              <Route path="/push-notifications" element={<PushNotifications />} />
+              <Route path="/email-settings" element={<ProtectedRoute><EmailSettings /></ProtectedRoute>} />
+              <Route path="/push-notifications" element={<ProtectedRoute><PushNotifications /></ProtectedRoute>} />
               <Route path="/team-cubadate" element={<TeamCubaDate />} />
               <Route path="/manage-payment-account" element={<ManagePaymentAccount />} />
-              <Route path="/restore-purchase" element={<RestorePurchase />} />
+              <Route path="/restore-purchase" element={<ProtectedRoute><RestorePurchase /></ProtectedRoute>} />
               <Route path="/help-support" element={<HelpSupport />} />
               <Route path="/web-profile/:userId" element={<WebProfile />} />
               <Route path="/web-profile" element={<WebProfile />} />
-              <Route path="/delete-account" element={<DeleteAccount />} />
+              <Route path="/delete-account" element={<ProtectedRoute requireCompleteProfile={false}><DeleteAccount /></ProtectedRoute>} />
               <Route path="/licenses" element={<Licenses />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/contact-us" element={<ContactUs />} />
               <Route path="/ticket-tracking" element={<TicketTracking />} />
               <Route path="/admin/tickets" element={<AdminRoute><AdminTickets /></AdminRoute>} />
-              <Route path="/admin" element={<AdminRoute><AdminDashboardFull /></AdminRoute>} />
+              <Route path="/admin" element={<AdminRoute allowModerator><AdminDashboardFull /></AdminRoute>} />
               <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
               <Route path="/admin/email-templates" element={<AdminRoute><AdminEmailTemplates /></AdminRoute>} />
-              <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
+              <Route path="/admin/verifications" element={<AdminRoute allowModerator><AdminVerifications /></AdminRoute>} />
               <Route path="/admin/agent" element={<AdminRoute allowModerator><AgentDashboard /></AdminRoute>} />
               <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
               <Route path="/admin/knowledge-base" element={<AdminRoute><AdminKnowledgeBase /></AdminRoute>} />
-              <Route path="/admin/moderation" element={<AdminRoute><AdminModeration /></AdminRoute>} />
+              <Route path="/admin/moderation" element={<AdminRoute allowModerator><AdminModeration /></AdminRoute>} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
               <Route path="/knowledge-base/:articleId" element={<KnowledgeBase />} />
               <Route path="/donate/:recipientId?" element={<CubanDonations />} />
@@ -239,16 +240,16 @@ const App = () => (
               <Route path="/who-liked-you" element={<ProtectedRoute><WhoLikedYou /></ProtectedRoute>} />
               <Route path="/passport-mode" element={<ProtectedRoute><PassportMode /></ProtectedRoute>} />
               <Route path="/photo-verification" element={<PhotoVerification />} />
-              <Route path="/double-hangout" element={<DoubleDate />} />
+              <Route path="/double-hangout" element={<ProtectedRoute><DoubleDate /></ProtectedRoute>} />
               <Route path="/double-date" element={<Navigate to="/double-hangout" replace />} />
               <Route path="/qa-events" element={<QAEvents />} />
               <Route path="/introductions" element={<Matchmaker />} />
               <Route path="/matchmaker" element={<Navigate to="/introductions" replace />} />
-              <Route path="/loyalty-rewards" element={<LoyaltyRewards />} />
+              <Route path="/loyalty-rewards" element={<ProtectedRoute><LoyaltyRewards /></ProtectedRoute>} />
               <Route path="/cuban-rewards" element={<CubanRewards />} />
               <Route path="/cuban-cashout" element={<CubanCashout />} />
-              <Route path="/my-stars" element={<MyStars />} />
-              <Route path="/block-report/:userId" element={<BlockReportFlow />} />
+              <Route path="/my-stars" element={<ProtectedRoute><MyStars /></ProtectedRoute>} />
+              <Route path="/block-report/:userId" element={<ProtectedRoute><BlockReportFlow /></ProtectedRoute>} />
               <Route path="/reset-password" element={<Navigate to="/auth" replace />} />
               <Route path="/update-password" element={<Navigate to="/auth" replace />} />
               <Route path="/video-call/:matchId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
@@ -258,13 +259,13 @@ const App = () => (
               <Route path="/buy-minutes" element={<ProtectedRoute><BuyMinutes /></ProtectedRoute>} />
               <Route path="/group-chat/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
               <Route path="/explore/:category" element={<ProtectedRoute><CategorySwipe /></ProtectedRoute>} />
-              <Route path="/referrals" element={<Referrals />} />
+              <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
               <Route path="/staff-login" element={<ModeratorLogin />} />
               <Route path="/support" element={<SupportPortal />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/agent-dashboard" element={<AdminRoute allowModerator><AgentDashboard /></AdminRoute>} />
               <Route path="/signup" element={<Navigate to="/auth?mode=signup" replace />} />
-              <Route path="/redeem-code" element={<RedeemCode />} />
+              <Route path="/redeem-code" element={<ProtectedRoute><RedeemCode /></ProtectedRoute>} />
               <Route path="/admin/users" element={<AdminRoute><AdminUserManagement /></AdminRoute>} />
               <Route path="/admin/payment-tests" element={<AdminRoute><AdminPaymentTests /></AdminRoute>} />
               <Route path="/phone-line" element={<ProtectedRoute><PhoneLine /></ProtectedRoute>} />

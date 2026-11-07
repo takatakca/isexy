@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Switch } from "@/components/ui/switch";
+import { useDeviceSetting } from "@/hooks/useDeviceSetting";
 
 const FriendsInCommon = () => {
-  const [enableFriendsInCommon, setEnableFriendsInCommon] = useState(false);
+  const [enableFriendsInCommon, setEnableFriendsInCommon] = useDeviceSetting("friends_in_common_enabled", false);
 
   return (
     <AuthLayout showBack variant="gray">
@@ -17,13 +18,14 @@ const FriendsInCommon = () => {
             <Switch
               checked={enableFriendsInCommon}
               onCheckedChange={setEnableFriendsInCommon}
+              aria-label="Enable Friends in Common"
             />
           </div>
         </div>
 
         <p className="text-sm text-muted-foreground mt-4 px-1">
           You and your contacts may be counted as mutuals for other ISEXY members who enable Friends in Common.{" "}
-          <span className="text-primary cursor-pointer">Learn More</span>
+          <Link to="/faq" className="text-primary">Learn More</Link>
         </p>
       </div>
     </AuthLayout>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import {
   Heart, Shield, Globe, Star, ChevronRight, ChevronDown, ChevronUp,
@@ -84,6 +85,11 @@ export default function Welcome() {
   const toggleSection = (title: string) => {
     setExpandedSection(prev => (prev === title ? null : title));
   };
+
+  // Returning members (signed in, e.g. opening the installed app) go straight to
+  // Discover; ProtectedRoute sends anyone without a complete profile to setup.
+  const { user, loading } = useAuth();
+  if (!loading && user) return <Navigate to="/discover" replace />;
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">

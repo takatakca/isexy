@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { ArrowLeft, MapPin, Briefcase, GraduationCap, BadgeCheck, Heart, X, Star, Languages } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, MapPin, Briefcase, GraduationCap, BadgeCheck, Heart, X, Star, Languages, Share2 } from "lucide-react";
+import { shareLink } from "@/lib/share";
 
 interface Profile {
   id: string;
@@ -28,18 +29,39 @@ interface ProfileDetailProps {
 export function ProfileDetail({ profile, onClose, onLike, onPass, onSuperLike }: ProfileDetailProps) {
   const [currentPhoto, setCurrentPhoto] = useState(0);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const share = () => shareLink({
+    title: `${profile.first_name} on ISEXY`,
+    text: `Meet ${profile.first_name} on ISEXY`,
+    url: `/web-profile/${profile.id}`,
+  });
+
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+    // z-[60]: above the bottom nav (z-50), so its bar never covers the actions.
+    <div role="dialog" aria-modal="true" aria-label={`${profile.first_name}'s profile`} className="fixed inset-0 z-[60] bg-background overflow-y-auto overscroll-contain">
       {/* Back button */}
       <button
         onClick={onClose}
         className="fixed top-4 left-4 z-50 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm shadow-md flex items-center justify-center border border-border"
+        aria-label="Back"
       >
         <ArrowLeft className="w-5 h-5 text-foreground" />
       </button>
+      <button
+        onClick={share}
+        className="fixed top-4 right-4 z-50 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm shadow-md flex items-center justify-center border border-border"
+        aria-label={`Share ${profile.first_name}'s profile`}
+      >
+        <Share2 className="w-5 h-5 text-foreground" />
+      </button>
 
       {/* Photos */}
-      <div className="relative w-full aspect-[3/4]">
+      <div className="relative w-full max-w-lg mx-auto aspect-[3/4]">
         {profile.photos[currentPhoto] ? (
           <img
             src={profile.photos[currentPhoto]}
@@ -58,6 +80,7 @@ export function ProfileDetail({ profile, onClose, onLike, onPass, onSuperLike }:
             <button
               key={idx}
               onClick={() => setCurrentPhoto(idx)}
+              aria-label={`Photo ${idx + 1} of ${profile.photos.length}`}
               className={`h-1 flex-1 rounded-full transition-colors ${
                 idx === currentPhoto ? "bg-white" : "bg-white/40"
               }`}
@@ -70,20 +93,20 @@ export function ProfileDetail({ profile, onClose, onLike, onPass, onSuperLike }:
       </div>
 
       {/* Info */}
-      <div className="px-4 -mt-12 relative z-10 pb-32">
+      <div className="px-4 -mt-12 relative z-10 pb-32 max-w-lg mx-auto">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-3xl font-bold text-foreground">
             {profile.first_name}, {profile.age}
           </h1>
           {profile.is_verified && (
-            <BadgeCheck className="w-7 h-7 text-cyan-400 fill-cyan-400" />
+            <BadgeCheck className="w-7 h-7 text-cyan-300 fill-cyan-400/20" aria-label="Verified" />
           )}
         </div>
 
-        {profile.distance && (
+        {profile.distance != null && (
           <p className="text-muted-foreground text-sm flex items-center gap-1 mb-2">
             <MapPin className="w-4 h-4" />
-            {profile.distance} km away
+            {profile.distance < 1 ? "< 1" : profile.distance} km away
           </p>
         )}
 
@@ -134,22 +157,25 @@ export function ProfileDetail({ profile, onClose, onLike, onPass, onSuperLike }:
       </div>
 
       {/* Action buttons */}
-      <div className="fixed bottom-6 left-0 right-0 flex items-center justify-center gap-4 z-50">
+      <div className="fixed left-0 right-0 flex items-center justify-center gap-4 z-50" style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
         <button
           onClick={onPass}
           className="w-16 h-16 rounded-full bg-card shadow-lg flex items-center justify-center border border-border"
+          aria-label="Pass"
         >
           <X className="w-8 h-8 text-rose-500" />
         </button>
         <button
           onClick={onSuperLike}
           className="w-12 h-12 rounded-full bg-card shadow-lg flex items-center justify-center border border-border"
+          aria-label="Super Like"
         >
           <Star className="w-5 h-5 text-cyan-400 fill-cyan-400" />
         </button>
         <button
           onClick={onLike}
           className="w-16 h-16 rounded-full bg-card shadow-lg flex items-center justify-center border border-border"
+          aria-label="Like"
         >
           <Heart className="w-8 h-8 text-green-500 fill-green-500" />
         </button>

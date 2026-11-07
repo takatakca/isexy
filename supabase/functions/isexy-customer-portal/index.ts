@@ -1,18 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "../_shared/supabase.ts";
 import { isexyEnv } from "../_shared/env.ts";
 import { findStripeCustomerId } from "../_shared/stripe-customer.ts";
+import { corsHeaders, gateRefusal, json, signedInMember } from "../_shared/payments.ts";
+import { isexyAppUrl } from "../_shared/app-url.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CUSTOMER-PORTAL] ${step}${detailsStr}`);
-};
+// Stripe's billing page (cancel, change card, invoices) for members who paid
+// with Stripe.
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -20,68 +14,27 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
+    const refused = gateRefusal();
+    if (refused) return refused;
 
-    const stripeKey = isexyEnv("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    const member = await signedInMember(req);
+    if (!member) return json({ error: "Not authenticated" }, 401);
 
-    const liveEnabled = (isexyEnv("PAYMENTS_LIVE_ENABLED") || "false").toLowerCase() === "true";
-    if (!liveEnabled && !stripeKey.startsWith("sk_test_")) {
-      return new Response(JSON.stringify({ error: "Live payments are disabled until testing is complete." }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const stripe = new Stripe(isexyEnv("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-08-27.basil" });
+    const customerId = await findStripeCustomerId(stripe, member);
+    if (!customerId) {
+      return json({ error: "No payment account yet: nothing was bought with this account.", code: "no_customer" }, 404);
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.id) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const stripeCustomerId = await findStripeCustomerId(stripe, user);
-    if (!stripeCustomerId) {
-      throw new Error("No Stripe customer found for this user");
-    }
-    const customerId = stripeCustomerId;
-    logStep("Found Stripe customer");
-
-    // Never trust the request Origin header for a Stripe billing return URL.
-    // ISEXY_APP_URL is server-controlled; default to the documented fallback host.
-    const appUrl = isexyEnv("APP_URL") || "https://isexy.onrender.com";
-    const returnUrl = new URL("/settings", appUrl);
-    if (returnUrl.protocol !== "https:" &&
-        !(returnUrl.protocol === "http:" && ["localhost", "127.0.0.1"].includes(returnUrl.hostname))) {
-      throw new Error("ISEXY_APP_URL must be a secure website URL");
-    }
+    // Return URL from ISEXY_APP_URL only, never the request Origin (main d713375).
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: returnUrl.toString(),
+      return_url: isexyAppUrl("/my-subscription"),
     });
-    logStep("Customer portal session created");
-
-    return new Response(JSON.stringify({ url: portalSession.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return json({ url: portalSession.url });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in customer-portal", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("[CUSTOMER-PORTAL]", errorMessage);
+    return json({ error: errorMessage }, 500);
   }
 });

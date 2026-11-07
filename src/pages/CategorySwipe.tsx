@@ -1,11 +1,12 @@
 import { useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, Info, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SwipeDeck } from "@/components/SwipeDeck";
 import { MatchCelebration } from "@/components/MatchCelebration";
 import { useDiscoverDeck, type SwipeAction, type SwipeOutcome } from "@/hooks/useDiscoverDeck";
+import { useChatOpener } from "@/hooks/useChatOpener";
 import type { FeedProfile } from "@/lib/discoverFeed";
 
 const categoryTitles: Record<string, string> = {
@@ -64,6 +65,7 @@ export default function CategorySwipe() {
   const title = categoryTitles[category] || "Explore";
   // Same secure, server-ranked deck as Discover, narrowed to this category.
   const deck = useDiscoverDeck({ source: `explore:${category}`, interests: categoryInterests[category] ?? [category] });
+  const { openChat, contactModal, contactOpen } = useChatOpener();
 
   const onSwiped = useCallback((action: SwipeAction, profile: FeedProfile, settled: Promise<SwipeOutcome>) => {
     if (action !== "pass") toast.success(action === "super_like" ? `Super Liked ${profile.first_name} ⭐` : `Liked ${profile.first_name} ❤️`, { duration: 1200 });
@@ -92,17 +94,28 @@ export default function CategorySwipe() {
         <MatchCelebration
           isOpen
           onClose={deck.clearMatch}
-          onChatNow={() => { const id = deck.match!.matchId; deck.clearMatch(); navigate(`/chat/${id}`); }}
+          onChatNow={() => {
+            const m = deck.match!;
+            deck.clearMatch();
+            openChat({ matchId: m.matchId, otherName: m.name, otherPhotoUrl: m.photoUrl });
+          }}
           matchName={deck.match.name}
           matchPhotoUrl={deck.match.photoUrl}
         />
       )}
+      {contactModal}
 
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-4">
         {deck.loading ? (
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading profiles" />
         ) : deck.top ? (
-          <SwipeDeck deck={deck} onSwiped={onSwiped} paused={!!deck.match} />
+          <SwipeDeck deck={deck} onSwiped={onSwiped} paused={!!deck.match || contactOpen} />
+        ) : deck.loadError ? (
+          <div className="text-center px-8" role="alert">
+            <h2 className="text-xl font-bold text-foreground mb-2">We couldn't load profiles</h2>
+            <p className="text-muted-foreground mb-6">Check your connection and try again.</p>
+            <Button onClick={deck.reload}><RefreshCw className="w-4 h-4 mr-2" />Try again</Button>
+          </div>
         ) : (
           <div className="text-center px-8">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4"><Info className="w-10 h-10 text-muted-foreground" /></div>

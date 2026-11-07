@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { PhotoVerificationQueue } from "@/components/admin/PhotoVerificationQueue";
+import { useStaffRole } from "@/lib/staff";
+import { goBack } from "@/lib/navigation";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -67,38 +70,19 @@ export default function AdminVerifications() {
   const [processing, setProcessing] = useState(false);
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
 
+  const role = useStaffRole();
+  const [section, setSection] = useState<"photos" | "cuban">("photos");
+
+  // AdminRoute admits admins and moderators. Photo checks: both. Cuban ID
+  // checks (on hold, admins only, cuban_verifications RLS): unchanged.
   useEffect(() => {
-    checkAdminAndFetch();
-  }, []);
-
-  const checkAdminAndFetch = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-
-      if (!roleData) {
-        navigate('/');
-        return;
-      }
-
-      await fetchVerifications();
-    } catch (error) {
-      console.error('Error:', error);
-      navigate('/');
-    } finally {
+    if (role.loading) return;
+    if (!role.isAdmin) {
       setLoading(false);
+      return;
     }
-  };
+    void fetchVerifications().finally(() => setLoading(false));
+  }, [role.loading, role.isAdmin]);
 
   const fetchVerifications = async () => {
     const { data, error } = await supabase
@@ -116,6 +100,31 @@ export default function AdminVerifications() {
     }
   };
 
+  /** Member-supplied evidence: a path in the private bucket (opened through a
+   *  short signed URL) or an older http(s) link. Nothing else is opened: a
+   *  "javascript:" value would run in the admin's session. */
+  const openEvidence = async (ref: string) => {
+    const value = ref.trim();
+    if (/^https?:\/\//i.test(value)) {
+      window.open(value, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.includes("..")) {
+      toast.error("This file link is not valid.");
+      return;
+    }
+    const win = window.open("", "_blank");
+    if (win) win.opener = null;
+    const { data, error } = await supabase.storage.from("isexy-cuban-verifications").createSignedUrl(value, 600);
+    if (error || !data?.signedUrl) {
+      win?.close();
+      toast.error("The file could not be opened.");
+      return;
+    }
+    if (win) win.location.href = data.signedUrl;
+    else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const handleApprove = async (verification: Verification) => {
     setProcessing(true);
     try {
@@ -130,11 +139,12 @@ export default function AdminVerifications() {
 
       if (error) throw error;
 
-      // Update profile is_verified
-      await supabase
-        .from("profiles")
-        .update({ is_verified: true } as any)
-        .eq("id", verification.profile_id);
+      // Mark the member verified (staff-only RPC: is_verified is not writable from the browser).
+      const { error: verifyError } = await supabase.rpc("staff_set_profile_verified", {
+        p_profile_id: verification.profile_id,
+        p_verified: true,
+      });
+      if (verifyError) throw verifyError;
 
       toast.success("Verification approved!");
       await fetchVerifications();
@@ -197,16 +207,36 @@ export default function AdminVerifications() {
       {/* Header */}
       <div className="bg-card border-b border-border px-4 py-4">
         <div className="flex items-center gap-3 max-w-7xl mx-auto">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/dashboard')}>
+          <Button variant="ghost" size="icon" onClick={() => goBack(navigate, '/admin')} aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold text-foreground">Cuban Verifications</h1>
-          <Button variant="ghost" size="icon" onClick={fetchVerifications} className="ml-auto">
-            <RefreshCw className="h-5 w-5" />
-          </Button>
+          <h1 className="text-xl font-bold text-foreground">Verifications</h1>
+          {section === "cuban" && (
+            <Button variant="ghost" size="icon" onClick={fetchVerifications} className="ml-auto" aria-label="Refresh">
+              <RefreshCw className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
 
+      {role.isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <Tabs value={section} onValueChange={(v) => setSection(v as "photos" | "cuban")}>
+            <TabsList className="w-full">
+              <TabsTrigger value="photos" className="flex-1">Photo checks</TabsTrigger>
+              <TabsTrigger value="cuban" className="flex-1">Cuban ID (on hold)</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+
+      {section === "photos" && (
+        <div className="max-w-7xl mx-auto p-4">
+          <PhotoVerificationQueue />
+        </div>
+      )}
+
+      {section === "cuban" && role.isAdmin && (
       <div className="max-w-7xl mx-auto p-4 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
@@ -306,6 +336,7 @@ export default function AdminVerifications() {
           )}
         </div>
       </div>
+      )}
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedVerification} onOpenChange={() => setSelectedVerification(null)}>
@@ -353,30 +384,28 @@ export default function AdminVerifications() {
                   
                   <div className="grid grid-cols-2 gap-2">
                     {selectedVerification.carnet_front_url ? (
-                      <a
-                        href={selectedVerification.carnet_front_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => void openEvidence(selectedVerification.carnet_front_url!)}
                         className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-accent transition"
                       >
                         <Eye className="h-4 w-4" />
                         <span className="text-sm">Front</span>
-                      </a>
+                      </button>
                     ) : (
                       <div className="p-2 bg-background rounded border text-sm text-muted-foreground">
                         No front image
                       </div>
                     )}
                     {selectedVerification.carnet_back_url ? (
-                      <a
-                        href={selectedVerification.carnet_back_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => void openEvidence(selectedVerification.carnet_back_url!)}
                         className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-accent transition"
                       >
                         <Eye className="h-4 w-4" />
                         <span className="text-sm">Back</span>
-                      </a>
+                      </button>
                     ) : (
                       <div className="p-2 bg-background rounded border text-sm text-muted-foreground">
                         No back image

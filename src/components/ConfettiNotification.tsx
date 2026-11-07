@@ -10,11 +10,11 @@ interface ConfettiNotificationProps {
 }
 
 const badgeInfo: Record<string, { label: string; reward: string; emoji: string }> = {
-  "3_day": { label: "3 Day Streak", reward: "🎁 Unlocked: 1 Free Super Like", emoji: "🔥" },
-  "7_day": { label: "7 Day Streak", reward: "🎁 Unlocked: Profile Boost", emoji: "⚡" },
-  "14_day": { label: "14 Day Streak", reward: "🎁 Unlocked: 3 Free Super Likes", emoji: "💎" },
-  "30_day": { label: "30 Day Streak", reward: "🎁 Unlocked: 1 Week Premium Trial", emoji: "👑" },
-  "100_day": { label: "100 Day Streak", reward: "🎁 Unlocked: 1 Month Premium Free!", emoji: "🏆" },
+  "3_day": { label: "3 Day Streak", reward: "🎁 Added: 25 loyalty points", emoji: "🔥" },
+  "7_day": { label: "7 Day Streak", reward: "🎁 Added: 1 free Super Like", emoji: "⚡" },
+  "14_day": { label: "14 Day Streak", reward: "🎁 Added: 1 free Boost", emoji: "💎" },
+  "30_day": { label: "30 Day Streak", reward: "🎁 Added: 3 free Super Likes", emoji: "👑" },
+  "100_day": { label: "100 Day Streak", reward: "🎁 Added: 5 free Boosts", emoji: "🏆" },
 };
 
 export function ConfettiNotification({ show, badgeType, onClose }: ConfettiNotificationProps) {

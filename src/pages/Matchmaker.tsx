@@ -1,29 +1,24 @@
-import { useState } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { useDeviceSetting } from "@/hooks/useDeviceSetting";
+import { shareLink } from "@/lib/share";
 
 export default function Matchmaker() {
-  const [showInMatchmaker, setShowInMatchmaker] = useState(true);
+  const [showInMatchmaker, setShowInMatchmaker] = useDeviceSetting("introductions_show_me", true);
 
+  // Introductions sessions are not live yet, so there is nothing to end.
   const handleTerminateSessions = () => {
-    toast.success("All active Introductions sessions have been ended");
+    toast("You have no active Introductions sessions.");
   };
 
-  const handleInviteFriends = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: "Join ISEXY Introductions",
-        text: "Introduce me to your friends on ISEXY!",
-        url: window.location.origin,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.origin);
-      toast.success("Link copied to clipboard!");
-    }
-  };
+  const handleInviteFriends = () => shareLink({
+    title: "Join ISEXY Introductions",
+    text: "Introduce me to your friends on ISEXY!",
+    url: "/",
+  });
 
   return (
     <AuthLayout showBack variant="white">
@@ -36,6 +31,7 @@ export default function Matchmaker() {
             <Switch
               checked={showInMatchmaker}
               onCheckedChange={setShowInMatchmaker}
+              aria-label="Show me in Introductions"
             />
           </div>
         </div>

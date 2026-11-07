@@ -21,7 +21,7 @@ export function AuthButton({
     primary: "gradient-primary text-foreground shadow-button hover:shadow-glow hover:opacity-95",
     secondary: "bg-secondary text-secondary-foreground hover:bg-muted",
     outline: "bg-transparent border-2 border-primary-foreground text-foreground hover:bg-primary-foreground/10",
-    dark: "bg-background text-background hover:bg-background/90",
+    dark: "bg-foreground text-background hover:bg-foreground/90",
   };
 
   return (

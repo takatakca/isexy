@@ -1,23 +1,27 @@
 import { useNavigate } from "react-router-dom";
 import { X, Zap, Timer } from "lucide-react";
+import { useWallet } from "@/hooks/useWallet";
 
 interface BoostsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  boostsRemaining: number;
-  primetimeBoostsRemaining: number;
   onGetMoreBoosts?: () => void;
 }
 
+/**
+ * The member's Boosts, read from the wallet (isexy.get_my_wallet). Render it
+ * only while open: it reads the balances when it mounts.
+ */
 export function BoostsModal({
   isOpen,
   onClose,
-  boostsRemaining,
-  primetimeBoostsRemaining,
 }: BoostsModalProps) {
   const navigate = useNavigate();
-  
+  const { wallet, loading, error } = useWallet();
+
   if (!isOpen) return null;
+
+  const left = (n: number | undefined) => (wallet ? `${n ?? 0} left` : loading ? "…" : error ? "Couldn't load" : "0 left");
 
   const handleGetMoreBoosts = () => {
     onClose();
@@ -34,7 +38,7 @@ export function BoostsModal({
 
         {/* Close button */}
         <div className="px-4 pb-2">
-          <button onClick={onClose} className="p-2">
+          <button onClick={onClose} className="p-2" aria-label="Close">
             <X className="w-6 h-6 text-foreground" />
           </button>
         </div>
@@ -57,7 +61,7 @@ export function BoostsModal({
               </div>
               <div className="flex-1">
                 <p className="font-bold text-foreground">Boosts</p>
-                <p className="text-sm text-muted-foreground">{boostsRemaining} left</p>
+                <p className="text-sm text-muted-foreground">{left(wallet?.boosts)}</p>
               </div>
             </div>
 
@@ -68,7 +72,7 @@ export function BoostsModal({
               </div>
               <div className="flex-1">
                 <p className="font-bold text-foreground">Primetime Boosts</p>
-                <p className="text-sm text-muted-foreground">{primetimeBoostsRemaining} left</p>
+                <p className="text-sm text-muted-foreground">{left(wallet?.primetime_boosts)}</p>
               </div>
             </div>
           </div>
@@ -76,7 +80,7 @@ export function BoostsModal({
           {/* Get more button */}
           <button
             onClick={handleGetMoreBoosts}
-            className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
+            className="w-full py-4 gradient-primary text-white rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
           >
             Get more Boosts
           </button>

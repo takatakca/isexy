@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { goBack } from "@/lib/navigation";
 import { Seo } from "@/components/Seo";
 import { articleSchema, breadcrumbSchema } from "@/seo/structuredData";
 import ReactMarkdown from "react-markdown";
@@ -11,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { openAssistant } from "@/lib/assistant";
 import { track } from "@/lib/analytics";
+import { AdSlot } from "@/components/AdSlot";
 
 interface Article {
   id: string;
@@ -159,7 +161,7 @@ export default function KnowledgeBase() {
     <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b border-border">
       <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
         <button
-          onClick={() => (selected ? navigate("/knowledge-base") : navigate(-1))}
+          onClick={() => (selected ? navigate("/knowledge-base") : goBack(navigate, "/help-support"))}
           className="p-2 -ml-2 text-foreground hover:opacity-70 flex items-center gap-2"
           aria-label="Go back"
         >
@@ -264,6 +266,8 @@ export default function KnowledgeBase() {
               </div>
             </section>
           )}
+
+          <AdSlot placement="isexy-content-inline" className="mt-10" />
         </main>
       </div>
     );
@@ -346,6 +350,8 @@ export default function KnowledgeBase() {
             ))}
           </div>
         )}
+
+        <AdSlot placement="isexy-content-inline" className="mt-8" />
       </main>
     </div>
   );

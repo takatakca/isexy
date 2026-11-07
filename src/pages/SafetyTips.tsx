@@ -1,5 +1,6 @@
 import { AuthLayout } from "@/components/AuthLayout";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AdSlot } from "@/components/AdSlot";
 
 export default function SafetyTips() {
   return (
@@ -152,6 +153,8 @@ export default function SafetyTips() {
               </div>
             </div>
           </div>
+
+          <AdSlot placement="isexy-content-inline" className="mb-8" />
         </div>
       </ScrollArea>
     </AuthLayout>

@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Logo } from "@/components/Logo";
 import { TakatakSignIn } from "@/components/TakatakSignIn";
+import { goBack } from "@/lib/navigation";
 
 type Mode = "login" | "signup";
 
@@ -35,8 +36,8 @@ export default function Auth() {
       </aside>
 
       <div className="flex-1 flex flex-col">
-        <header className="flex items-center justify-between p-4 h-16">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-foreground hover:opacity-70" aria-label="Go back">
+        <header className="flex items-center justify-between px-4 pt-5 pb-1">
+          <button onClick={() => goBack(navigate, "/")} className="p-2 -ml-2 text-foreground hover:opacity-70" aria-label="Go back">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <Logo size="sm" variant="dark" />

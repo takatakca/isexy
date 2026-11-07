@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { startCheckout } from "@/lib/payments";
 
 interface GiftPackage {
   id: string;
@@ -73,33 +74,19 @@ export function GiftModal({ isOpen, onClose, recipientId, recipientName }: GiftM
     if (!selectedPackage || !profile) return;
 
     setProcessing(true);
-    try {
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
-        "isexy-create-one-time-payment",
-        {
-          body: {
-            productId: `gift_${selectedPackage.id}`,
-            metadata: {
-              type: "gift",
-              recipient_profile_id: recipientId,
-              gift_type: selectedPackage.category,
-              message: message?.slice(0, 200) || "",
-            },
-          },
-        }
-      );
-
-      if (checkoutError) throw checkoutError;
-
-      if (checkoutData?.url) {
-        window.location.href = checkoutData.url;
-      } else {
-        throw new Error("No checkout URL returned");
-      }
-    } catch (error: any) {
-      console.error("Gift purchase error:", error);
-      toast.error("Failed to process gift. Please try again.");
-    } finally {
+    // Same-tab redirect and the server's reason when payments are not open
+    // (the amount and what the gift gives are decided server-side).
+    const result = await startCheckout("isexy-create-one-time-payment", {
+      productId: `gift_${selectedPackage.id}`,
+      metadata: {
+        type: "gift",
+        recipient_profile_id: recipientId,
+        gift_type: selectedPackage.category,
+        message: message?.slice(0, 200) || "",
+      },
+    });
+    if (!result.ok) {
+      toast.error(result.message ?? "Failed to process gift. Please try again.");
       setProcessing(false);
     }
   };

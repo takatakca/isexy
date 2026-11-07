@@ -5,6 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/** What isexy.unlock_conversation() returns (jsonb). */
+interface UnlockResult {
+  success?: boolean;
+  error?: string;
+  type?: string;
+}
+
 interface ContactMethodModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,7 +53,14 @@ export function ContactMethodModal({ isOpen, onClose, matchId, otherName, otherP
       setLoadingStatus(false);
     };
     fetchStatus();
-  }, [isOpen, profile?.id]);
+  }, [isOpen, profile?.id, profile?.is_premium]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -82,7 +96,7 @@ export function ContactMethodModal({ isOpen, onClose, matchId, otherName, otherP
       });
 
       if (error) throw error;
-      const result = data as any;
+      const result = data as unknown as UnlockResult | null;
 
       if (!result?.success) {
         if (result?.error === "no_chat_subscription") {
@@ -104,7 +118,7 @@ export function ContactMethodModal({ isOpen, onClose, matchId, otherName, otherP
       if (type === "chat") navigate(`/chat/${matchId}`);
       else if (type === "video") navigate(`/video-call/${matchId}?type=video`);
       else navigate(`/video-call/${matchId}?type=phone`);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Unlock error:", err);
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -129,7 +143,7 @@ export function ContactMethodModal({ isOpen, onClose, matchId, otherName, otherP
       desc: `${videoMinutes} min available`,
       available: videoMinutes > 0,
       detail: videoMinutes > 0 ? `${videoMinutes} min` : "Buy minutes",
-      color: "text-emerald-500",
+      color: "text-primary",
     },
     {
       type: "phone" as const,
@@ -138,19 +152,23 @@ export function ContactMethodModal({ isOpen, onClose, matchId, otherName, otherP
       desc: `${phoneMinutes} min available`,
       available: phoneMinutes > 0,
       detail: phoneMinutes > 0 ? `${phoneMinutes} min` : "Buy minutes",
-      color: "text-blue-500",
+      color: "text-primary",
     },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center" onClick={onClose}>
+    // z-[60]: above the bottom nav (z-50), which used to cover the bottom of this sheet.
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
-        className="bg-card w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 pb-8 shadow-xl animate-in slide-in-from-bottom"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Contact ${otherName}`}
+        className="bg-card w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 pb-[max(2rem,env(safe-area-inset-bottom))] shadow-xl animate-in slide-in-from-bottom"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-foreground">Contact {otherName}</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-muted" aria-label="Close">
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>

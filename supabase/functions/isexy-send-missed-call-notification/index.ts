@@ -9,11 +9,15 @@ const corsHeaders = {
 };
 
 interface MissedCallPayload {
-  callerId: string;
-  receiverId: string;
   matchId: string;
-  callerName: string;
+  /** "phone" or "video" (VideoCall.tsx sends it); otherwise taken from the call session. */
+  callType?: string;
+  /** The video_call_sessions row that isexy.record_missed_call just marked missed. */
+  callSessionId?: string;
 }
+
+/** A missed call is reported only while it is recent. */
+const MISSED_CALL_MAX_AGE_MS = 5 * 60_000;
 
 
 /**
@@ -80,19 +84,59 @@ serve(async (req) => {
 
     console.log(`[MISSED-CALL] Processing missed call notification for receiver ${receiverId}`);
 
-    // Record the missed call
-    const { data: missedCall, error: insertError } = await supabaseClient
-      .from("missed_calls")
-      .insert({
-        caller_id: callerId,
-        receiver_id: receiverId,
-        match_id: matchId,
-      })
-      .select()
-      .single();
+    // Only a call that really rang out: the session isexy.record_missed_call
+    // marked missed, placed by this caller in this match, a few minutes old at
+    // most. Without it this endpoint could email/push "missed call" at will.
+    const callSessionId = typeof payload.callSessionId === "string" ? payload.callSessionId : "";
+    const { data: session } = callSessionId
+      ? await supabaseClient
+        .from("video_call_sessions")
+        .select("id, call_type, status, created_at")
+        .eq("id", callSessionId)
+        .eq("match_id", matchId)
+        .eq("caller_id", callerId)
+        .maybeSingle()
+      : { data: null };
+    const createdAt = session?.created_at ? new Date(session.created_at).getTime() : NaN;
+    if (!session || session.status !== "missed" || !(Date.now() - createdAt <= MISSED_CALL_MAX_AGE_MS)) {
+      return new Response(JSON.stringify({ error: "No missed call to report" }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callType = payload.callType === "phone" || payload.callType === "video"
+      ? payload.callType
+      : session?.call_type === "phone" ? "phone" : "video";
+    const callLabel = callType === "phone" ? "call" : "video call";
+    const appUrl = (isexyEnv("APP_URL") ?? "https://isexy.onrender.com").replace(/\/+$/, "");
 
-    if (insertError) {
-      console.error("[MISSED-CALL] Error recording missed call:", insertError);
+    // record_missed_call already wrote the missed_calls row (one per call
+    // session); insert it only if it is somehow missing.
+    let { data: missedCall } = await supabaseClient
+      .from("missed_calls")
+      .select("id, notified_push")
+      .eq("call_session_id", session.id)
+      .maybeSingle();
+    if (!missedCall) {
+      const { data: inserted, error: insertError } = await supabaseClient
+        .from("missed_calls")
+        .insert({
+          caller_id: callerId,
+          receiver_id: receiverId,
+          match_id: matchId,
+          call_session_id: session.id,
+        })
+        .select("id, notified_push")
+        .single();
+      if (insertError) {
+        console.error("[MISSED-CALL] Error recording missed call:", insertError);
+      }
+      missedCall = inserted;
+    }
+    if (missedCall?.notified_push) {
+      // Already reported (a retry): do not notify twice.
+      return new Response(JSON.stringify({ success: true, already_notified: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Get receiver's details
@@ -106,9 +150,11 @@ serve(async (req) => {
       throw new Error("Receiver profile not found");
     }
 
-    // Get user email
+    // Get user email (phone-only accounts have a placeholder address: skip those)
     const { data: userData } = await supabaseClient.auth.admin.getUserById(receiverProfile.user_id);
-    const receiverEmail = userData?.user?.email;
+    const rawEmail = userData?.user?.email;
+    const receiverEmail = rawEmail && !rawEmail.endsWith("@phone.isexy.ca") ? rawEmail : null;
+    const receiverName = escapeHtml(String(receiverProfile.first_name ?? "there"));
 
     // Send email notification
     if (receiverEmail) {
@@ -117,34 +163,34 @@ serve(async (req) => {
         const resend = new Resend(resendApiKey);
         
         await resend.emails.send({
-          from: isexyEnv("RESEND_FROM") ?? "ISEXY <onboarding@resend.dev>",
+          from: isexyEnv("RESEND_FROM") ?? "ISEXY <notifications@isexy.ca>",
           to: [receiverEmail],
-          subject: `📞 Missed Video Call from ${callerName}`,
+          subject: `📞 Missed ${callLabel} from ${resolved.callerName}`,
           html: `
             <!DOCTYPE html>
             <html>
             <head>
               <style>
-                body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+                body { font-family: 'Segoe UI', sans-serif; background: #F5F8FC; margin: 0; padding: 20px; }
                 .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; }
-                .header { background: linear-gradient(135deg, #E91E63, #FF5722); padding: 30px; text-align: center; }
-                .header h1 { color: white; margin: 0; font-size: 24px; }
+                .header { background: linear-gradient(135deg, #060D1F, #0B1B3D); padding: 30px; text-align: center; }
+                .header h1 { color: #F5F8FC; margin: 0; font-size: 24px; }
                 .content { padding: 30px; }
                 .message { font-size: 16px; color: #333; line-height: 1.6; }
-                .cta { display: inline-block; background: #E91E63; color: white; padding: 14px 28px; border-radius: 25px; text-decoration: none; font-weight: bold; margin: 20px 0; }
+                .cta { display: inline-block; background: #1565D8; color: white; padding: 14px 28px; border-radius: 25px; text-decoration: none; font-weight: bold; margin: 20px 0; }
               </style>
             </head>
             <body>
               <div class="container">
                 <div class="header">
-                  <h1>📞 Missed Call</h1>
+                  <h1>📞 Missed ${callLabel}</h1>
                 </div>
                 <div class="content">
-                  <p class="message">Hi ${receiverProfile.first_name},</p>
-                  <p class="message"><strong>${callerName}</strong> tried to video call you but couldn't reach you.</p>
-                  <p class="message">You can call them back or send a message to schedule a call for later.</p>
+                  <p class="message">Hi ${receiverName},</p>
+                  <p class="message"><strong>${callerName}</strong> tried to reach you by ${callLabel} on ISEXY.</p>
+                  <p class="message">You can call them back or send a message to set a time that works.</p>
                   <center>
-                    <a href="${isexyEnv("APP_URL") ?? "https://isexy.onrender.com"}/chat/${matchId}" class="cta">Reply to ${callerName}</a>
+                    <a href="${appUrl}/chat/${matchId}" class="cta">Reply to ${callerName}</a>
                   </center>
                 </div>
               </div>
@@ -224,12 +270,14 @@ serve(async (req) => {
     await supabaseClient.functions.invoke("isexy-send-push-notification", {
       body: {
         userId: receiverId,
-        title: "📞 Missed Video Call",
-        body: `You missed a call from ${callerName}`,
+        title: `📞 Missed ${callLabel}`,
+        body: `You missed a ${callLabel} from ${resolved.callerName}`,
+        tag: `missed-call-${matchId}`,
         data: {
           type: "missed_call",
           matchId,
           callerId,
+          url: `/chat/${matchId}`,
         },
       },
     });

@@ -37,6 +37,8 @@ import {
   LANGUAGES_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
 } from "@/lib/preferenceOptions";
+import { MIN_BIO_LENGTH } from "@/lib/profileStatus";
+import { goBack } from "@/lib/navigation";
 
 interface Photo {
   id?: string;
@@ -226,6 +228,7 @@ export default function EditProfile() {
   const [activeDrawer, setActiveDrawer] = useState<DrawerConfig | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [bioError, setBioError] = useState("");
 
   const profileId = profile?.id;
 
@@ -266,6 +269,7 @@ export default function EditProfile() {
   const set = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === "firstName") setNameError("");
+    if (key === "bio") setBioError("");
   }, []);
 
   const strength = useMemo(() => {
@@ -281,9 +285,15 @@ export default function EditProfile() {
   const handleSave = async () => {
     if (!profile) return;
     const firstName = form.firstName.trim();
-    if (!firstName) {
-      setNameError("Your name is required");
+    if (firstName.length < 2) {
+      setNameError(firstName ? "Use at least 2 characters" : "Your name is required");
       window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    // Profiles need an "About me" to stay complete (otherwise the member is sent back to setup).
+    if (form.bio.trim().length < MIN_BIO_LENGTH) {
+      setBioError(`Write at least ${MIN_BIO_LENGTH} characters about yourself`);
+      document.getElementById("field-bio")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -331,12 +341,12 @@ export default function EditProfile() {
     await refreshProfile();
     setInitial(form);
     setIsSaving(false);
-    navigate(-1);
+    goBack(navigate, "/profile");
   };
 
   const handleBack = () => {
     if (isDirty) setConfirmLeave(true);
-    else navigate(-1);
+    else goBack(navigate, "/profile");
   };
 
   const drawerValue = activeDrawer ? form[activeDrawer.key] : "";
@@ -390,7 +400,7 @@ export default function EditProfile() {
         <SectionHeader title="About you" icon={User} />
         <div className="space-y-3">
           <TextRow icon={User} label="Display name" value={form.firstName} onChange={(v) => set("firstName", v)} placeholder="Your first name" maxLength={40} error={nameError} />
-          <div className="bg-card border border-border rounded-xl p-4 focus-within:border-primary transition-colors">
+          <div className={`bg-card border rounded-xl p-4 focus-within:border-primary transition-colors ${bioError ? "border-destructive" : "border-border"}`}>
             <label htmlFor="field-bio" className="flex items-center gap-3 mb-2 text-sm font-medium text-muted-foreground">
               <FileText className="w-5 h-5" />
               About me
@@ -404,7 +414,10 @@ export default function EditProfile() {
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none resize-none"
               maxLength={500}
             />
-            <p className="text-xs text-muted-foreground text-right mt-1">{form.bio.length}/500</p>
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <p className="text-xs text-destructive">{bioError}</p>
+              <p className="text-xs text-muted-foreground">{form.bio.length}/500</p>
+            </div>
           </div>
         </div>
 
@@ -472,7 +485,7 @@ export default function EditProfile() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate(-1)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={() => goBack(navigate, "/profile")} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Discard
             </AlertDialogAction>
           </AlertDialogFooter>

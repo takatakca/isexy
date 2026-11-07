@@ -1,21 +1,9 @@
-import { useState, useEffect } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Switch } from "@/components/ui/switch";
+import { useDeviceSetting } from "@/hooks/useDeviceSetting";
 
 const SwipeSurge = () => {
-  const [participateInSwipeSurge, setParticipateInSwipeSurge] = useState(true);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("swipe_surge_participate");
-    if (saved !== null) {
-      setParticipateInSwipeSurge(saved === "true");
-    }
-  }, []);
-
-  const handleToggle = (checked: boolean) => {
-    setParticipateInSwipeSurge(checked);
-    localStorage.setItem("swipe_surge_participate", String(checked));
-  };
+  const [participateInSwipeSurge, handleToggle] = useDeviceSetting("swipe_surge_participate", true);
 
   return (
     <AuthLayout showBack variant="white">
@@ -27,6 +15,7 @@ const SwipeSurge = () => {
           <Switch
             checked={participateInSwipeSurge}
             onCheckedChange={handleToggle}
+            aria-label="Participate in Swipe Surge"
           />
         </div>
       </div>

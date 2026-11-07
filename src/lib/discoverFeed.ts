@@ -86,7 +86,7 @@ export async function fetchDiscoverFeed(opts: FeedOptions): Promise<FeedProfile[
 // Legacy path — same rules as the RPC, done client-side, but batched:
 // 3 parallel exclusion queries + 1 profile query + 1 photo query.
 // ---------------------------------------------------------------------------
-function normalizeGender(value?: string | null): string {
+export function normalizeGender(value?: string | null): string {
   const v = (value || "").toLowerCase().trim();
   if (["man", "male", "men", "m"].includes(v)) return "men";
   if (["woman", "female", "women", "w", "f"].includes(v)) return "women";
@@ -143,6 +143,8 @@ async function legacyFeed({ viewer, limit = 30, exclude = [], verifiedOnly, inte
     .from("profiles")
     .select("id, first_name, birth_date, bio, city, job_title, company, school, is_verified, latitude, longitude, gender, interested_in, interests, subscription_tier, last_boost_at, super_boost_until")
     .eq("is_active", true)
+    // Only runs without get_discover_feed (a database before 0013), where members
+    // can still read shadow_banned; from 0015 K3 on it is staff-only.
     .neq("shadow_banned", true)
     .not("first_name", "is", null)
     .lte("birth_date", maxBirth)

@@ -1,0 +1,76 @@
+# ISEXY end-to-end checks (mocked backend, nothing reaches production)
+
+Playwright scripts that drive the production build at a 390x844 phone size.
+Every Supabase call (REST, RPC, Auth, Storage, Functions, realtime websocket)
+is answered by a mock inside the script. `offline-browser.mjs` is preloaded
+for every run: the browser can reach `127.0.0.1` and nothing else, so an
+unmocked request fails instead of reaching TAKATAK V1, Render or isexy.ca.
+
+## Run
+
+```bash
+# 1. Build. The SEO step would fetch Help Center articles from V1: disable network.
+NODE_OPTIONS="--import=./e2e/no-network.mjs" npm run build
+
+# 2. Serve the build (keep it running; stop it by its PID afterwards).
+npx vite preview --port 4173 --strictPort --host 127.0.0.1 &
+
+# 3. Run any script (E2E_BASE defaults to http://127.0.0.1:4173).
+node --import ./e2e/offline-browser.mjs e2e/<file>.mjs [args]
+```
+
+Playwright comes from `/opt/node22/lib/node_modules/playwright` and Chromium from
+`/opt/pw-browsers/chromium` (override with `PLAYWRIGHT_MODULE`, `CHROMIUM_PATH`).
+`SHOTS` below is any scratch folder for screenshots.
+
+## Scripts
+
+Pass/fail checks (print `PASS`/`FAIL` lines, exit 1 on a failure):
+
+| Script | Area | Covers | Run |
+|---|---|---|---|
+| `discover-e2e.mjs` | Discover | Show-me filter, drag/keys/undo, First Impression, Top Picks, Who liked you (locked/unlocked, paging, like back), match → chat, web profile share, News/Stories links, category errors, matches list, Double Hangout | `node --import ./e2e/offline-browser.mjs e2e/discover-e2e.mjs SHOTS public/og-image.png` |
+| `accounts-auth-setup.mjs` | Accounts | sign-in routing, profile setup, profile read errors | `E2E_SHOTS=SHOTS node --import ./e2e/offline-browser.mjs e2e/accounts-auth-setup.mjs` |
+| `accounts-profile.mjs` | Accounts | profile, edit profile + photos, bio, interests | same pattern |
+| `accounts-settings.mjs` | Accounts | settings, active status, block contacts, passport, verification, delete | same pattern |
+| `accounts-signups.mjs` | Accounts | tourist signup, entry pages, sign-in guards, home redirect | same pattern |
+| `accounts-layout.mjs` | Accounts | 390x844 sweep: no horizontal scroll, no covered controls | same pattern |
+| `chat-e2e.mjs` | Chat | read RPC, optimistic send + retry, history paging, translation cache, presence, locked chat | `node --import ./e2e/offline-browser.mjs e2e/chat-e2e.mjs http://127.0.0.1:4173 SHOTS public/og-image.png` |
+| `chat-notifications-e2e.mjs` | Chat | badges, push opt-in + settings, email settings, missed calls, group chat, matches list | same as chat-e2e |
+| `calls-e2e.mjs` | Calls | two browsers, real WebRTC (fake camera/mic): ring, answer, video + audio-only, mute/camera/speaker/switch camera, ICE drop -> Reconnecting -> restart, give up, decline, ringing catch-up, camera blocked -> audio only, mic blocked, missed call RPC, out of minutes, every track stopped | `node --import ./e2e/offline-browser.mjs e2e/calls-e2e.mjs SHOTS http://127.0.0.1:4173` |
+| `calls-phone-line-pages.mjs` | Calls (Phone Line pages) | voice recorder (WAV 16 kHz upload, mic released on stop / leaving / 90 s limit, mic blocked), Voice profile save rules (age from birth date, Save draft writes no status, banned stays banned, new greeting before older ones are switched off), hub statuses + link my phone (IVR card), Browse (audio stops on leaving, reply recorder, load error + Try again), Voice inbox, staff review queue (play, approve, reject + reason), in-app calls list | build with `VITE_PHONE_LINE_NUMBER="+1 514 555 0100"`, then `node --import ./e2e/offline-browser.mjs e2e/calls-phone-line-pages.mjs SHOTS http://127.0.0.1:4173` |
+| `calls-twilio-test.mjs` | Calls (Phone Line by phone) | the three Twilio webhooks run in Node against an in-memory Supabase (no browser, no network): signature over the public URL (Twilio's test vector, wrong account, internal URL refused), well-formed escaped TwiML, caller by verified number + 18+ birth date, one session per CallSid, menu keys, silence -> hang up, browse (blocked / shadow-banned left out, WAV/MP3 played from a signed URL, other formats read by headline), status callback -> `apply_twilio_call_status`, 500 on a database error | `node --experimental-strip-types --no-warnings --import ./e2e/calls-twilio-loader.mjs e2e/calls-twilio-test.mjs` |
+| `trust-e2e.mjs` | Trust | block/report (RPCs, sign-in guard, own profile), 404 EN/FR, EN/FR button, Help search, ticket tracking (guests: a guest ticket's status only, never a member's ticket; members: tickets sent from their e-mail in full), Contact Us (signed in: the account e-mail, read-only; guests: any address), assistant (streamed answer, member handoff to a person, guest sign-in/ticket), moderator (staff home, member sheet: suspend/warn/shadow ban/verify, reports, photo and voice queues, live chat accept/send/close, support portal tabs), admin (revenue, ticket reply with a saved reply, audit log, roles); no direct write of profiles/reports/warnings/tickets/roles/blocks; HTML/script payloads from members render as text on staff pages, Cuban ID evidence opens only through signed URLs (D1-D5) | `E2E_BASE=http://127.0.0.1:4173 node --import ./e2e/offline-browser.mjs e2e/trust-e2e.mjs` |
+| `rewards-e2e.mjs` | Rewards | payments not configured / paused / test mode, checkout bodies (no amounts) and return, promo only with the coupon, My Subscription plan sources, Boosts use/buy, credits to minutes, Loyalty, referral link, Restore purchases, Redeem code, wallet balances, sign-in guards, no browser write of protected data | `E2E_BASE=http://127.0.0.1:4173 node --import ./e2e/offline-browser.mjs e2e/rewards-e2e.mjs` |
+| `ads-e2e.mjs` | Ads | logic of `src/lib/ads.ts` (pages per space, never on chat/calls/checkout/sign-in/staff/legal/404, list and feed positions, served-ad checks, URLs), TAKATAK serve/impression/click, AdSense fallback (non-personalized without the Advertising consent, unfilled/blocked → house banner), ad text never HTML, ad-free members (staff, plan, chat subscription, recent payment; no flash while loading; fail closed), visitors on public pages only, FR labels, desktop, `ads.txt` + AdSense and Search Console verification tags, Privacy/Cookie policy Advertising sections (EN + FR) and the real consent toggles; plain build: house banner, no Google request | two builds, see the header of the script and `docs/ADS.md` › How to test (`E2E_ADS_MODE=configured` / `plain`, port 4410) |
+
+Broad smoke scripts (print a log to read; they stop with an error if a step cannot run):
+
+| Script | Covers | Run |
+|---|---|---|
+| `smoke-swipe.mjs` | Discover deck: drag, like → match, failed swipe, keyboard, undo, photo tap | `node --import ./e2e/offline-browser.mjs e2e/smoke-swipe.mjs SHOTS public/og-image.png` |
+| `smoke-chat.mjs` | inbox search, chat history, translation, optimistic send, failed send | same pattern |
+| `smoke-auth.mjs` | Takatak sign-in (email/SMS code, Google redirect) | `node --import ./e2e/offline-browser.mjs e2e/smoke-auth.mjs SHOTS` |
+| `smoke-reposition.mjs` | old dating URLs redirect, no dating wording on public pages | `node --import ./e2e/offline-browser.mjs e2e/smoke-reposition.mjs SHOTS` |
+
+Helpers: `accounts-mockdb.mjs` (in-memory PostgREST/Auth/Storage/Functions mock
+used by the accounts, rewards and trust scripts; it refuses with `42501`, as the
+database does since 0015 K, a `select *` or any read, filter or write of
+`profiles.shadow_banned*` / `support_tickets.admin_notes`, and a signed-in
+member's ticket under another e-mail), `no-network.mjs` (build-time fetch blocker),
+`offline-browser.mjs` (browser network guard; also prints a FAIL line at exit
+for any such `profiles` / `support_tickets` request made by a script with its
+own mocks), `calls-twilio-loader.mjs`
+(maps the functions' esm.sh supabase-js import to the in-memory fake, blocks
+every other network import).
+
+## Database checks
+
+SQL is checked separately on a throwaway local Postgres 16, like the CI
+`migrations` job: `scripts/isexy/test/v1-mock.sql`, `scripts/isexy/migrate.sh`
+(dry run, `--apply`, re-run), then `scripts/isexy/test/0013-smoke.sql`,
+`calls-smoke.sql` (part D), `rewards-smoke.sql` (part R),
+`security-smoke.sql` (0014), `live-functions-compat.sql`,
+`trust-smoke.sql` (0015) and `ads-smoke.sql` (0016), each inside BEGIN/ROLLBACK with
+`psql -v ON_ERROR_STOP=1` (instructions at the top of each file; CI runs the
+same loop). Never point these at V1.

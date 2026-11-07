@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { TakatakSignIn } from "@/components/TakatakSignIn";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { MIN_BIO_LENGTH, SHOW_ME_LABELS, isAdult, isProfileComplete, toggleShowMe, type ShowMe } from "@/lib/profileStatus";
 import { AuthLayout } from "@/components/AuthLayout";
 import { AuthInput } from "@/components/AuthInput";
 import { AuthButton } from "@/components/AuthButton";
@@ -42,6 +43,8 @@ export default function TouristSignup() {
   const [name, setName] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [gender, setGender] = useState("");
+  // Required for a complete profile (ProtectedRoute), like on /profile-setup.
+  const [interestedIn, setInterestedIn] = useState<ShowMe[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [bio, setBio] = useState("");
   const [drinking, setDrinking] = useState("");
@@ -55,7 +58,7 @@ export default function TouristSignup() {
   const [country, setCountry] = useState("");
 
   // Takatak Auth first: photo uploads (step 4) need a signed-in member.
-  const { user, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile: existingProfile, photoCount, loading: authLoading, refreshProfile } = useAuth();
   const [completing, setCompleting] = useState(false);
 
   const genderOptions = ["Woman", "Man", "More"];
@@ -64,39 +67,43 @@ export default function TouristSignup() {
     if (!user) return;
     setCompleting(true);
     try {
+      const fields = {
+        first_name: name.trim(),
+        birth_date: birthdate,
+        gender: gender.toLowerCase(),
+        interested_in: interestedIn,
+        country: country.trim() || "Tourist",
+        bio: bio.trim(),
+        drinking,
+        smoking,
+        workout,
+        pets,
+        communication_style: communication,
+        love_language: loveLanguage,
+        education,
+        interests,
+        privacy_accepted: true,
+      };
       // profiles.id is set to the auth user id by the database (Takatak identity).
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: user.id,
-          first_name: name,
-          birth_date: birthdate,
-          gender: gender.toLowerCase(),
-          country: country || "Tourist",
-          bio,
-          drinking,
-          smoking,
-          workout,
-          pets,
-          communication_style: communication,
-          love_language: loveLanguage,
-          education,
-          interests,
-          is_cuban: false,
-          privacy_accepted: true,
-        })
-        .select()
-        .single();
+      // A member who already started a profile (another signup flow) gets it updated, not a duplicate.
+      const { data: profile, error: profileError } = existingProfile
+        ? await supabase.from("profiles").update(fields).eq("id", existingProfile.id).select("id").single()
+        : await supabase.from("profiles").insert({ user_id: user.id, ...fields }).select("id").single();
 
       if (profileError) throw profileError;
+      // is_cuban (default false) is not member-writable: a profile started in the Cuban signup is switched server-side.
+      if (existingProfile && (existingProfile as { is_cuban?: boolean | null }).is_cuban) {
+        await supabase.rpc("set_my_cuban_flag", { p_is_cuban: false });
+      }
 
       if (photos.length > 0) {
         const photoInserts = photos.map((url, index) => ({
           profile_id: profile.id,
           photo_url: url,
-          position: index,
+          position: (existingProfile ? photoCount : 0) + index,
         }));
-        await supabase.from("profile_photos").insert(photoInserts);
+        const { error: photosError } = await supabase.from("profile_photos").insert(photoInserts);
+        if (photosError) throw photosError;
       }
 
       await refreshProfile();
@@ -112,11 +119,11 @@ export default function TouristSignup() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return name.length >= 2;
-      case 2: return !!birthdate;
-      case 3: return !!gender;
+      case 1: return name.trim().length >= 2;
+      case 2: return !!birthdate && isAdult(birthdate);
+      case 3: return !!gender && interestedIn.length > 0;
       case 4: return photos.length >= 2;
-      case 5: return true; // Bio optional
+      case 5: return bio.trim().length >= MIN_BIO_LENGTH; // needed for a complete profile
       case 6: return true; // Lifestyle optional
       case 7: return true; // Personality optional
       case 8: return interests.length >= 3;
@@ -194,6 +201,30 @@ export default function TouristSignup() {
                 </button>
               ))}
             </div>
+
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              Show me
+            </h2>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {(["women", "men", "everyone"] as const).map((value) => {
+                const selected = interestedIn.includes(value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setInterestedIn(toggleShowMe(interestedIn, value))}
+                    className={`px-4 py-2 rounded-full border-2 font-medium text-sm transition-all ${
+                      selected
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-foreground hover:border-muted-foreground"
+                    }`}
+                  >
+                    {SHOW_ME_LABELS[value]}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         );
 
@@ -212,6 +243,7 @@ export default function TouristSignup() {
             <PhotoUpload
               photos={photos}
               onPhotosChange={setPhotos}
+              userId={user?.id}
             />
           </div>
         );
@@ -236,6 +268,9 @@ export default function TouristSignup() {
                 className="w-full bg-transparent border-none outline-none resize-none text-foreground placeholder:text-muted-foreground min-h-[120px]"
                 maxLength={500}
               />
+              <p className="text-xs text-muted-foreground text-right">
+                {bio.trim().length < MIN_BIO_LENGTH ? `At least ${MIN_BIO_LENGTH} characters` : `${bio.length}/500`}
+              </p>
             </div>
           </div>
         );
@@ -380,6 +415,9 @@ export default function TouristSignup() {
       navigate(-1);
     }
   };
+
+  // A returning member with a complete profile has nothing to do here.
+  if (!authLoading && isProfileComplete(existingProfile, photoCount)) return <Navigate to="/discover" replace />;
 
   if (!authLoading && !user) {
     return (

@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Search, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { goBack } from "@/lib/navigation";
 
 const allInterests = [
   // Sports & Fitness
@@ -81,6 +82,14 @@ export default function Interests() {
   const [searchQuery, setSearchQuery] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // The profile may still be loading on a direct visit: seed once it arrives,
+  // so saving never wipes interests the member already had.
+  const profileId = profile?.id;
+  useEffect(() => {
+    if (profile?.interests) setSelectedInterests(profile.interests);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
+
   const maxInterests = 10;
 
   const filteredInterests = useMemo(() => {
@@ -116,7 +125,7 @@ export default function Interests() {
     } else {
       toast.success("Interests saved!");
       await refreshProfile();
-      navigate(-1);
+      goBack(navigate, "/profile");
     }
     setSaving(false);
   };
@@ -126,7 +135,7 @@ export default function Interests() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background border-b border-border px-4 py-4">
         <div className="flex items-center justify-between mb-4">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button onClick={() => goBack(navigate, "/profile")} className="p-2 -ml-2" aria-label="Close">
             <X className="w-6 h-6 text-foreground" />
           </button>
           <span className="text-muted-foreground font-semibold">

@@ -51,9 +51,9 @@ export function PhotoUpload({ photos, onPhotosChange, maxPhotos = 6, userId }: P
       onPhotosChange(newPhotos.filter(Boolean));
       
       toast.success("Photo uploaded!");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload photo");
+      toast.error((error as { message?: string })?.message || "Failed to upload photo");
     } finally {
       setUploading(null);
     }
@@ -75,6 +75,8 @@ export function PhotoUpload({ photos, onPhotosChange, maxPhotos = 6, userId }: P
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
+              // Clear the input so picking the same file again still triggers a change.
+              e.target.value = "";
               if (file) handleFileSelect(index, file);
             }}
           />
@@ -113,10 +115,11 @@ export function PhotoUpload({ photos, onPhotosChange, maxPhotos = 6, userId }: P
                 fileInputRefs.current[index]?.click();
               }
             }}
+            aria-label={photos[index] ? `Remove photo ${index + 1}` : "Add a photo"}
             className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-colors ${
               photos[index]
                 ? "bg-destructive text-white hover:bg-destructive/90"
-                : "bg-background text-background hover:bg-background/90"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
             }`}
           >
             {photos[index] ? (

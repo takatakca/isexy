@@ -38,9 +38,15 @@ BEGIN
     WHERE profile_id=v_user_id AND boosts=10
       AND primetime_boosts=3 AND super_boost_hours=6)
   THEN RAISE EXCEPTION 'Incorrect boost wallet totals'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM isexy.allowances
+  -- Since 0013 purchased Super Likes go to the spendable balance (the profile
+  -- starts with 1), not to the weekly allowance maximum that the weekly reset
+  -- refilled forever and sync_entitlements resets to the plan's value.
+  IF NOT EXISTS (SELECT 1 FROM isexy.profiles
+    WHERE id=v_user_id AND super_likes_remaining=16)
+  THEN RAISE EXCEPTION 'Incorrect super-like balance'; END IF;
+  IF EXISTS (SELECT 1 FROM isexy.allowances
     WHERE profile_id=v_user_id AND weekly_super_likes_max=15)
-  THEN RAISE EXCEPTION 'Incorrect super-like allowance'; END IF;
+  THEN RAISE EXCEPTION 'Super Likes raised the weekly allowance'; END IF;
   IF (SELECT count(*) FROM isexy.boost_transactions
     WHERE profile_id=v_user_id) <> 4
   THEN RAISE EXCEPTION 'Boost transaction ledger inconsistency'; END IF;

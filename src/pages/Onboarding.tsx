@@ -116,6 +116,8 @@ export default function Onboarding() {
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
+            aria-label={`Slide ${index + 1} of ${slides.length}`}
+            aria-current={index === currentSlide ? "step" : undefined}
             className={`w-2.5 h-2.5 rounded-full transition-all ${
               index === currentSlide
                 ? "bg-primary w-8"

@@ -2,14 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchDiscoverFeed, type FeedProfile } from "@/lib/discoverFeed";
+import { performSwipe, type SwipeAction, type SwipeOutcome } from "@/lib/likes";
 import { track } from "@/lib/analytics";
 
-export type SwipeAction = "like" | "pass" | "super_like";
-
-export type SwipeOutcome =
-  | { status: "ok"; matchId?: string }
-  | { status: "rate_limited"; cooldownHours: number }
-  | { status: "no_likes" | "no_super_likes" | "error" };
+export type { SwipeAction, SwipeOutcome };
 
 export interface MatchInfo {
   matchId: string;
@@ -126,61 +122,36 @@ export function useDiscoverDeck({ source, interests, verifiedOnly = false }: Opt
 
   const send = useCallback(async (profile: FeedProfile, action: SwipeAction): Promise<SwipeOutcome> => {
     if (!me) return { status: "error" };
-    try {
-      if (!me.is_premium) {
-        const { data: rate } = await supabase.rpc("check_swipe_rate_limit", { p_profile_id: me.id });
-        const r = rate as { allowed?: boolean; error?: string; cooldown_until?: string } | null;
-        if (r && r.allowed === false) {
-          const hours = r.cooldown_until ? Math.max(1, Math.ceil((new Date(r.cooldown_until).getTime() - Date.now()) / 3_600_000)) : 12;
-          return { status: "rate_limited", cooldownHours: hours };
-        }
-      }
-
-      const { data, error } = await supabase.rpc("perform_like", {
-        p_swiper_id: me.id,
-        p_swiped_id: profile.id,
-        p_action: action,
-      });
-      if (error) throw error;
-      const result = data as { success?: boolean; error?: string; likes_remaining?: number; already_swiped?: boolean } | null;
-      if (result?.success === false) {
-        if (result.error === "no_likes_remaining") return { status: "no_likes" };
-        if (result.error === "no_super_likes_remaining") return { status: "no_super_likes" };
-        return { status: "error" };
-      }
-      if (typeof result?.likes_remaining === "number") setLikesRemaining(result.likes_remaining);
-      track(action, { source });
-
-      if (action !== "pass" && !result?.already_swiped) {
-        const [a, b] = me.id < profile.id ? [me.id, profile.id] : [profile.id, me.id];
-        const { data: m } = await supabase.from("matches").select("id").eq("profile1_id", a).eq("profile2_id", b).maybeSingle();
-        if (m) {
-          track("match", { source });
-          navigator.vibrate?.([20, 40, 20]);
-          setMatch({ matchId: m.id, name: profile.first_name, photoUrl: profile.photos[0] });
-          return { status: "ok", matchId: m.id };
-        }
-      }
-      return { status: "ok" };
-    } catch (e) {
-      console.error("Swipe failed:", e);
-      return { status: "error" };
+    const outcome = await performSwipe(me, profile.id, action);
+    if (outcome.status !== "ok") return outcome;
+    if (typeof outcome.likesRemaining === "number") setLikesRemaining(outcome.likesRemaining);
+    track(action, { source });
+    if (outcome.matchId) {
+      track("match", { source });
+      navigator.vibrate?.([20, 40, 20]);
+      setMatch({ matchId: outcome.matchId, name: profile.first_name, photoUrl: profile.photos[0] });
     }
+    return outcome;
   }, [me, source]);
 
-  /** Swipe the top card. Resolves once the server has accepted or refused it. */
-  const swipe = useCallback((action: SwipeAction): Promise<SwipeOutcome> => {
-    const top = deckRef.current[0];
+  /**
+   * Swipe the top card, or `target` (e.g. a Top Pick) when given. Resolves
+   * once the server has accepted or refused it; a refused card comes back.
+   */
+  const swipe = useCallback((action: SwipeAction, target?: FeedProfile): Promise<SwipeOutcome> => {
+    const top = target ?? deckRef.current[0];
     if (!top) return Promise.resolve({ status: "error" });
+    if (inFlight.current.has(top.id)) return Promise.resolve({ status: "error" });
     if (action !== "pass") navigator.vibrate?.(10);
 
+    const wasInDeck = deckRef.current.some((p) => p.id === top.id);
     setDeck((prev) => prev.filter((p) => p.id !== top.id));
     inFlight.current.add(top.id);
 
     const settled = send(top, action).then((outcome) => {
       inFlight.current.delete(top.id);
       if (outcome.status !== "ok") {
-        putBack(top);
+        if (wasInDeck) putBack(top);
         history.current = history.current.filter((h) => h.profile.id !== top.id);
         setCanUndo(history.current.length > 0);
       }

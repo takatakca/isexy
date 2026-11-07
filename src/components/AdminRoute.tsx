@@ -10,11 +10,13 @@ interface AdminRouteProps {
 }
 
 /**
- * Wraps admin-only pages. Requires login + a row in user_roles with role = 'admin'.
- * Non-admins are redirected to /discover. Unauthenticated users are sent to /auth.
+ * Wraps staff pages. Requires login + a row in user_roles with role 'admin'
+ * (or 'moderator' when allowModerator). A moderator on an admin-only page is
+ * sent to the staff home (/admin); members go to /discover, guests to /auth.
+ * The server checks the role again on every read (RLS) and action (RPCs).
  */
 export function AdminRoute({ children, allowModerator = false }: AdminRouteProps) {
-  const [state, setState] = useState<"loading" | "admin" | "denied" | "anon">(
+  const [state, setState] = useState<"loading" | "admin" | "moderator-only" | "denied" | "anon">(
     "loading",
   );
 
@@ -31,9 +33,12 @@ export function AdminRoute({ children, allowModerator = false }: AdminRouteProps
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .in("role", allowModerator ? ["admin", "moderator"] : ["admin"]);
+        .in("role", ["admin", "moderator"]);
       if (cancelled) return;
-      setState(data && data.length > 0 ? "admin" : "denied");
+      const roles = new Set((data ?? []).map((r) => r.role as string));
+      if (roles.has("admin") || (allowModerator && roles.has("moderator"))) setState("admin");
+      else if (roles.has("moderator")) setState("moderator-only");
+      else setState("denied");
     })();
     return () => {
       cancelled = true;
@@ -48,6 +53,7 @@ export function AdminRoute({ children, allowModerator = false }: AdminRouteProps
     );
   }
   if (state === "anon") return <Navigate to="/auth" replace />;
+  if (state === "moderator-only") return <Navigate to="/admin" replace />;
   if (state === "denied") return <Navigate to="/discover" replace />;
   return <>{children}</>;
 }

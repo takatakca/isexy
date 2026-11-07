@@ -1,16 +1,17 @@
 import { AuthLayout } from "@/components/AuthLayout";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { AdvertisingPolicy } from "@/components/AdvertisingPolicy";
 
 export default function Privacy() {
   return (
     <AuthLayout showBack variant="white">
       <div className="flex-1">
         <h1 className="text-3xl font-extrabold text-foreground mb-2">Privacy Policy</h1>
-        <p className="text-muted-foreground mb-6">Effective Date: December 24, 2024</p>
+        <p className="text-muted-foreground mb-6">Effective Date: December 24, 2024 · Last updated: October 22, 2026 (Advertising)</p>
 
         <ScrollArea className="h-[calc(100vh-200px)]">
-          <div className="prose prose-sm max-w-none text-foreground pr-4">
+          <div className="prose prose-sm max-w-none text-foreground pr-4 prose-headings:text-foreground prose-strong:text-foreground">
             
             {/* Introduction */}
             <section className="mb-8">
@@ -171,6 +172,7 @@ export default function Privacy() {
                 <li>Customer support tools</li>
                 <li>Email and push notification services</li>
                 <li>Identity verification services</li>
+                <li>Advertising: TAKATAK ads and Google AdSense, for free members only (see section 12)</li>
               </ul>
 
               <h3 className="text-lg font-semibold mb-3 mt-6">6.3 Affiliates</h3>
@@ -330,9 +332,14 @@ export default function Privacy() {
 
             <Separator className="my-6" />
 
+            {/* Advertising (free members; EN + FR) */}
+            <AdvertisingPolicy variant="privacy" heading={{ en: "12. Advertising", fr: "12. Publicité" }} />
+
+            <Separator className="my-6" />
+
             {/* Children's Privacy */}
             <section className="mb-8">
-              <h2 className="text-xl font-bold mb-4">12. Children's Privacy</h2>
+              <h2 className="text-xl font-bold mb-4">13. Children's Privacy</h2>
               <p className="text-muted-foreground mb-4">
                 Our services are not intended for individuals under the age of 18. We do not knowingly collect 
                 personal data from children. If we become aware that we have collected personal data from a 
@@ -344,7 +351,7 @@ export default function Privacy() {
 
             {/* Changes to Policy */}
             <section className="mb-8">
-              <h2 className="text-xl font-bold mb-4">13. Changes to This Privacy Policy</h2>
+              <h2 className="text-xl font-bold mb-4">14. Changes to This Privacy Policy</h2>
               <p className="text-muted-foreground mb-4">
                 We may update this privacy policy from time to time. We will notify you of any material changes 
                 by posting the new privacy policy on this page and updating the "Effective Date" at the top. 
@@ -356,7 +363,7 @@ export default function Privacy() {
 
             {/* Regional Notices */}
             <section className="mb-8">
-              <h2 className="text-xl font-bold mb-4">14. Regional Privacy Notices</h2>
+              <h2 className="text-xl font-bold mb-4">15. Regional Privacy Notices</h2>
               
               <div className="bg-muted p-4 rounded-xl mb-4">
                 <h3 className="font-semibold text-foreground mb-2">🇪🇺 European Economic Area (EEA) Users</h3>
@@ -397,7 +404,7 @@ export default function Privacy() {
 
             {/* Contact Us */}
             <section className="mb-8">
-              <h2 className="text-xl font-bold mb-4">15. Contact Us</h2>
+              <h2 className="text-xl font-bold mb-4">16. Contact Us</h2>
               <p className="text-muted-foreground mb-4">
                 If you have any questions about this privacy policy or our privacy practices, please contact us:
               </p>

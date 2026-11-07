@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, Heart, Quote, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { shareLink } from "@/lib/share";
+import { AdSlot } from "@/components/AdSlot";
+import { feedAdAfter } from "@/lib/ads";
 
 const successStories = [
   {
@@ -47,9 +50,26 @@ const successStories = [
   },
 ];
 
+/** Each story has a shareable link: /community-stories#story-<id>. */
+const storyHash = (id: number) => `story-${id}`;
+
 export default function LoveStories() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedStory, setSelectedStory] = useState(0);
+
+  // Open the story a shared link points to.
+  useEffect(() => {
+    const idx = successStories.findIndex((s) => storyHash(s.id) === location.hash.replace("#", ""));
+    if (idx >= 0) setSelectedStory(idx);
+  }, [location.hash]);
+
+  const story = successStories[selectedStory];
+  const shareStory = () => shareLink({
+    title: `${story.names} · ISEXY Community Stories`,
+    text: story.story,
+    url: `/community-stories#${storyHash(story.id)}`,
+  });
 
   const nextStory = () => {
     setSelectedStory((prev) => (prev + 1) % successStories.length);
@@ -60,11 +80,11 @@ export default function LoveStories() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-background">
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))} className="p-2 -ml-2" aria-label="Go back">
             <ArrowLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="text-xl font-bold text-foreground">Community Stories</h1>
@@ -114,6 +134,14 @@ export default function LoveStories() {
               </p>
             </div>
 
+            <button
+              onClick={shareStory}
+              className="w-full mb-4 py-2.5 rounded-full border border-border text-foreground font-semibold flex items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              Share this story
+            </button>
+
             {/* Navigation */}
             <div className="flex items-center justify-between pt-4 border-t border-border">
               <button
@@ -128,6 +156,8 @@ export default function LoveStories() {
                   <button
                     key={idx}
                     onClick={() => setSelectedStory(idx)}
+                    aria-label={`Story ${idx + 1}`}
+                    aria-current={idx === selectedStory || undefined}
                     className={`w-2 h-2 rounded-full transition-colors ${
                       idx === selectedStory ? "bg-primary" : "bg-muted"
                     }`}
@@ -151,9 +181,9 @@ export default function LoveStories() {
         <h3 className="text-lg font-bold text-foreground mb-4">More Community Stories</h3>
         <div className="grid grid-cols-2 gap-3">
           {successStories.map((story, idx) => (
+            <Fragment key={story.id}>
             <button
-              key={story.id}
-              onClick={() => setSelectedStory(idx)}
+              onClick={() => { setSelectedStory(idx); window.scrollTo({ top: 0, behavior: "smooth" }); }}
               className={`relative aspect-square rounded-2xl overflow-hidden ${
                 idx === selectedStory ? "ring-2 ring-primary ring-offset-2" : ""
               }`}
@@ -162,12 +192,16 @@ export default function LoveStories() {
                 src={story.image}
                 alt={story.names}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
               <div className="absolute bottom-2 left-2 right-2 text-white text-left">
                 <p className="font-semibold text-sm truncate">{story.names}</p>
               </div>
             </button>
+            {feedAdAfter(idx, successStories.length) && <AdSlot placement="isexy-feed-inline" className="col-span-2" />}
+            </Fragment>
           ))}
         </div>
       </div>

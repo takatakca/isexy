@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useStaffRole } from "@/lib/staff";
 import { supabase } from "@/integrations/supabase/client";
 import { openConsentSettings } from "@/lib/consent";
 import { AuthLayout } from "@/components/AuthLayout";
+import { AdSlot } from "@/components/AdSlot";
 import { AuthButton } from "@/components/AuthButton";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -13,7 +15,7 @@ import {
   EyeOff, Plane, MapPin, Globe, Users, Eye, MessageCircle, 
   Bell, Mail, Moon, Video, Link2, HelpCircle, Phone, CreditCard,
   Languages, GraduationCap, Heart, MessageSquare, PawPrint, Wine, Cigarette, Dumbbell, Baby, AtSign,
-  Gift, Coins
+  Gift, Coins, type LucideIcon
 } from "lucide-react";
 import { BoostsModal } from "@/components/BoostsModal";
 import { PreferenceDrawer } from "@/components/PreferenceDrawer";
@@ -32,11 +34,48 @@ import {
   LANGUAGES_OPTIONS,
   SOCIAL_MEDIA_OPTIONS,
 } from "@/lib/preferenceOptions";
+import { useMemberSettings, type MemberSettings } from "@/hooks/useMemberSettings";
+import { SHOW_ME_LABELS, showMeFrom, toggleShowMe, type ShowMe } from "@/lib/profileStatus";
+
+type Discovery = NonNullable<MemberSettings["discovery"]>;
+
+const FILTER_KEYS = [
+  "lookingFor", "relationshipType", "languages", "zodiac", "education", "familyPlans",
+  "communicationStyle", "loveLanguage", "pets", "drinking", "smoking", "workout", "socialMedia",
+] as const;
+
+/** One shape with every key, so saved and edited settings compare reliably. */
+function canonicalDiscovery(d: Discovery = {}): Discovery {
+  const filters: Record<string, string | string[]> = {};
+  for (const key of FILTER_KEYS) {
+    const v = d.filters?.[key];
+    filters[key] = key === "languages" || key === "pets" ? (Array.isArray(v) ? v : []) : (typeof v === "string" ? v : "");
+  }
+  return {
+    global: d.global ?? false,
+    showFurtherAway: d.showFurtherAway ?? true,
+    showOutOfAgeRange: d.showOutOfAgeRange ?? true,
+    enabled: d.enabled ?? true,
+    sortBy: d.sortBy ?? "balanced",
+    visibility: d.visibility ?? "standard",
+    photoVerifiedChatOnly: d.photoVerifiedChatOnly ?? false,
+    readReceipts: d.readReceipts ?? true,
+    distanceUnit: d.distanceUnit ?? "km",
+    minPhotos: d.minPhotos ?? 1,
+    requireBio: d.requireBio ?? false,
+    filters,
+  };
+}
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { profile, signOut, refreshProfile } = useAuth();
-  
+  const { user, profile, signOut, refreshProfile } = useAuth();
+  const staffRole = useStaffRole();
+  // Discovery toggles and "who I'd like to see" filters have no profile
+  // column: they are private member settings (see useMemberSettings).
+  const { settings, loading: settingsLoading, save: saveSettings } = useMemberSettings();
+  const [showMeOpen, setShowMeOpen] = useState(false);
+
   const [distancePreference, setDistancePreference] = useState(80);
   const [ageMin, setAgeMin] = useState(18);
   const [ageMax, setAgeMax] = useState(50);
@@ -86,45 +125,109 @@ export default function Settings() {
       setShowGender(profile.show_gender ?? true);
       setShowOrientation(profile.show_orientation ?? false);
       setInterestedIn(profile.interested_in || []);
-      setLookingFor(profile.looking_for || "");
-      setEducation(profile.education || "");
-      setCommunicationStyle(profile.communication_style || "");
-      setLoveLanguage(profile.love_language || "");
-      setPets(profile.pets || []);
-      setDrinking(profile.drinking || "");
-      setSmoking(profile.smoking || "");
-      setWorkout(profile.workout || "");
     }
   }, [profile]);
 
+  // Seed the toggles and filters once the member's settings have loaded.
+  useEffect(() => {
+    if (settingsLoading) return;
+    const d = canonicalDiscovery(settings.discovery);
+    setIsGlobal(d.global);
+    setShowFurtherAway(d.showFurtherAway);
+    setShowOutOfAge(d.showOutOfAgeRange);
+    setEnableDiscovery(d.enabled);
+    setControlWhoYouSee(d.sortBy);
+    setVisibility(d.visibility);
+    setPhotoVerifiedChat(d.photoVerifiedChatOnly);
+    setSendReadReceipts(d.readReceipts);
+    setDistanceUnit(d.distanceUnit);
+    setMinPhotos(d.minPhotos);
+    setRequireBio(d.requireBio);
+    const f = d.filters;
+    setLookingFor(f.lookingFor as string);
+    setRelationshipType(f.relationshipType as string);
+    setLanguages(f.languages as string[]);
+    setZodiac(f.zodiac as string);
+    setEducation(f.education as string);
+    setFamilyPlans(f.familyPlans as string);
+    setCommunicationStyle(f.communicationStyle as string);
+    setLoveLanguage(f.loveLanguage as string);
+    setPets(f.pets as string[]);
+    setDrinking(f.drinking as string);
+    setSmoking(f.smoking as string);
+    setWorkout(f.workout as string);
+    setSocialMedia(f.socialMedia as string);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoading]);
+
+  const currentDiscovery = (): Discovery => canonicalDiscovery({
+    global: isGlobal,
+    showFurtherAway,
+    showOutOfAgeRange: showOutOfAge,
+    enabled: enableDiscovery,
+    sortBy: controlWhoYouSee as Discovery["sortBy"],
+    visibility: visibility as Discovery["visibility"],
+    photoVerifiedChatOnly: photoVerifiedChat,
+    readReceipts: sendReadReceipts,
+    distanceUnit,
+    minPhotos,
+    requireBio,
+    filters: {
+      lookingFor, relationshipType, languages, zodiac, education, familyPlans,
+      communicationStyle, loveLanguage, pets, drinking, smoking, workout, socialMedia,
+    },
+  });
+
+  const profileDirty = !!profile && (
+    distancePreference !== (profile.distance_preference || 80) ||
+    ageMin !== (profile.age_min || 18) ||
+    ageMax !== (profile.age_max || 50) ||
+    showGender !== (profile.show_gender ?? true) ||
+    showOrientation !== (profile.show_orientation ?? false) ||
+    JSON.stringify(interestedIn) !== JSON.stringify(profile.interested_in || [])
+  );
+  const settingsDirty = !settingsLoading &&
+    JSON.stringify(currentDiscovery()) !== JSON.stringify(canonicalDiscovery(settings.discovery));
+  const isDirty = profileDirty || settingsDirty;
+
+  const showMe = showMeFrom(interestedIn);
+
+  // "Recently Active" and "Incognito" are Plus™ features: free members are shown the plans.
+  const isPremium = ["plus", "gold", "platinum"].includes(profile?.subscription_tier ?? "");
+  const choosePlus = (apply: () => void) => {
+    if (isPremium) return apply();
+    toast("This is part of ISEXY Plus™", { description: "See the plans to unlock it." });
+    navigate("/premium");
+  };
+
   const handleSave = async () => {
     if (!profile) return;
-    
+    if (showMe.length === 0) {
+      toast.error("Choose who you'd like to see under \"Show me\"");
+      setShowMeOpen(true);
+      return;
+    }
+
     setIsSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        distance_preference: distancePreference,
-        age_min: ageMin,
-        age_max: ageMax,
-        show_gender: showGender,
-        show_orientation: showOrientation,
-        interested_in: interestedIn,
-        looking_for: lookingFor,
-        education,
-        communication_style: communicationStyle,
-        love_language: loveLanguage,
-        pets,
-        drinking,
-        smoking,
-        workout,
-      })
-      .eq("id", profile.id);
+    const [{ error }, savedOnServer] = await Promise.all([
+      supabase
+        .from("profiles")
+        .update({
+          distance_preference: distancePreference,
+          age_min: ageMin,
+          age_max: ageMax,
+          show_gender: showGender,
+          show_orientation: showOrientation,
+          interested_in: showMe,
+        })
+        .eq("id", profile.id),
+      saveSettings({ discovery: currentDiscovery() }),
+    ]);
 
     if (error) {
       toast.error("Failed to save settings");
     } else {
-      toast.success("Settings saved!");
+      toast.success(savedOnServer ? "Settings saved!" : "Settings saved on this device");
       await refreshProfile();
     }
     setIsSaving(false);
@@ -148,26 +251,35 @@ export default function Settings() {
     onClick,
     iconColor = "text-muted-foreground"
   }: { 
-    icon?: any; 
+    icon?: LucideIcon;
     label: string; 
     value?: string; 
     onClick?: () => void;
     iconColor?: string;
-  }) => (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        {Icon && <Icon className={`w-5 h-5 ${iconColor}`} />}
-        <span className="text-foreground">{label}</span>
-      </div>
-      <div className="flex items-center gap-2 text-muted-foreground">
-        {value && <span>{value}</span>}
-        <ChevronRight className="w-5 h-5" />
-      </div>
-    </button>
-  );
+  }) => {
+    const content = (
+      <>
+        <div className="flex items-center gap-3 min-w-0">
+          {Icon && <Icon className={`w-5 h-5 shrink-0 ${iconColor}`} />}
+          <span className="text-foreground">{label}</span>
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground min-w-0">
+          {value && <span className="truncate max-w-[160px]">{value}</span>}
+          {onClick && <ChevronRight className="w-5 h-5 shrink-0" />}
+        </div>
+      </>
+    );
+    // Rows without an action are read-only information, not dead buttons.
+    if (!onClick) return <div className="w-full flex items-center justify-between gap-3 p-4">{content}</div>;
+    return (
+      <button
+        onClick={onClick}
+        className="w-full flex items-center justify-between gap-3 p-4 hover:bg-muted/30 transition-colors text-left"
+      >
+        {content}
+      </button>
+    );
+  };
 
   return (
     <AuthLayout showBack variant="white">
@@ -278,10 +390,16 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Account Settings</h2>
           <SettingCard className="divide-y divide-border">
+            {/* Read-only: both come from the member's TAKATAK account (Takatak Auth). */}
             <SettingRow
               icon={Phone}
               label="Phone Number"
-              value={profile?.city ? "Verified" : "Add"}
+              value={user?.phone ? `+${user.phone.replace(/^\+/, "")}` : "Not added"}
+            />
+            <SettingRow
+              icon={Mail}
+              label="Email"
+              value={user?.email || "Not added"}
             />
             <SettingRow
               icon={Gift}
@@ -304,10 +422,10 @@ export default function Settings() {
                 <MapPin className="w-5 h-5 text-primary" />
                 <div>
                   <p className="font-medium text-foreground">Location</p>
-                  <p className="text-foreground">{profile?.city || "Montreal"}, {profile?.country || "Canada"}</p>
+                  <p className="text-foreground">{[profile?.city, profile?.country].filter(Boolean).join(", ") || "Not set"}</p>
                 </div>
               </div>
-              <button className="text-primary text-sm font-medium mt-1">Add a new location</button>
+              <button onClick={() => navigate("/passport-mode")} className="text-primary text-sm font-medium mt-1">Add a new location</button>
             </div>
             <p className="px-4 pb-3 text-sm text-muted-foreground">
               Change locations to find matches anywhere.
@@ -349,8 +467,8 @@ export default function Settings() {
             <SettingRow
               icon={Users}
               label="Show me"
-              value={interestedIn.length > 0 ? interestedIn.join(", ") : "Everyone"}
-              onClick={() => {}}
+              value={showMe.length > 0 ? showMe.map((v) => SHOW_ME_LABELS[v]).join(", ") : "Choose"}
+              onClick={() => setShowMeOpen(true)}
             />
 
             {/* Age Range */}
@@ -381,14 +499,14 @@ export default function Settings() {
 
         {/* Premium Preferences Upsell */}
         <section className="mb-6">
-          <SettingCard className="p-4 bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-200">
+          <SettingCard className="p-4 bg-primary/10 border-primary/30">
             <h3 className="text-xl font-bold text-foreground mb-2">Unlock more Preferences...</h3>
             <p className="text-muted-foreground text-sm mb-4">
               Want more personalization? Set your Premium Preferences to see profiles that match your vibe, without missing out on others.
             </p>
-            <button 
+            <button
               onClick={() => navigate("/premium")}
-              className="px-6 py-2 bg-amber-100 border border-amber-300 rounded-full font-semibold text-amber-800"
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-full font-semibold"
             >
               Unlock
             </button>
@@ -455,7 +573,7 @@ export default function Settings() {
               {controlWhoYouSee === "balanced" && <div className="text-primary">✓</div>}
             </button>
             <button
-              onClick={() => setControlWhoYouSee("recent")}
+              onClick={() => choosePlus(() => setControlWhoYouSee("recent"))}
               className="w-full p-4 text-left flex items-center justify-between"
             >
               <div>
@@ -482,7 +600,7 @@ export default function Settings() {
               {visibility === "standard" && <div className="text-primary">✓</div>}
             </button>
             <button
-              onClick={() => setVisibility("incognito")}
+              onClick={() => choosePlus(() => setVisibility("incognito"))}
               className="w-full p-4 text-left flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
@@ -509,7 +627,7 @@ export default function Settings() {
             </div>
           </SettingCard>
           <p className="text-sm text-muted-foreground mt-2 px-1">
-            When turned off, your profile will be hidden from the card stack and Discovery will be disabled. People you have already Liked may still see and match with you.
+            When turned off, your profile is hidden from other members' card stack. People you have already liked may still see you and match with you.
           </p>
         </section>
 
@@ -557,7 +675,7 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Appearance</h2>
           <SettingCard>
-            <SettingRow icon={Moon} label="Use System Setting" onClick={() => navigate("/dark-mode")} iconColor="text-muted-foreground" />
+            <SettingRow icon={Moon} label="Dark mode" value="On" onClick={() => navigate("/dark-mode")} iconColor="text-muted-foreground" />
           </SettingCard>
         </section>
 
@@ -569,29 +687,20 @@ export default function Settings() {
           </SettingCard>
         </section>
 
-        {/* Apply for Student Mode */}
-        <section className="mb-6">
-          <SettingCard>
-            <button className="w-full p-4 text-center">
-              <span className="text-primary font-semibold">Apply for Student Mode</span>
-            </button>
-          </SettingCard>
-        </section>
-
         {/* Web Profile */}
         <section className="mb-6">
           <SettingCard className="p-4">
             <p className="font-semibold text-foreground mb-1">Web Profile</p>
             <p className="text-sm text-muted-foreground mb-3">
-              Create a username. Share your username. Have people all over the world match with you right on ISEXY.
+              Share a link to your ISEXY profile with friends.
             </p>
             <button 
               onClick={() => navigate("/web-profile")}
               className="flex items-center justify-between w-full"
             >
-              <span className="text-foreground">Username</span>
+              <span className="text-foreground">Your profile link</span>
               <span className="flex items-center gap-1 text-muted-foreground">
-                Claim Yours <ChevronRight className="w-4 h-4" />
+                Share <ChevronRight className="w-4 h-4" />
               </span>
             </button>
           </SettingCard>
@@ -690,7 +799,6 @@ export default function Settings() {
           <h2 className="text-lg font-bold text-foreground mb-3">Payment Account</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow icon={CreditCard} label="Manage Payment Account" onClick={() => navigate("/manage-payment-account")} iconColor="text-muted-foreground" />
-            <SettingRow label="Manage Google Play Account" />
             <SettingRow label="Restore Purchase" onClick={() => navigate("/restore-purchase")} />
           </SettingCard>
         </section>
@@ -704,6 +812,7 @@ export default function Settings() {
             <SettingRow label="Contact Us" onClick={() => navigate("/contact-us")} />
             <SettingRow label="Track Your Tickets" onClick={() => navigate("/ticket-tracking")} />
             <SettingRow label="Report a problem" onClick={() => navigate("/help-support")} />
+            {staffRole.isStaff && <SettingRow label="Staff tools" onClick={() => navigate("/admin")} />}
           </SettingCard>
         </section>
 
@@ -725,7 +834,7 @@ export default function Settings() {
                 iconColor="text-green-500"
               />
             )}
-            <SettingRow label="Refer a Friend" onClick={() => navigate("/loyalty-rewards")} />
+            <SettingRow label="Refer a Friend" onClick={() => navigate("/referrals")} />
           </SettingCard>
         </section>
 
@@ -733,8 +842,8 @@ export default function Settings() {
         <section className="mb-6">
           <h2 className="text-lg font-bold text-foreground mb-3">Community</h2>
           <SettingCard className="divide-y divide-border">
-            <SettingRow label="Community Guidelines" onClick={() => navigate("/house-rules")} />
-            <SettingRow label="Safety Tips" onClick={() => navigate("/safety")} />
+            <SettingRow label="Community Guidelines" onClick={() => navigate("/community-guidelines")} />
+            <SettingRow label="Safety Tips" onClick={() => navigate("/safety-tips")} />
             <SettingRow label="Safety Center" onClick={() => navigate("/safety")} />
           </SettingCard>
         </section>
@@ -754,7 +863,6 @@ export default function Settings() {
             <SettingRow label="Cookie Policy" onClick={() => navigate("/cookie-policy")} />
             <SettingRow label="Privacy Policy" onClick={() => navigate("/privacy")} />
             <SettingRow label="Consumer Health Data Privacy" onClick={() => navigate("/consumer-health-privacy")} />
-            <SettingRow label="Privacy Preferences" />
           </SettingCard>
         </section>
 
@@ -769,8 +877,8 @@ export default function Settings() {
         </section>
 
         {/* Save Button */}
-        <AuthButton variant="primary" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save Changes"}
+        <AuthButton variant="primary" onClick={handleSave} disabled={isSaving || !isDirty}>
+          {isSaving ? "Saving..." : isDirty ? "Save Changes" : "All changes saved"}
         </AuthButton>
 
         {/* Logout */}
@@ -794,7 +902,7 @@ export default function Settings() {
         {/* Delete Account */}
         <section className="mb-8">
           <SettingCard>
-            <button 
+            <button
               onClick={() => navigate("/delete-account")}
               className="w-full p-4 text-center font-semibold text-destructive"
             >
@@ -802,15 +910,45 @@ export default function Settings() {
             </button>
           </SettingCard>
         </section>
+
+        <AdSlot placement="isexy-profile-banner" className="mb-8" />
       </div>
 
-      <BoostsModal 
-        isOpen={boostsModalOpen} 
-        onClose={() => setBoostsModalOpen(false)} 
-        boostsRemaining={profile?.boosts_remaining || 0}
-        primetimeBoostsRemaining={0}
-        onGetMoreBoosts={() => navigate("/premium")}
+      {/* Unsaved changes: keep Save in reach on a long page (phones especially). */}
+      {isDirty && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="max-w-md mx-auto flex items-center gap-3">
+            <p className="flex-1 text-sm text-muted-foreground">You have unsaved changes</p>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-50"
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <PreferenceDrawer
+        isOpen={showMeOpen}
+        onClose={() => setShowMeOpen(false)}
+        title="Show me"
+        options={(["women", "men", "everyone"] as const).map((v) => SHOW_ME_LABELS[v])}
+        selected={showMe.map((v) => SHOW_ME_LABELS[v])}
+        onSelect={(labels: string[]) => {
+          // The drawer adds or removes one label per tap; apply that tap with the Everyone rule.
+          const before = showMe.map((v) => SHOW_ME_LABELS[v]);
+          const tapped = [...labels.filter((l) => !before.includes(l)), ...before.filter((l) => !labels.includes(l))][0];
+          const value = (Object.keys(SHOW_ME_LABELS) as ShowMe[]).find((k) => SHOW_ME_LABELS[k] === tapped);
+          if (value) setInterestedIn(toggleShowMe(showMe, value));
+        }}
+        multiSelect
       />
+
+      {boostsModalOpen && (
+        <BoostsModal isOpen onClose={() => setBoostsModalOpen(false)} />
+      )}
 
       {/* Preference Drawers */}
       <PreferenceDrawer

@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Switch } from "@/components/ui/switch";
+import { useDeviceSetting } from "@/hooks/useDeviceSetting";
 
 export default function QAEvents() {
-  const [participateInQA, setParticipateInQA] = useState(true);
+  const [participateInQA, setParticipateInQA] = useDeviceSetting("qa_events_participate", true);
 
   return (
     <AuthLayout showBack variant="white">
@@ -15,6 +15,7 @@ export default function QAEvents() {
           <Switch
             checked={participateInQA}
             onCheckedChange={setParticipateInQA}
+            aria-label="Participate in Q&A Events"
           />
         </div>
       </div>

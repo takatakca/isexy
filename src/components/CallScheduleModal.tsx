@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Calendar, Clock, X, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, addDays, setHours, setMinutes } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export function CallScheduleModal({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [scheduling, setScheduling] = useState(false);
+  const { profile } = useAuth();
 
   const handleSchedule = async () => {
     if (!selectedDate || !selectedTime) {
@@ -64,16 +66,18 @@ export function CallScheduleModal({
 
       if (error) throw error;
 
-      // Send notification to recipient
+      // Tell the recipient who wants to call (it used to show the recipient's own name).
       await supabase.functions.invoke("isexy-send-push-notification", {
         body: {
           userId: recipientId,
-          title: "📅 Call Scheduled",
-          body: `${recipientName} wants to video call you on ${format(scheduledAt, "MMM d 'at' h:mm a")}`,
+          title: "📅 Call scheduled",
+          body: `${profile?.first_name ?? "Your match"} wants to video call you on ${format(scheduledAt, "MMM d 'at' h:mm a")}`,
+          tag: `scheduled-call-${matchId}`,
           data: {
             type: "scheduled_call",
             matchId,
             scheduledAt: scheduledAt.toISOString(),
+            url: `/chat/${matchId}`,
           },
         },
       });

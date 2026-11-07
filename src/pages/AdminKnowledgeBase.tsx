@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { goBack } from "@/lib/navigation";
 import { 
   ArrowLeft, 
   Plus, 
@@ -277,7 +278,7 @@ export default function AdminKnowledgeBase() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2">
+            <button onClick={() => goBack(navigate, "/admin")} className="p-2" aria-label="Back">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <div>

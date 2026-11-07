@@ -80,9 +80,10 @@ const AdminDashboard = () => {
   };
 
   const fetchAllStats = async () => {
+    // Named columns: staff notes are not readable directly (0015 K1).
     const { data: tickets } = await supabase
       .from('support_tickets')
-      .select('*');
+      .select('id, status, category, priority, created_at, updated_at, responded_at');
 
     if (!tickets) return;
 

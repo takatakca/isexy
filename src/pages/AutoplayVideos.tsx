@@ -1,23 +1,11 @@
-import { useState, useEffect } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Check } from "lucide-react";
+import { useDeviceSetting } from "@/hooks/useDeviceSetting";
 
 type AutoplayMode = "wifi-data" | "wifi-only" | "never";
 
 export default function AutoplayVideos() {
-  const [selectedMode, setSelectedMode] = useState<AutoplayMode>("wifi-data");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("autoplay-mode") as AutoplayMode;
-    if (saved) {
-      setSelectedMode(saved);
-    }
-  }, []);
-
-  const handleSelect = (mode: AutoplayMode) => {
-    setSelectedMode(mode);
-    localStorage.setItem("autoplay-mode", mode);
-  };
+  const [selectedMode, handleSelect] = useDeviceSetting<AutoplayMode>("autoplay-mode", "wifi-data");
 
   const options = [
     {
@@ -49,6 +37,7 @@ export default function AutoplayVideos() {
           <button
             key={option.id}
             onClick={() => handleSelect(option.id)}
+            aria-pressed={selectedMode === option.id}
             className={`w-full flex items-center justify-between p-4 ${
               index !== options.length - 1 ? "border-b border-border" : ""
             }`}

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
-import { Users } from "lucide-react";
+import { AdSlot } from "@/components/AdSlot";
+import { feedAdAfter } from "@/lib/ads";
 import Forum from "@/components/Forum";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -9,7 +10,6 @@ interface ExploreCategory {
   id: string;
   title: string;
   color: string;
-  count: string;
   image?: string;
   featured?: boolean;
 }
@@ -19,43 +19,47 @@ const categories: { section: string; description: string; items: ExploreCategory
     section: "What you're here for",
     description: "Find people who want the same thing from ISEXY",
     items: [
-      { id: "long-term", title: "Long-term friendships", color: "from-orange-600/90 to-rose-500/90", count: "3K", featured: true },
-      { id: "serious", title: "Deep Conversations", color: "from-red-600/90 to-orange-500/90", count: "2K" },
-      { id: "tonight", title: "Free Tonight", color: "from-purple-600/90 to-violet-500/90", count: "776" },
-      { id: "short-term", title: "Just for Fun", color: "from-pink-600/90 to-rose-500/90", count: "448" },
-      { id: "friends", title: "New friends", color: "from-rose-500/90 to-pink-500/90", count: "243" },
-      { id: "non-mono", title: "Language Exchange", color: "from-cyan-600/90 to-teal-500/90", count: "357" },
+      { id: "long-term", title: "Long-term friendships", color: "from-orange-600/90 to-rose-500/90", featured: true },
+      { id: "serious", title: "Deep Conversations", color: "from-red-600/90 to-orange-500/90" },
+      { id: "tonight", title: "Free Tonight", color: "from-purple-600/90 to-violet-500/90" },
+      { id: "short-term", title: "Just for Fun", color: "from-pink-600/90 to-rose-500/90" },
+      { id: "friends", title: "New friends", color: "from-rose-500/90 to-pink-500/90" },
+      { id: "non-mono", title: "Language Exchange", color: "from-cyan-600/90 to-teal-500/90" },
     ],
   },
   {
     section: "Similar plans and lifestyles",
     description: "Find people at a similar stage of life",
     items: [
-      { id: "wants-kids", title: "Family-Oriented", color: "from-green-600/90 to-emerald-500/90", count: "685" },
-      { id: "child-free", title: "Child-Free", color: "from-cyan-600/90 to-teal-500/90", count: "339" },
+      { id: "wants-kids", title: "Family-Oriented", color: "from-green-600/90 to-emerald-500/90" },
+      { id: "child-free", title: "Child-Free", color: "from-cyan-600/90 to-teal-500/90" },
     ],
   },
   {
     section: "Shared interests or hobbies",
     description: "Find people with similar interests",
     items: [
-      { id: "travel", title: "Travel", color: "from-rose-600/90 to-pink-500/90", count: "1K" },
-      { id: "anthem", title: "Add an Anthem", color: "from-cyan-600/90 to-blue-500/90", count: "1K" },
-      { id: "foodies", title: "Foodies", color: "from-red-800/90 to-rose-600/90", count: "1K" },
-      { id: "nature", title: "Outdoor Fans", color: "from-green-600/90 to-emerald-500/90", count: "1K" },
-      { id: "music", title: "Music Fans", color: "from-purple-700/90 to-violet-500/90", count: "1K" },
-      { id: "self-care", title: "Self Care", color: "from-green-600/90 to-teal-500/90", count: "1K" },
-      { id: "gamers", title: "Gamers", color: "from-green-700/90 to-emerald-600/90", count: "436" },
-      { id: "pets", title: "Animal Parents", color: "from-red-700/90 to-orange-600/90", count: "147" },
-      { id: "binge", title: "Binge Watchers", color: "from-green-600/90 to-teal-500/90", count: "1K" },
-      { id: "sporty", title: "Sporty", color: "from-red-600/90 to-orange-500/90", count: "1K" },
-      { id: "coffee", title: "Coffee Chats", color: "from-yellow-600/90 to-amber-500/90", count: "192" },
-      { id: "date-night", title: "Night Out", color: "from-pink-700/90 to-rose-600/90", count: "1K" },
-      { id: "thrill", title: "Thrill Seekers", color: "from-orange-600/90 to-amber-500/90", count: "1K" },
-      { id: "creatives", title: "Creatives", color: "from-purple-600/90 to-violet-500/90", count: "1K" },
+      { id: "travel", title: "Travel", color: "from-rose-600/90 to-pink-500/90" },
+      { id: "anthem", title: "Add an Anthem", color: "from-cyan-600/90 to-blue-500/90" },
+      { id: "foodies", title: "Foodies", color: "from-red-800/90 to-rose-600/90" },
+      { id: "nature", title: "Outdoor Fans", color: "from-green-600/90 to-emerald-500/90" },
+      { id: "music", title: "Music Fans", color: "from-purple-700/90 to-violet-500/90" },
+      { id: "self-care", title: "Self Care", color: "from-green-600/90 to-teal-500/90" },
+      { id: "gamers", title: "Gamers", color: "from-green-700/90 to-emerald-600/90" },
+      { id: "pets", title: "Animal Parents", color: "from-red-700/90 to-orange-600/90" },
+      { id: "binge", title: "Binge Watchers", color: "from-green-600/90 to-teal-500/90" },
+      { id: "sporty", title: "Sporty", color: "from-red-600/90 to-orange-500/90" },
+      { id: "coffee", title: "Coffee Chats", color: "from-yellow-600/90 to-amber-500/90" },
+      { id: "date-night", title: "Night Out", color: "from-pink-700/90 to-rose-600/90" },
+      { id: "thrill", title: "Thrill Seekers", color: "from-orange-600/90 to-amber-500/90" },
+      { id: "creatives", title: "Creatives", color: "from-purple-600/90 to-violet-500/90" },
     ],
   },
 ];
+
+// Free members: one inline ad card every 6 categories, counted across sections.
+const TOTAL_ITEMS = categories.reduce((n, s) => n + s.items.length, 0);
+const SECTION_OFFSETS = categories.map((_, i) => categories.slice(0, i).reduce((n, s) => n + s.items.length, 0));
 
 // Placeholder images for categories (using gradients as fallback)
 const categoryImages: Record<string, string> = {
@@ -73,7 +77,6 @@ const categoryImages: Record<string, string> = {
   "gamers": "https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=400&h=500&fit=crop",
   "pets": "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&h=500&fit=crop",
   "binge": "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=400&h=500&fit=crop",
-  "sporty": "https://images.unsplash.com/photo-1461896836934- voices?w=400&h=500&fit=crop",
   "coffee": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=500&fit=crop",
   "date-night": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&h=500&fit=crop",
 };
@@ -87,7 +90,7 @@ export default function Explore() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-40">
       <div className="sticky top-0 z-10 bg-background px-4 pt-12 pb-4">
         <h1 className="text-3xl font-extrabold text-foreground">Explore</h1>
       </div>
@@ -100,38 +103,40 @@ export default function Explore() {
           </TabsList>
 
           <TabsContent value="discover" className="space-y-8">
-            {categories.map((section) => (
+            {categories.map((section, si) => (
               <div key={section.section}>
                 <h2 className="text-lg font-bold text-foreground mb-1">{section.section}</h2>
                 <p className="text-sm text-muted-foreground mb-4">{section.description}</p>
                 
                 <div className="grid grid-cols-2 gap-3">
-                  {section.items.map((item) => (
+                  {section.items.map((item, idx) => (
+                    <Fragment key={item.id}>
                     <button
-                      key={item.id}
                       onClick={() => handleCategoryClick(item)}
                       className={`relative rounded-2xl overflow-hidden ${item.featured ? 'col-span-2 h-48' : 'h-44'} flex flex-col justify-end text-left transition-transform active:scale-[0.98]`}
                     >
                       {categoryImages[item.id] && (
                         <img
                           src={categoryImages[item.id]}
-                          alt={item.title}
+                          alt=""
                           className="absolute inset-0 w-full h-full object-cover"
                           loading="lazy"
+                          decoding="async"
+                          onError={(e) => { e.currentTarget.style.display = "none"; }}
                         />
                       )}
-                      <div className={`absolute inset-0 bg-gradient-to-br ${item.color} mix-blend-multiply`} />
+                      <div className={`absolute inset-0 bg-gradient-to-br ${item.color} ${categoryImages[item.id] ? "mix-blend-multiply" : ""}`} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                      <div className="absolute top-3 right-3 bg-background/90 text-background text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
-                        <Users className="w-3 h-3" />
-                        {item.count}
-                      </div>
                       <div className="relative z-10 p-4">
                         <h3 className="text-white font-bold text-xl leading-tight drop-shadow-lg">
                           {item.title}
                         </h3>
                       </div>
                     </button>
+                    {feedAdAfter(SECTION_OFFSETS[si] + idx, TOTAL_ITEMS) && (
+                      <AdSlot placement="isexy-feed-inline" className="col-span-2" />
+                    )}
+                    </Fragment>
                   ))}
                 </div>
               </div>

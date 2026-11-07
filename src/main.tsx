@@ -3,8 +3,10 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { installGlobalErrorHandlers } from "@/lib/errorReporting";
+import { rememberReferralCode } from "@/lib/referral";
 
 installGlobalErrorHandlers();
+rememberReferralCode();
 
 // Pre-rendered head tags (index.html / scripts/generate-seo.mjs) serve crawlers
 // and link previews. Once the app boots, react-helmet owns them — drop the

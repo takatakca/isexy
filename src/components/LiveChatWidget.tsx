@@ -37,7 +37,7 @@ export function LiveChatWidget() {
 
     // Subscribe to new messages
     const channel = supabase
-      .channel(`chat-${sessionId}`)
+      .channel(`live-chat-${sessionId}`)
       .on(
         "postgres_changes" as any,
         {
