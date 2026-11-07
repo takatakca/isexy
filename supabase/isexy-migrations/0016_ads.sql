@@ -138,19 +138,21 @@ BEGIN
        AND bt.stripe_session_id IS NOT NULL
        AND bt.created_at > now() - c_ad_free_after_payment
     UNION ALL
-    SELECT coalesce(gt.completed_at, gt.created_at)
+    SELECT coalesce(gt.payment_confirmed_at, CASE WHEN gt.status = 'completed' THEN coalesce(gt.completed_at, gt.created_at) END)
       FROM gift_transactions gt
      WHERE gt.sender_profile_id = v_profile_id
-       AND gt.status = 'completed'
+       AND gt.status <> 'refunded'
+       AND (gt.payment_confirmed_at IS NOT NULL OR gt.status = 'completed')
        AND gt.stripe_session_id IS NOT NULL
-       AND coalesce(gt.completed_at, gt.created_at) > now() - c_ad_free_after_payment
+       AND coalesce(gt.payment_confirmed_at, CASE WHEN gt.status = 'completed' THEN coalesce(gt.completed_at, gt.created_at) END) > now() - c_ad_free_after_payment
     UNION ALL
-    SELECT coalesce(d.completed_at, d.created_at)
+    SELECT coalesce(d.payment_confirmed_at, CASE WHEN d.status = 'completed' THEN coalesce(d.completed_at, d.created_at) END)
       FROM donations d
      WHERE d.donor_profile_id = v_profile_id
-       AND d.status = 'completed'
+       AND d.status <> 'refunded'
+       AND (d.payment_confirmed_at IS NOT NULL OR d.status = 'completed')
        AND d.stripe_session_id IS NOT NULL
-       AND coalesce(d.completed_at, d.created_at) > now() - c_ad_free_after_payment
+       AND coalesce(d.payment_confirmed_at, CASE WHEN d.status = 'completed' THEN coalesce(d.completed_at, d.created_at) END) > now() - c_ad_free_after_payment
     UNION ALL
     SELECT s.current_period_start
       FROM subscriptions s

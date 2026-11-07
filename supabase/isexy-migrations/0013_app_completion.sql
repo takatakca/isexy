@@ -2466,6 +2466,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS chat_subscriptions_stripe_subscription_key
   ON isexy.chat_subscriptions (stripe_subscription_id) WHERE stripe_subscription_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS chat_subscriptions_profile_idx ON isexy.chat_subscriptions (profile_id, expires_at DESC);
 
+-- Payment settlement is not provider delivery. Only the service role can
+-- write these markers; member INSERT/UPDATE policies are closed in 0014.
+ALTER TABLE isexy.gift_transactions ADD COLUMN IF NOT EXISTS payment_confirmed_at timestamptz;
+ALTER TABLE isexy.donations ADD COLUMN IF NOT EXISTS payment_confirmed_at timestamptz;
+
 -- One-time purchase. The server catalog decides what a product gives; the
 -- ledger row is written first with the Stripe session id (unique), so a
 -- retried or duplicated event changes nothing. All or nothing.
@@ -2487,6 +2492,8 @@ DECLARE
   v_qty integer;
   v_ledger uuid;
   v_gift gift_packages%ROWTYPE;
+  v_existing_gift gift_transactions%ROWTYPE;
+  v_existing_donation donations%ROWTYPE;
   v_recipient uuid;
   v_stars integer;
   v_amount numeric := round(coalesce(p_amount_cents, 0) / 100.0, 2);
@@ -2597,16 +2604,37 @@ BEGIN
     IF v_gift.id IS NULL OR v_recipient IS NULL OR NOT EXISTS (SELECT 1 FROM profiles WHERE id = v_recipient) THEN
       RETURN jsonb_build_object('success', false, 'error', 'gift_metadata_invalid', 'product', p_product);
     END IF;
-    INSERT INTO gift_transactions (sender_profile_id, receiver_profile_id, gift_package_id, amount_usd,
-                                   message, status, stripe_session_id, completed_at)
-    VALUES (p_profile_id, v_recipient, v_gift.id, v_amount, left(p_meta->>'message', 200),
-            'completed', p_session_id, now())
-    ON CONFLICT (stripe_session_id) WHERE stripe_session_id IS NOT NULL DO NOTHING
-    RETURNING id INTO v_ledger;
-    IF v_ledger IS NULL THEN
-      UPDATE gift_transactions SET status = 'completed', completed_at = coalesce(completed_at, now())
-       WHERE stripe_session_id = p_session_id AND status <> 'completed';
-      RETURN jsonb_build_object('success', true, 'already_fulfilled', true, 'product', p_product);
+    IF v_gift.category = 'stars' THEN
+      v_stars := nullif(substring(v_gift.name FROM '^([0-9]+)'), '')::integer;
+      IF coalesce(v_stars, 0) <= 0 THEN
+        RETURN jsonb_build_object('success', false, 'error', 'gift_quantity_invalid', 'product', p_product);
+      END IF;
+    END IF;
+    SELECT * INTO v_existing_gift FROM gift_transactions
+     WHERE stripe_session_id = p_session_id FOR UPDATE;
+    IF FOUND THEN
+      IF v_existing_gift.sender_profile_id IS DISTINCT FROM p_profile_id
+         OR v_existing_gift.receiver_profile_id IS DISTINCT FROM v_recipient
+         OR v_existing_gift.gift_package_id IS DISTINCT FROM v_gift.id THEN
+        RETURN jsonb_build_object('success', false, 'error', 'payment_reference_mismatch');
+      END IF;
+      IF v_existing_gift.payment_confirmed_at IS NOT NULL OR v_existing_gift.status = 'completed' THEN
+        RETURN jsonb_build_object('success', true, 'already_fulfilled', true, 'product', p_product,
+                                  'fulfillment_status', v_existing_gift.status);
+      END IF;
+      IF v_existing_gift.status <> 'pending' THEN
+        RETURN jsonb_build_object('success', false, 'error', 'manual_reconciliation_required');
+      END IF;
+      UPDATE gift_transactions SET payment_confirmed_at = now(), amount_usd = v_amount,
+        status = CASE WHEN v_gift.category = 'stars' THEN 'completed' ELSE 'pending' END,
+        completed_at = CASE WHEN v_gift.category = 'stars' THEN now() END
+       WHERE id = v_existing_gift.id;
+    ELSE
+      INSERT INTO gift_transactions (sender_profile_id, receiver_profile_id, gift_package_id, amount_usd,
+                                     message, status, stripe_session_id, completed_at, payment_confirmed_at)
+      VALUES (p_profile_id, v_recipient, v_gift.id, v_amount, left(p_meta->>'message', 200),
+              CASE WHEN v_gift.category = 'stars' THEN 'completed' ELSE 'pending' END,
+              p_session_id, CASE WHEN v_gift.category = 'stars' THEN now() END, now());
     END IF;
     IF v_gift.category = 'stars' THEN
       v_stars := nullif(substring(v_gift.name FROM '^([0-9]+)'), '')::integer;
@@ -2628,28 +2656,44 @@ BEGIN
           updated_at = now();
       END IF;
     END IF;
-    RETURN jsonb_build_object('success', true, 'product', p_product, 'kind', 'gift', 'stars', v_stars);
+    RETURN jsonb_build_object('success', true, 'product', p_product, 'kind', 'gift', 'stars', v_stars,
+                              'fulfillment_status', CASE WHEN v_gift.category = 'stars' THEN 'completed' ELSE 'pending' END);
   END IF;
 
-  -- Donations, mobile top-ups, food packages (Cuba, on hold: recorded as before).
+  -- A paid donation/top-up/food order awaits real provider fulfillment.
   IF p_product ~ '^(donation|topup|food)_[0-9]+$' THEN
-    INSERT INTO donations (donor_profile_id, recipient_profile_id, amount_usd, donation_type, phone_number,
-                           recipient_name, status, stripe_session_id, completed_at)
-    VALUES (p_profile_id,
-            CASE WHEN coalesce(p_meta->>'recipient_profile_id', '') ~ '^[0-9a-f-]{36}$'
-                 THEN (p_meta->>'recipient_profile_id')::uuid END,
-            v_amount,
-            CASE split_part(p_product, '_', 1) WHEN 'topup' THEN 'topup' WHEN 'food' THEN 'food' ELSE 'cash' END,
-            left(p_meta->>'phone_number', 40), left(p_meta->>'recipient_name', 120),
-            'completed', p_session_id, now())
-    ON CONFLICT (stripe_session_id) DO NOTHING
-    RETURNING id INTO v_ledger;
-    IF v_ledger IS NULL THEN
-      UPDATE donations SET status = 'completed', completed_at = coalesce(completed_at, now())
-       WHERE stripe_session_id = p_session_id AND status <> 'completed';
-      RETURN jsonb_build_object('success', true, 'already_fulfilled', true, 'product', p_product);
+    BEGIN
+      v_recipient := nullif(p_meta->>'recipient_profile_id', '')::uuid;
+    EXCEPTION WHEN invalid_text_representation THEN
+      RETURN jsonb_build_object('success', false, 'error', 'donation_metadata_invalid');
+    END;
+    SELECT * INTO v_existing_donation FROM donations
+     WHERE stripe_session_id = p_session_id FOR UPDATE;
+    IF FOUND THEN
+      IF v_existing_donation.donor_profile_id IS DISTINCT FROM p_profile_id
+         OR v_existing_donation.recipient_profile_id IS DISTINCT FROM v_recipient
+         OR v_existing_donation.donation_type IS DISTINCT FROM
+              CASE split_part(p_product, '_', 1) WHEN 'topup' THEN 'topup' WHEN 'food' THEN 'food' ELSE 'cash' END THEN
+        RETURN jsonb_build_object('success', false, 'error', 'payment_reference_mismatch');
+      END IF;
+      IF v_existing_donation.payment_confirmed_at IS NOT NULL OR v_existing_donation.status = 'completed' THEN
+        RETURN jsonb_build_object('success', true, 'already_fulfilled', true, 'product', p_product,
+                                  'fulfillment_status', v_existing_donation.status);
+      END IF;
+      IF v_existing_donation.status <> 'pending' THEN
+        RETURN jsonb_build_object('success', false, 'error', 'manual_reconciliation_required');
+      END IF;
+      UPDATE donations SET payment_confirmed_at = now(), amount_usd = v_amount
+       WHERE id = v_existing_donation.id;
+    ELSE
+      INSERT INTO donations (donor_profile_id, recipient_profile_id, amount_usd, donation_type, phone_number,
+                             recipient_name, status, stripe_session_id, payment_confirmed_at)
+      VALUES (p_profile_id, v_recipient, v_amount,
+              CASE split_part(p_product, '_', 1) WHEN 'topup' THEN 'topup' WHEN 'food' THEN 'food' ELSE 'cash' END,
+              left(p_meta->>'phone_number', 40), left(p_meta->>'recipient_name', 120),
+              'pending', p_session_id, now());
     END IF;
-    RETURN jsonb_build_object('success', true, 'product', p_product, 'kind', 'donation');
+    RETURN jsonb_build_object('success', true, 'product', p_product, 'kind', 'donation', 'fulfillment_status', 'pending');
   END IF;
 
   RETURN jsonb_build_object('success', false, 'error', 'unknown_product', 'product', p_product);

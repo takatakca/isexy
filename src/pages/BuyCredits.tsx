@@ -34,7 +34,7 @@ export default function BuyCredits() {
   const [converting, setConverting] = useState<"video" | "phone" | null>(null);
   const [convertAmount, setConvertAmount] = useState(10);
 
-  useCheckoutReturn(refresh, "Payment received. Your credits will appear in a few seconds.");
+  useCheckoutReturn(refresh, "Checking payment confirmation. Your credits will update after confirmation.");
 
   const currentCredits = wallet?.credits ?? 0;
   const blocked = blockedLabel(gate);

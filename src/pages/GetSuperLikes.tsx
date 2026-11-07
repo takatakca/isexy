@@ -32,7 +32,7 @@ export default function GetSuperLikes() {
   const [selectedPackage, setSelectedPackage] = useState<string>("15");
   const [loading, setLoading] = useState(false);
 
-  useCheckoutReturn(refresh, "Payment received. Your Super Likes will appear in a few seconds.");
+  useCheckoutReturn(refresh, "Checking payment confirmation. Your Super Likes will update after confirmation.");
 
   const selected = packages.find((p) => p.id === selectedPackage)!;
   const total = selected.quantity * selected.pricePerItem;

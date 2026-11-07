@@ -82,7 +82,7 @@ export default function GetBoosts() {
   const [loading, setLoading] = useState(false);
   const [using, setUsing] = useState<BoostKind | null>(null);
 
-  useCheckoutReturn(refresh, "Payment received. Your Boosts will appear in a few seconds.");
+  useCheckoutReturn(refresh, "Checking payment confirmation. Your Boosts will update after confirmation.");
 
   const config = boostTypeConfig[activeType];
   const packages = config.packages;

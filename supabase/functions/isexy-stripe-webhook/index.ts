@@ -196,7 +196,7 @@ serve(async (req) => {
     }
     // Paid but not credited (e.g. bad gift details): never acknowledge it.
     if (!result?.success) throw new Error(`payment ${session.id}: ${result?.error ?? "not fulfilled"} (${product})`);
-    logStep(result.already_fulfilled ? "Payment already fulfilled" : "Payment fulfilled", { sessionId: session.id, product });
+    logStep(result.already_fulfilled ? "Payment already recorded" : "Payment recorded", { sessionId: session.id, product });
   }
 
   /**

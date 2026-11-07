@@ -6,12 +6,12 @@ import { AD_STATUS_QUERY_KEY } from "@/hooks/useAdFree";
 
 /**
  * Coming back from Stripe (?checkout=success|cancelled, older links
- * ?success=true / ?canceled=true / ?purchase=...). Says what happened, then
+ * ?success=true / ?canceled=true / ?purchase=...). Requests account confirmation, then
  * refreshes the balances a few times: the webhook credits the account a few
  * seconds after the payment. The query is removed so a reload does not repeat it.
  * Ads go away too: the ad-free status is re-read with the balances.
  */
-export function useCheckoutReturn(onPaid?: () => unknown, successMessage = "Payment received. Updating your account…") {
+export function useCheckoutReturn(onPaid?: () => unknown, returnMessage = "Checking payment confirmation. Your account will update after confirmation.") {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,7 +33,7 @@ export function useCheckoutReturn(onPaid?: () => unknown, successMessage = "Paym
     done.current = true;
 
     if (success) {
-      toast.success(successMessage);
+      toast.info(returnMessage);
       for (const delay of [0, 2500, 6000, 12000]) {
         timers.current.push(window.setTimeout(() => {
           onPaidRef.current?.();
@@ -41,7 +41,7 @@ export function useCheckoutReturn(onPaid?: () => unknown, successMessage = "Paym
         }, delay));
       }
     } else {
-      toast("Payment cancelled. Nothing was charged.");
+      toast("Checkout closed. Check your account for payment status.");
     }
 
     const next = new URLSearchParams(params);

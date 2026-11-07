@@ -40,7 +40,7 @@ export default function BuyMinutes() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("phone");
 
-  useCheckoutReturn(refresh, "Payment received. Your minutes will appear in a few seconds.");
+  useCheckoutReturn(refresh, "Checking payment confirmation. Your minutes will update after confirmation.");
 
   const phoneBalance = wallet?.phone_minutes ?? 0;
   const videoBalance = wallet?.video_minutes ?? 0;

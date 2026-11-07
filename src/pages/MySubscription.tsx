@@ -118,7 +118,7 @@ export default function MySubscription() {
   const [syncFailed, setSyncFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
-  useCheckoutReturn(refresh, "Payment received. Your plan starts in a few seconds.");
+  useCheckoutReturn(refresh, "Checking payment confirmation. Your plan will update after confirmation.");
 
   // Catch up with Stripe (a missed webhook), then show the plan from the database.
   useEffect(() => {
