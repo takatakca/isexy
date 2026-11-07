@@ -2673,7 +2673,7 @@ BEGIN
       IF v_existing_donation.donor_profile_id IS DISTINCT FROM p_profile_id
          OR v_existing_donation.recipient_profile_id IS DISTINCT FROM v_recipient
          OR v_existing_donation.donation_type IS DISTINCT FROM
-              CASE split_part(p_product, '_', 1) WHEN 'topup' THEN 'topup' WHEN 'food' THEN 'food' ELSE 'cash' END THEN
+              (CASE split_part(p_product, '_', 1) WHEN 'topup' THEN 'topup' WHEN 'food' THEN 'food' ELSE 'cash' END) THEN
         RETURN jsonb_build_object('success', false, 'error', 'payment_reference_mismatch');
       END IF;
       IF v_existing_donation.payment_confirmed_at IS NOT NULL OR v_existing_donation.status = 'completed' THEN
