@@ -73,11 +73,18 @@ export default function Profile() {
   ];
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-40">
+    <div className="min-h-screen bg-background pb-40">
       {/* Header */}
-      <div className="bg-background px-4 pt-12 pb-6">
-        <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+      <div className="brand-ambient px-4 pb-6" style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}>
+        <div className="mx-auto max-w-3xl">
+        <div className="flex justify-end -mr-2 mb-1">
+            <LanguageSelector variant="icon" />
+            <button onClick={() => navigate("/safety")} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors" aria-label="Safety"><Shield className="w-[22px] h-[22px] text-muted-foreground" /></button>
+            <button onClick={() => navigate("/settings")} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors" aria-label="Settings"><Settings className="w-[22px] h-[22px] text-muted-foreground" /></button>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative w-24 h-24 rounded-[1.75rem] p-[3px] gradient-glow shadow-glow flex-shrink-0">
+          <div className="w-full h-full rounded-[1.6rem] overflow-hidden bg-muted">
             {profilePhoto ? (
               <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -86,61 +93,61 @@ export default function Profile() {
               </div>
             )}
           </div>
+          </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-foreground truncate">{profile?.first_name || "User"}</h1>
-              {profile?.is_verified && <BadgeCheck className="w-5 h-5 text-cyan-500" />}
+            <p className="eyebrow mb-1.5">My profile</p>
+            <div className="flex items-center gap-2 mb-3">
+              <h1 className="type-title text-foreground truncate">{profile?.first_name || "User"}</h1>
+              {profile?.is_verified && <BadgeCheck className="w-6 h-6 text-accent shrink-0" aria-label="Verified" />}
             </div>
             <button
               onClick={() => navigate("/edit-profile")}
-              className="flex items-center gap-2 px-3 py-2 bg-foreground text-background rounded-full font-semibold text-sm whitespace-nowrap"
+              className="inline-flex min-h-10 items-center gap-2 px-4 gradient-primary text-primary-foreground rounded-full font-semibold text-sm whitespace-nowrap shadow-button hover:brightness-110 transition-[filter]"
             >
               <Pencil className="w-4 h-4" />
               Edit profile
             </button>
           </div>
-          <div className="flex items-center shrink-0">
-            <LanguageSelector variant="icon" />
-            <button onClick={() => navigate("/safety")} className="p-1.5" aria-label="Safety"><Shield className="w-6 h-6 text-muted-foreground" /></button>
-            <button onClick={() => navigate("/settings")} className="p-1.5" aria-label="Settings"><Settings className="w-6 h-6 text-muted-foreground" /></button>
-          </div>
+        </div>
         </div>
       </div>
 
       {/* Completion Score */}
-      <div className="bg-background px-4 pb-6 border-b border-border">
+      <div className="px-4 mx-auto max-w-3xl">
+      <div className="panel p-4 -mt-2">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-foreground">Profile Score</span>
-          <span className="text-sm font-bold text-primary">{score}%</span>
+          <span className="eyebrow-muted">Profile Score</span>
+          <span className="font-display text-lg font-extrabold text-gradient">{score}%</span>
         </div>
-        <Progress value={score} className="h-3" />
+        <Progress value={score} className="h-2.5 bg-foreground/10" />
         <p className="text-xs text-muted-foreground mt-2">
           {score >= 80 ? "🔥 Your profile is looking great!" : "Complete your profile to be seen by more people!"}
         </p>
       </div>
+      </div>
 
       {/* Incomplete Action Cards */}
       {incompleteItems.length > 0 && (
-        <div className="p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Boost your visibility</h2>
+        <div className="p-4 space-y-3 mx-auto max-w-3xl">
+          <h2 className="eyebrow-muted pt-2">Boost your visibility</h2>
           {incompleteItems.map((card) => {
             const Icon = iconMap[card.icon] || Image;
             return (
               <button
                 key={card.id}
                 onClick={() => navigate(card.actionPath)}
-                className="w-full flex items-center gap-4 p-4 bg-background rounded-2xl shadow-sm"
+                className="w-full flex items-center gap-4 p-4 bg-card/70 rounded-2xl border border-foreground/[0.07] hover:border-primary/40 hover:bg-card transition-colors"
               >
                 <div className={`relative ${iconBgMap[card.icon] || "bg-muted"} p-3 rounded-xl`}>
                   <Icon className={`w-6 h-6 ${iconColorMap[card.icon] || "text-muted-foreground"}`} />
-                  <span className="absolute -bottom-1 -right-1 text-xs font-bold text-primary">{card.boost}</span>
+                  <span className="absolute -bottom-2 -right-2 rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground">{card.boost}</span>
                 </div>
                 <div className="flex-1 text-left">
-                  <h3 className="font-semibold text-foreground">{card.label}</h3>
+                  <h3 className="font-display font-bold text-foreground">{card.label}</h3>
                   <p className="text-sm text-muted-foreground">{card.description}</p>
                 </div>
-                <div className="w-8 h-8 border-2 border-muted-foreground/20 rounded-full flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-muted-foreground" />
+                <div className="w-9 h-9 bg-primary/15 ring-1 ring-primary/40 rounded-full flex items-center justify-center shrink-0">
+                  <Plus className="w-4 h-4 text-primary" />
                 </div>
               </button>
             );
@@ -150,16 +157,16 @@ export default function Profile() {
 
       {/* Completed items collapsed */}
       {completedItems.length > 0 && (
-        <div className="px-4 pb-2">
-          <p className="text-xs text-muted-foreground mb-1">{completedItems.length} completed</p>
+        <div className="px-4 pb-2 mx-auto max-w-3xl">
+          <p className="eyebrow-muted mb-2">{completedItems.length} completed</p>
           <div className="flex flex-wrap gap-2">
             {completedItems.map((card) => {
               const Icon = iconMap[card.icon] || Image;
               return (
-                <div key={card.id} className="flex items-center gap-1 px-3 py-1.5 bg-background rounded-full border border-border">
-                  <Icon className="w-4 h-4 text-green-500" />
+                <div key={card.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 rounded-full border border-success/25">
+                  <Icon className="w-4 h-4 text-success" />
                   <span className="text-xs text-foreground">{card.label}</span>
-                  <Check className="w-3 h-3 text-green-500" />
+                  <Check className="w-3 h-3 text-success" />
                 </div>
               );
             })}
@@ -168,31 +175,31 @@ export default function Profile() {
       )}
 
       {/* Quick Actions */}
-      <div className="px-4 pt-4 grid grid-cols-3 gap-3 mb-4">
+      <div className="px-4 pt-4 grid grid-cols-3 gap-3 mb-4 mx-auto max-w-3xl">
         {quickActions.map((action) => (
           <button
             key={action.id}
             onClick={() => navigate(action.path)}
-            className="relative bg-background rounded-2xl p-4 flex flex-col items-center shadow-sm"
+            className="relative bg-card/70 rounded-2xl p-4 flex flex-col items-center border border-foreground/[0.07] hover:border-primary/40 hover:-translate-y-0.5 transition-all"
           >
             <Plus className="absolute top-2 right-2 w-4 h-4 text-muted-foreground" />
             <action.icon className={`w-8 h-8 ${action.iconColor} mb-2`} />
             <span className="text-xs font-semibold text-foreground text-center">{action.title}</span>
-            {action.action && <span className="text-xs text-primary font-semibold mt-1">{action.action}</span>}
+            {action.action && <span className="text-[10px] tracking-[0.14em] text-accent font-semibold mt-1">{action.action}</span>}
           </button>
         ))}
       </div>
 
       {/* Gold Upsell */}
-      <div className="px-4">
-        <div className="bg-card border border-yellow-500/30 rounded-2xl p-4">
+      <div className="px-4 mx-auto max-w-3xl">
+        <div className="rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-400/10 via-card to-card p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Flame className="w-6 h-6 text-yellow-500" />
-              <span className="font-bold text-foreground">ISEXY</span>
+              <Flame className="w-6 h-6 text-amber-300" />
+              <span className="font-display font-extrabold text-foreground">ISEXY</span>
               <span className="px-2 py-0.5 bg-amber-400 text-navy text-xs font-bold rounded">GOLD</span>
             </div>
-            <button onClick={() => navigate("/premium")} className="px-4 py-2 bg-yellow-500 text-black font-bold rounded-full text-sm">Upgrade</button>
+            <button onClick={() => navigate("/premium")} className="min-h-10 px-5 bg-primary text-primary-foreground font-semibold rounded-full text-sm shadow-button hover:brightness-110">Upgrade</button>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
@@ -213,7 +220,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <AdSlot placement="isexy-profile-banner" className="mx-4 mt-4 w-auto" />
+      <div className="px-4 mx-auto max-w-3xl"><AdSlot placement="isexy-profile-banner" className="mt-4" /></div>
 
       <BottomNav />
     </div>

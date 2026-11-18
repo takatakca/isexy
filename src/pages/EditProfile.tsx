@@ -114,9 +114,9 @@ const EXTENDED_COLUMNS = ["relationship_type", "languages", "zodiac", "family_pl
 
 function SectionHeader({ title, icon: Icon }: { title: string; icon?: IconType }) {
   return (
-    <div className="flex items-center gap-2 mb-3 mt-8">
-      {Icon && <Icon className="w-5 h-5 text-primary" />}
-      <h2 className="text-lg font-bold text-foreground">{title}</h2>
+    <div className="flex items-center gap-2.5 mb-3 mt-9">
+      {Icon && <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/30"><Icon className="w-4 h-4 text-primary" /></span>}
+      <h2 className="type-heading text-foreground">{title}</h2>
     </div>
   );
 }
@@ -134,8 +134,8 @@ function TextRow({
 }) {
   const id = `field-${label.toLowerCase().replace(/\W+/g, "-")}`;
   return (
-    <div className={`bg-card border rounded-xl p-4 transition-colors focus-within:border-primary ${error ? "border-destructive" : "border-border"}`}>
-      <label htmlFor={id} className="flex items-center gap-3 mb-2 text-sm font-medium text-muted-foreground">
+    <div className={`bg-card border rounded-2xl p-4 transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 ${error ? "border-destructive" : "border-foreground/10"}`}>
+      <label htmlFor={id} className="flex items-center gap-2 mb-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground [&_svg]:h-4 [&_svg]:w-4">
         {Icon && <Icon className="w-5 h-5" />}
         {label}
       </label>
@@ -353,29 +353,29 @@ export default function EditProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 bg-background/90 backdrop-blur border-b border-border">
-        <div className="max-w-2xl mx-auto flex items-center justify-between px-4 h-14">
-          <button onClick={handleBack} className="p-2 -ml-2 text-foreground hover:opacity-70" aria-label="Go back">
+      <header className="app-header">
+        <div className="max-w-2xl mx-auto flex items-center justify-between px-2 min-h-14">
+          <button onClick={handleBack} className="flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-secondary transition-colors" aria-label="Go back">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-base font-bold text-foreground">Edit profile</h1>
+          <h1 className="font-display text-base font-bold text-foreground">Edit profile</h1>
           <button
             onClick={handleSave}
             disabled={isSaving || !isDirty}
-            className="min-w-[72px] px-4 py-2 bg-primary text-primary-foreground rounded-full font-semibold text-sm disabled:opacity-40 flex items-center justify-center gap-1"
+            className={`min-w-[84px] min-h-10 px-4 rounded-full font-semibold text-sm flex items-center justify-center gap-1 transition-all ${isDirty || isSaving ? "bg-primary text-primary-foreground shadow-button hover:brightness-110" : "bg-success/15 text-success"} disabled:cursor-default`}
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : isDirty ? "Save" : <><Check className="w-4 h-4" />Saved</>}
           </button>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 pb-16 pt-4">
-        <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 p-4 mb-2">
+      <main className="max-w-2xl mx-auto px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-4">
+        <div className="panel bg-gradient-to-br from-primary/15 via-card to-accent/10 p-4 mb-2">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-foreground">Profile strength</p>
-            <p className="text-sm font-bold text-primary">{strength}%</p>
+            <p className="eyebrow-muted">Profile strength</p>
+            <p className="font-display text-lg font-extrabold text-gradient">{strength}%</p>
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-2 rounded-full bg-foreground/10 overflow-hidden">
             <div className="h-full gradient-glow transition-all duration-500" style={{ width: `${strength}%` }} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
@@ -400,9 +400,9 @@ export default function EditProfile() {
         <SectionHeader title="About you" icon={User} />
         <div className="space-y-3">
           <TextRow icon={User} label="Display name" value={form.firstName} onChange={(v) => set("firstName", v)} placeholder="Your first name" maxLength={40} error={nameError} />
-          <div className={`bg-card border rounded-xl p-4 focus-within:border-primary transition-colors ${bioError ? "border-destructive" : "border-border"}`}>
-            <label htmlFor="field-bio" className="flex items-center gap-3 mb-2 text-sm font-medium text-muted-foreground">
-              <FileText className="w-5 h-5" />
+          <div className={`bg-card border rounded-2xl p-4 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 transition-colors ${bioError ? "border-destructive" : "border-foreground/10"}`}>
+            <label htmlFor="field-bio" className="flex items-center gap-2 mb-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <FileText className="w-4 h-4" />
               About me
             </label>
             <textarea
@@ -432,7 +432,7 @@ export default function EditProfile() {
         <TextRow icon={MapPin} label="City" value={form.city} onChange={(v) => set("city", v)} placeholder="Montréal, La Habana, Toronto…" />
 
         <SectionHeader title="Lifestyle" icon={Heart} />
-        <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
+        <div className="bg-card border border-foreground/10 rounded-2xl divide-y divide-foreground/[0.07] overflow-hidden">
           {LIFESTYLE_ROWS.map((row) => (
             <PreferenceRow key={row.key} icon={row.icon} label={row.label} value={form[row.key]} onClick={() => setActiveDrawer(row)} />
           ))}
@@ -444,7 +444,7 @@ export default function EditProfile() {
 
         <button
           onClick={() => navigate("/interests")}
-          className="mt-8 w-full bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:bg-muted/40 transition-colors"
+          className="mt-8 w-full min-h-14 bg-card border border-foreground/10 rounded-2xl p-4 flex items-center justify-between hover:border-primary/40 hover:bg-secondary/60 transition-colors"
         >
           <span className="flex items-center gap-3">
             <Sparkles className="w-5 h-5 text-primary" />
