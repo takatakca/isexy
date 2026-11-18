@@ -121,7 +121,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
     const waitSeconds = Math.max(0, Math.ceil((resendAt - now) / 1000));
     return (
       <form onSubmit={verifyCode} noValidate className="space-y-4">
-        <button type="button" onClick={() => { setStep("enter"); setError(null); }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <button type="button" onClick={() => { setStep("enter"); setError(null); }} className="-ml-2 flex min-h-11 items-center gap-1 rounded-full px-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4" /> Change {method === "email" ? "email" : "number"}
         </button>
         <p className="text-sm text-muted-foreground">
@@ -129,7 +129,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
           {method === "email" && " You can also tap the link in that email."}
         </p>
         <div>
-          <label htmlFor="takatak-code" className="block text-sm font-medium text-foreground mb-1.5">Code</label>
+          <label htmlFor="takatak-code" className="block text-sm font-semibold text-foreground mb-2">Code</label>
           <input
             id="takatak-code"
             inputMode="numeric"
@@ -139,14 +139,14 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
             value={code}
             onChange={(e) => { setCode(e.target.value.replace(/\D/g, "")); setError(null); }}
             placeholder="123456"
-            className="w-full h-14 px-4 rounded-xl bg-card border border-border text-center text-2xl tracking-[0.4em] font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="w-full h-16 px-4 rounded-2xl bg-card border border-input text-center font-display text-3xl tracking-[0.4em] font-bold text-foreground outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/20"
           />
         </div>
         {error && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
-        <button type="submit" disabled={busy} className="w-full h-14 rounded-full gradient-primary text-white font-bold shadow-button disabled:opacity-60 flex items-center justify-center gap-2">
+        <button type="submit" disabled={busy} className="cta-primary w-full h-14">
           {busy && <Loader2 className="w-5 h-5 animate-spin" />} Continue
         </button>
-        <button type="button" disabled={!canResend || busy} onClick={() => sendCode()} className="w-full text-sm font-semibold text-primary disabled:text-muted-foreground">
+        <button type="button" disabled={!canResend || busy} onClick={() => sendCode()} className="w-full min-h-11 text-sm font-semibold text-link disabled:text-muted-foreground">
           {canResend ? "Send a new code" : `You can ask for a new code in ${waitSeconds}s`}
         </button>
       </form>
@@ -159,7 +159,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
         type="button"
         onClick={google}
         disabled={busy}
-        className="w-full h-12 rounded-full border border-border bg-card font-semibold text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-3 disabled:opacity-60"
+        className="w-full h-12 rounded-full border border-foreground/15 bg-foreground text-background font-semibold hover:bg-foreground/90 transition-colors flex items-center justify-center gap-3 disabled:opacity-60"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="w-5 h-5">
           <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.7z" />
@@ -171,12 +171,12 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
       </button>
 
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-border" />
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">or get a code</span>
-        <div className="flex-1 h-px bg-border" />
+        <div className="flex-1 h-px bg-foreground/10" />
+        <span className="eyebrow-muted">or get a code</span>
+        <div className="flex-1 h-px bg-foreground/10" />
       </div>
 
-      <div role="tablist" className="grid grid-cols-2 p-1 rounded-full bg-muted">
+      <div role="tablist" className="grid grid-cols-2 p-1 rounded-full bg-card border border-foreground/[0.08]">
         {(["email", "phone"] as const).map((m) => (
           <button
             key={m}
@@ -184,7 +184,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
             role="tab"
             aria-selected={method === m}
             onClick={() => { setMethod(m); setError(null); }}
-            className={`py-2.5 rounded-full text-sm font-semibold transition-all flex items-center justify-center gap-2 ${method === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+            className={`min-h-10 rounded-full text-sm font-semibold transition-all flex items-center justify-center gap-2 ${method === m ? "bg-secondary text-foreground ring-1 ring-primary/50" : "text-muted-foreground hover:text-foreground"}`}
           >
             {m === "email" ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
             {m === "email" ? "Email" : "Phone"}
@@ -195,7 +195,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
       <form onSubmit={sendCode} noValidate className="space-y-4">
         {method === "email" ? (
           <div>
-            <label htmlFor="takatak-email" className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+            <label htmlFor="takatak-email" className="block text-sm font-semibold text-foreground mb-2">Email</label>
             <input
               id="takatak-email"
               type="email"
@@ -204,12 +204,12 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(null); }}
               placeholder="you@example.com"
-              className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full h-12 px-4 rounded-xl bg-card border border-input text-foreground placeholder:text-muted-foreground/70 outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/20"
             />
           </div>
         ) : (
           <div>
-            <label htmlFor="takatak-phone" className="block text-sm font-medium text-foreground mb-1.5">Mobile number</label>
+            <label htmlFor="takatak-phone" className="block text-sm font-semibold text-foreground mb-2">Mobile number</label>
             <input
               id="takatak-phone"
               type="tel"
@@ -218,7 +218,7 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
               value={phone}
               onChange={(e) => { setPhone(e.target.value); setError(null); }}
               placeholder="+1 514 555 0123"
-              className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full h-12 px-4 rounded-xl bg-card border border-input text-foreground placeholder:text-muted-foreground/70 outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/20"
             />
             <p className="text-xs text-muted-foreground mt-1">Canada +1 · Cuba +53 · we text you a code.</p>
           </div>
@@ -230,27 +230,27 @@ export function TakatakSignIn({ redirectPath = "/discover", intent = "login", de
               type="checkbox"
               checked={acceptedTerms}
               onChange={(e) => { setAcceptedTerms(e.target.checked); setError(null); }}
-              className="mt-0.5 w-4 h-4 accent-[hsl(var(--primary))]"
+              className="mt-0.5 w-5 h-5 shrink-0 accent-[hsl(var(--primary-solid))]"
             />
             <span>
               I'm 18 or older and agree to the{" "}
-              <Link to="/terms" className="text-primary font-medium hover:underline">Terms</Link>,{" "}
-              <Link to="/privacy" className="text-primary font-medium hover:underline">Privacy Policy</Link> and{" "}
-              <Link to="/community-guidelines" className="text-primary font-medium hover:underline">Community Guidelines</Link>.
+              <Link to="/terms" className="text-link font-medium hover:underline">Terms</Link>,{" "}
+              <Link to="/privacy" className="text-link font-medium hover:underline">Privacy Policy</Link> and{" "}
+              <Link to="/community-guidelines" className="text-link font-medium hover:underline">Community Guidelines</Link>.
             </span>
           </label>
         )}
 
         {error && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
 
-        <button type="submit" disabled={busy} className="w-full h-14 rounded-full gradient-primary text-white font-bold shadow-button disabled:opacity-60 flex items-center justify-center gap-2">
+        <button type="submit" disabled={busy} className="cta-primary w-full h-14">
           {busy && <Loader2 className="w-5 h-5 animate-spin" />}
           {intent === "signup" ? "Create my account" : "Send my code"}
         </button>
       </form>
 
       <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <ShieldCheck className="w-4 h-4" /> Takatak Auth · one secure TAKATAK account, no password
+        <ShieldCheck className="w-4 h-4 text-success" /> Takatak Auth · one secure TAKATAK account, no password
       </p>
     </div>
   );

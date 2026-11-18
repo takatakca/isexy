@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Logo } from "@/components/Logo";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useNavigate, Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import {
   Heart, Shield, Globe, Star, ChevronRight, ChevronDown, ChevronUp,
-  Menu, X,
+  Menu, X, Flame,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -92,19 +92,23 @@ export default function Welcome() {
   if (!loading && user) return <Navigate to="/discover" replace />;
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Nav */}
-      <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4 z-30">
-        <div className="flex items-center gap-2">
-          <Logo size="sm" variant="light" showText={false} />
-          <span className="text-lg font-extrabold tracking-tight">ISEXY</span>
+      <nav aria-label="Site" className="absolute top-0 left-0 right-0 z-30" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+          <BrandMark />
+          <div className="flex items-center gap-1">
+            <LanguageSelector variant="icon" className="h-11 w-11 rounded-full" />
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              className="w-11 h-11 flex items-center justify-center rounded-full text-foreground/90 hover:bg-secondary transition-colors"
+            >
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="w-10 h-10 flex items-center justify-center text-foreground/80 hover:text-foreground transition-colors"
-        >
-          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
       </nav>
 
       {/* Full-screen Mobile Menu */}
@@ -115,21 +119,20 @@ export default function Welcome() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-20 bg-background flex flex-col"
+            className="fixed inset-0 z-40 brand-ambient flex flex-col"
+            style={{ paddingTop: "env(safe-area-inset-top)" }}
           >
-            <div className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center gap-2">
-                <Logo size="sm" variant="light" showText={false} />
-                <span className="text-lg font-extrabold tracking-tight text-foreground">ISEXY</span>
-              </div>
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+              <BrandMark />
               <button
                 onClick={() => setMenuOpen(false)}
-                className="w-10 h-10 flex items-center justify-center text-foreground/80 hover:text-foreground"
+                aria-label="Close menu"
+                className="w-11 h-11 flex items-center justify-center rounded-full text-foreground/90 hover:bg-secondary"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-8">
+            <div className="flex-1 overflow-y-auto px-4 pb-8 mx-auto w-full max-w-lg">
               {menuSections.map((section) => (
                 <div key={section.title} className="mb-2">
                   <button
@@ -141,18 +144,19 @@ export default function Welcome() {
                         navigate(section.path);
                       }
                     }}
-                    className={`w-full flex items-center justify-between px-4 py-4 rounded-xl text-left font-semibold text-base transition-colors ${
+                    aria-expanded={section.expandable ? expandedSection === section.title : undefined}
+                    className={`w-full flex items-center justify-between px-4 min-h-14 rounded-2xl text-left font-display font-bold text-base transition-colors ${
                       expandedSection === section.title
-                        ? "bg-primary-foreground/5 text-primary"
-                        : "bg-primary-foreground/[0.03] text-foreground hover:bg-primary-foreground/5"
+                        ? "bg-primary/15 text-foreground ring-1 ring-primary/40"
+                        : "bg-card/60 text-foreground hover:bg-secondary"
                     }`}
                   >
                     {section.title}
-                    {section.expandable && (
+                    {section.expandable ? (
                       expandedSection === section.title
                         ? <ChevronUp className="w-5 h-5 text-primary" />
-                        : <ChevronDown className="w-5 h-5 text-foreground/40" />
-                    )}
+                        : <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                    ) : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
                   </button>
                   <AnimatePresence>
                     {section.expandable && expandedSection === section.title && section.items && (
@@ -163,12 +167,12 @@ export default function Welcome() {
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="pl-6 py-2 space-y-1">
+                        <div className="pl-4 py-2 space-y-1">
                           {section.items.map((item) => (
                             <button
                               key={item.label}
                               onClick={() => { setMenuOpen(false); navigate(item.path); }}
-                              className="w-full text-left px-4 py-3 text-sm text-foreground/70 hover:text-foreground transition-colors"
+                              className="w-full text-left px-4 min-h-11 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
                             >
                               {item.label}
                             </button>
@@ -180,15 +184,15 @@ export default function Welcome() {
                 </div>
               ))}
             </div>
-            <div className="px-6 pb-8 space-y-4">
+            <div className="px-6 pb-[max(2rem,env(safe-area-inset-bottom))] space-y-4 mx-auto w-full max-w-lg">
               <button
                 onClick={() => { setMenuOpen(false); navigate("/auth"); }}
-                className="w-full py-4 bg-primary-foreground text-foreground font-bold rounded-full text-base hover:bg-primary-foreground/90 transition-colors"
+                className="cta-primary w-full"
               >
                 Log in
               </button>
-              <div className="flex items-center justify-center gap-2 text-foreground/50">
-                <LanguageSelector variant="icon" className="text-foreground/50 hover:text-foreground" />
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <LanguageSelector variant="icon" className="text-muted-foreground hover:text-foreground" />
                 <span className="text-sm">Language</span>
               </div>
             </div>
@@ -196,108 +200,102 @@ export default function Welcome() {
         )}
       </AnimatePresence>
 
-      {/* Hero Section - Full viewport, image with overlay buttons */}
-      <section className="relative min-h-[100dvh] w-full flex flex-col">
-        {/* Background image */}
-        <img
-          src="/images/hero-bg.png"
-          alt="ISEXY.CA - Experience Cuba & Canada, Together"
-          className="absolute inset-0 w-full h-full object-cover object-top"
-          loading="eager"
-        />
-
-        {/* Gradient overlay at bottom for button legibility */}
-        <div className="absolute inset-x-0 bottom-0 h-[50%] bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
-
-        {/* Spacer to push content to bottom */}
-        <div className="flex-1" />
-
-        {/* CTA Buttons overlaid on image */}
-        <div className="relative z-10 px-6 pb-6 max-w-md mx-auto w-full space-y-3">
+      {/* Hero */}
+      <section className="relative brand-ambient">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:radial-gradient(hsl(var(--muted-foreground)/0.25)_1px,transparent_1.5px)] [background-size:26px_26px] [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden />
+        <div className="relative mx-auto grid min-h-[100dvh] max-w-6xl items-center gap-10 px-6 pb-10 pt-24 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-28">
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-3"
+            className="mx-auto w-full max-w-md lg:mx-0 lg:max-w-xl"
           >
-            <button
-              onClick={() => navigate("/signup")}
-              className="w-full py-3.5 bg-primary text-foreground font-bold rounded-full text-base shadow-lg hover:brightness-110 transition-all active:scale-[0.98]"
-            >
-              Create account
-            </button>
-            <button
-              onClick={() => navigate("/auth")}
-              className="w-full py-3.5 border-2 border-white/80 text-white font-bold rounded-full text-base hover:bg-white/10 transition-all active:scale-[0.98]"
-            >
-              Log in
-            </button>
+            <p className="eyebrow">Social network · 18+ · Canada</p>
+            <h1 className="type-display mt-4 text-foreground">
+              Meet new people &amp; <span className="text-gradient">make friends</span>
+            </h1>
+            <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Verified profiles, swipes to find people to talk with, chat with live translation in English and French, then phone and video calls when you're both ready.
+            </p>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <button onClick={() => navigate("/signup")} className="cta-primary w-full">
+                Create account
+              </button>
+              <button onClick={() => navigate("/auth")} className="cta-secondary w-full">
+                Log in
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-foreground/10" />
+                <span className="eyebrow-muted">or sign in with</span>
+                <div className="flex-1 h-px bg-foreground/10" />
+              </div>
+              <div className="grid grid-cols-3 gap-2.5">
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="min-h-12 rounded-2xl border border-foreground/10 bg-card/70 flex items-center justify-center gap-2 hover:border-primary/50 hover:bg-secondary transition-colors"
+                >
+                  <GoogleIcon />
+                  <span className="text-sm font-medium text-foreground">Google</span>
+                </button>
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="min-h-12 rounded-2xl border border-foreground/10 bg-card/70 flex items-center justify-center gap-2 hover:border-primary/50 hover:bg-secondary transition-colors"
+                >
+                  <FacebookIcon />
+                  <span className="text-sm font-medium text-foreground">Facebook</span>
+                </button>
+                <button
+                  onClick={() => navigate("/phone")}
+                  className="min-h-12 rounded-2xl border border-foreground/10 bg-card/70 flex items-center justify-center gap-2 hover:border-primary/50 hover:bg-secondary transition-colors text-foreground"
+                >
+                  <PhoneIcon />
+                  <span className="text-sm font-medium">Phone</span>
+                </button>
+              </div>
+            </div>
+
+            <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
+              By continuing you agree to our{" "}
+              <Link to="/terms" className="text-link underline">Terms</Link>,{" "}
+              <Link to="/privacy" className="text-link underline">Privacy Policy</Link> &{" "}
+              <Link to="/cookies" className="text-link underline">Cookies Policy</Link>.
+            </p>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="space-y-3"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mx-auto w-full max-w-[22rem]"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-white/20" />
-              <span className="text-white/60 text-xs font-medium">or sign in with</span>
-              <div className="flex-1 h-px bg-white/20" />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-white/30 rounded-full flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
-              >
-                <GoogleIcon />
-                <span className="text-sm font-medium text-white">Google</span>
-              </button>
-              <button
-                onClick={() => navigate("/auth")}
-                className="flex-1 py-3 border border-white/30 rounded-full flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
-              >
-                <FacebookIcon />
-                <span className="text-sm font-medium text-white">Facebook</span>
-              </button>
-              <button
-                onClick={() => navigate("/phone")}
-                className="flex-1 py-3 border border-white/30 rounded-full flex items-center justify-center gap-2 hover:bg-white/10 transition-colors text-white"
-              >
-                <PhoneIcon />
-                <span className="text-sm font-medium">Phone</span>
-              </button>
-            </div>
+            <PhonePreview />
           </motion.div>
-
-          <p className="text-center text-white/40 text-[10px] leading-relaxed pt-1">
-            By continuing you agree to our{" "}
-            <Link to="/terms" className="underline hover:text-white/60">Terms</Link>,{" "}
-            <Link to="/privacy" className="underline hover:text-white/60">Privacy Policy</Link> &{" "}
-            <Link to="/cookies" className="underline hover:text-white/60">Cookies Policy</Link>.
-          </p>
         </div>
       </section>
 
-      {/* Cuban Registration Card - below hero */}
-      <section className="bg-background px-6 py-6">
-        <div className="max-w-md mx-auto">
+      {/* Cuban Registration Card */}
+      <section className="px-6 pb-4 sm:px-8">
+        <div className="mx-auto max-w-md lg:max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-primary-foreground/5 border border-primary/25 rounded-2xl p-4"
+            className="panel flex flex-col gap-4 p-5 lg:flex-row lg:items-center"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-xl">🇨🇺</span>
+            <div className="flex flex-1 items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary text-xl" aria-hidden>🇨🇺</span>
               <div>
-                <p className="font-bold text-sm text-foreground">Cuban? Sign up FREE</p>
-                <p className="text-foreground/50 text-xs">Get verified and start connecting</p>
+                <p className="font-display font-bold text-foreground">Cuban? Sign up FREE</p>
+                <p className="text-muted-foreground text-sm">Get verified and start connecting</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/cuban-signup")}
-              className="w-full py-2.5 bg-primary text-foreground font-bold rounded-xl hover:brightness-110 transition-all text-sm active:scale-[0.98]"
+              className="min-h-11 rounded-full border border-primary/50 px-5 font-semibold text-sm text-foreground hover:bg-primary/15 transition-colors active:scale-[0.98]"
             >
               Cuban Registration (Free)
             </button>
@@ -306,22 +304,25 @@ export default function Welcome() {
       </section>
 
       {/* Features Section */}
-      <section className="px-6 py-16 bg-primary-foreground/[0.03]">
-        <div className="max-w-lg mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8">Why ISEXY?</h2>
-          <div className="grid grid-cols-2 gap-4">
+      <section className="px-6 py-16 sm:px-8 sm:py-20">
+        <div className="mx-auto max-w-5xl">
+          <p className="eyebrow text-center">Why members stay</p>
+          <h2 className="type-title mt-3 text-center">Why ISEXY?</h2>
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {features.map((f, i) => (
               <motion.div
                 key={f.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-primary-foreground/5 border border-primary-foreground/10 rounded-2xl p-4"
+                transition={{ delay: i * 0.08 }}
+                className="panel p-4 sm:p-5"
               >
-                <f.icon className="w-6 h-6 text-primary mb-2" />
-                <p className="font-bold text-sm">{f.title}</p>
-                <p className="text-foreground/50 text-xs mt-1">{f.desc}</p>
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 ring-1 ring-primary/30">
+                  <f.icon className="w-5 h-5 text-primary" />
+                </span>
+                <p className="mt-4 font-display font-bold text-sm sm:text-base">{f.title}</p>
+                <p className="text-muted-foreground text-xs sm:text-sm mt-1 leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -329,34 +330,35 @@ export default function Welcome() {
       </section>
 
       {/* How it works Section */}
-      <section className="px-6 py-16">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">How ISEXY works</h2>
+      <section className="px-6 pb-16 sm:px-8 sm:pb-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow">Three steps</p>
+              <h2 className="type-title mt-3">How ISEXY works</h2>
+            </div>
             <button
               onClick={() => navigate("/community-stories")}
-              className="text-primary text-sm font-semibold flex items-center gap-1 hover:underline"
+              className="min-h-11 text-link text-sm font-semibold flex items-center gap-1 hover:underline"
             >
               Community Stories <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="space-y-4">
+          <div className="mt-8 grid gap-3 md:grid-cols-3 md:gap-4">
             {loveStories.map((story, i) => (
               <motion.div
                 key={story.names}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className="bg-primary-foreground/5 border border-primary-foreground/10 rounded-2xl p-5 flex gap-4 items-start"
+                transition={{ delay: i * 0.12 }}
+                className="panel p-5 flex gap-4 items-start md:flex-col"
               >
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-5 h-5 text-primary" />
-                </div>
+                <span className="font-display text-3xl font-extrabold leading-none text-gradient">0{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm">{story.names}</p>
-                  <p className="text-foreground/40 text-xs mb-1">{story.location}</p>
-                  <p className="text-foreground/70 text-sm">{story.quote}</p>
+                  <p className="font-display font-bold">{story.names.replace(/^\d\.\s*/, "")}</p>
+                  <p className="eyebrow-muted mt-1.5 mb-2">{story.location}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{story.quote}</p>
                 </div>
               </motion.div>
             ))}
@@ -365,57 +367,87 @@ export default function Welcome() {
       </section>
 
       {/* Stats Banner */}
-      <section className="px-6 py-12 bg-primary/10">
-        <div className="max-w-lg mx-auto flex justify-around text-center">
-          <div>
-            <p className="text-3xl font-extrabold text-primary">18+</p>
-            <p className="text-foreground/50 text-xs mt-1">Adults only</p>
-          </div>
-          <div>
-            <p className="text-3xl font-extrabold text-primary">EN · FR</p>
-            <p className="text-foreground/50 text-xs mt-1">Live translation</p>
-          </div>
-          <div>
-            <p className="text-3xl font-extrabold text-primary">Free</p>
-            <p className="text-foreground/50 text-xs mt-1">To join</p>
+      <section className="px-6 sm:px-8">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-[1.75rem] border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-accent/10 px-6 py-10">
+          <div className="flex justify-around gap-4 text-center">
+            <div>
+              <p className="font-display text-3xl sm:text-4xl font-extrabold text-foreground">18+</p>
+              <p className="eyebrow-muted mt-2">Adults only</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl sm:text-4xl font-extrabold text-gradient">EN · FR</p>
+              <p className="eyebrow-muted mt-2">Live translation</p>
+            </div>
+            <div>
+              <p className="font-display text-3xl sm:text-4xl font-extrabold text-foreground">Free</p>
+              <p className="eyebrow-muted mt-2">To join</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* About / SEO Text */}
-      <section className="px-6 py-12">
-        <div className="max-w-lg mx-auto">
-          <p className="text-foreground/50 text-sm leading-relaxed mb-4">
+      <section className="px-6 py-12 sm:px-8">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-muted-foreground text-sm leading-relaxed text-center">
             ISEXY.CA is a social network for adults (18+) in Canada. Create a verified profile, swipe to find
             people to talk with, chat with live translation, and make new friends through phone and video calls.
           </p>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="px-6 py-8 border-t border-primary-foreground/10">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-2 mb-6">
-            <Logo size="sm" variant="light" showText={false} />
-            <span className="text-lg font-extrabold tracking-tight">ISEXY</span>
+      <SiteFooter />
+    </div>
+  );
+}
+
+function BrandMark() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl gradient-glow shadow-glow" aria-hidden>
+        <Flame className="h-[18px] w-[18px] text-white" strokeWidth={2.4} />
+      </span>
+      <span className="font-display text-lg font-extrabold tracking-[0.08em]">ISEXY</span>
+    </div>
+  );
+}
+
+/** Product preview: a miniature of the Discover card, drawn with the app's own tokens (no photo of a real person). */
+function PhonePreview() {
+  return (
+    <div className="relative" aria-hidden>
+      <div className="absolute -inset-8 rounded-[3rem] bg-primary/25 blur-3xl" />
+      <div className="relative rounded-[2.5rem] border border-foreground/10 bg-card/80 p-3 shadow-[0_40px_120px_-40px_hsl(var(--primary)/0.8)] backdrop-blur">
+        <div className="relative aspect-[3/4.4] overflow-hidden rounded-[2rem] bg-gradient-to-br from-[hsl(204_55%_55%)] via-[hsl(214_60%_32%)] to-[hsl(223_68%_10%)]">
+          <div className="absolute left-1/2 top-[22%] h-28 w-28 -translate-x-1/2 rounded-full bg-white/25" />
+          <div className="absolute inset-x-6 bottom-0 top-[52%] rounded-t-[999px] bg-white/20" />
+          <div className="absolute inset-x-0 top-3 flex gap-1 px-4">
+            <span className="h-1 flex-1 rounded-full bg-white/90" />
+            <span className="h-1 flex-1 rounded-full bg-white/35" />
+            <span className="h-1 flex-1 rounded-full bg-white/35" />
           </div>
-          <div className="grid grid-cols-2 gap-4 text-sm mb-6">
-            <div className="space-y-2">
-              <Link to="/faq" className="block text-foreground/50 hover:text-foreground">FAQ</Link>
-              <Link to="/about" className="block text-foreground/50 hover:text-foreground">About</Link>
-              <Link to="/safety" className="block text-foreground/50 hover:text-foreground">Safety</Link>
-              <Link to="/contact-us" className="block text-foreground/50 hover:text-foreground">Contact</Link>
-            </div>
-            <div className="space-y-2">
-              <Link to="/terms" className="block text-foreground/50 hover:text-foreground">Terms</Link>
-              <Link to="/privacy" className="block text-foreground/50 hover:text-foreground">Privacy</Link>
-              <Link to="/cookie-policy" className="block text-foreground/50 hover:text-foreground">Cookies</Link>
-              <Link to="/consumer-health-privacy" className="block text-foreground/50 hover:text-foreground">Health Privacy</Link>
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 pt-16 text-white">
+            <p className="font-display text-2xl font-extrabold">Camille <span className="font-sans text-xl font-normal opacity-90">29</span></p>
+            <p className="mt-1 text-sm text-white/80">Montréal · Coffee, live music, long walks</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {["Coffee", "Hiking", "Live music"].map((t) => (
+                <span key={t} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium backdrop-blur">{t}</span>
+              ))}
             </div>
           </div>
-          <p className="text-foreground/30 text-xs">© {new Date().getFullYear()} ISEXY.CA — All rights reserved.</p>
+          <span className="absolute right-4 top-8 rounded-full bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-accent-foreground">Verified</span>
         </div>
-      </footer>
+        <div className="flex items-center justify-center gap-4 py-4">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-foreground/10 bg-background"><X className="h-6 w-6 text-foreground" /></span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-foreground/10 bg-background"><Star className="h-5 w-5 text-accent fill-accent" /></span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-full gradient-primary shadow-button"><Heart className="h-6 w-6 text-white fill-white" /></span>
+        </div>
+      </div>
+      <div className="absolute -left-4 top-[38%] hidden rounded-2xl border border-foreground/10 bg-card/90 px-4 py-3 shadow-medium backdrop-blur sm:block">
+        <p className="eyebrow">Live translation</p>
+        <p className="mt-1.5 text-sm text-foreground">“On se voit au Festival?”</p>
+        <p className="text-xs text-muted-foreground">See you at the festival?</p>
+      </div>
     </div>
   );
 }
