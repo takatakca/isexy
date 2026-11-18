@@ -87,11 +87,11 @@ export const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
       </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 px-6 py-3 shrink-0" role="group" aria-label="Swipe actions">
+      <div className="flex items-center justify-center gap-3 px-4 py-3 shrink-0" role="group" aria-label="Swipe actions">
         <button
           onClick={() => deck.undo()}
           disabled={!deck.canUndo}
-          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-90 hover:scale-105 transition-transform border border-border disabled:opacity-40"
+          className="w-12 h-12 rounded-full bg-card/90 ring-1 ring-foreground/10 shadow-soft flex items-center justify-center text-muted-foreground hover:text-foreground hover:-translate-y-0.5 active:scale-90 transition-all disabled:opacity-40 disabled:hover:translate-y-0"
           aria-label="Undo last swipe"
         >
           <RotateCcw className="w-5 h-5" />
@@ -99,7 +99,7 @@ export const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
         <button
           onClick={() => press("left")}
           disabled={!top}
-          className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center active:scale-90 hover:scale-105 transition-transform border border-border"
+          className="w-16 h-16 rounded-full bg-card ring-1 ring-foreground/15 shadow-medium flex items-center justify-center hover:-translate-y-0.5 hover:ring-foreground/40 active:scale-90 transition-all"
           aria-label="Pass"
         >
           <X className="w-8 h-8 text-foreground" strokeWidth={2.5} />
@@ -107,7 +107,7 @@ export const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
         <button
           onClick={() => press("up")}
           disabled={!top}
-          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-accent active:scale-90 hover:scale-105 transition-transform border border-border"
+          className="w-[3.25rem] h-[3.25rem] rounded-full bg-card ring-1 ring-accent/50 shadow-glow-cyan flex items-center justify-center text-accent hover:-translate-y-0.5 active:scale-90 transition-all"
           aria-label="Super Like"
         >
           <Star className="w-5 h-5 fill-current" />
@@ -115,10 +115,10 @@ export const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
         <button
           onClick={() => press("right")}
           disabled={!top}
-          className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center active:scale-90 hover:scale-105 transition-transform border border-border"
+          className="w-16 h-16 rounded-full gradient-primary shadow-button ring-1 ring-white/10 flex items-center justify-center hover:-translate-y-0.5 hover:brightness-110 active:scale-90 transition-all"
           aria-label="Like"
         >
-          <Heart className="w-8 h-8 text-primary fill-primary" />
+          <Heart className="w-8 h-8 text-white fill-white" />
         </button>
         {extraAction}
       </div>

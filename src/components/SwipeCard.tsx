@@ -46,21 +46,21 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
     <div
       ref={ref}
       aria-hidden={isBehind || undefined}
-      className="absolute inset-0 rounded-3xl overflow-hidden bg-card select-none"
+      className="absolute inset-0 rounded-[1.75rem] overflow-hidden bg-card select-none"
       style={{
         touchAction: isBehind ? undefined : "none",
         willChange: isBehind ? undefined : "transform",
         transform: isBehind ? "scale(0.95) translateY(10px)" : undefined,
         transition: isBehind ? "transform 260ms ease-out" : undefined,
-        boxShadow: "0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px hsl(var(--border))",
+        boxShadow: isBehind ? "0 0 0 1px hsl(var(--foreground) / 0.06)" : "0 36px 80px -32px hsl(var(--primary) / 0.55), 0 24px 48px -24px rgba(0,0,0,0.7), 0 0 0 1px hsl(var(--foreground) / 0.1)",
         ...style,
       }}
     >
       {/* Photo progress */}
       {photos.length > 1 && (
-        <div className="absolute top-3 left-3 right-3 flex gap-1.5 z-20" aria-hidden>
+        <div className="absolute top-3 left-4 right-4 flex gap-1.5 z-20" aria-hidden>
           {photos.map((_, i) => (
-            <div key={i} className="h-1 flex-1 rounded-full overflow-hidden bg-white/25">
+            <div key={i} className="h-1 flex-1 rounded-full overflow-hidden bg-white/25 backdrop-blur">
               <div className={`h-full bg-white transition-all duration-200 ${i <= photoIndex ? "w-full" : "w-0"} ${i < photoIndex ? "opacity-60" : ""}`} />
             </div>
           ))}
@@ -77,8 +77,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
           loading={isBehind ? "lazy" : "eager"}
         />
       ) : (
-        <div className="absolute inset-0 bg-muted flex items-center justify-center">
-          <span className="text-7xl font-extrabold text-muted-foreground">{profile.first_name[0]}</span>
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary to-background flex items-center justify-center">
+          <span className="font-display text-7xl font-extrabold text-muted-foreground">{profile.first_name[0]}</span>
         </div>
       )}
 
@@ -90,8 +90,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
         </div>
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[hsl(223_68%_5%)] via-[hsl(223_68%_7%/0.35)] via-45% to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/45 to-transparent pointer-events-none" />
 
       {!isBehind && (
         <>
@@ -109,12 +109,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
 
       <div className="absolute bottom-0 inset-x-0 p-5 pb-6 text-white z-20">
         <div className="flex items-end gap-2 mb-2 pr-12">
-          <h2 className="text-3xl font-extrabold leading-none tracking-tight truncate min-w-0">{profile.first_name}</h2>
+          <h2 className="font-display text-[2rem] font-extrabold leading-none tracking-tight truncate min-w-0">{profile.first_name}</h2>
           <span className="text-2xl font-light leading-none opacity-90 shrink-0">{profile.age}</span>
           {profile.is_verified && <BadgeCheck className="w-6 h-6 text-accent fill-accent/20 mb-0.5 shrink-0" aria-label="Verified" />}
         </div>
 
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/85 mb-2">
+        <div className="flex flex-wrap gap-1.5 text-xs font-medium text-white/90 mb-3 [&>span]:rounded-full [&>span]:bg-white/15 [&>span]:px-2.5 [&>span]:py-1 [&>span]:backdrop-blur-md [&>span]:ring-1 [&>span]:ring-white/15">
           {profile.distance != null ? (
             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{profile.distance < 1 ? "< 1" : profile.distance} km{profile.city ? ` · ${profile.city}` : ""}</span>
           ) : profile.city ? (
@@ -137,7 +137,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onOpenDetails(); }}
-            className="absolute right-4 bottom-6 w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center hover:bg-white/30"
+            className="absolute right-4 bottom-5 w-11 h-11 rounded-full bg-white/15 ring-1 ring-white/25 backdrop-blur-md flex items-center justify-center hover:bg-white/25 transition-colors"
             aria-label={`Open ${profile.first_name}'s profile`}
           >
             <Info className="w-5 h-5" />

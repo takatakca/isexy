@@ -99,20 +99,20 @@ export function DiscoverFilters({
   };
   
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center">
       {/* Safety Button */}
       <button 
         onClick={() => navigate("/safety-tips")}
-        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+        className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors"
         aria-label="Safety tips"
       >
-        <BadgeCheck className="w-6 h-6 text-cyan-500" />
+        <BadgeCheck className="w-6 h-6 text-accent" />
       </button>
 
       {/* Filters Sheet */}
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetTrigger asChild>
-          <button className="p-2 hover:bg-muted/50 rounded-full transition-colors" aria-label="Discovery settings">
+          <button className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors" aria-label="Discovery settings">
             <Sliders className="w-6 h-6 text-foreground" />
           </button>
         </SheetTrigger>
@@ -229,7 +229,7 @@ export function DiscoverFilters({
       {/* Boost Button */}
       <button 
         onClick={() => navigate("/get-boosts")} 
-        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+        className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors"
         aria-label="Get Boosts"
       >
         <Zap className="w-6 h-6 text-accent fill-accent" />

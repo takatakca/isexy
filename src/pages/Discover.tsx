@@ -180,16 +180,23 @@ export default function Discover() {
   const modalOpen = showPaywall || !!deck.match || contactOpen || !!firstImpressionFor || !!detailFor || showModal;
 
   const header = (
-    <header className="flex items-center justify-between px-4 py-3 z-20 border-b border-border/50">
+    <header className="relative flex items-center justify-between gap-2 px-3 py-2 z-20 border-b border-foreground/[0.06] bg-background/80 backdrop-blur-xl" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
       <DiscoverFilters onFiltersChange={deck.reload} showVerifiedOnly={showVerifiedOnly} setShowVerifiedOnly={setShowVerifiedOnly} />
-      <div className="flex items-center gap-2">
-        <Flame className="w-5 h-5 text-primary" />
-        <span className="font-bold text-foreground">ISEXY</span>
-        {!me?.is_premium && deck.likesRemaining !== null && (
-          <span className="text-xs text-muted-foreground ml-1 tabular-nums">({deck.likesRemaining} likes)</span>
-        )}
+      <div className="flex items-center gap-2 lg:hidden">
+        <span className="hidden min-[400px]:flex h-7 w-7 items-center justify-center rounded-lg gradient-glow" aria-hidden>
+          <Flame className="w-4 h-4 text-white" strokeWidth={2.4} />
+        </span>
+        <span className="font-display font-extrabold tracking-[0.08em] text-foreground">ISEXY</span>
       </div>
-      <LanguageSelector variant="icon" />
+      <div className="hidden lg:block">
+        <p className="eyebrow">Discover</p>
+      </div>
+      <div className="flex items-center gap-1">
+        {!me?.is_premium && deck.likesRemaining !== null && (
+          <span className="whitespace-nowrap rounded-full border border-foreground/10 bg-card/70 px-2 py-1 text-[11px] font-semibold text-muted-foreground tabular-nums" title="Likes left today">({deck.likesRemaining} likes)</span>
+        )}
+        <LanguageSelector variant="icon" />
+      </div>
     </header>
   );
 
@@ -198,13 +205,16 @@ export default function Discover() {
       <div className="min-h-screen bg-background flex flex-col pb-20">
         {header}
         <main className="flex-1 flex flex-col items-center px-3 pt-6" aria-busy="true">
-          <div className="relative w-full max-w-sm aspect-[3/4.5] rounded-3xl bg-muted/60 overflow-hidden">
-            <div className="absolute inset-0 animate-pulse bg-gradient-to-t from-muted to-muted/30" />
+          <div className="relative w-full max-w-sm aspect-[3/4.5] rounded-[1.75rem] overflow-hidden ring-1 ring-foreground/[0.08] animate-shimmer">
             <div className="absolute bottom-6 left-5 right-5 space-y-3">
-              <div className="h-7 w-1/2 rounded-full bg-background/40" />
-              <div className="h-4 w-3/4 rounded-full bg-background/30" />
+              <div className="h-8 w-1/2 rounded-full bg-background/40" />
+              <div className="flex gap-2"><div className="h-6 w-20 rounded-full bg-background/30" /><div className="h-6 w-24 rounded-full bg-background/30" /></div>
+              <div className="h-4 w-3/4 rounded-full bg-background/25" />
             </div>
             <Loader2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-primary animate-spin" />
+          </div>
+          <div className="mt-5 flex gap-3" aria-hidden>
+            {[48, 64, 52, 64, 48].map((d, i) => <span key={i} className="rounded-full bg-muted ring-1 ring-foreground/[0.06]" style={{ width: d, height: d }} />)}
           </div>
           <p className="text-muted-foreground mt-4 text-sm">Finding people you'll like…</p>
         </main>
@@ -216,16 +226,19 @@ export default function Discover() {
   return (
     <div className="h-[100dvh] overflow-hidden bg-background flex flex-col" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
       {showPaywall && (
-        <div role="dialog" aria-modal="true" aria-labelledby="paywall-title" className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onClick={() => setShowPaywall(false)}>
-          <div className="bg-card rounded-3xl p-6 max-w-sm w-full shadow-xl animate-fade-in" onClick={(e) => e.stopPropagation()}>
+        <div role="dialog" aria-modal="true" aria-labelledby="paywall-title" className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={() => setShowPaywall(false)}>
+          <div className="glass-card bg-card rounded-[1.75rem] p-6 max-w-sm w-full animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="text-center">
-              <Heart className="w-16 h-16 text-primary mx-auto mb-4" />
-              <h2 id="paywall-title" className="text-2xl font-bold text-foreground mb-2">You're out of likes</h2>
+              <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full gradient-primary shadow-glow">
+                <Heart className="w-8 h-8 text-white fill-white" />
+              </span>
+              <p className="eyebrow mb-2">Daily limit</p>
+              <h2 id="paywall-title" className="type-title text-foreground mb-2">You're out of likes</h2>
               <p className="text-muted-foreground mb-6">Go Premium for unlimited likes, see who likes you, Passport and more.</p>
-              <button onClick={() => { setShowPaywall(false); navigate("/premium"); }} className="w-full py-3 gradient-primary text-white font-bold rounded-full mb-3">
+              <button onClick={() => { setShowPaywall(false); navigate("/premium"); }} className="cta-primary w-full mb-2">
                 See Premium plans
               </button>
-              <button onClick={() => setShowPaywall(false)} className="text-muted-foreground text-sm">Maybe later</button>
+              <button onClick={() => setShowPaywall(false)} className="w-full min-h-11 rounded-full text-muted-foreground text-sm font-semibold hover:text-foreground">Maybe later</button>
             </div>
           </div>
         </div>
@@ -303,7 +316,7 @@ export default function Discover() {
               <button
                 onClick={activateBoost}
                 disabled={boosting}
-                className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-accent active:scale-90 hover:scale-105 transition-transform border border-border disabled:opacity-60"
+                className="w-12 h-12 rounded-full bg-card/90 ring-1 ring-accent/40 shadow-soft flex items-center justify-center text-accent hover:-translate-y-0.5 active:scale-90 transition-all disabled:opacity-60"
                 aria-label="Boost my profile"
               >
                 {boosting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />}
@@ -312,13 +325,17 @@ export default function Discover() {
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 text-center">
-            <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6">
-              <Heart className="w-12 h-12 text-muted-foreground" />
+            <div className="relative w-28 h-28 mb-6">
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl" />
+              <div className="absolute inset-0 rounded-full border border-primary/30" />
+              <div className="absolute inset-5 rounded-full bg-card ring-1 ring-primary/40 flex items-center justify-center">
+                <Heart className="w-8 h-8 text-primary" />
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="type-title text-foreground mb-2">
               {deck.loadError ? "We couldn't load profiles" : "You've seen everyone for now"}
             </h2>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-muted-foreground mb-6 max-w-sm">
               {deck.loadError
                 ? "Check your connection and try again."
                 : showVerifiedOnly
@@ -326,10 +343,10 @@ export default function Discover() {
                   : "Widen your age range or try Passport to meet people in Cuba, Canada and beyond."}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <button onClick={deck.reload} className="px-6 py-3 gradient-primary text-white rounded-full font-semibold flex items-center justify-center gap-2">
+              <button onClick={deck.reload} className="cta-primary">
                 <RefreshCw className="w-4 h-4" /> Refresh
               </button>
-              <button onClick={() => navigate("/passport-mode")} className="px-6 py-3 rounded-full border border-border font-semibold text-foreground hover:bg-muted">
+              <button onClick={() => navigate("/passport-mode")} className="cta-secondary">
                 Try Passport
               </button>
             </div>
