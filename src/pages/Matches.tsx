@@ -113,27 +113,27 @@ export default function Matches() {
   return (
     <div className="min-h-screen bg-background pb-40">
       {/* Header */}
-      <header className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 flex items-center justify-between px-3 py-2 border-b border-foreground/[0.06] bg-background/80 backdrop-blur-xl" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
         <button
           onClick={() => navigate("/discover")}
-          className="p-2 -ml-2 rounded-full hover:bg-muted/60 transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors"
           aria-label="Back to discover"
         >
           <Flame className="w-6 h-6 text-muted-foreground" />
         </button>
-        <h1 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        <h1 className="font-display text-xl font-extrabold tracking-tight text-gradient">
           Matches
         </h1>
         <button
           onClick={() => navigate("/matches")}
-          className="p-2 -mr-2 rounded-full hover:bg-muted/60 transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors"
           aria-label="Open messages"
         >
           <MessageCircle className="w-6 h-6 text-primary" />
         </button>
       </header>
 
-      <main className="px-4 pt-4 safe-bottom">
+      <main className="px-4 pt-4 safe-bottom mx-auto max-w-3xl">
         {!loading && !(loadError && matches.length === 0) && adAfter < 0 && (
           <AdSlot placement="isexy-list-banner" className="mb-4" />
         )}
@@ -141,16 +141,16 @@ export default function Matches() {
           <div className="space-y-6" aria-busy="true">
             <div className="grid grid-cols-3 gap-2">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="aspect-square rounded-2xl bg-muted/40 animate-pulse" />
+                <div key={i} className="aspect-square rounded-2xl animate-shimmer" />
               ))}
             </div>
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 p-3">
-                  <div className="w-14 h-14 rounded-full bg-muted/40 animate-pulse" />
+                  <div className="w-14 h-14 rounded-full animate-shimmer" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-3 w-1/3 bg-muted/40 rounded animate-pulse" />
-                    <div className="h-3 w-2/3 bg-muted/30 rounded animate-pulse" />
+                    <div className="h-3 w-1/3 rounded-full animate-shimmer" />
+                    <div className="h-3 w-2/3 rounded-full animate-shimmer opacity-70" />
                   </div>
                 </div>
               ))}
@@ -158,11 +158,11 @@ export default function Matches() {
           </div>
         ) : loadError && matches.length === 0 ? (
           <div className="text-center py-24 px-6" role="alert">
-            <h2 className="text-2xl font-bold text-foreground mb-2">We couldn't load your matches</h2>
+            <h2 className="type-title text-foreground mb-2">We couldn't load your matches</h2>
             <p className="text-muted-foreground mb-6">Check your connection and try again.</p>
             <button
               onClick={() => { setLoading(true); void fetchMatches(); }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold"
+              className="cta-primary"
             >
               <RefreshCw className="w-4 h-4" />
               Try again
@@ -171,18 +171,18 @@ export default function Matches() {
         ) : matches.length === 0 ? (
           <div className="text-center py-24 px-6">
             <div className="relative w-24 h-24 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-secondary/20 blur-2xl" />
-              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-xl shadow-primary/30">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/40 to-accent/20 blur-2xl" />
+              <div className="relative w-24 h-24 rounded-full gradient-primary flex items-center justify-center shadow-glow">
                 <Heart className="w-12 h-12 text-primary-foreground fill-current" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">No matches yet</h2>
+            <h2 className="type-title text-foreground mb-2">No matches yet</h2>
             <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
               Keep swiping — your next great conversation is one tap away.
             </p>
             <button
               onClick={() => navigate("/discover")}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-shadow"
+              className="cta-primary"
             >
               <Flame className="w-4 h-4" />
               Start swiping
@@ -192,13 +192,13 @@ export default function Matches() {
           <div className="space-y-6">
             <div>
               <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                <h2 className="eyebrow-muted">
                   New matches
                 </h2>
                 <span className="text-xs text-muted-foreground">{matches.length} total</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {[...matches]
                   .sort((a, b) => new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime())
                   .slice(0, 6)
@@ -206,7 +206,7 @@ export default function Matches() {
                   <button
                     key={match.id}
                     onClick={() => open(match)}
-                    className="group relative aspect-square rounded-2xl overflow-hidden ring-1 ring-border/60 hover:ring-primary/60 transition-all"
+                    className="group relative aspect-square rounded-2xl overflow-hidden ring-1 ring-foreground/10 hover:ring-primary transition-all shadow-soft"
                     aria-label={`Chat with ${match.other_profile.first_name}`}
                   >
                     {match.other_profile.photos[0] ? (
@@ -231,13 +231,13 @@ export default function Matches() {
                       />
                     </div>
                     {match.unread_count > 0 && (
-                      <div className="absolute top-2 left-2 min-w-[20px] h-5 px-1 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
-                        <span className="text-[10px] font-bold text-primary-foreground">
+                      <div className="absolute top-2 left-2 min-w-[20px] h-5 px-1 rounded-full bg-accent flex items-center justify-center shadow-glow-cyan">
+                        <span className="text-[10px] font-bold text-accent-foreground">
                           {match.unread_count > 9 ? "9+" : match.unread_count}
                         </span>
                       </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2 pt-6">
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[hsl(223_68%_5%/0.9)] via-[hsl(223_68%_7%/0.3)] to-transparent p-2 pt-6">
                       <p className="text-white text-sm font-semibold truncate">
                         {match.other_profile.first_name}
                         {match.other_profile.age ? `, ${match.other_profile.age}` : ""}
@@ -249,7 +249,7 @@ export default function Matches() {
             </div>
 
             <div>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              <h2 className="eyebrow-muted mb-3">
                 Messages
               </h2>
               <div className="space-y-2">
@@ -257,7 +257,7 @@ export default function Matches() {
                   <Fragment key={match.id}>
                   <button
                     onClick={() => open(match)}
-                    className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 transition-all active:scale-[0.99]"
+                    className="w-full flex items-center gap-3 p-3 bg-card/70 rounded-2xl border border-foreground/[0.07] hover:bg-card hover:border-primary/40 transition-all active:scale-[0.99]"
                   >
                     <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-border/40">
                       {match.other_profile.photos[0] ? (
@@ -302,8 +302,8 @@ export default function Matches() {
                           {match.last_message_preview || "Say hi! 👋"}
                         </span>
                         {match.unread_count > 0 && (
-                          <span className="ml-auto flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary flex items-center justify-center">
-                            <span className="text-[10px] font-bold text-primary-foreground">
+                          <span className="ml-auto flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-accent flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-accent-foreground">
                               {match.unread_count > 9 ? "9+" : match.unread_count}
                             </span>
                           </span>

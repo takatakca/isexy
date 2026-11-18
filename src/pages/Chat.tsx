@@ -837,7 +837,7 @@ export default function Chat() {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-16 px-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
+            <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
               <span className="text-3xl">👋</span>
             </div>
             <h3 className="font-bold text-foreground mb-1">You matched!</h3>
@@ -975,7 +975,7 @@ export default function Chat() {
           <button
             onClick={() => void handleSend()}
             disabled={!newMessage.trim() || isBanned || locked}
-            className="w-12 h-12 shrink-0 flex items-center justify-center bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-full shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none enabled:active:scale-95 transition-all"
+            className="w-12 h-12 shrink-0 flex items-center justify-center gradient-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none enabled:active:scale-95 transition-all"
             aria-label="Send message"
           >
             <Send className="w-5 h-5" />

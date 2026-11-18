@@ -105,36 +105,37 @@ export default function Likes() {
 
   return (
     <div className="min-h-screen bg-background pb-40">
-      <div className="sticky top-0 z-10 bg-background px-4 pt-12 pb-2">
-        <h1 className="text-3xl font-extrabold text-foreground mb-4">Likes</h1>
-        <div className="flex border-b border-border" role="tablist">
-          <button
-            role="tab"
-            aria-selected={activeTab === "likes"}
-            onClick={() => setActiveTab("likes")}
-            className={`flex-1 py-3 text-center font-semibold relative ${activeTab === "likes" ? "text-foreground" : "text-muted-foreground"}`}
-          >
-            Who Liked You
-            {activeTab === "likes" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === "sent"}
-            onClick={() => setActiveTab("sent")}
-            className={`flex-1 py-3 text-center font-semibold relative ${activeTab === "sent" ? "text-foreground" : "text-muted-foreground"}`}
-          >
-            Sent
-            {activeTab === "sent" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
-          </button>
+      <div className="sticky top-0 z-10 border-b border-foreground/[0.06] bg-background/85 backdrop-blur-xl px-4 pb-3" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}>
+        <div className="mx-auto max-w-3xl">
+          <p className="eyebrow mb-2">Your connections</p>
+          <h1 className="type-title text-foreground mb-4">Likes</h1>
+          <div className="grid grid-cols-2 gap-1 rounded-full border border-foreground/[0.08] bg-card p-1" role="tablist">
+            <button
+              role="tab"
+              aria-selected={activeTab === "likes"}
+              onClick={() => setActiveTab("likes")}
+              className={`min-h-10 rounded-full text-center text-sm font-semibold transition-all ${activeTab === "likes" ? "bg-primary text-primary-foreground shadow-button" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Who Liked You
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeTab === "sent"}
+              onClick={() => setActiveTab("sent")}
+              className={`min-h-10 rounded-full text-center text-sm font-semibold transition-all ${activeTab === "sent" ? "bg-primary text-primary-foreground shadow-button" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Sent
+            </button>
+          </div>
         </div>
       </div>
 
       {activeTab === "likes" ? (
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 mx-auto max-w-3xl">
           <LikesReceivedGrid />
         </div>
       ) : (
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 mx-auto max-w-3xl">
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" aria-label="Loading" />
@@ -142,28 +143,30 @@ export default function Likes() {
           ) : loadError ? (
             <div className="flex flex-col items-center py-12" role="alert">
               <p className="text-muted-foreground mb-4">We couldn't load the likes you sent.</p>
-              <button onClick={() => fetchSent("first")} className="flex items-center gap-2 text-primary font-semibold">
+              <button onClick={() => fetchSent("first")} className="cta-secondary">
                 <RefreshCw className="w-4 h-4" /> Try again
               </button>
             </div>
           ) : sentLikes.length === 0 ? (
             <div className="flex flex-col items-center py-12">
               <AdSlot placement="isexy-list-banner" className="mb-8" />
-              <Heart className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No likes sent yet</p>
-              <button onClick={() => navigate("/discover")} className="mt-4 text-primary font-semibold">
+              <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-card ring-1 ring-primary/40 shadow-glow">
+                <Heart className="w-7 h-7 text-primary" />
+              </span>
+              <p className="type-heading text-foreground">No likes sent yet</p>
+              <button onClick={() => navigate("/discover")} className="cta-primary mt-5">
                 Start Swiping
               </button>
             </div>
           ) : (
             <>
               {listAdAfterIndex(sentLikes.length, 2) < 0 && <AdSlot placement="isexy-list-banner" className="mb-4" />}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {sentLikes.map((profile, i) => (
                   <Fragment key={profile.id}>
                   <button
                     type="button"
-                    className="relative rounded-xl overflow-hidden aspect-[3/4] text-left bg-muted"
+                    className="relative rounded-2xl overflow-hidden aspect-[3/4] text-left bg-muted ring-1 ring-foreground/[0.08] shadow-soft transition-transform hover:-translate-y-0.5"
                     onClick={() => navigate(`/web-profile/${profile.id}`)}
                     aria-label={`Open ${profile.first_name}'s profile`}
                   >
@@ -174,17 +177,17 @@ export default function Likes() {
                         <Heart className="w-8 h-8 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[hsl(223_68%_5%/0.85)] via-transparent to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="font-bold text-white text-sm flex items-center gap-1">
+                      <h3 className="font-display font-bold text-white text-sm flex items-center gap-1">
                         <span className="truncate">{profile.first_name}, {ageFrom(profile.birth_date)}</span>
-                        {profile.is_verified && <BadgeCheck className="w-4 h-4 text-cyan-300 shrink-0" aria-label="Verified" />}
+                        {profile.is_verified && <BadgeCheck className="w-4 h-4 text-accent shrink-0" aria-label="Verified" />}
                       </h3>
                       {profile.city && <p className="text-white/70 text-xs truncate">{profile.city}</p>}
                     </div>
                     {profile.action === "super_like" && (
-                      <div className="absolute top-2 right-2 bg-cyan-500 rounded-full p-1" aria-label="Super Like">
-                        <Star className="w-3 h-3 text-white fill-current" />
+                      <div className="absolute top-2 right-2 bg-accent rounded-full p-1.5 shadow-glow-cyan" aria-label="Super Like">
+                        <Star className="w-3 h-3 text-accent-foreground fill-current" />
                       </div>
                     )}
                   </button>
@@ -197,7 +200,7 @@ export default function Likes() {
                   <button
                     onClick={() => fetchSent("more")}
                     disabled={loadingMore}
-                    className="px-5 py-2 rounded-full border border-border text-sm font-semibold text-foreground disabled:opacity-60"
+                    className="min-h-11 px-6 rounded-full border border-input text-sm font-semibold text-foreground hover:border-primary/60 hover:bg-secondary disabled:opacity-60"
                   >
                     {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load more"}
                   </button>

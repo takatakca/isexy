@@ -166,27 +166,27 @@ export default function Messages() {
     <div className="min-h-screen bg-background pb-40">
       {/* Safety Modal */}
       {showSafetyModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-background rounded-3xl max-w-sm w-full p-6 relative" role="dialog" aria-modal="true" aria-label="Stay safe">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-4">
+          <div className="glass-card bg-card rounded-[1.75rem] max-w-sm w-full p-6 relative animate-slide-up" role="dialog" aria-modal="true" aria-label="Stay safe">
             <button
               onClick={() => {
                 try { localStorage.setItem(SAFETY_SEEN_KEY, "true"); } catch { /* ignore */ }
                 setShowSafetyModal(false);
               }}
-              className="absolute top-4 right-4 p-2"
+              className="absolute top-3 right-3 flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary"
               aria-label="Close"
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
 
             <div className="flex items-center gap-2 mb-6">
-              <Shield className="w-5 h-5 text-cyan-500" />
-              <span className="font-semibold text-foreground">Stay Safe</span>
+              <Shield className="w-5 h-5 text-accent" />
+              <span className="eyebrow">Stay Safe</span>
             </div>
 
             {renderSafetyIcon(safetySlides[safetySlide].icon)}
 
-            <h3 className="font-bold text-lg text-foreground mb-2">
+            <h3 className="type-heading text-foreground mb-2">
               {safetySlides[safetySlide].title}
             </h3>
             <p className="text-muted-foreground text-sm mb-4">
@@ -220,22 +220,26 @@ export default function Messages() {
       )}
 
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/85 backdrop-blur-xl px-4 pt-12 pb-4 border-b border-border/40">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Chat{totalUnread > 0 && <span className="sr-only">, {totalUnread} unread</span>}
-          </h1>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowSafetyModal(true)} className="p-2 rounded-full hover:bg-muted/60 transition-colors" aria-label="Safety tips">
+      <div className="sticky top-0 z-10 bg-background/85 backdrop-blur-xl px-4 pb-4 border-b border-foreground/[0.06]" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top))" }}>
+        <div className="mx-auto max-w-3xl">
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <p className="eyebrow mb-2">Messages{totalUnread > 0 ? ` · ${totalUnread} new` : ""}</p>
+            <h1 className="type-title text-foreground">
+              Chat{totalUnread > 0 && <span className="sr-only">, {totalUnread} unread</span>}
+            </h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setShowSafetyModal(true)} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors" aria-label="Safety tips">
               <Shield className="w-5 h-5 text-muted-foreground" />
             </button>
-            <button onClick={() => navigate("/referrals")} className="p-2 rounded-full hover:bg-muted/60 transition-colors relative" aria-label="Referrals">
+            <button onClick={() => navigate("/referrals")} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary transition-colors relative" aria-label="Referrals">
               <Smile className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-background" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-accent rounded-full ring-2 ring-background" />
             </button>
           </div>
         </div>
-        <label className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/40 border border-border/40 focus-within:border-primary/60 transition-colors">
+        <label className="flex items-center gap-2 px-4 min-h-11 rounded-full bg-card border border-foreground/10 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 transition-colors">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="search"
@@ -246,17 +250,18 @@ export default function Messages() {
             aria-label="Search matches by name"
           />
           {query && (
-            <button onClick={() => setQuery("")} aria-label="Clear search"><X className="w-4 h-4 text-muted-foreground" /></button>
+            <button onClick={() => setQuery("")} aria-label="Clear search" className="-mr-2 flex h-9 w-9 items-center justify-center rounded-full hover:bg-secondary"><X className="w-4 h-4 text-muted-foreground" /></button>
           )}
         </label>
+        </div>
       </div>
 
-      <div className="px-4 pt-4">
+      <div className="px-4 pt-4 mx-auto max-w-3xl">
         <ScheduledCallsList />
         <MissedCallBanner />
       </div>
 
-      <div className="flex-1 px-4">
+      <div className="flex-1 px-4 mx-auto max-w-3xl">
         {!loading && !(loadError && conversations.length === 0) && adAfter < 0 && (
           <AdSlot placement="isexy-list-banner" className="mt-3" />
         )}
@@ -264,33 +269,33 @@ export default function Messages() {
           <div className="space-y-2 mt-4" aria-busy="true">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 p-3">
-                <div className="w-14 h-14 rounded-full bg-muted/40 animate-pulse" />
+                <div className="w-14 h-14 rounded-full animate-shimmer" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 w-1/3 bg-muted/40 rounded animate-pulse" />
-                  <div className="h-3 w-2/3 bg-muted/30 rounded animate-pulse" />
+                  <div className="h-3 w-1/3 rounded-full animate-shimmer" />
+                  <div className="h-3 w-2/3 rounded-full animate-shimmer opacity-70" />
                 </div>
               </div>
             ))}
           </div>
         ) : loadError && conversations.length === 0 ? (
           <div className="text-center py-16">
-            <p className="font-semibold text-foreground mb-1">Couldn't load your chats</p>
+            <p className="type-heading text-foreground mb-1">Couldn't load your chats</p>
             <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
-            <button onClick={() => { setLoading(true); load(); }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm">
+            <button onClick={() => { setLoading(true); load(); }} className="cta-primary">
               <RefreshCw className="w-4 h-4" /> Retry
             </button>
           </div>
         ) : conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-16 px-6">
             <div className="relative w-24 h-24 mb-6">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-secondary/20 blur-2xl" />
-              <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-xl shadow-primary/30">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/40 to-accent/20 blur-2xl" />
+              <div className="relative w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center shadow-glow">
                 <Smile className="w-12 h-12 text-primary-foreground" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Get swiping</h2>
+            <h2 className="type-title text-foreground mb-2">Get swiping</h2>
             <p className="text-muted-foreground max-w-xs mb-6">When you match with other users they'll appear here, ready to chat.</p>
-            <button onClick={() => navigate("/discover")} className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold shadow-lg shadow-primary/30">
+            <button onClick={() => navigate("/discover")} className="cta-primary">
               Start swiping
             </button>
           </div>
@@ -298,11 +303,11 @@ export default function Messages() {
           <>
             {newMatches.length > 0 && (
               <section className="mt-3" aria-label="New matches">
-                <h2 className="text-sm font-bold text-foreground mb-3">New matches</h2>
+                <h2 className="eyebrow-muted mb-3">New matches</h2>
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
                   {newMatches.map((c) => (
                     <button key={c.match_id} onClick={() => open(c)} className="shrink-0 w-[76px] text-center">
-                      <div className="relative w-[76px] h-[96px] rounded-2xl overflow-hidden bg-muted ring-2 ring-primary/70">
+                      <div className="relative w-[76px] h-[96px] rounded-2xl overflow-hidden bg-muted ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[0_10px_24px_-10px_hsl(var(--primary)/0.8)]">
                         {c.photo_url ? (
                           <img src={c.photo_url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         ) : (
@@ -319,13 +324,13 @@ export default function Messages() {
 
             {threads.length > 0 && (
               <section className="mt-3" aria-label="Messages">
-                {newMatches.length > 0 && <h2 className="text-sm font-bold text-foreground mb-2">Messages</h2>}
+                {newMatches.length > 0 && <h2 className="eyebrow-muted mt-2 mb-3">Messages</h2>}
                 <div className="space-y-2">
                   {threads.map((c, i) => (
                     <Fragment key={c.match_id}>
                     <button
                       onClick={() => open(c)}
-                      className="w-full flex items-center gap-3 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 hover:bg-card hover:border-primary/40 active:scale-[0.99] transition-all"
+                      className="w-full flex items-center gap-3 p-3 bg-card/70 rounded-2xl border border-foreground/[0.07] hover:bg-card hover:border-primary/40 active:scale-[0.99] transition-all"
                     >
                       <div className="relative w-14 h-14 rounded-full bg-muted overflow-hidden flex-shrink-0 ring-2 ring-border/40">
                         {c.photo_url ? (
@@ -341,16 +346,16 @@ export default function Messages() {
                         <div className="flex items-center justify-between gap-2">
                           <h3 className={`truncate flex items-center gap-1 ${c.unread_count > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/90"}`}>
                             {c.first_name}
-                            {c.is_verified && <BadgeCheck className="w-4 h-4 text-cyan-400 shrink-0" aria-label="Verified" />}
+                            {c.is_verified && <BadgeCheck className="w-4 h-4 text-accent shrink-0" aria-label="Verified" />}
                           </h3>
-                          <span className={`text-xs shrink-0 ${c.unread_count > 0 ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                          <span className={`text-xs shrink-0 ${c.unread_count > 0 ? "text-accent font-semibold" : "text-muted-foreground"}`}>
                             {relativeTime(c.last_message_at, language.code)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
                           <p className={`text-sm truncate ${c.unread_count > 0 ? "text-foreground/80 font-medium" : "text-muted-foreground"}`}>
                             {!c.is_unlocked ? (
-                              <span className="flex items-center gap-1 text-amber-500"><Lock className="w-3 h-3" />Unlock to reply</span>
+                              <span className="flex items-center gap-1 text-accent"><Lock className="w-3 h-3" />Unlock to reply</span>
                             ) : (
                               <>
                                 {c.last_message_mine && <CheckCheck className="inline w-3.5 h-3.5 mr-1 -mt-0.5 text-muted-foreground" aria-label="You:" />}
@@ -359,8 +364,8 @@ export default function Messages() {
                             )}
                           </p>
                           {c.unread_count > 0 && (
-                            <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary flex items-center justify-center">
-                              <span className="text-[10px] font-bold text-primary-foreground">{c.unread_count > 9 ? "9+" : c.unread_count}</span>
+                            <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-accent flex items-center justify-center">
+                              <span className="text-[10px] font-bold text-accent-foreground">{c.unread_count > 9 ? "9+" : c.unread_count}</span>
                             </span>
                           )}
                         </div>

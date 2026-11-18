@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BadgeCheck, Crown, Heart, Loader2, Lock, RefreshCw, Star, X } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/EmptyState";
 import { MatchCelebration } from "@/components/MatchCelebration";
 import { AdSlot } from "@/components/AdSlot";
 import { listAdAfterIndex } from "@/lib/ads";
@@ -121,9 +122,9 @@ export function LikesReceivedGrid() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3" aria-busy="true" aria-label="Loading likes">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" aria-busy="true" aria-label="Loading likes">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="aspect-[3/4] rounded-xl bg-muted animate-pulse" />
+          <div key={i} className="aspect-[3/4] rounded-2xl ring-1 ring-foreground/[0.06] animate-shimmer" />
         ))}
       </div>
     );
@@ -132,8 +133,10 @@ export function LikesReceivedGrid() {
   if (error) {
     return (
       <div className="text-center py-16" role="alert">
-        <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-foreground mb-2">
+        <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-card ring-1 ring-primary/40 shadow-glow">
+          <Heart className="w-7 h-7 text-primary" />
+        </span>
+        <h2 className="type-heading text-foreground mb-2">
           {error === "unavailable" ? "Likes are on their way" : "We couldn't load your likes"}
         </h2>
         <p className="text-muted-foreground mb-6">
@@ -143,7 +146,7 @@ export function LikesReceivedGrid() {
         </p>
         <button
           onClick={() => load("first")}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full gradient-primary text-white font-semibold"
+          className="cta-primary"
         >
           <RefreshCw className="w-4 h-4" /> Try again
         </button>
@@ -169,22 +172,22 @@ export function LikesReceivedGrid() {
       {contactModal}
 
       {!canSee && (
-        <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-black">
+        <div className="mb-4 p-4 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/25 via-card to-accent/10 text-foreground shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.8)]">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 shrink-0 rounded-full bg-white/20 flex items-center justify-center">
-              <Crown className="w-6 h-6" />
+            <div className="w-12 h-12 shrink-0 rounded-2xl bg-amber-400/15 ring-1 ring-amber-400/40 flex items-center justify-center">
+              <Crown className="w-6 h-6 text-amber-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold">
+              <p className="font-display font-bold">
                 {likers.length > 0
                   ? `${hasMore ? `${likers.length}+` : likers.length} ${likers.length === 1 && !hasMore ? "person likes" : "people like"} you`
                   : "Unlock with Gold or Platinum"}
               </p>
-              <p className="text-sm opacity-90">See who likes you & match instantly</p>
+              <p className="text-sm text-muted-foreground">See who likes you & match instantly</p>
             </div>
             <button
               onClick={() => navigate("/premium")}
-              className="px-4 py-2 bg-black text-white rounded-full font-semibold text-sm shrink-0"
+              className="min-h-10 px-4 bg-primary text-primary-foreground rounded-full font-semibold text-sm shrink-0 shadow-button hover:brightness-110"
             >
               Upgrade
             </button>
@@ -196,27 +199,22 @@ export function LikesReceivedGrid() {
       {listAdAfterIndex(likers.length, 2) < 0 && <AdSlot placement="isexy-list-banner" className="mb-4" />}
 
       {likers.length === 0 ? (
-        <div className="text-center py-16">
-          <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-foreground mb-2">No new likes yet</h2>
-          <p className="text-muted-foreground mb-6">Complete your profile and keep swiping to get noticed.</p>
-          <button onClick={() => navigate("/discover")} className="text-primary font-semibold">
-            Go to Discover
-          </button>
-        </div>
+        <EmptyState icon={Heart} title="No new likes yet" actions={<button onClick={() => navigate("/discover")} className="cta-primary">Go to Discover</button>}>
+          Complete your profile and keep swiping to get noticed.
+        </EmptyState>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {likers.map((liker, i) => {
             const locked = liker.locked || !liker.liker_id;
             const key = liker.liker_id ?? `locked-${i}-${liker.liked_at}`;
             return (
               <Fragment key={key}>
-              <div className="relative rounded-xl overflow-hidden aspect-[3/4] bg-muted">
+              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-muted ring-1 ring-foreground/[0.08] shadow-soft">
                 {locked ? (
                   <button
                     type="button"
                     onClick={() => navigate("/premium")}
-                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/40 via-muted to-secondary/30 blur-[1px]"
+                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/45 via-secondary to-accent/20"
                     aria-label="Upgrade to see who likes you"
                   />
                 ) : (
@@ -236,31 +234,31 @@ export function LikesReceivedGrid() {
                   </button>
                 )}
 
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[hsl(223_68%_5%/0.9)] via-[hsl(223_68%_7%/0.2)] to-transparent" />
 
                 {liker.action === "super_like" && (
-                  <div className="absolute top-2 left-2 bg-cyan-500 rounded-full p-1.5 shadow-lg" aria-label="Super Like">
-                    <Star className="w-3.5 h-3.5 text-white fill-white" />
+                  <div className="absolute top-2 left-2 bg-accent rounded-full p-1.5 shadow-glow-cyan" aria-label="Super Like">
+                    <Star className="w-3.5 h-3.5 text-accent-foreground fill-current" />
                   </div>
                 )}
 
                 {locked && (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
-                      <Lock className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 rounded-full bg-background/50 ring-1 ring-white/20 backdrop-blur-md flex items-center justify-center">
+                      <Lock className="w-5 h-5 text-white" />
                     </div>
                   </div>
                 )}
 
                 <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
                   {locked ? (
-                    <p className="font-bold text-base">Someone likes you</p>
+                    <p className="font-display font-bold text-sm">Someone likes you</p>
                   ) : (
                     <>
                       <div className="flex items-center gap-1.5 mb-1 pointer-events-none">
-                        <h3 className="font-bold text-base truncate">{liker.first_name}</h3>
+                        <h3 className="font-display font-bold text-base truncate">{liker.first_name}</h3>
                         {liker.birth_date && <span className="text-base">{ageFrom(liker.birth_date)}</span>}
-                        {liker.is_verified && <BadgeCheck className="w-4 h-4 text-cyan-400 fill-cyan-400 shrink-0" aria-label="Verified" />}
+                        {liker.is_verified && <BadgeCheck className="w-4 h-4 text-accent fill-accent/20 shrink-0" aria-label="Verified" />}
                       </div>
                       {liker.city && <p className="text-xs text-white/80 truncate pointer-events-none">{liker.city}</p>}
                       {liker.message && (
@@ -270,23 +268,23 @@ export function LikesReceivedGrid() {
                         <button
                           disabled={acting === liker.liker_id}
                           onClick={() => handleAction(liker, "pass")}
-                          className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center disabled:opacity-50 active:scale-90 transition-transform"
+                          className="w-10 h-10 rounded-full bg-white/15 ring-1 ring-white/25 backdrop-blur-md flex items-center justify-center disabled:opacity-50 active:scale-90 transition-transform"
                           aria-label={`Pass on ${liker.first_name}`}
                         >
-                          <X className="w-4 h-4 text-foreground" />
+                          <X className="w-4 h-4 text-white" />
                         </button>
                         <button
                           disabled={acting === liker.liker_id}
                           onClick={() => handleAction(liker, "super_like")}
-                          className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center disabled:opacity-50 active:scale-90 transition-transform"
+                          className="w-10 h-10 rounded-full bg-white/15 ring-1 ring-accent/60 backdrop-blur-md flex items-center justify-center disabled:opacity-50 active:scale-90 transition-transform"
                           aria-label={`Super Like ${liker.first_name}`}
                         >
-                          <Star className="w-4 h-4 text-cyan-500 fill-current" />
+                          <Star className="w-4 h-4 text-accent fill-current" />
                         </button>
                         <button
                           disabled={acting === liker.liker_id}
                           onClick={() => handleAction(liker, "like")}
-                          className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center disabled:opacity-50 ml-auto active:scale-90 transition-transform"
+                          className="w-10 h-10 rounded-full gradient-primary shadow-button flex items-center justify-center disabled:opacity-50 ml-auto active:scale-90 transition-transform"
                           aria-label={`Like ${liker.first_name} back`}
                         >
                           {acting === liker.liker_id ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Heart className="w-4 h-4 text-white fill-white" />}
@@ -308,7 +306,7 @@ export function LikesReceivedGrid() {
           <button
             onClick={() => load("more")}
             disabled={loadingMore}
-            className="px-5 py-2 rounded-full border border-border text-sm font-semibold text-foreground disabled:opacity-60"
+            className="min-h-11 px-6 rounded-full border border-input text-sm font-semibold text-foreground hover:border-primary/60 hover:bg-secondary disabled:opacity-60"
           >
             {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load more"}
           </button>
