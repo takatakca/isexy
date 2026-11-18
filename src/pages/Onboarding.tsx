@@ -24,13 +24,13 @@ const slides: OnboardingSlide[] = [
     icon: <Users className="w-12 h-12" />,
     title: "Verified Profiles",
     description: "Look for the verified badge: members can verify their photos so you know you're talking with real people.",
-    color: "from-blue-500 to-cyan-500",
+    color: "from-[hsl(var(--gradient-end))] to-primary-solid",
   },
   {
     icon: <Shield className="w-12 h-12" />,
     title: "Safe & Secure",
     description: "Your privacy and safety are our top priorities. Chat and video call securely with built-in protections.",
-    color: "from-green-500 to-emerald-500",
+    color: "from-primary-solid to-[hsl(var(--gradient-end))]",
   },
   {
     icon: <Sparkles className="w-12 h-12" />,
@@ -62,18 +62,14 @@ export default function Onboarding() {
   const progress = ((currentSlide + 1) / slides.length) * 100;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Progress bar */}
-      <div className="p-4">
-        <Progress value={progress} className="h-1" />
-      </div>
-
-      {/* Skip button */}
-      <div className="absolute top-4 right-4">
+    <div className="min-h-[100dvh] brand-ambient flex flex-col" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      {/* Progress + skip */}
+      <div className="mx-auto flex w-full max-w-lg items-center gap-3 px-5 pt-4">
+        <Progress value={progress} className="h-1.5 flex-1 bg-foreground/10" aria-label={`Step ${currentSlide + 1} of ${slides.length}`} />
         <Button
           variant="ghost"
           onClick={() => navigate("/auth")}
-          className="text-muted-foreground"
+          className="-mr-2 rounded-full text-muted-foreground"
         >
           Skip
         </Button>
@@ -84,26 +80,27 @@ export default function Onboarding() {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-            className="text-center"
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+            className="text-center max-w-md"
           >
-            {/* Icon */}
-            <div
-              className={`w-32 h-32 mx-auto rounded-full bg-gradient-to-br ${slide.color} flex items-center justify-center mb-8 text-white shadow-2xl`}
-            >
-              {slide.icon}
+            {/* Icon orb */}
+            <div className="relative mx-auto mb-10 h-40 w-40">
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl" />
+              <div className="absolute inset-0 rounded-full border border-primary/25" />
+              <div className="absolute inset-4 rounded-full border border-primary/35" />
+              <div className={`absolute inset-8 rounded-full bg-gradient-to-br ${slide.color} flex items-center justify-center text-white shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.9)] [&_svg]:h-11 [&_svg]:w-11`}>
+                {slide.icon}
+              </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-3xl font-bold text-foreground mb-4">
+            <p className="eyebrow mb-3">Step {currentSlide + 1} of {slides.length}</p>
+            <h1 className="type-title text-foreground mb-4">
               {slide.title}
             </h1>
-
-            {/* Description */}
-            <p className="text-muted-foreground text-lg max-w-sm mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
               {slide.description}
             </p>
           </motion.div>
@@ -111,30 +108,28 @@ export default function Onboarding() {
       </div>
 
       {/* Dots */}
-      <div className="flex justify-center gap-2 mb-8">
+      <div className="flex justify-center gap-1 mb-4">
         {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
             aria-label={`Slide ${index + 1} of ${slides.length}`}
             aria-current={index === currentSlide ? "step" : undefined}
-            className={`w-2.5 h-2.5 rounded-full transition-all ${
-              index === currentSlide
-                ? "bg-primary w-8"
-                : "bg-muted-foreground/30"
-            }`}
-          />
+            className="flex h-11 items-center justify-center px-1"
+          >
+            <span className={`block h-2 rounded-full transition-all duration-300 ${index === currentSlide ? "w-8 bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.8)]" : "w-2 bg-muted-foreground/40"}`} />
+          </button>
         ))}
       </div>
 
       {/* Navigation */}
-      <div className="p-6 flex gap-4">
+      <div className="mx-auto flex w-full max-w-lg gap-3 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         {currentSlide > 0 && (
           <Button
             variant="outline"
             size="lg"
             onClick={prevSlide}
-            className="flex-1"
+            className="h-14 flex-1 rounded-full"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
@@ -143,7 +138,7 @@ export default function Onboarding() {
         <Button
           size="lg"
           onClick={nextSlide}
-          className={`flex-1 ${currentSlide === 0 ? "w-full" : ""}`}
+          className={`h-14 flex-1 rounded-full gradient-primary ${currentSlide === 0 ? "w-full" : ""}`}
         >
           {currentSlide === slides.length - 1 ? "Get Started" : "Next"}
           <ArrowRight className="w-5 h-5 ml-2" />

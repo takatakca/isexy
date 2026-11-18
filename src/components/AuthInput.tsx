@@ -11,14 +11,14 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <label className="block text-sm font-medium text-muted-foreground">
+          <label className="block text-sm font-semibold text-foreground">
             {label}
           </label>
         )}
         <input
           ref={ref}
           className={cn(
-            "w-full px-0 py-3 text-lg bg-transparent border-b-2 border-muted focus:border-primary outline-none transition-colors placeholder:text-muted-foreground/50",
+            "w-full h-14 px-4 text-lg rounded-2xl bg-card border border-input text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 hover:border-muted-foreground/70 focus:border-primary focus:ring-4 focus:ring-primary/20 [color-scheme:dark]",
             error && "border-destructive",
             className
           )}

@@ -270,7 +270,7 @@ export default function ProfileSetup() {
       case 1:
         return (
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-extrabold text-foreground mb-8">
+            <h1 className="type-title text-foreground mb-8">
               What's your first name?
             </h1>
             <AuthInput
@@ -288,7 +288,7 @@ export default function ProfileSetup() {
       case 2:
         return (
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-extrabold text-foreground mb-8">
+            <h1 className="type-title text-foreground mb-8">
               When's your birthday?
             </h1>
             <AuthInput
@@ -310,7 +310,7 @@ export default function ProfileSetup() {
       case 3:
         return (
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-extrabold text-foreground mb-6">
+            <h1 className="type-title text-foreground mb-6">
               What's your gender?
             </h1>
             <div className="space-y-3 mb-8">
@@ -318,10 +318,11 @@ export default function ProfileSetup() {
                 <button
                   key={option}
                   onClick={() => setGender(option)}
-                  className={`w-full py-4 px-6 rounded-full border-2 font-semibold transition-all ${
+                  aria-pressed={gender === option}
+                  className={`w-full min-h-14 px-6 rounded-2xl border font-semibold text-left transition-all ${
                     gender === option
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-foreground hover:border-muted-foreground"
+                      ? "border-primary bg-primary/15 text-foreground ring-brand"
+                      : "border-foreground/10 bg-card/60 text-foreground hover:border-primary/40 hover:bg-secondary"
                   }`}
                 >
                   {option}
@@ -329,7 +330,7 @@ export default function ProfileSetup() {
               ))}
             </div>
 
-            <h2 className="text-xl font-bold text-foreground mb-4">
+            <h2 className="type-heading text-foreground mb-4">
               Show me
             </h2>
             <div className="flex flex-wrap gap-2 mb-4">
@@ -341,10 +342,10 @@ export default function ProfileSetup() {
                     type="button"
                     aria-pressed={selected}
                     onClick={() => setInterestedIn(toggleShowMe(interestedIn, value))}
-                    className={`px-4 py-2 rounded-full border-2 font-medium text-sm transition-all ${
+                    className={`min-h-11 px-5 rounded-full border font-semibold text-sm transition-all ${
                       selected
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-foreground hover:border-muted-foreground"
+                        ? "border-primary bg-primary text-primary-foreground shadow-button"
+                        : "border-foreground/15 bg-card/60 text-foreground hover:border-primary/50"
                     }`}
                   >
                     {SHOW_ME_LABELS[value]}
@@ -359,7 +360,7 @@ export default function ProfileSetup() {
       case 4:
         return (
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-extrabold text-foreground mb-2">
+            <h1 className="type-title text-foreground mb-2">
               Add your recent pics
             </h1>
             <p className="text-muted-foreground mb-6">
@@ -376,7 +377,7 @@ export default function ProfileSetup() {
       case 5:
         return (
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-extrabold text-foreground mb-2">
+            <h1 className="type-title text-foreground mb-2">
               Share more about yourself
             </h1>
             <p className="text-muted-foreground mb-6">
@@ -384,7 +385,7 @@ export default function ProfileSetup() {
             </p>
             
             <div className="space-y-4">
-              <div className="bg-muted/30 rounded-xl p-4">
+              <div className="bg-card rounded-2xl border border-input p-4 transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20">
                 <label htmlFor="setup-bio" className="block font-semibold mb-2">About me</label>
                 <textarea
                   id="setup-bio"
@@ -399,7 +400,7 @@ export default function ProfileSetup() {
                 </p>
               </div>
 
-              <div className="bg-primary/10 rounded-xl p-4 flex items-start gap-3">
+              <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-start gap-3">
                 <Lightbulb className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <p className="text-sm">
                   Adding a short intro about you could lead to{" "}
@@ -413,7 +414,7 @@ export default function ProfileSetup() {
       case 6:
         return (
           <div className="flex-1 flex flex-col overflow-y-auto">
-            <h1 className="text-3xl font-extrabold text-foreground mb-2">
+            <h1 className="type-title text-foreground mb-2">
               Let's talk lifestyle habits, {name}
             </h1>
             <p className="text-muted-foreground mb-6">
@@ -466,7 +467,7 @@ export default function ProfileSetup() {
       case 7:
         return (
           <div className="flex-1 flex flex-col overflow-y-auto">
-            <h1 className="text-3xl font-extrabold text-foreground mb-2">
+            <h1 className="type-title text-foreground mb-2">
               What else makes you–you?
             </h1>
             <p className="text-muted-foreground mb-6">
@@ -508,7 +509,7 @@ export default function ProfileSetup() {
       case 8:
         return (
           <div className="flex-1 flex flex-col overflow-y-auto">
-            <h1 className="text-3xl font-extrabold text-foreground mb-2">
+            <h1 className="type-title text-foreground mb-2">
               What are you into?
             </h1>
             <p className="text-muted-foreground mb-6">
@@ -518,7 +519,7 @@ export default function ProfileSetup() {
             <div className="space-y-6 pb-4">
               {Object.entries(interestCategories).map(([category, items]) => (
                 <div key={category}>
-                  <h3 className="text-lg font-semibold mb-3">{category}</h3>
+                  <h3 className="eyebrow-muted mb-3">{category}</h3>
                   <div className="flex flex-wrap gap-2">
                     {items.map((interest) => {
                       const isSelected = interests.includes(interest);
@@ -533,10 +534,11 @@ export default function ProfileSetup() {
                               setInterests([...interests, interest]);
                             }
                           }}
-                          className={`px-3 py-1.5 rounded-full border text-sm transition-all ${
+                          aria-pressed={isSelected}
+                          className={`min-h-10 px-4 rounded-full border text-sm font-medium transition-all ${
                             isSelected
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border text-foreground hover:border-muted-foreground"
+                              ? "border-primary bg-primary/20 text-foreground ring-1 ring-primary"
+                              : "border-foreground/15 bg-card/50 text-foreground hover:border-primary/50"
                           }`}
                         >
                           {interest}
@@ -553,11 +555,15 @@ export default function ProfileSetup() {
       case 9:
         return (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-40 h-40 bg-muted rounded-full flex items-center justify-center mb-8">
-              <MapPin className="w-16 h-16 text-muted-foreground" />
+            <div className="relative w-40 h-40 mb-8">
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl" />
+              <div className="absolute inset-0 rounded-full border border-primary/30" />
+              <div className="absolute inset-6 rounded-full gradient-primary flex items-center justify-center shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.9)]">
+                <MapPin className="w-12 h-12 text-white" />
+              </div>
             </div>
             
-            <h1 className="text-3xl font-extrabold text-foreground mb-4">
+            <h1 className="type-title text-foreground mb-4">
               So, are you from around here?
             </h1>
             <p className="text-muted-foreground mb-8 max-w-xs">
@@ -575,7 +581,7 @@ export default function ProfileSetup() {
             <button
               onClick={() => setStep(10)}
               disabled={locating}
-              className="mt-4 text-muted-foreground text-sm hover:text-foreground transition-colors"
+              className="mt-3 min-h-11 px-4 text-muted-foreground text-sm font-semibold hover:text-foreground transition-colors"
             >
               Not now
             </button>
@@ -585,11 +591,15 @@ export default function ProfileSetup() {
       case 10:
         return (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-40 h-40 bg-muted rounded-full flex items-center justify-center mb-8">
-              <Shield className="w-16 h-16 text-muted-foreground" />
+            <div className="relative w-40 h-40 mb-8">
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl" />
+              <div className="absolute inset-0 rounded-full border border-primary/30" />
+              <div className="absolute inset-6 rounded-full gradient-primary flex items-center justify-center shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.9)]">
+                <Shield className="w-12 h-12 text-white" />
+              </div>
             </div>
             
-            <h1 className="text-3xl font-extrabold text-foreground mb-4">
+            <h1 className="type-title text-foreground mb-4">
               We Value Your Privacy
             </h1>
             <p className="text-muted-foreground mb-8 max-w-sm">
@@ -606,7 +616,7 @@ export default function ProfileSetup() {
             
             <button
               onClick={openConsentSettings}
-              className="mt-4 w-full py-3 border border-border text-foreground rounded-full font-semibold hover:bg-muted transition-colors"
+              className="mt-3 w-full min-h-12 border border-input text-foreground rounded-full font-semibold hover:border-primary/60 hover:bg-secondary transition-colors"
             >
               Personalize
             </button>
@@ -641,19 +651,20 @@ export default function ProfileSetup() {
       {[6, 7].includes(step) && (
         <button
           onClick={handleSkip}
-          className="absolute top-4 right-4 text-muted-foreground font-semibold hover:text-foreground transition-colors"
+          className="absolute -top-12 right-0 min-h-11 px-3 rounded-full text-muted-foreground font-semibold hover:text-foreground transition-colors"
         >
           Skip
         </button>
       )}
 
       {/* Progress indicator */}
-      <div className="flex gap-1 mb-6">
+      <p className="eyebrow mb-3">Step {step} of {TOTAL_STEPS}</p>
+      <div className="flex gap-1 mb-8" aria-hidden>
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-colors ${
-              i < step ? "bg-primary" : "bg-muted"
+            className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+              i < step ? "gradient-glow" : "bg-foreground/10"
             }`}
           />
         ))}

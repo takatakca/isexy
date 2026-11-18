@@ -14,14 +14,15 @@ export function AuthButton({
   className,
   ...props
 }: AuthButtonProps) {
-  const baseStyles = "w-full flex items-center justify-center gap-3 py-4 px-6 rounded-full font-semibold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "w-full min-h-14 flex items-center justify-center gap-3 py-3.5 px-6 rounded-full font-semibold text-base transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed";
   
   const variants = {
-    social: "bg-card text-foreground shadow-button hover:shadow-medium border border-border",
-    primary: "gradient-primary text-foreground shadow-button hover:shadow-glow hover:opacity-95",
-    secondary: "bg-secondary text-secondary-foreground hover:bg-muted",
-    outline: "bg-transparent border-2 border-primary-foreground text-foreground hover:bg-primary-foreground/10",
-    dark: "bg-foreground text-background hover:bg-foreground/90",
+    social: "bg-card text-foreground border border-foreground/10 hover:border-primary/50 hover:bg-secondary disabled:opacity-50",
+    primary: "gradient-primary text-primary-foreground shadow-button hover:brightness-110 disabled:opacity-50",
+    // Disabled-looking "Next" until the step is complete (the button itself is disabled).
+    secondary: "bg-secondary text-muted-foreground border border-foreground/[0.06]",
+    outline: "bg-transparent border border-input text-foreground hover:border-primary/60 hover:bg-secondary disabled:opacity-50",
+    dark: "gradient-primary text-primary-foreground shadow-button hover:brightness-110 disabled:opacity-50",
   };
 
   return (

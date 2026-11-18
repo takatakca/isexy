@@ -120,7 +120,9 @@ const reply = (route, body, status = 200) => route.fulfill({ status, contentType
 for (const vpName of which === "all" ? Object.keys(VIEWPORTS) : [which]) {
   const dir = `${out}/${vpName}`;
   mkdirSync(dir, { recursive: true });
+  const only = process.env.ONLY ? process.env.ONLY.split(",") : null; // e.g. ONLY=welcome,auth
   for (const [i, [name, path, who]] of SCREENS.entries()) {
+    if (only && !only.includes(name)) continue;
     const ctx = await browser.newContext({ viewport: VIEWPORTS[vpName], deviceScaleFactor: 1 });
     const newcomer = who === "new";
     const id = newcomer ? "dddddddd-0000-4000-8000-0000000000bb" : ME;

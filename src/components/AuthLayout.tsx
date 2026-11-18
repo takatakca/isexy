@@ -38,22 +38,27 @@ export function AuthLayout({
     : variant === "gray" 
     ? "bg-muted min-h-screen" 
     : "bg-background min-h-screen";
+  // Soft brand light at the top of every auth / setup screen.
+  const glow = variant === "gradient" ? null : (
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(36rem_14rem_at_50%_-30%,hsl(var(--primary)/0.22),transparent_70%)]" aria-hidden />
+  );
   const iconColor = variant === "gradient" ? "text-primary-foreground" : "text-foreground";
 
   return (
-    <div className={`${bgClass} flex flex-col`}>
+    <div className={`${bgClass} relative flex flex-col`}>
+      {glow}
       {/* Header with navigation */}
-      <header className="flex items-center justify-between p-4 h-14">
+      <header className="relative flex items-center justify-between px-3 pb-1 min-h-14" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
         {showBack ? (
           <button
             onClick={handleBack}
-            className={`${iconColor} p-2 -ml-2 hover:opacity-70 transition-opacity`}
+            className={`${iconColor} flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary/70 transition-colors`}
             aria-label="Go back"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
         ) : (
-          <div className="w-10" />
+          <div className="w-11" />
         )}
         
         <div className="flex items-center gap-2">
@@ -61,7 +66,7 @@ export function AuthLayout({
             <button
               onClick={onSave}
               disabled={isSaving}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-full font-semibold text-sm disabled:opacity-50"
+              className="min-h-10 px-5 bg-primary text-primary-foreground rounded-full font-semibold text-sm shadow-button disabled:opacity-50"
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
             </button>
@@ -70,7 +75,7 @@ export function AuthLayout({
           {showClose && (
             <button
               onClick={() => navigate("/")}
-              className={`${iconColor} p-2 -mr-2 hover:opacity-70 transition-opacity`}
+              className={`${iconColor} flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary/70 transition-colors`}
               aria-label="Close"
             >
               <X className="w-6 h-6" />
@@ -80,7 +85,7 @@ export function AuthLayout({
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col px-6 pb-8 animate-fade-in">
+      <main className="relative flex-1 flex flex-col w-full max-w-lg mx-auto px-6 pb-[max(2rem,env(safe-area-inset-bottom))] animate-fade-in">
         {children}
       </main>
     </div>
