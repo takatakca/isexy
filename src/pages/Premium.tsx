@@ -76,15 +76,15 @@ export default function Premium() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Coral glow header */}
+      {/* Brand light header */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/25 via-primary/5 to-transparent" aria-hidden />
-        <div className="relative">
-          <div className="flex items-center justify-between p-4">
-            <button onClick={() => goBack(navigate, "/discover")} className="p-2 rounded-full hover:bg-muted/50" aria-label="Close">
+        <div className="absolute inset-0 bg-[radial-gradient(40rem_18rem_at_50%_-20%,hsl(var(--primary)/0.35),transparent_70%),radial-gradient(24rem_12rem_at_90%_0%,hsl(var(--accent)/0.15),transparent_70%)]" aria-hidden />
+        <div className="relative mx-auto max-w-2xl">
+          <div className="flex items-center justify-between px-2 py-2" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}>
+            <button onClick={() => goBack(navigate, "/discover")} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary" aria-label="Close">
               <X className="w-6 h-6 text-foreground" />
             </button>
-            <div className="flex items-center gap-1 glass-card rounded-full p-1">
+            <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-card/80 p-1 backdrop-blur">
               {(["plus", "gold", "platinum"] as SubscriptionTier[]).map((tier) => (
                 <button
                   key={tier}
@@ -92,9 +92,10 @@ export default function Premium() {
                     setActiveTier(tier);
                     setSelectedDuration("week");
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                  aria-pressed={activeTier === tier}
+                  className={`flex min-h-10 items-center gap-1.5 px-3.5 rounded-full text-xs font-bold transition-all ${
                     activeTier === tier
-                      ? "gradient-primary text-primary-foreground"
+                      ? "gradient-primary text-primary-foreground shadow-button"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -103,11 +104,12 @@ export default function Premium() {
                 </button>
               ))}
             </div>
-            <div className="w-10" />
+            <div className="w-11" />
           </div>
 
-          <div className="px-6 pb-6 pt-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-foreground leading-tight">
+          <div className="px-6 pb-6 pt-4">
+            <p className="eyebrow mb-3">ISEXY {tierMeta[activeTier].label}</p>
+            <h1 className="type-title text-foreground leading-tight">
               {tierMeta[activeTier].headline}
             </h1>
           </div>
@@ -115,19 +117,20 @@ export default function Premium() {
       </div>
 
       {/* Duration selector */}
-      <div className="px-4 -mt-2">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-3">Choose duration</h2>
-        <div className="grid grid-cols-3 gap-2">
+      <div className="px-4 -mt-1 mx-auto w-full max-w-2xl">
+        <h2 className="eyebrow-muted mb-4">Choose duration</h2>
+        <div className="grid grid-cols-3 gap-2.5">
           {plans.map((plan) => {
             const selected = selectedDuration === plan.duration;
             return (
               <button
                 key={plan.duration}
                 onClick={() => setSelectedDuration(plan.duration)}
-                className={`relative p-3 rounded-2xl border text-left transition-all ${
+                aria-pressed={selected}
+                className={`relative min-h-[7.5rem] p-3 pt-4 rounded-2xl border text-left transition-all ${
                   selected
-                    ? "border-primary bg-primary/10 ring-brand"
-                    : "border-border bg-card hover:border-primary/40"
+                    ? "border-primary bg-primary/15 ring-brand"
+                    : "border-foreground/10 bg-card hover:border-primary/40"
                 }`}
               >
                 {(plan.popular || plan.bestValue) && (
@@ -135,10 +138,11 @@ export default function Premium() {
                     {plan.bestValue ? "Best value" : "Popular"}
                   </span>
                 )}
-                <p className="text-sm font-bold text-foreground">{plan.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">{cad(plan.weeklyPrice)}/wk</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{plan.label}</p>
+                <p className="font-display text-xl font-extrabold text-foreground mt-1.5 leading-none">{cad(plan.weeklyPrice)}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">per week</p>
                 {plan.savings && (
-                  <span className="inline-block mt-2 text-[10px] font-bold text-primary">Save {plan.savings}%</span>
+                  <span className="inline-block mt-2 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">Save {plan.savings}%</span>
                 )}
                 {selected && (
                   <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
@@ -152,18 +156,18 @@ export default function Premium() {
       </div>
 
       {/* Features */}
-      <div className="flex-1 px-4 pb-56 overflow-y-auto mt-4">
-        <div className="glass-card rounded-2xl p-5">
+      <div className="flex-1 px-4 pb-64 overflow-y-auto mt-5 mx-auto w-full max-w-2xl">
+        <div className="panel p-5">
           <div className="flex justify-center mb-4">
-            <span className="px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-bold">
+            <span className="eyebrow rounded-full bg-accent/10 px-3 py-1.5">
               Included with {tierData.name}
             </span>
           </div>
           <div className="space-y-3">
             {features.map((feature, idx) => (
               <div key={idx} className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="w-3.5 h-3.5 text-primary" />
+                <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
                 </div>
                 <p className="font-semibold text-foreground text-sm">{feature}</p>
               </div>
@@ -182,7 +186,8 @@ export default function Premium() {
       </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-foreground/10 bg-background/90 backdrop-blur-xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-2xl space-y-2">
         {paysWithStripe ? (
           <p className="text-xs text-center text-foreground" role="status">
             You have ISEXY {wallet?.tier ? wallet.tier.charAt(0).toUpperCase() + wallet.tier.slice(1) : ""}. Change or cancel it in My Subscription.
@@ -192,14 +197,14 @@ export default function Premium() {
         )}
         <button
           onClick={() => navigate("/compare-plans")}
-          className="w-full text-center text-xs text-primary font-bold hover:underline"
+          className="w-full min-h-8 text-center text-xs text-link font-semibold hover:underline"
         >
           Compare all plans →
         </button>
         <button
           onClick={() => handleSubscribe()}
           disabled={loading || (!paysWithStripe && !!blocked)}
-          className="cta-primary w-full text-base disabled:opacity-60"
+          className="cta-primary w-full h-14 text-base disabled:opacity-60"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -214,6 +219,7 @@ export default function Premium() {
         <p className="text-[10px] text-muted-foreground text-center leading-snug">
           Renews automatically until cancelled. Cancel anytime in My Subscription. Your plan starts once Stripe confirms the payment.
         </p>
+        </div>
       </div>
     </div>
   );

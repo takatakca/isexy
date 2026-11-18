@@ -64,15 +64,16 @@ export default function BuyMinutes() {
           <button
             key={pkg.id}
             onClick={() => setSelectedPackage(pkg.id)}
-            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+            aria-pressed={isSel}
+            className={`w-full min-h-[4.5rem] flex items-center justify-between gap-3 p-4 rounded-2xl border transition-all ${
               isSel
-                ? "border-primary bg-primary/10 ring-brand"
-                : "border-border bg-card hover:border-primary/40"
+                ? "border-primary bg-primary/15 ring-brand"
+                : "border-foreground/10 bg-card hover:border-primary/40"
             }`}
           >
             <div className="text-left">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-foreground">{pkg.minutes} minutes</span>
+                <span className="font-display font-bold text-foreground">{pkg.minutes} minutes</span>
                 {pkg.popular && (
                   <Badge className="text-[10px] gradient-primary text-primary-foreground border-0">
                     <Sparkles className="w-3 h-3 mr-1" /> Best value
@@ -81,7 +82,7 @@ export default function BuyMinutes() {
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{cad(pkg.price)} · {pkg.perMinute}/min</p>
             </div>
-            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSel ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+            <div className={`w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center ${isSel ? "border-primary bg-primary" : "border-input"}`}>
               {isSel && <Check className="w-4 h-4 text-primary-foreground" />}
             </div>
           </button>
@@ -96,20 +97,21 @@ export default function BuyMinutes() {
     <AuthLayout showBack variant="white">
       <div className="space-y-6 pb-40">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground">Buy Minutes</h1>
-          <p className="text-sm text-muted-foreground">Phone & video call packages</p>
+          <p className="eyebrow mb-2">Calls · minutes never expire</p>
+          <h1 className="type-title text-foreground">Buy Minutes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Phone & video call packages</p>
         </div>
 
         {/* Balances */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card rounded-2xl p-4 text-center">
-            <Phone className="w-6 h-6 text-primary mx-auto mb-1" />
-            <p className="text-2xl font-extrabold text-foreground">{phoneBalance}</p>
+          <div className="panel p-4 text-center">
+            <span className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/30"><Phone className="w-5 h-5 text-primary" /></span>
+            <p className="font-display text-3xl font-extrabold text-foreground">{phoneBalance}</p>
             <p className="text-xs text-muted-foreground">Phone min</p>
           </div>
-          <div className="glass-card rounded-2xl p-4 text-center">
-            <Video className="w-6 h-6 text-primary mx-auto mb-1" />
-            <p className="text-2xl font-extrabold text-foreground">{videoBalance}</p>
+          <div className="panel p-4 text-center">
+            <span className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 ring-1 ring-accent/30"><Video className="w-5 h-5 text-accent" /></span>
+            <p className="font-display text-3xl font-extrabold text-foreground">{videoBalance}</p>
             <p className="text-xs text-muted-foreground">Video min</p>
           </div>
         </div>
@@ -117,7 +119,7 @@ export default function BuyMinutes() {
         {!!wallet?.credits && (
           <button
             onClick={() => navigate("/buy-credits")}
-            className="w-full glass-card rounded-2xl p-3 flex items-center gap-2 text-left text-xs text-foreground"
+            className="w-full min-h-11 rounded-2xl border border-primary/30 bg-primary/10 p-3 flex items-center gap-2 text-left text-xs text-foreground hover:bg-primary/15 transition-colors"
           >
             <Coins className="w-4 h-4 text-primary shrink-0" />
             <span>You have <strong>{wallet.credits} credits</strong>: use them as call minutes (1 credit = 1 minute).</span>
@@ -131,17 +133,17 @@ export default function BuyMinutes() {
             setSelectedPackage(v === "phone" ? "phone_150" : "video_150");
           }}
         >
-          <TabsList className="w-full bg-card">
-            <TabsTrigger value="phone" className="flex-1 gap-1 data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">
+          <TabsList className="w-full bg-card rounded-full">
+            <TabsTrigger value="phone" className="flex-1 gap-1 rounded-full">
               <Phone className="w-4 h-4" /> Phone
             </TabsTrigger>
-            <TabsTrigger value="video" className="flex-1 gap-1 data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="video" className="flex-1 gap-1 rounded-full">
               <Video className="w-4 h-4" /> Video
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="phone" className="mt-4 space-y-3">
-            <div className="glass-card rounded-2xl p-3 flex items-start gap-2">
+            <div className="rounded-2xl border border-foreground/[0.08] bg-card/60 p-3 flex items-start gap-2">
               <EyeOff className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <p className="text-xs text-muted-foreground">
                 <strong className="text-foreground">Phone calls use phone minutes.</strong> Your real number stays private — calls go through a masked relay.
@@ -151,7 +153,7 @@ export default function BuyMinutes() {
           </TabsContent>
 
           <TabsContent value="video" className="mt-4 space-y-3">
-            <div className="glass-card rounded-2xl p-3 flex items-start gap-2">
+            <div className="rounded-2xl border border-foreground/[0.08] bg-card/60 p-3 flex items-start gap-2">
               <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <p className="text-xs text-muted-foreground">
                 <strong className="text-foreground">Video calls use video minutes.</strong> End-to-end encrypted WebRTC. Auto-ends when minutes hit zero.
@@ -167,12 +169,14 @@ export default function BuyMinutes() {
       </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-foreground/10 bg-background/90 backdrop-blur-xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-lg space-y-2">
         <PaymentsNotice gate={gate} />
-        <button onClick={handlePurchase} disabled={isLoading || !!blocked} className="cta-primary w-full disabled:opacity-60">
+        <button onClick={handlePurchase} disabled={isLoading || !!blocked} className="cta-primary w-full h-14 text-base disabled:opacity-60">
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : blocked ?? (currentPkg ? `Buy ${currentPkg.minutes} minutes — ${cad(currentPkg.price)} CAD` : "Purchase")}
         </button>
         <p className="text-[10px] text-muted-foreground text-center">Minutes never expire. Added once Stripe confirms the payment.</p>
+        </div>
       </div>
     </AuthLayout>
   );

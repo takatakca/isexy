@@ -79,17 +79,18 @@ export default function BuyCredits() {
               <Coins className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-foreground">Buy Credits</h1>
+              <p className="eyebrow mb-1">Calls · pay as you go</p>
+              <h1 className="type-title text-foreground">Buy Credits</h1>
               <p className="text-sm text-muted-foreground">1 credit = 1 minute of video or phone calls</p>
             </div>
           </div>
         </div>
 
         {/* Balance */}
-        <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
+        <div className="panel bg-gradient-to-br from-primary/15 via-card to-accent/10 p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Your balance</p>
-            <p className="text-3xl font-extrabold text-foreground">{currentCredits}<span className="text-base font-bold text-muted-foreground ml-1">credits</span></p>
+            <p className="eyebrow-muted">Your balance</p>
+            <p className="font-display text-4xl font-extrabold text-foreground mt-2">{currentCredits}<span className="text-base font-bold text-muted-foreground ml-1">credits</span></p>
           </div>
           <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center">
             <Coins className="w-7 h-7 text-primary" />
@@ -97,8 +98,8 @@ export default function BuyCredits() {
         </div>
 
         {/* Use credits */}
-        <div className="glass-card rounded-2xl p-4">
-          <h3 className="font-bold text-foreground mb-1 flex items-center gap-2 text-sm">
+        <div className="panel p-4">
+          <h3 className="font-display font-bold text-foreground mb-1 flex items-center gap-2 text-sm">
             <Video className="w-4 h-4 text-primary" /> Use your credits for calls
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
@@ -115,19 +116,19 @@ export default function BuyCredits() {
               max={Math.max(currentCredits, 1)}
               value={convertAmount}
               onChange={(e) => setConvertAmount(Number(e.target.value) || 0)}
-              className="w-20 h-10 rounded-xl border border-border bg-background px-3 text-sm text-foreground"
+              className="w-20 h-11 rounded-xl border border-input bg-background/60 px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
             />
             <button
               onClick={() => convert("video")}
               disabled={!currentCredits || !!converting}
-              className="flex-1 h-10 rounded-full text-xs font-semibold gradient-primary text-primary-foreground disabled:opacity-40 flex items-center justify-center gap-1"
+              className="flex-1 h-11 rounded-full text-xs font-semibold border border-primary/60 bg-primary/15 text-foreground hover:bg-primary/25 disabled:opacity-40 flex items-center justify-center gap-1 transition-colors"
             >
               {converting === "video" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Video className="w-4 h-4" /> Video min</>}
             </button>
             <button
               onClick={() => convert("phone")}
               disabled={!currentCredits || !!converting}
-              className="flex-1 h-10 rounded-full text-xs font-semibold border border-primary text-primary disabled:opacity-40 flex items-center justify-center gap-1"
+              className="flex-1 h-11 rounded-full text-xs font-semibold border border-input text-foreground hover:border-primary/60 hover:bg-secondary disabled:opacity-40 flex items-center justify-center gap-1 transition-colors"
             >
               {converting === "phone" ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Phone className="w-4 h-4" /> Phone min</>}
             </button>
@@ -137,17 +138,18 @@ export default function BuyCredits() {
 
         {/* Packages */}
         <div className="space-y-3">
-          <h3 className="font-bold text-foreground text-sm uppercase tracking-wide">Choose a package</h3>
+          <h3 className="eyebrow-muted">Choose a package</h3>
           {creditPackages.map((pkg) => {
             const isSel = selectedPackage === pkg.id;
             return (
               <button
                 key={pkg.id}
                 onClick={() => setSelectedPackage(pkg.id)}
-                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                aria-pressed={isSel}
+                className={`w-full min-h-[4.5rem] flex items-center justify-between gap-3 p-4 rounded-2xl border transition-all ${
                   isSel
-                    ? "border-primary bg-primary/10 ring-brand"
-                    : "border-border bg-card hover:border-primary/40"
+                    ? "border-primary bg-primary/15 ring-brand"
+                    : "border-foreground/10 bg-card hover:border-primary/40"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -156,8 +158,8 @@ export default function BuyCredits() {
                   </div>
                   <div className="text-left">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-foreground">{pkg.credits} Credits</span>
-                      {pkg.bonus && <Badge className="text-[10px] bg-primary/15 text-primary border-0">+{pkg.bonus} bonus</Badge>}
+                      <span className="font-display font-bold text-foreground">{pkg.credits} Credits</span>
+                      {pkg.bonus && <Badge className="text-[10px] bg-accent/15 text-accent border-0 hover:bg-accent/15">+{pkg.bonus} bonus</Badge>}
                       {pkg.popular && <Badge className="text-[10px] gradient-primary text-primary-foreground border-0"><Sparkles className="w-3 h-3 mr-1" />Popular</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -165,7 +167,7 @@ export default function BuyCredits() {
                     </p>
                   </div>
                 </div>
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSel ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                <div className={`w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center ${isSel ? "border-primary bg-primary" : "border-input"}`}>
                   {isSel && <Check className="w-4 h-4 text-primary-foreground" />}
                 </div>
               </button>
@@ -179,12 +181,14 @@ export default function BuyCredits() {
       </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 glass-card border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-foreground/10 bg-background/90 backdrop-blur-xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-lg space-y-2">
         <PaymentsNotice gate={gate} />
-        <button onClick={handlePurchase} disabled={isLoading || !!blocked} className="cta-primary w-full disabled:opacity-60">
+        <button onClick={handlePurchase} disabled={isLoading || !!blocked} className="cta-primary w-full h-14 text-base disabled:opacity-60">
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : blocked ?? `Buy ${selected.credits + (selected.bonus ?? 0)} credits — ${cad(selected.price)} CAD`}
         </button>
         <p className="text-[10px] text-muted-foreground text-center">Credits are added once Stripe confirms the payment. Non-refundable.</p>
+        </div>
       </div>
     </AuthLayout>
   );
