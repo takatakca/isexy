@@ -138,7 +138,7 @@ export function TopPicksCarousel({ className, onSelect, hiddenIds, compact = fal
       {!isGoldOrPlatinum && !compact && (
         <button
           onClick={() => navigate("/premium")}
-          className="mx-4 mt-3 w-[calc(100%-2rem)] py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-full font-bold text-sm"
+          className="mx-4 mt-3 w-[calc(100%-2rem)] py-3 gradient-primary text-primary-foreground rounded-full font-bold text-sm"
         >
           Unlock Top Picks with Gold
         </button>

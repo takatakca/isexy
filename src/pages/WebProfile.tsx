@@ -427,7 +427,7 @@ function MemberProfile({ id }: { id: string }) {
                 className="w-16 h-16 rounded-full bg-card shadow-lg flex items-center justify-center border border-border disabled:opacity-60 active:scale-90 transition-transform"
                 aria-label="Pass"
               >
-                <X className="w-8 h-8 text-rose-500" />
+                <X className="w-8 h-8 text-foreground" strokeWidth={2.5} />
               </button>
               <button
                 onClick={() => act("super_like")}

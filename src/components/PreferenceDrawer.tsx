@@ -85,7 +85,7 @@ export function PreferenceDrawer({
         <DrawerFooter className="pt-4">
           <Button
             onClick={handleDone}
-            className="w-full h-14 rounded-full text-lg font-bold bg-gradient-to-r from-primary to-rose-400 hover:opacity-90"
+            className="w-full h-14 rounded-full text-lg font-bold gradient-primary text-primary-foreground hover:brightness-110"
           >
             DONE
           </Button>

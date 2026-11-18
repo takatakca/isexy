@@ -8,7 +8,7 @@ export default function DatingRegulations() {
     <AuthLayout showBack variant="white">
       <div className="flex-1">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
             <Scale className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -36,7 +36,7 @@ export default function DatingRegulations() {
             {/* Canadian Laws */}
             <section>
               <div className="flex items-center gap-2 mb-4">
-                <MapPin className="w-5 h-5 text-red-500" />
+                <MapPin className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-bold">🇨🇦 Canadian Online Safety Laws & Regulations</h2>
               </div>
 

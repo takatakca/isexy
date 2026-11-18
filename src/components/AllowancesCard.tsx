@@ -47,14 +47,14 @@ export default function AllowancesCard({ profileId }: AllowancesCardProps) {
       label: "First Impressions",
       current: allowance.weekly_first_impressions,
       max: allowance.weekly_first_impressions_max,
-      icon: <MessageCircle className="w-4 h-4 text-purple-400" />,
+      icon: <MessageCircle className="w-4 h-4 text-accent" />,
       resetLabel: `Resets ${formatDistanceToNow(new Date(allowance.weekly_reset_at), { addSuffix: true })}`,
     },
     {
       label: "Monthly Boosts",
       current: allowance.monthly_boosts,
       max: allowance.monthly_boosts_max,
-      icon: <RefreshCw className="w-4 h-4 text-amber-400" />,
+      icon: <RefreshCw className="w-4 h-4 text-primary" />,
       resetLabel: `Resets ${formatDistanceToNow(new Date(allowance.monthly_reset_at), { addSuffix: true })}`,
     },
   ];

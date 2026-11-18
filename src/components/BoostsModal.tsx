@@ -56,8 +56,8 @@ export function BoostsModal({
           <div className="space-y-4 mb-8">
             {/* Regular Boosts */}
             <div className="flex items-center gap-4 py-3 border-b border-border">
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-purple-500" />
+              <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-accent" />
               </div>
               <div className="flex-1">
                 <p className="font-bold text-foreground">Boosts</p>
@@ -67,8 +67,8 @@ export function BoostsModal({
 
             {/* Primetime Boosts */}
             <div className="flex items-center gap-4 py-3">
-              <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
-                <Timer className="w-6 h-6 text-pink-500" />
+              <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center">
+                <Timer className="w-6 h-6 text-primary" />
               </div>
               <div className="flex-1">
                 <p className="font-bold text-foreground">Primetime Boosts</p>

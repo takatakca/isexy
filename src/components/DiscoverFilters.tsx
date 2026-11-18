@@ -232,7 +232,7 @@ export function DiscoverFilters({
         className="p-2 hover:bg-muted/50 rounded-full transition-colors"
         aria-label="Get Boosts"
       >
-        <Zap className="w-6 h-6 text-purple-500 fill-purple-500" />
+        <Zap className="w-6 h-6 text-accent fill-accent" />
       </button>
     </div>
   );

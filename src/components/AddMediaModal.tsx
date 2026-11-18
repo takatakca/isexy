@@ -33,7 +33,7 @@ export function AddMediaModal({
           onClick={onPhotoSelector}
           className="w-full flex items-center gap-4 p-4 bg-muted rounded-2xl hover:bg-muted/80 transition-colors"
         >
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center">
             <Sparkles className="w-7 h-7 text-white" />
           </div>
           <div className="flex-1 text-left">

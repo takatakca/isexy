@@ -74,9 +74,9 @@ export default function PromoOfferBanner({ profileId, tier = "gold" }: PromoOffe
   if (loading || !offer || dismissed) return null;
 
   const tierColors: Record<string, string> = {
-    plus: "from-rose-500 to-pink-600",
-    gold: "from-amber-400 to-yellow-600",
-    platinum: "from-slate-500 to-slate-700",
+    plus: "from-primary-solid to-[hsl(var(--gradient-end))]",
+    gold: "from-[hsl(var(--gradient-end))] to-primary-solid",
+    platinum: "from-secondary to-midnight",
   };
 
   return (

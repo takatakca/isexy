@@ -44,15 +44,15 @@ const tierConfig: Record<SubscriptionTier, {
 }> = {
   plus: {
     name: "Plus",
-    gradient: "from-pink-500 to-rose-500",
-    headerBg: "bg-gradient-to-r from-pink-500 to-rose-500",
+    gradient: "from-primary-solid to-[hsl(var(--gradient-end))]",
+    headerBg: "gradient-primary",
     headerText: "text-white",
   },
   gold: {
     name: "Gold",
     gradient: "from-yellow-400 to-amber-500",
     headerBg: "bg-gradient-to-r from-yellow-400 to-amber-500",
-    headerText: "text-white",
+    headerText: "text-navy",
   },
   platinum: {
     name: "Platinum",

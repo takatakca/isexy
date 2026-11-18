@@ -74,10 +74,10 @@ export function ConfettiNotification({ show, badgeType, onClose }: ConfettiNotif
           exit={{ opacity: 0, y: -100 }}
           className="fixed top-4 left-4 right-4 z-[100] pointer-events-auto"
         >
-          <div className="bg-gradient-to-r from-primary via-pink-500 to-orange-500 rounded-2xl p-1 shadow-2xl">
+          <div className="bg-gradient-to-r from-primary via-accent to-primary-solid rounded-2xl p-1 shadow-2xl">
             <div className="bg-card rounded-xl p-4">
               <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center shrink-0">
                   <Award className="w-8 h-8 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">

@@ -102,7 +102,7 @@ export default function GetSuperLikes() {
                 onClick={() => setSelectedPackage(pkg.id)}
                 className={`relative p-3 rounded-2xl border transition-all text-left ${
                   isSel
-                    ? "border-primary bg-primary/10 ring-coral"
+                    ? "border-primary bg-primary/10 ring-brand"
                     : "border-border bg-card hover:border-primary/40"
                 }`}
               >

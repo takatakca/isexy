@@ -96,7 +96,7 @@ export default function LoveStories() {
         <div className="flex justify-center mb-4">
           <div className="relative">
             <Heart className="w-16 h-16 text-primary fill-primary" />
-            <Heart className="w-8 h-8 text-rose-400 fill-rose-400 absolute -top-2 -right-2 animate-pulse" />
+            <Heart className="w-8 h-8 text-accent fill-accent absolute -top-2 -right-2 animate-pulse" />
           </div>
         </div>
         <h2 className="text-3xl font-bold text-foreground mb-2">
@@ -210,7 +210,7 @@ export default function LoveStories() {
       <div className="px-4 pb-8">
         <button
           onClick={() => navigate("/discover")}
-          className="w-full py-4 bg-gradient-to-r from-primary to-rose-500 text-primary-foreground rounded-full font-bold text-lg shadow-lg"
+          className="w-full py-4 gradient-primary text-primary-foreground rounded-full font-bold text-lg shadow-lg"
         >
           Start a Conversation
         </button>

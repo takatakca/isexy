@@ -66,13 +66,13 @@ export default function BoostWalletCard({ profileId }: BoostWalletCardProps) {
       type: "boost",
       label: "Boosts",
       count: wallet?.boosts ?? 0,
-      icon: <Zap className="w-5 h-5 text-purple-400" />,
+      icon: <Zap className="w-5 h-5 text-accent" />,
     },
     {
       type: "primetime",
       label: "Primetime Boosts",
       count: wallet?.primetime_boosts ?? 0,
-      icon: <Timer className="w-5 h-5 text-purple-400" />,
+      icon: <Timer className="w-5 h-5 text-primary" />,
     },
   ];
 
@@ -87,7 +87,7 @@ export default function BoostWalletCard({ profileId }: BoostWalletCardProps) {
         {items.map((item) => (
           <div key={item.type} className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
                 {item.icon}
               </div>
               <div>
@@ -99,7 +99,7 @@ export default function BoostWalletCard({ profileId }: BoostWalletCardProps) {
               <button
                 onClick={() => handleUseBoost(item.type)}
                 disabled={using === item.type}
-                className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white disabled:opacity-50"
+                className="px-3 py-1.5 rounded-full text-xs font-semibold gradient-primary text-primary-foreground disabled:opacity-50"
               >
                 {using === item.type ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -114,8 +114,8 @@ export default function BoostWalletCard({ profileId }: BoostWalletCardProps) {
         {wallet?.monthly_boost_available && (
           <div className="flex items-center justify-between pt-2 border-t border-border">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-amber-400" />
+              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="font-semibold text-foreground text-sm">Monthly Boost</p>
@@ -125,7 +125,7 @@ export default function BoostWalletCard({ profileId }: BoostWalletCardProps) {
             <button
               onClick={() => handleUseBoost("monthly")}
               disabled={using === "monthly"}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-400 to-yellow-500 text-white disabled:opacity-50"
+              className="px-3 py-1.5 rounded-full text-xs font-semibold gradient-primary text-primary-foreground disabled:opacity-50"
             >
               {using === "monthly" ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -139,7 +139,7 @@ export default function BoostWalletCard({ profileId }: BoostWalletCardProps) {
 
       <button
         onClick={() => navigate("/get-boosts")}
-        className="w-full py-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-sm hover:opacity-90 transition-opacity"
+        className="w-full py-3 rounded-full gradient-primary text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity"
       >
         Get more Boosts
       </button>

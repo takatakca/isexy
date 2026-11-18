@@ -47,7 +47,7 @@ export default function ModeratorLogin() {
   return (
     <AuthLayout showBack variant="white">
       <div className="flex-1 flex flex-col items-center">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center mb-6">
+        <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center mb-6">
           <Shield className="w-10 h-10 text-white" />
         </div>
         <h1 className="text-3xl font-extrabold text-foreground mb-2 text-center">Staff Portal</h1>

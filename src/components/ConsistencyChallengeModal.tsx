@@ -56,7 +56,7 @@ export function ConsistencyChallengeModal({
           {/* Header with flame animation */}
           <div className="text-center mb-6">
             <div className="relative inline-flex items-center justify-center mb-4">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center animate-pulse">
+              <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center animate-pulse">
                 <Flame className="w-10 h-10 text-white" />
               </div>
               {currentStreak > 0 && (
@@ -84,7 +84,7 @@ export function ConsistencyChallengeModal({
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-orange-400 to-primary rounded-full transition-all duration-500"
+                  className="h-full gradient-glow rounded-full transition-all duration-500"
                   style={{ 
                     width: `${((currentStreak % nextMilestone.days) / nextMilestone.days) * 100}%` 
                   }}
@@ -162,7 +162,7 @@ export function ConsistencyChallengeModal({
           {/* CTA Button */}
           <Button
             onClick={handleStartChallenge}
-            className="w-full py-6 text-lg font-bold bg-gradient-to-r from-orange-500 to-primary text-white hover:opacity-90 rounded-full"
+            className="w-full py-6 text-lg font-bold gradient-primary text-primary-foreground hover:brightness-110 rounded-full"
           >
             {currentStreak > 0 ? "Continue Streak" : "Start the Challenge"}
           </Button>

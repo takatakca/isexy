@@ -146,7 +146,7 @@ export default function MyStars() {
   return (
     <div className="min-h-screen bg-muted/30 pb-8">
       {/* Header */}
-      <header className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white p-6 pb-20">
+      <header className="gradient-primary text-primary-foreground p-6 pb-20">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-white/20 rounded-full">
             <ArrowLeft className="w-6 h-6" />
@@ -206,7 +206,7 @@ export default function MyStars() {
           {cashoutRequests
             .filter(c => c.status === "pending" || c.status === "processing")
             .map(request => (
-              <div key={request.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 mb-2">
+              <div key={request.id} className="bg-accent/10 rounded-xl p-4 mb-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-foreground">
@@ -216,7 +216,7 @@ export default function MyStars() {
                       ${request.usd_amount.toFixed(2)} via {request.cashout_method.replace("_", " ")}
                     </p>
                   </div>
-                  <span className="px-3 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full capitalize">
+                  <span className="px-3 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full capitalize">
                     {request.status}
                   </span>
                 </div>
@@ -244,7 +244,7 @@ export default function MyStars() {
               return (
                 <div key={tx.id} className="bg-card rounded-xl p-4 flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isReceived ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+                    isReceived ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
                   }`}>
                     {isReceived ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                   </div>
@@ -259,7 +259,7 @@ export default function MyStars() {
                       {format(new Date(tx.created_at), "MMM d, h:mm a")}
                     </p>
                   </div>
-                  <div className={`text-right ${isReceived ? "text-green-600" : "text-red-600"}`}>
+                  <div className={`text-right ${isReceived ? "text-success" : "text-destructive"}`}>
                     <p className="font-bold">{isReceived ? "+" : "-"}{tx.stars_amount}</p>
                     <p className="text-xs">≈ ${tx.usd_value.toFixed(2)}</p>
                   </div>

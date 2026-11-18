@@ -141,7 +141,7 @@ export default function About() {
 
       {/* Mission Statement */}
       <div className="px-4 py-8">
-        <div className="bg-gradient-to-br from-primary/20 to-rose-500/20 rounded-3xl p-6 text-center">
+        <div className="bg-gradient-to-br from-primary/20 to-accent/10 rounded-3xl p-6 text-center">
           <h3 className="text-xl font-bold text-foreground mb-4">Our Mission</h3>
           <p className="text-foreground/90 leading-relaxed">
             "To make it easy and safe for adults to meet new people, start real conversations and make friends — whatever language they speak."
@@ -229,7 +229,7 @@ export default function About() {
               key={feature.title}
               className="flex gap-4 p-4 bg-card rounded-2xl border border-border"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-rose-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
                 <feature.icon className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
@@ -251,7 +251,7 @@ export default function About() {
               className="p-4 bg-card rounded-2xl border border-border"
             >
               <div className="flex items-center gap-4 mb-3">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-rose-500 flex items-center justify-center text-primary-foreground font-bold text-lg">
+                <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
                   {member.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div>
@@ -294,7 +294,7 @@ export default function About() {
 
       {/* Community Stories CTA */}
       <div className="px-4 py-8">
-        <div className="bg-gradient-to-r from-primary to-rose-500 rounded-2xl p-6 text-center">
+        <div className="gradient-primary rounded-2xl p-6 text-center">
           <Heart className="w-12 h-12 text-primary-foreground mx-auto mb-4" />
           <h3 className="text-xl font-bold text-primary-foreground mb-2">
             Community Stories

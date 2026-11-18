@@ -95,13 +95,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
 
       {!isBehind && (
         <>
-          <div style={{ opacity: "var(--like, 0)" }} className="pointer-events-none absolute top-16 left-6 px-5 py-2 rounded-2xl bg-emerald-500/15 border-2 border-emerald-400 text-emerald-300 font-extrabold text-2xl -rotate-12 z-30 backdrop-blur-sm flex items-center gap-2">
+          <div style={{ opacity: "var(--like, 0)" }} className="pointer-events-none absolute top-16 left-6 px-5 py-2 rounded-2xl bg-primary/25 border-2 border-primary text-white font-extrabold text-2xl -rotate-12 z-30 backdrop-blur-sm flex items-center gap-2">
             <Heart className="w-6 h-6 fill-current" /> LIKE
           </div>
-          <div style={{ opacity: "var(--nope, 0)" }} className="pointer-events-none absolute top-16 right-6 px-5 py-2 rounded-2xl bg-rose-500/15 border-2 border-rose-400 text-rose-300 font-extrabold text-2xl rotate-12 z-30 backdrop-blur-sm flex items-center gap-2">
+          <div style={{ opacity: "var(--nope, 0)" }} className="pointer-events-none absolute top-16 right-6 px-5 py-2 rounded-2xl bg-black/30 border-2 border-white/80 text-white font-extrabold text-2xl rotate-12 z-30 backdrop-blur-sm flex items-center gap-2">
             <X className="w-6 h-6" /> NOPE
           </div>
-          <div style={{ opacity: "var(--super, 0)" }} className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 px-6 py-2 rounded-2xl bg-cyan-500/15 border-2 border-cyan-400 text-cyan-300 font-extrabold text-2xl z-30 backdrop-blur-sm flex items-center gap-2">
+          <div style={{ opacity: "var(--super, 0)" }} className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 px-6 py-2 rounded-2xl bg-accent/20 border-2 border-accent text-accent font-extrabold text-2xl z-30 backdrop-blur-sm flex items-center gap-2">
             <Star className="w-6 h-6 fill-current" /> SUPER
           </div>
         </>
@@ -111,7 +111,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(function Swi
         <div className="flex items-end gap-2 mb-2 pr-12">
           <h2 className="text-3xl font-extrabold leading-none tracking-tight truncate min-w-0">{profile.first_name}</h2>
           <span className="text-2xl font-light leading-none opacity-90 shrink-0">{profile.age}</span>
-          {profile.is_verified && <BadgeCheck className="w-6 h-6 text-cyan-300 fill-cyan-400/20 mb-0.5 shrink-0" aria-label="Verified" />}
+          {profile.is_verified && <BadgeCheck className="w-6 h-6 text-accent fill-accent/20 mb-0.5 shrink-0" aria-label="Verified" />}
         </div>
 
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-white/85 mb-2">

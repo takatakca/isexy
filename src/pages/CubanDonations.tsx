@@ -53,7 +53,7 @@ const donationOptions: DonationOption[] = [
     id: "cash",
     name: "Cash Donation",
     description: "Direct monetary gift to support them",
-    icon: <DollarSign className="w-6 h-6 text-yellow-500" />,
+    icon: <DollarSign className="w-6 h-6 text-accent" />,
     basePrice: 0,
     options: [
       { label: "$5 USD", value: 5 },
@@ -295,7 +295,7 @@ export default function CubanDonations() {
 
       {/* Hero */}
       <div className="px-4 py-6">
-        <div className="bg-gradient-to-br from-red-500 via-primary to-blue-600 rounded-2xl p-6 text-white text-center">
+        <div className="gradient-primary rounded-2xl p-6 text-white text-center">
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
             <Heart className="w-8 h-8" />
           </div>

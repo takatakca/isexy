@@ -15,27 +15,27 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 const iconBgMap: Record<string, string> = {
-  Image: "bg-pink-100",
-  FileText: "bg-purple-100",
-  Sparkles: "bg-blue-100",
-  BadgeCheck: "bg-rose-100",
-  Briefcase: "bg-amber-100",
-  GraduationCap: "bg-green-100",
-  MapPin: "bg-teal-100",
-  Quote: "bg-indigo-100",
-  Heart: "bg-pink-100",
+  Image: "bg-primary/15",
+  FileText: "bg-primary/15",
+  Sparkles: "bg-accent/15",
+  BadgeCheck: "bg-accent/15",
+  Briefcase: "bg-primary/15",
+  GraduationCap: "bg-primary/15",
+  MapPin: "bg-primary/15",
+  Quote: "bg-primary/15",
+  Heart: "bg-primary/15",
 };
 
 const iconColorMap: Record<string, string> = {
-  Image: "text-pink-500",
-  FileText: "text-purple-500",
-  Sparkles: "text-blue-500",
-  BadgeCheck: "text-rose-500",
-  Briefcase: "text-amber-500",
-  GraduationCap: "text-green-500",
-  MapPin: "text-teal-500",
-  Quote: "text-indigo-500",
-  Heart: "text-pink-500",
+  Image: "text-primary",
+  FileText: "text-primary",
+  Sparkles: "text-accent",
+  BadgeCheck: "text-accent",
+  Briefcase: "text-primary",
+  GraduationCap: "text-primary",
+  MapPin: "text-primary",
+  Quote: "text-primary",
+  Heart: "text-primary",
 };
 
 export default function Profile() {
@@ -68,7 +68,7 @@ export default function Profile() {
   const tier = wallet?.tier ?? (profile?.is_premium ? profile.subscription_tier : "free");
   const quickActions = [
     { id: "superlikes", icon: Star, iconColor: "text-cyan-500", title: wallet ? (superLikes === null ? "Unlimited Super Likes" : `${superLikes} Super Likes`) : "Super Likes", action: "GET MORE", path: "/get-super-likes" },
-    { id: "boosts", icon: Zap, iconColor: "text-purple-500", title: wallet ? `${wallet.boosts + wallet.primetime_boosts} Boosts` : "Boosts", action: "GET MORE", path: "/get-boosts" },
+    { id: "boosts", icon: Zap, iconColor: "text-accent", title: wallet ? `${wallet.boosts + wallet.primetime_boosts} Boosts` : "Boosts", action: "GET MORE", path: "/get-boosts" },
     { id: "subscription", icon: Flame, iconColor: "text-primary", title: tier && tier !== "free" ? tier.charAt(0).toUpperCase() + tier.slice(1) : "Subscribe", action: null, path: tier && tier !== "free" ? "/my-subscription" : "/premium" },
   ];
 
@@ -190,7 +190,7 @@ export default function Profile() {
             <div className="flex items-center gap-2">
               <Flame className="w-6 h-6 text-yellow-500" />
               <span className="font-bold text-foreground">ISEXY</span>
-              <span className="px-2 py-0.5 bg-yellow-600 text-white text-xs font-bold rounded">GOLD</span>
+              <span className="px-2 py-0.5 bg-amber-400 text-navy text-xs font-bold rounded">GOLD</span>
             </div>
             <button onClick={() => navigate("/premium")} className="px-4 py-2 bg-yellow-500 text-black font-bold rounded-full text-sm">Upgrade</button>
           </div>

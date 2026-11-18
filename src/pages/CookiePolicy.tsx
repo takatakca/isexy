@@ -143,7 +143,7 @@ export default function CookiePolicy() {
               <div className="bg-muted p-4 rounded-xl mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <Settings className="w-5 h-5 text-purple-600" />
+                    <Settings className="w-5 h-5 text-accent" />
                     <h3 className="font-semibold text-foreground m-0">Functional Cookies</h3>
                   </div>
                   <Switch 
@@ -170,7 +170,7 @@ export default function CookiePolicy() {
               <div className="bg-muted p-4 rounded-xl mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <Target className="w-5 h-5 text-orange-600" />
+                    <Target className="w-5 h-5 text-primary" />
                     <h3 className="font-semibold text-foreground m-0">Marketing Cookies</h3>
                   </div>
                   <Switch 
@@ -271,19 +271,19 @@ export default function CookiePolicy() {
                       <td className="p-2 sm:p-3 text-muted-foreground">theme</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Dark/light mode preference</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">1 year</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Functional</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-accent/15 text-accent px-2 py-1 rounded">Functional</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">locale</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Language preference</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">1 year</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Functional</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-accent/15 text-accent px-2 py-1 rounded">Functional</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">_fbp</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Facebook tracking</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">90 days</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Marketing</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-primary/15 text-primary px-2 py-1 rounded">Marketing</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">isexy_consent</td>
@@ -295,13 +295,13 @@ export default function CookiePolicy() {
                       <td className="p-2 sm:p-3 text-muted-foreground">__gads, __gpi</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Google AdSense: ad serving, frequency capping, measurement (free members, pages with a Google ad)</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Up to 13 months</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Advertising</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-primary/15 text-primary px-2 py-1 rounded">Advertising</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">IDE (doubleclick.net)</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Google: personalized ads, only with the Advertising choice</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Set by Google (up to 13 months in Europe, longer elsewhere)</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Advertising</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-primary/15 text-primary px-2 py-1 rounded">Advertising</span></td>
                     </tr>
                   </tbody>
                 </table>

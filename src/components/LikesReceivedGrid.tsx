@@ -273,7 +273,7 @@ export function LikesReceivedGrid() {
                           className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center disabled:opacity-50 active:scale-90 transition-transform"
                           aria-label={`Pass on ${liker.first_name}`}
                         >
-                          <X className="w-4 h-4 text-rose-500" />
+                          <X className="w-4 h-4 text-foreground" />
                         </button>
                         <button
                           disabled={acting === liker.liker_id}

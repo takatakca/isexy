@@ -30,7 +30,7 @@ export function SwipeSurgeNotification({
   return (
     <div className="fixed top-4 left-4 right-4 z-50 animate-in slide-in-from-top duration-300">
       <div 
-        className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-4 shadow-lg cursor-pointer"
+        className="gradient-primary rounded-2xl p-4 shadow-lg cursor-pointer"
         onClick={() => navigate("/discover")}
       >
         <button
@@ -72,7 +72,7 @@ export function SwipeSurgeNotification({
               <span className="text-xs font-bold text-white">+{usersActive - 4}</span>
             </div>
           </div>
-          <button className="px-4 py-2 bg-white text-purple-600 rounded-full font-bold text-sm">
+          <button className="px-4 py-2 bg-white text-primary-solid rounded-full font-bold text-sm">
             Start Swiping
           </button>
         </div>

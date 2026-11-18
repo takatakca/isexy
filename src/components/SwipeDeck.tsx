@@ -91,7 +91,7 @@ export const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
         <button
           onClick={() => deck.undo()}
           disabled={!deck.canUndo}
-          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-yellow-500 active:scale-90 hover:scale-105 transition-transform border border-border disabled:opacity-40"
+          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-90 hover:scale-105 transition-transform border border-border disabled:opacity-40"
           aria-label="Undo last swipe"
         >
           <RotateCcw className="w-5 h-5" />
@@ -102,12 +102,12 @@ export const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
           className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center active:scale-90 hover:scale-105 transition-transform border border-border"
           aria-label="Pass"
         >
-          <X className="w-8 h-8 text-rose-500" />
+          <X className="w-8 h-8 text-foreground" strokeWidth={2.5} />
         </button>
         <button
           onClick={() => press("up")}
           disabled={!top}
-          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-cyan-400 active:scale-90 hover:scale-105 transition-transform border border-border"
+          className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-accent active:scale-90 hover:scale-105 transition-transform border border-border"
           aria-label="Super Like"
         >
           <Star className="w-5 h-5 fill-current" />
@@ -118,7 +118,7 @@ export const SwipeDeck = forwardRef<SwipeDeckHandle, Props>(function SwipeDeck(
           className="w-16 h-16 rounded-full bg-card shadow-md flex items-center justify-center active:scale-90 hover:scale-105 transition-transform border border-border"
           aria-label="Like"
         >
-          <Heart className="w-8 h-8 text-green-500 fill-green-500" />
+          <Heart className="w-8 h-8 text-primary fill-primary" />
         </button>
         {extraAction}
       </div>

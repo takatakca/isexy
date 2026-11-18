@@ -240,7 +240,7 @@ export default function KnowledgeBase() {
             )}
           </div>
 
-          <div className="mt-6 rounded-2xl bg-gradient-to-br from-primary/10 to-pink-500/10 border border-primary/20 p-5">
+          <div className="mt-6 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 p-5">
             <div className="flex items-start gap-3">
               <Sparkles className="w-6 h-6 text-primary shrink-0" />
               <div className="flex-1">
@@ -299,7 +299,7 @@ export default function KnowledgeBase() {
         </section>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <button onClick={() => openAssistant(query || undefined)} className="rounded-2xl p-4 text-left bg-gradient-to-br from-primary to-pink-500 text-white shadow-md">
+          <button onClick={() => openAssistant(query || undefined)} className="rounded-2xl p-4 text-left gradient-primary text-primary-foreground shadow-md">
             <Sparkles className="w-6 h-6 mb-2" />
             <span className="font-semibold text-sm block">Ask AI</span>
             <span className="text-xs opacity-85">Instant answers</span>

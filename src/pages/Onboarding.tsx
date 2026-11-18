@@ -18,7 +18,7 @@ const slides: OnboardingSlide[] = [
     icon: <Heart className="w-12 h-12" />,
     title: "Find People to Talk To",
     description: "Meet adults across Canada, Cuba and around the world. Swipe to find people you'd like to talk to, chat with live translation, and make new friends.",
-    color: "from-pink-500 to-rose-500",
+    color: "from-primary-solid to-[hsl(var(--gradient-end))]",
   },
   {
     icon: <Users className="w-12 h-12" />,
@@ -36,7 +36,7 @@ const slides: OnboardingSlide[] = [
     icon: <Sparkles className="w-12 h-12" />,
     title: "Premium Features",
     description: "Video calls, unlimited likes, see who likes you, and more. Make new friends without limits.",
-    color: "from-purple-500 to-violet-500",
+    color: "from-[hsl(var(--gradient-end))] to-primary-solid",
   },
 ];
 

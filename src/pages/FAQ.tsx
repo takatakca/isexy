@@ -459,7 +459,7 @@ export default function FAQ() {
 
       {/* Still Need Help */}
       <div className="px-4 py-6">
-        <div className="bg-gradient-to-r from-primary to-rose-500 rounded-2xl p-6 text-center">
+        <div className="gradient-primary rounded-2xl p-6 text-center">
           <HelpCircle className="w-12 h-12 text-primary-foreground mx-auto mb-4" />
           <h3 className="text-xl font-bold text-primary-foreground mb-2">
             Still need help?

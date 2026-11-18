@@ -303,7 +303,7 @@ export default function Discover() {
               <button
                 onClick={activateBoost}
                 disabled={boosting}
-                className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-purple-500 active:scale-90 hover:scale-105 transition-transform border border-border disabled:opacity-60"
+                className="w-12 h-12 rounded-full bg-card shadow-md flex items-center justify-center text-accent active:scale-90 hover:scale-105 transition-transform border border-border disabled:opacity-60"
                 aria-label="Boost my profile"
               >
                 {boosting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-current" />}

@@ -530,7 +530,7 @@ export function AIChatWidget() {
           )}
           <button
             onClick={() => setIsOpen(true)}
-            className="relative w-14 h-14 rounded-full bg-gradient-to-br from-primary to-pink-500 text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+            className="relative w-14 h-14 rounded-full gradient-primary text-primary-foreground shadow-button flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
             aria-label={`Open ${t.title}`}
           >
             <Sparkles className="w-6 h-6" />
@@ -551,7 +551,7 @@ export function AIChatWidget() {
           aria-label={t.title}
           className="fixed z-50 inset-0 md:inset-auto md:right-6 md:bottom-6 md:w-[400px] md:h-[min(680px,calc(100vh-48px))] bg-background md:rounded-3xl md:border md:border-border shadow-2xl flex flex-col overflow-hidden animate-fade-in"
         >
-          <header className="bg-gradient-to-r from-primary to-pink-500 text-white px-4 py-3 flex items-center gap-3 shrink-0" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+          <header className="gradient-primary text-primary-foreground px-4 py-3 flex items-center gap-3 shrink-0" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
               <Bot className="w-5 h-5" />
             </div>
@@ -722,7 +722,7 @@ export function AIChatWidget() {
 function AssistantBubble({ content, error, onNavigate }: { content: string; error?: boolean; onNavigate?: () => void }) {
   return (
     <div className="flex gap-2 items-start">
-      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-pink-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-full gradient-primary text-primary-foreground flex items-center justify-center shrink-0 mt-0.5">
         <Bot className="w-4 h-4" />
       </div>
       <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tl-md text-sm break-words ${error ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-card border border-border text-foreground"}`}>

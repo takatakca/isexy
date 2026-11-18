@@ -163,7 +163,7 @@ export function ProfileDetail({ profile, onClose, onLike, onPass, onSuperLike }:
           className="w-16 h-16 rounded-full bg-card shadow-lg flex items-center justify-center border border-border"
           aria-label="Pass"
         >
-          <X className="w-8 h-8 text-rose-500" />
+          <X className="w-8 h-8 text-foreground" strokeWidth={2.5} />
         </button>
         <button
           onClick={onSuperLike}

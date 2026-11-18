@@ -308,7 +308,7 @@ export default function Settings() {
             >
               <div className="flex items-center justify-center gap-2 mb-1">
                 <span className="text-xl font-bold">🔥 ISEXY</span>
-                <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs px-2 py-0.5 rounded font-bold">GOLD</span>
+                <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-navy text-xs px-2 py-0.5 rounded font-bold">GOLD</span>
               </div>
               <p className="text-sm text-muted-foreground">See who Likes You & More!</p>
             </button>
@@ -354,10 +354,10 @@ export default function Settings() {
               onClick={() => setBoostsModalOpen(true)}
               className="w-full flex flex-col items-center gap-2"
             >
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-purple-500" />
+              <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-accent" />
               </div>
-              <span className="text-sm font-medium text-purple-500">Get Boosts</span>
+              <span className="text-sm font-medium text-accent">Get Boosts</span>
             </button>
           </SettingCard>
 
@@ -378,7 +378,7 @@ export default function Settings() {
               onClick={() => navigate("/passport-mode")}
               className="w-full flex flex-col items-center gap-2"
             >
-              <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center">
                 <Plane className="w-6 h-6 text-primary" />
               </div>
               <span className="text-sm font-medium text-primary">Passport™ Mode</span>

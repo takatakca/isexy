@@ -48,10 +48,10 @@ const getTier = (lifetimePoints: number) => {
 const earningOpportunities = [
   { icon: UserPlus, label: "Invite a Friend", points: 100, description: "When they sign up", color: "text-primary" },
   { icon: MessageSquare, label: "Chat with Match", points: 5, description: "Per conversation (daily)", color: "text-blue-400" },
-  { icon: Video, label: "Video Call", points: 25, description: "Per completed call", color: "text-purple-500" },
-  { icon: Video, label: "Video Call (30+ min)", points: 50, description: "Bonus for longer calls", color: "text-purple-600" },
+  { icon: Video, label: "Video Call", points: 25, description: "Per completed call", color: "text-accent" },
+  { icon: Video, label: "Video Call (30+ min)", points: 50, description: "Bonus for longer calls", color: "text-accent" },
   { icon: Star, label: "Get Super Liked", points: 15, description: "Someone super liked you", color: "text-cyan-500" },
-  { icon: Heart, label: "Receive a Gift", points: 10, description: "When someone donates to you", color: "text-red-400" },
+  { icon: Heart, label: "Receive a Gift", points: 10, description: "When someone donates to you", color: "text-primary" },
   { icon: Flame, label: "Daily Login Streak", points: 10, description: "Login daily for bonus", color: "text-orange-500" },
   { icon: Trophy, label: "Profile Verification", points: 200, description: "One-time bonus", color: "text-yellow-500" },
 ];
@@ -234,7 +234,7 @@ export default function CubanRewards() {
             ))}
 
             {/* Invite Friends CTA */}
-            <Card className="bg-gradient-to-r from-primary/20 to-rose-500/20 border-primary/30 mt-6">
+            <Card className="bg-gradient-to-r from-primary/20 to-accent/15 border-primary/30 mt-6">
               <CardContent className="p-6 text-center">
                 <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
                   <Users className="w-7 h-7 text-primary" />
@@ -314,8 +314,8 @@ export default function CubanRewards() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                      <Zap className="w-6 h-6 text-purple-500" />
+                    <div className="w-12 h-12 rounded-xl bg-accent/15 flex items-center justify-center">
+                      <Zap className="w-6 h-6 text-accent" />
                     </div>
                     <div>
                       <p className="font-semibold text-foreground">Get Boosts</p>

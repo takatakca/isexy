@@ -230,7 +230,7 @@ export default function GetBoosts() {
                 aria-pressed={isSel}
                 className={`w-full p-4 rounded-2xl border transition-all relative ${
                   isSel
-                    ? "border-primary bg-primary/10 ring-coral"
+                    ? "border-primary bg-primary/10 ring-brand"
                     : "border-border bg-card hover:border-primary/40"
                 }`}
               >

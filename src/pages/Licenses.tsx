@@ -819,12 +819,12 @@ export default function Licenses() {
   <title>ISEXY - Open Source Licenses</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-    h1 { color: #e94057; border-bottom: 2px solid #e94057; padding-bottom: 10px; }
+    h1 { color: #1565D8; border-bottom: 2px solid #1565D8; padding-bottom: 10px; }
     h2 { color: #333; margin-top: 30px; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
     .library { margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 6px; }
     .library-name { font-weight: 600; color: #333; }
     .library-version { color: #666; font-size: 12px; }
-    .library-license { color: #e94057; font-size: 13px; margin-top: 5px; }
+    .library-license { color: #1565D8; font-size: 13px; margin-top: 5px; }
     @media print { body { padding: 20px; } }
   </style>
 </head>

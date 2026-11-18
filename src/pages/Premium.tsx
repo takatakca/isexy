@@ -126,7 +126,7 @@ export default function Premium() {
                 onClick={() => setSelectedDuration(plan.duration)}
                 className={`relative p-3 rounded-2xl border text-left transition-all ${
                   selected
-                    ? "border-primary bg-primary/10 ring-coral"
+                    ? "border-primary bg-primary/10 ring-brand"
                     : "border-border bg-card hover:border-primary/40"
                 }`}
               >

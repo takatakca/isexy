@@ -370,13 +370,13 @@ export default function EditProfile() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 pb-16 pt-4">
-        <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-pink-500/10 border border-primary/20 p-4 mb-2">
+        <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 p-4 mb-2">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-foreground">Profile strength</p>
             <p className="text-sm font-bold text-primary">{strength}%</p>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-pink-500 transition-all duration-500" style={{ width: `${strength}%` }} />
+            <div className="h-full gradient-glow transition-all duration-500" style={{ width: `${strength}%` }} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             {strength < 100

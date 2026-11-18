@@ -146,7 +146,7 @@ export default function BuyCredits() {
                 onClick={() => setSelectedPackage(pkg.id)}
                 className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
                   isSel
-                    ? "border-primary bg-primary/10 ring-coral"
+                    ? "border-primary bg-primary/10 ring-brand"
                     : "border-border bg-card hover:border-primary/40"
                 }`}
               >

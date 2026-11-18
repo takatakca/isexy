@@ -44,13 +44,13 @@ interface Loyalty {
 
 // What the server pays for (0013_app_completion.sql part R9).
 const waysToEarn = [
-  { icon: Flame, label: "Open ISEXY each day", note: "once a day", points: 5, color: "text-orange-500", once: null },
+  { icon: Flame, label: "Open ISEXY each day", note: "once a day", points: 5, color: "text-primary", once: null },
   { icon: Star, label: "Complete your profile", note: "3 photos, a bio, 3 interests", points: 50, color: "text-primary", once: "profile_complete" },
   { icon: ShieldCheck, label: "Verify your profile", note: "once", points: 100, color: "text-primary", once: "verified" },
   { icon: Sparkles, label: "Send your first message", note: "once", points: 10, color: "text-primary", once: "first_message" },
-  { icon: Trophy, label: "Get a match", note: "up to 4 a day", points: 25, color: "text-amber-500", once: null },
+  { icon: Trophy, label: "Get a match", note: "up to 4 a day", points: 25, color: "text-accent", once: null },
   { icon: Users, label: "A friend joins with your code", note: "up to 5 a month", points: 200, color: "text-primary", once: null },
-  { icon: Flame, label: "3-day streak", note: "once", points: 25, color: "text-orange-500", once: null },
+  { icon: Flame, label: "3-day streak", note: "once", points: 25, color: "text-primary", once: null },
 ] as const;
 
 const reasonLabel: Record<string, string> = {
@@ -186,7 +186,7 @@ export default function LoyaltyRewards() {
             <>
               <p className="text-4xl font-bold text-foreground" data-testid="loyalty-points">{points.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                <Flame className="w-3.5 h-3.5 inline -mt-0.5 text-orange-500" /> {loyalty?.streak ?? 0}-day streak
+                <Flame className="w-3.5 h-3.5 inline -mt-0.5 text-primary" /> {loyalty?.streak ?? 0}-day streak
                 {loyalty && loyalty.longest_streak > loyalty.streak ? ` · best ${loyalty.longest_streak}` : ""}
               </p>
               {nextReward && (

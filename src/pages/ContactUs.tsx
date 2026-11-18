@@ -357,10 +357,10 @@ const ContactUs = () => {
                         ? priority === "urgent"
                           ? "bg-destructive text-white"
                           : priority === "high"
-                          ? "bg-orange-500 text-white"
+                          ? "bg-warning text-warning-foreground"
                           : priority === "medium"
-                          ? "bg-primary text-white"
-                          : "bg-muted-foreground text-white"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-foreground"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >

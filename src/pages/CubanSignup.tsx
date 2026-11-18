@@ -569,8 +569,8 @@ export default function CubanSignup() {
         return (
           <>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Video className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center">
+                <Video className="w-6 h-6 text-accent" />
               </div>
               <div>
                 <h1 className="text-2xl font-extrabold text-foreground">Video Verification</h1>
@@ -607,7 +607,7 @@ export default function CubanSignup() {
               ) : (
                 <div className="text-center py-8">
                   <Camera className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <Button onClick={startVideoRecording} className="bg-purple-500 hover:bg-purple-600">
+                  <Button onClick={startVideoRecording} className="bg-primary hover:brightness-110">
                     <Video className="w-4 h-4 mr-2" />
                     Start Recording
                   </Button>

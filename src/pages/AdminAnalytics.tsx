@@ -243,8 +243,8 @@ export default function AdminAnalytics() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-pink-500/10 rounded-lg">
-                  <Heart className="h-5 w-5 text-pink-500" />
+                <div className="p-2 bg-accent/10 rounded-lg">
+                  <Heart className="h-5 w-5 text-accent" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.totalMatches}</p>
@@ -280,7 +280,7 @@ export default function AdminAnalytics() {
             <p className="text-xs text-muted-foreground">Verified</p>
           </div>
           <div className="bg-card border border-border rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-purple-500">{stats.totalMessages}</p>
+            <p className="text-lg font-bold text-accent">{stats.totalMessages}</p>
             <p className="text-xs text-muted-foreground">Messages</p>
           </div>
         </div>
@@ -336,7 +336,7 @@ export default function AdminAnalytics() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-pink-500" />
+                  <Activity className="w-5 h-5 text-accent" />
                   Matches & Messages
                 </CardTitle>
               </CardHeader>
@@ -355,7 +355,7 @@ export default function AdminAnalytics() {
                         }} 
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="matches" stroke="#ec4899" strokeWidth={2} name="Matches" />
+                      <Line type="monotone" dataKey="matches" stroke="#29C3FF" strokeWidth={2} name="Matches" />
                       <Line type="monotone" dataKey="messages" stroke="#8b5cf6" strokeWidth={2} name="Messages" />
                     </LineChart>
                   </ResponsiveContainer>
@@ -438,7 +438,7 @@ export default function AdminAnalytics() {
                         }} 
                       />
                       <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                        <Cell fill="#ec4899" />
+                        <Cell fill="#29C3FF" />
                         <Cell fill="#f59e0b" />
                         <Cell fill="#475569" />
                       </Bar>

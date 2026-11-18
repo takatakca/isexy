@@ -177,7 +177,7 @@ export default function PassportMode() {
 
       {/* Premium upsell for non-subscribers */}
       {!isPremiumUser && (
-        <div className="mx-4 mt-4 p-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+        <div className="mx-4 mt-4 p-4 rounded-2xl gradient-primary text-primary-foreground">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
               <Crown className="w-6 h-6" />
@@ -188,7 +188,7 @@ export default function PassportMode() {
             </div>
             <button
               onClick={() => navigate("/premium")}
-              className="px-4 py-2 bg-white text-purple-600 rounded-full font-semibold text-sm"
+              className="px-4 py-2 bg-white text-primary-solid rounded-full font-semibold text-sm"
             >
               Upgrade
             </button>

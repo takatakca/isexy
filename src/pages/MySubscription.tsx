@@ -200,7 +200,7 @@ export default function MySubscription() {
                 </button>
               </div>
             ) : currentTier && wallet ? (
-              <div className="glass-card rounded-2xl p-5 ring-coral">
+              <div className="glass-card rounded-2xl p-5 ring-brand">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Crown className="w-5 h-5 text-primary fill-primary/30" />

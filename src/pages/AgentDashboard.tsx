@@ -240,9 +240,9 @@ export default function AgentDashboard() {
             )}
           </div>
           <div className={`grid ${role.isAdmin ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
-            <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-2 text-center">
-              <Clock className="w-4 h-4 mx-auto text-orange-600 mb-1" />
-              <span className="text-lg font-bold text-orange-600">{waiting.length}</span>
+            <div className="bg-warning/15 rounded-lg p-2 text-center">
+              <Clock className="w-4 h-4 mx-auto text-warning mb-1" />
+              <span className="text-lg font-bold text-warning">{waiting.length}</span>
               <p className="text-xs text-muted-foreground">Waiting</p>
             </div>
             <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-2 text-center">

@@ -213,7 +213,7 @@ export default function Interests() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full py-4 bg-gradient-to-r from-primary to-rose-500 text-primary-foreground rounded-full font-bold text-lg disabled:opacity-50"
+          className="w-full py-4 gradient-primary text-primary-foreground rounded-full font-bold text-lg disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save Interests"}
         </button>
