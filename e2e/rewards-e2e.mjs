@@ -241,7 +241,7 @@ async function finish(t, label) {
   check("premium: checkout sends tier + duration only (no price)", checkout && JSON.stringify(Object.keys(checkout.body).sort()) === '["duration","tier"]' && checkout.body.tier === "gold", JSON.stringify(checkout?.body));
   check("premium: same-tab redirect to the returned URL", new URL(t.page.url()).pathname === "/my-subscription");
   await settle(t.page, 800);
-  check("return: payment toast shown", /Payment received/.test(await toastText(t.page)), await toastText(t.page));
+  check("return: payment toast shown", /Checking payment confirmation/.test(await toastText(t.page)), await toastText(t.page));
   check("return: ?checkout removed from the URL", !new URL(t.page.url()).search.includes("checkout"));
   check("return: wallet refreshed", calls(t.s, "rpc", "get_my_wallet").length >= 2, String(calls(t.s, "rpc", "get_my_wallet").length));
   await finish(t, "premium");
