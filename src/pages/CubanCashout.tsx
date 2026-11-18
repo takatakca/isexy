@@ -194,7 +194,7 @@ export default function CubanCashout() {
 
       {/* Balance Card */}
       <div className="px-4 py-6">
-        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
+        <div className="gradient-primary rounded-2xl p-6 text-white shadow-glow">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
               <Coins className="w-8 h-8" />

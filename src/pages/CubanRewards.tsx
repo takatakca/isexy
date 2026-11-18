@@ -149,7 +149,7 @@ export default function CubanRewards() {
             Cuban Rewards points are not available yet. Nothing you do is lost: this page will show your points once they are switched on.
           </p>
         )}
-        <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 overflow-hidden relative">
+        <Card className="gradient-primary text-white border-0 shadow-glow overflow-hidden relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12" />
           <CardContent className="p-6 relative">
