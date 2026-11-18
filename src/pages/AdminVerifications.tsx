@@ -285,7 +285,7 @@ export default function AdminVerifications() {
             filteredVerifications.map((verification) => (
               <Card
                 key={verification.id}
-                className="cursor-pointer hover:bg-accent/50 transition-colors"
+                className="cursor-pointer hover:bg-secondary/60 transition-colors"
                 onClick={() => setSelectedVerification(verification)}
               >
                 <CardContent className="p-4">
@@ -387,7 +387,7 @@ export default function AdminVerifications() {
                       <button
                         type="button"
                         onClick={() => void openEvidence(selectedVerification.carnet_front_url!)}
-                        className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-accent transition"
+                        className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-secondary transition"
                       >
                         <Eye className="h-4 w-4" />
                         <span className="text-sm">Front</span>
@@ -401,7 +401,7 @@ export default function AdminVerifications() {
                       <button
                         type="button"
                         onClick={() => void openEvidence(selectedVerification.carnet_back_url!)}
-                        className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-accent transition"
+                        className="flex items-center gap-2 p-2 bg-background rounded border hover:bg-secondary transition"
                       >
                         <Eye className="h-4 w-4" />
                         <span className="text-sm">Back</span>

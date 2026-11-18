@@ -1,7 +1,11 @@
-@import url('@fontsource/nunito/400.css');
-@import url('@fontsource/nunito/600.css');
-@import url('@fontsource/nunito/700.css');
-@import url('@fontsource/nunito/800.css');
+/* ISEXY 2026: GROUPE TAKATAK brand (BRAND.md). Electric blue on deep navy.
+   Headings: Montserrat 700/800. Body: Inter 400/500/600.
+   Every colour pair below is checked by scripts/design/contrast.mjs (WCAG AA). */
+@import url('@fontsource/inter/400.css');
+@import url('@fontsource/inter/500.css');
+@import url('@fontsource/inter/600.css');
+@import url('@fontsource/montserrat/700.css');
+@import url('@fontsource/montserrat/800.css');
 
 @tailwind base;
 @tailwind components;
@@ -9,156 +13,277 @@
 
 @layer base {
   :root {
-    /* ISEXY — Coral on dark */
-    --background: 240 10% 6%;
-    --foreground: 0 0% 98%;
+    /* Ground and surfaces */
+    --background: 223.2 67.6% 7.3%;          /* navy #060D1F */
+    --foreground: 214.3 53.8% 97.5%;         /* white #F5F8FC */
 
-    --card: 240 8% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 220.8 69.4% 14.1%;               /* midnight #0B1B3D */
+    --card-foreground: 214.3 53.8% 97.5%;
 
-    --popover: 240 8% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220.8 69.4% 14.1%;
+    --popover-foreground: 214.3 53.8% 97.5%;
 
-    --primary: 353 100% 67%;        /* #ff5864 */
+    /* Brand blue. text-/border-/ring- use electric blue; bg-primary uses
+       --primary-solid (tailwind.config.ts) so white text passes AA. */
+    --primary: 211.1 100% 56.1%;             /* electric blue #1F8BFF: accents, glows, text on dark */
+    --primary-solid: 215.4 82.3% 46.5%;      /* brand blue #1565D8: filled buttons, white text */
     --primary-foreground: 0 0% 100%;
-    --primary-light: 22 100% 78%;   /* #ffb199 */
-    --primary-dark: 353 70% 50%;
+    --primary-light: 208 100% 68%;           /* #5CB3FF: soft glows */
+    --primary-dark: 215.4 82.3% 46.5%;       /* #1565D8 */
 
-    --secondary: 240 6% 14%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220.3 64.4% 17.6%;          /* raised midnight #10234A */
+    --secondary-foreground: 214.3 53.8% 97.5%;
 
-    --muted: 240 5% 16%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 221.1 65.9% 16.1%;              /* #0E1F44 */
+    --muted-foreground: 213.3 23.5% 77.5%;   /* silver #B8C4D3 */
 
-    --accent: 353 100% 67%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 196.8 100% 58%;                /* cyan #29C3FF: highlights, "real results" */
+    --accent-foreground: 223.2 67.6% 7.3%;   /* navy on cyan */
 
-    --destructive: 0 75% 58%;
+    /* Status only (BRAND.md): red = error, green = success, amber = warning. */
+    --destructive: 0 90.6% 70.8%;            /* #F87171: error text on dark */
+    --destructive-solid: 0 72.2% 50.6%;      /* #DC2626: destructive buttons, white text */
     --destructive-foreground: 0 0% 100%;
+    --success: 142.1 70.6% 45.3%;            /* #22C55E */
+    --success-foreground: 223.2 67.6% 7.3%;
+    --warning: 37.7 92.1% 50.2%;             /* #F59E0B */
+    --warning-foreground: 223.2 67.6% 7.3%;
 
-    --border: 240 6% 18%;
-    --input: 240 6% 18%;
-    --ring: 353 100% 67%;
+    --border: 218.8 39.1% 22.5%;             /* silver at low alpha over midnight #23334F (decorative) */
+    --input: 217.9 16.2% 45.9%;              /* #627088: 3:1 on navy and midnight (form fields) */
+    --ring: 211.1 100% 56.1%;                /* electric blue focus ring */
 
-    --radius: 1rem;
+    --radius: 1.25rem;
 
-    --gradient-start: 353 100% 67%;
-    --gradient-end: 22 100% 70%;
+    /* Filled gradient (buttons with white text): brand blue to a cyan-leaning blue. */
+    --gradient-start: 215.4 82.3% 46.5%;     /* #1565D8 */
+    --gradient-end: 207.8 90.5% 41.2%;       /* #0A70C8 */
+    /* Light gradient (headline text, glows, decorative bars): electric blue to cyan. */
+    --glow-start: 211.1 100% 56.1%;          /* #1F8BFF */
+    --glow-end: 196.8 100% 58%;              /* #29C3FF */
 
-    --link: 353 100% 72%;
+    --link: 211 100% 65.1%;                  /* #4DA3FF */
     --google: 0 0% 100%;
     --facebook: 221 44% 41%;
     --phone: 0 0% 100%;
 
-    --sidebar-background: 240 8% 8%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 353 100% 67%;
+    --sidebar-background: 223.2 67.6% 7.3%;
+    --sidebar-foreground: 214.3 53.8% 97.5%;
+    --sidebar-primary: 215.4 82.3% 46.5%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 6% 14%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 6% 18%;
-    --sidebar-ring: 353 100% 67%;
+    --sidebar-accent: 220.3 64.4% 17.6%;
+    --sidebar-accent-foreground: 214.3 53.8% 97.5%;
+    --sidebar-border: 218.8 39.1% 22.5%;
+    --sidebar-ring: 211.1 100% 56.1%;
+
+    /* Layout */
+    --nav-height: 4.25rem;                   /* mobile tab bar, without the safe area */
+    --rail-width: 5.5rem;                    /* desktop navigation rail (lg and up) */
   }
 
-  /* .dark mirrors :root — app is dark-first */
+  /* .dark mirrors :root: the app is dark-first (contrast.mjs checks they match). */
   .dark {
-    --background: 240 10% 6%;
-    --foreground: 0 0% 98%;
-    --card: 240 8% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 8% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 353 100% 67%;
+    --background: 223.2 67.6% 7.3%;
+    --foreground: 214.3 53.8% 97.5%;
+    --card: 220.8 69.4% 14.1%;
+    --card-foreground: 214.3 53.8% 97.5%;
+    --popover: 220.8 69.4% 14.1%;
+    --popover-foreground: 214.3 53.8% 97.5%;
+    --primary: 211.1 100% 56.1%;
+    --primary-solid: 215.4 82.3% 46.5%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 22 100% 78%;
-    --primary-dark: 353 70% 50%;
-    --secondary: 240 6% 14%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 5% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 353 100% 67%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 75% 58%;
+    --primary-light: 208 100% 68%;
+    --primary-dark: 215.4 82.3% 46.5%;
+    --secondary: 220.3 64.4% 17.6%;
+    --secondary-foreground: 214.3 53.8% 97.5%;
+    --muted: 221.1 65.9% 16.1%;
+    --muted-foreground: 213.3 23.5% 77.5%;
+    --accent: 196.8 100% 58%;
+    --accent-foreground: 223.2 67.6% 7.3%;
+    --destructive: 0 90.6% 70.8%;
+    --destructive-solid: 0 72.2% 50.6%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 18%;
-    --input: 240 6% 18%;
-    --ring: 353 100% 67%;
-    --gradient-start: 353 100% 67%;
-    --gradient-end: 22 100% 70%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 223.2 67.6% 7.3%;
+    --warning: 37.7 92.1% 50.2%;
+    --warning-foreground: 223.2 67.6% 7.3%;
+    --border: 218.8 39.1% 22.5%;
+    --input: 217.9 16.2% 45.9%;
+    --ring: 211.1 100% 56.1%;
+    --gradient-start: 215.4 82.3% 46.5%;
+    --gradient-end: 207.8 90.5% 41.2%;
+    --glow-start: 211.1 100% 56.1%;
+    --glow-end: 196.8 100% 58%;
+    --link: 211 100% 65.1%;
+    --sidebar-background: 223.2 67.6% 7.3%;
+    --sidebar-foreground: 214.3 53.8% 97.5%;
+    --sidebar-primary: 215.4 82.3% 46.5%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220.3 64.4% 17.6%;
+    --sidebar-accent-foreground: 214.3 53.8% 97.5%;
+    --sidebar-border: 218.8 39.1% 22.5%;
+    --sidebar-ring: 211.1 100% 56.1%;
   }
 }
 
 @layer base {
   * { @apply border-border; }
-  html { font-family: 'Nunito', sans-serif; }
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    color-scheme: dark;
+  }
   body {
     @apply bg-background text-foreground antialiased;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
+  /* Visible keyboard focus everywhere; mouse and touch focus stay quiet. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  ::selection { background: hsl(var(--primary) / 0.35); color: hsl(var(--foreground)); }
+  a { text-underline-offset: 3px; }
+}
+
+/* Motion respects the system setting: no parallax, float or slide for those who ask. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
 @layer components {
+  /* Filled brand gradient: white text passes AA at both ends. */
   .gradient-primary {
     background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
   }
   .gradient-primary-vertical {
     background: linear-gradient(180deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
   }
+  /* Light electric-to-cyan gradient: headline text and decorative glows on dark. */
+  .gradient-glow {
+    background: linear-gradient(135deg, hsl(var(--glow-start)) 0%, hsl(var(--glow-end)) 100%);
+  }
   .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
+    background: linear-gradient(120deg, hsl(var(--glow-start)) 0%, hsl(var(--glow-end)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .glow-primary {
-    box-shadow: 0 10px 40px -10px hsl(var(--primary) / 0.55);
+    box-shadow: 0 12px 40px -12px hsl(var(--primary) / 0.6);
   }
   .surface-elevated {
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
   }
+  /* Primary call to action: one per screen. 48px tall, white on brand blue. */
   .cta-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground font-bold px-6 py-3.5 transition-all active:scale-[0.98] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed;
-    box-shadow: 0 8px 24px -8px hsl(var(--primary) / 0.5);
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 py-3.5 font-semibold text-primary-foreground transition-[transform,filter,box-shadow] duration-200 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
+    box-shadow: 0 10px 28px -10px hsl(var(--primary) / 0.7), inset 0 1px 0 hsl(0 0% 100% / 0.14);
   }
   .cta-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card text-foreground font-bold px-6 py-3.5 transition-colors hover:bg-muted active:scale-[0.98];
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-border bg-card/70 px-6 py-3.5 font-semibold text-foreground transition-colors hover:border-primary/50 hover:bg-secondary active:scale-[0.98];
   }
+  /* Glass / midnight panel: subtle border, soft blue glow, large radius. */
   .glass-card {
-    background: linear-gradient(180deg, hsl(var(--card) / 0.85) 0%, hsl(var(--card) / 0.6) 100%);
-    border: 1px solid hsl(var(--border) / 0.8);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: linear-gradient(180deg, hsl(var(--card) / 0.88) 0%, hsl(var(--card) / 0.66) 100%);
+    border: 1px solid hsl(var(--foreground) / 0.08);
+    box-shadow: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 18px 48px -24px hsl(var(--primary) / 0.35);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
   }
-  .ring-coral {
-    box-shadow: 0 0 0 2px hsl(var(--primary)), 0 12px 32px -10px hsl(var(--primary) / 0.45);
+  .panel {
+    @apply rounded-[1.5rem] border;
+    background: hsl(var(--card) / 0.8);
+    border-color: hsl(var(--foreground) / 0.08);
+    box-shadow: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 16px 40px -28px hsl(var(--primary) / 0.45);
   }
+  /* Selected state ring (cards, chips, plans). */
+  .ring-brand, .ring-coral {
+    box-shadow: 0 0 0 2px hsl(var(--primary)), 0 14px 36px -12px hsl(var(--primary) / 0.5);
+  }
+  /* Small wide-spaced caps label, like "GROUPE" and "DIGITAL SOLUTIONS". */
+  .eyebrow {
+    @apply text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.2em] text-accent;
+  }
+  .eyebrow-muted {
+    @apply text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.2em] text-muted-foreground;
+  }
+  /* Type scale (Montserrat for display/title/heading, Inter for body). */
+  .type-display { font-family: 'Montserrat', 'Inter', sans-serif; @apply text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl; }
+  .type-title { font-family: 'Montserrat', 'Inter', sans-serif; @apply text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl; }
+  .type-heading { font-family: 'Montserrat', 'Inter', sans-serif; @apply text-lg font-bold leading-snug; }
+  .type-body { @apply text-[0.9375rem] leading-relaxed text-foreground; }
+  .type-caption { @apply text-xs leading-snug text-muted-foreground; }
+  /* Page chrome: sticky translucent header used across member pages. */
+  .app-header {
+    @apply sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl;
+    padding-top: env(safe-area-inset-top);
+  }
+  /* Ambient brand light behind hero sections. */
+  .brand-ambient {
+    background:
+      radial-gradient(60rem 30rem at 15% -10%, hsl(var(--primary) / 0.22), transparent 60%),
+      radial-gradient(40rem 24rem at 100% 0%, hsl(var(--accent) / 0.12), transparent 60%),
+      hsl(var(--background));
+  }
+  /* Comfortable touch target for icon-only controls. */
+  .touch-target { min-width: 44px; min-height: 44px; }
 }
 
 @layer utilities {
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
-  .animate-float { animation: float 3s ease-in-out infinite; }
+  .animate-float { animation: float 4s ease-in-out infinite; }
   .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
-  .animate-slide-up { animation: slide-up 0.5s ease-out; }
-  .animate-fade-in { animation: fade-in 0.4s ease-out; }
+  .animate-slide-up { animation: slide-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .animate-fade-in { animation: fade-in 0.35s ease-out; }
+  .animate-shimmer {
+    background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--secondary)) 50%, hsl(var(--muted)) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .safe-top { padding-top: env(safe-area-inset-top); }
+  /* Kept for older markup: a fixed bar that clears the home indicator. */
+  .safe-area-inset-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .pb-nav { padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 0.75rem); }
+}
+
+/* Desktop: pages that show the app navigation make room for the left rail. */
+@media (min-width: 1024px) {
+  body:has(nav[data-app-nav]) #root { padding-left: var(--rail-width); }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
 }
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
+  50% { opacity: 0.75; }
 }
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }

@@ -16,7 +16,15 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Nunito', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Montserrat', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      // Filled surfaces use the darker brand blue / red so white text passes
+      // WCAG AA; text-, border-, ring- and fill- keep electric blue / light red
+      // (see docs/DESIGN.md › Tokens).
+      backgroundColor: {
+        primary: { DEFAULT: "hsl(var(--primary-solid))" },
+        destructive: { DEFAULT: "hsl(var(--destructive-solid))" },
       },
       colors: {
         border: "hsl(var(--border))",
@@ -27,6 +35,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          solid: "hsl(var(--primary-solid))",
           light: "hsl(var(--primary-light))",
           dark: "hsl(var(--primary-dark))",
         },
@@ -36,7 +45,16 @@ export default {
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
+          solid: "hsl(var(--destructive-solid))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -55,6 +73,10 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         link: "hsl(var(--link))",
+        navy: "hsl(var(--background))",
+        midnight: "hsl(var(--card))",
+        electric: "hsl(var(--primary))",
+        silver: "hsl(var(--muted-foreground))",
         google: "hsl(var(--google))",
         facebook: "hsl(var(--facebook))",
         sidebar: {
@@ -74,13 +96,17 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         xl: "1.5rem",
         "2xl": "2rem",
+        "3xl": "2.5rem",
       },
       boxShadow: {
-        'soft': '0 4px 20px rgba(0, 0, 0, 0.08)',
-        'medium': '0 8px 30px rgba(0, 0, 0, 0.12)',
-        'glow': '0 0 40px rgba(239, 68, 110, 0.3)',
-        'button': '0 4px 15px rgba(0, 0, 0, 0.1)',
+        'soft': '0 6px 24px -12px rgba(2, 8, 23, 0.6)',
+        'medium': '0 12px 36px -16px rgba(2, 8, 23, 0.75)',
+        'glow': '0 0 40px -8px rgba(31, 139, 255, 0.45)',
+        'glow-cyan': '0 0 36px -10px rgba(41, 195, 255, 0.5)',
+        'button': '0 10px 28px -10px rgba(31, 139, 255, 0.7)',
       },
+      minHeight: { touch: "44px" },
+      minWidth: { touch: "44px" },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

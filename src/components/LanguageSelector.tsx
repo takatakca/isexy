@@ -59,7 +59,7 @@ export function LanguageSelector({ variant = 'icon', className = '' }: LanguageS
               key={lang.code}
               onClick={() => handleSelect(lang)}
               className={`flex items-center gap-3 cursor-pointer ${
-                language.code === lang.code ? 'bg-accent' : ''
+                language.code === lang.code ? 'bg-secondary text-foreground' : ''
               }`}
             >
               <span className="text-xl" aria-hidden="true">{lang.flag}</span>
