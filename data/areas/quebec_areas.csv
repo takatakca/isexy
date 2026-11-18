@@ -1,0 +1,1181 @@
+code,name,designation,region_code,region_name,mrc,population,parent_code,kind,slug
+01,Bas-Saint-Laurent,Région administrative,01,Bas-Saint-Laurent,,204513,,region,bas-saint-laurent
+02,Saguenay–Lac-Saint-Jean,Région administrative,02,Saguenay–Lac-Saint-Jean,,286441,,region,saguenay-lac-saint-jean
+03,Capitale-Nationale,Région administrative,03,Capitale-Nationale,,816887,,region,capitale-nationale
+04,Mauricie,Région administrative,04,Mauricie,,289374,,region,mauricie
+05,Estrie,Région administrative,05,Estrie,,527765,,region,estrie
+06,Montréal,Région administrative,06,Montréal,,2170228,,region,montreal-region
+07,Outaouais,Région administrative,07,Outaouais,,429056,,region,outaouais
+08,Abitibi-Témiscamingue,Région administrative,08,Abitibi-Témiscamingue,,148923,,region,abitibi-temiscamingue
+09,Côte-Nord,Région administrative,09,Côte-Nord,,89363,,region,cote-nord
+10,Nord-du-Québec,Région administrative,10,Nord-du-Québec,,47291,,region,nord-du-quebec
+11,Gaspésie–Îles-de-la-Madeleine,Région administrative,11,Gaspésie–Îles-de-la-Madeleine,,92048,,region,gaspesie-iles-de-la-madeleine
+12,Chaudière-Appalaches,Région administrative,12,Chaudière-Appalaches,,460035,,region,chaudiere-appalaches
+13,Laval,Région administrative,13,Laval,,459650,,region,laval-region
+14,Lanaudière,Région administrative,14,Lanaudière,,568011,,region,lanaudiere
+15,Laurentides,Région administrative,15,Laurentides,,679637,,region,laurentides
+16,Montérégie,Région administrative,16,Montérégie,,1524072,,region,monteregie
+17,Centre-du-Québec,Région administrative,17,Centre-du-Québec,,265003,,region,centre-du-quebec
+07025,Albertville,Municipalité,01,Bas-Saint-Laurent,La Matapédia,262,01,municipality,albertville
+07047,Amqui,Ville,01,Bas-Saint-Laurent,La Matapédia,6056,01,municipality,amqui
+13045,Auclair,Municipalité,01,Bas-Saint-Laurent,Témiscouata,466,01,municipality,auclair
+08080,Baie-des-Sables,Municipalité,01,Bas-Saint-Laurent,La Matanie,605,01,municipality,baie-des-sables
+13055,Biencourt,Municipalité,01,Bas-Saint-Laurent,Témiscouata,427,01,municipality,biencourt
+12057,Cacouna,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,1886,01,municipality,cacouna
+07018,Causapscal,Ville,01,Bas-Saint-Laurent,La Matapédia,2150,01,municipality,causapscal
+13005,Dégelis,Ville,01,Bas-Saint-Laurent,Témiscouata,2945,01,municipality,degelis
+10005,Esprit-Saint,Municipalité,01,Bas-Saint-Laurent,Rimouski-Neigette,328,01,municipality,esprit-saint
+09060,Grand-Métis,Municipalité,01,Bas-Saint-Laurent,La Mitis,213,01,municipality,grand-metis
+08015,Grosses-Roches,Municipalité,01,Bas-Saint-Laurent,La Matanie,398,01,municipality,grosses-roches
+14050,Kamouraska,Municipalité,01,Bas-Saint-Laurent,Kamouraska,613,01,municipality,kamouraska
+12043,L'Isle-Verte,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,1427,01,municipality,l-isle-verte
+14082,La Pocatière,Ville,01,Bas-Saint-Laurent,Kamouraska,6344,01,municipality,la-pocatiere
+09005,La Rédemption,Paroisse,01,Bas-Saint-Laurent,La Mitis,378,01,municipality,la-redemption
+10010,La Trinité-des-Monts,Paroisse,01,Bas-Saint-Laurent,Rimouski-Neigette,246,01,municipality,la-trinite-des-monts
+07057,Lac-au-Saumon,Municipalité,01,Bas-Saint-Laurent,La Matapédia,1479,01,municipality,lac-au-saumon
+13062,Lac-des-Aigles,Ville,01,Bas-Saint-Laurent,Témiscouata,597,01,municipality,lac-des-aigles
+13050,Lejeune,Municipalité,01,Bas-Saint-Laurent,Témiscouata,246,01,municipality,lejeune
+09015,Les Hauteurs,Municipalité,01,Bas-Saint-Laurent,La Mitis,481,01,municipality,les-hauteurs
+08005,Les Méchins,Municipalité,01,Bas-Saint-Laurent,La Matanie,976,01,municipality,les-mechins
+08053,Matane,Ville,01,Bas-Saint-Laurent,La Matanie,14201,01,municipality,matane
+14005,Mont-Carmel,Municipalité,01,Bas-Saint-Laurent,Kamouraska,1188,01,municipality,mont-carmel
+09077,Mont-Joli,Ville,01,Bas-Saint-Laurent,La Mitis,6495,01,municipality,mont-joli
+09048,Métis-sur-Mer,Ville,01,Bas-Saint-Laurent,La Mitis,586,01,municipality,metis-sur-mer
+11045,Notre-Dame-des-Neiges,Municipalité,01,Bas-Saint-Laurent,Les Basques,1146,01,municipality,notre-dame-des-neiges
+12045,Notre-Dame-des-Sept-Douleurs,Paroisse,01,Bas-Saint-Laurent,Rivière-du-Loup,71,01,municipality,notre-dame-des-sept-douleurs
+12080,Notre-Dame-du-Portage,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,1339,01,municipality,notre-dame-du-portage
+13015,Packington,Paroisse,01,Bas-Saint-Laurent,Témiscouata,611,01,municipality,packington
+09040,Padoue,Municipalité,01,Bas-Saint-Laurent,La Mitis,249,01,municipality,padoue
+13095,Pohénégamook,Ville,01,Bas-Saint-Laurent,Témiscouata,2490,01,municipality,pohenegamook
+09065,Price,Village,01,Bas-Saint-Laurent,La Mitis,1699,01,municipality,price
+10043,Rimouski,Ville,01,Bas-Saint-Laurent,Rimouski-Neigette,51598,01,municipality,rimouski
+13025,Rivière-Bleue,Municipalité,01,Bas-Saint-Laurent,Témiscouata,1310,01,municipality,riviere-bleue
+14065,Rivière-Ouelle,Municipalité,01,Bas-Saint-Laurent,Kamouraska,1010,01,municipality,riviere-ouelle
+12072,Rivière-du-Loup,Ville,01,Bas-Saint-Laurent,Rivière-du-Loup,20652,01,municipality,riviere-du-loup
+08030,Saint-Adelme,Paroisse,01,Bas-Saint-Laurent,La Matanie,486,01,municipality,saint-adelme
+14035,Saint-Alexandre-de-Kamouraska,Municipalité,01,Bas-Saint-Laurent,Kamouraska,2497,01,municipality,saint-alexandre-de-kamouraska
+07065,Saint-Alexandre-des-Lacs,Paroisse,01,Bas-Saint-Laurent,La Matapédia,295,01,municipality,saint-alexandre-des-lacs
+10030,Saint-Anaclet-de-Lessard,Paroisse,01,Bas-Saint-Laurent,Rimouski-Neigette,3013,01,municipality,saint-anaclet-de-lessard
+14040,Saint-André-de-Kamouraska,Municipalité,01,Bas-Saint-Laurent,Kamouraska,663,01,municipality,saint-andre-de-kamouraska
+12015,Saint-Antonin,Ville,01,Bas-Saint-Laurent,Rivière-du-Loup,4630,01,municipality,saint-antonin
+12065,Saint-Arsène,Paroisse,01,Bas-Saint-Laurent,Rivière-du-Loup,1268,01,municipality,saint-arsene
+13100,Saint-Athanase,Municipalité,01,Bas-Saint-Laurent,Témiscouata,309,01,municipality,saint-athanase
+14010,Saint-Bruno-de-Kamouraska,Municipalité,01,Bas-Saint-Laurent,Kamouraska,510,01,municipality,saint-bruno-de-kamouraska
+09010,Saint-Charles-Garnier,Paroisse,01,Bas-Saint-Laurent,La Mitis,240,01,municipality,saint-charles-garnier
+11005,Saint-Clément,Municipalité,01,Bas-Saint-Laurent,Les Basques,503,01,municipality,saint-clement
+07090,Saint-Cléophas,Paroisse,01,Bas-Saint-Laurent,La Matapédia,316,01,municipality,saint-cleophas
+12005,Saint-Cyprien,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,1089,01,municipality,saint-cyprien-bas-saint-laurent
+07105,Saint-Damase,Paroisse,01,Bas-Saint-Laurent,La Matapédia,382,01,municipality,saint-damase-bas-saint-laurent
+14055,Saint-Denis-De La Bouteillerie,Municipalité,01,Bas-Saint-Laurent,Kamouraska,499,01,municipality,saint-denis-de-la-bouteillerie
+09030,Saint-Donat,Paroisse,01,Bas-Saint-Laurent,La Mitis,892,01,municipality,saint-donat-bas-saint-laurent
+13085,Saint-Elzéar-de-Témiscouata,Municipalité,01,Bas-Saint-Laurent,Témiscouata,337,01,municipality,saint-elzear-de-temiscouata
+10075,Saint-Eugène-de-Ladrière,Paroisse,01,Bas-Saint-Laurent,Rimouski-Neigette,416,01,municipality,saint-eugene-de-ladriere
+13030,Saint-Eusèbe,Paroisse,01,Bas-Saint-Laurent,Témiscouata,581,01,municipality,saint-eusebe
+10070,Saint-Fabien,Paroisse,01,Bas-Saint-Laurent,Rimouski-Neigette,1864,01,municipality,saint-fabien
+12025,Saint-François-Xavier-de-Viger,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,277,01,municipality,saint-francois-xavier-de-viger
+14075,Saint-Gabriel-Lalemant,Municipalité,01,Bas-Saint-Laurent,Kamouraska,660,01,municipality,saint-gabriel-lalemant
+09025,Saint-Gabriel-de-Rimouski,Municipalité,01,Bas-Saint-Laurent,La Mitis,1239,01,municipality,saint-gabriel-de-rimouski
+14045,Saint-Germain-de-Kamouraska,Municipalité,01,Bas-Saint-Laurent,Kamouraska,314,01,municipality,saint-germain-de-kamouraska
+13090,Saint-Honoré-de-Témiscouata,Municipalité,01,Bas-Saint-Laurent,Témiscouata,809,01,municipality,saint-honore-de-temiscouata
+12010,Saint-Hubert-de-Rivière-du-Loup,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,1472,01,municipality,saint-hubert-de-riviere-du-loup
+08010,Saint-Jean-de-Cherbourg,Paroisse,01,Bas-Saint-Laurent,La Matanie,170,01,municipality,saint-jean-de-cherbourg
+11010,Saint-Jean-de-Dieu,Municipalité,01,Bas-Saint-Laurent,Les Basques,1695,01,municipality,saint-jean-de-dieu
+13010,Saint-Jean-de-la-Lande,Municipalité,01,Bas-Saint-Laurent,Témiscouata,248,01,municipality,saint-jean-de-la-lande
+14030,Saint-Joseph-de-Kamouraska,Paroisse,01,Bas-Saint-Laurent,Kamouraska,401,01,municipality,saint-joseph-de-kamouraska
+09070,Saint-Joseph-de-Lepage,Paroisse,01,Bas-Saint-Laurent,La Mitis,581,01,municipality,saint-joseph-de-lepage
+13040,Saint-Juste-du-Lac,Municipalité,01,Bas-Saint-Laurent,Témiscouata,546,01,municipality,saint-juste-du-lac
+13080,Saint-Louis-du-Ha! Ha!,Paroisse,01,Bas-Saint-Laurent,Témiscouata,1353,01,municipality,saint-louis-du-ha-ha
+08065,Saint-Léandre,Paroisse,01,Bas-Saint-Laurent,La Matanie,368,01,municipality,saint-leandre
+07030,Saint-Léon-le-Grand,Paroisse,01,Bas-Saint-Laurent,La Matapédia,983,01,municipality,saint-leon-le-grand-bas-saint-laurent
+13020,Saint-Marc-du-Lac-Long,Paroisse,01,Bas-Saint-Laurent,Témiscouata,397,01,municipality,saint-marc-du-lac-long
+10025,Saint-Marcellin,Paroisse,01,Bas-Saint-Laurent,Rimouski-Neigette,424,01,municipality,saint-marcellin
+11050,Saint-Mathieu-de-Rioux,Municipalité,01,Bas-Saint-Laurent,Les Basques,748,01,municipality,saint-mathieu-de-rioux
+13065,Saint-Michel-du-Squatec,Municipalité,01,Bas-Saint-Laurent,Témiscouata,1054,01,municipality,saint-michel-du-squatec
+12020,Saint-Modeste,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,1181,01,municipality,saint-modeste
+07095,Saint-Moïse,Paroisse,01,Bas-Saint-Laurent,La Matapédia,527,01,municipality,saint-moise
+11025,Saint-Médard,Municipalité,01,Bas-Saint-Laurent,Les Basques,207,01,municipality,saint-medard
+10015,Saint-Narcisse-de-Rimouski,Paroisse,01,Bas-Saint-Laurent,Rimouski-Neigette,1188,01,municipality,saint-narcisse-de-rimouski
+07100,Saint-Noël,Village,01,Bas-Saint-Laurent,La Matapédia,387,01,municipality,saint-noel
+09055,Saint-Octave-de-Métis,Paroisse,01,Bas-Saint-Laurent,La Mitis,506,01,municipality,saint-octave-de-metis
+14070,Saint-Pacôme,Municipalité,01,Bas-Saint-Laurent,Kamouraska,1537,01,municipality,saint-pacome
+14018,Saint-Pascal,Ville,01,Bas-Saint-Laurent,Kamouraska,3509,01,municipality,saint-pascal
+12035,Saint-Paul-de-la-Croix,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,307,01,municipality,saint-paul-de-la-croix
+14060,Saint-Philippe-de-Néri,Paroisse,01,Bas-Saint-Laurent,Kamouraska,835,01,municipality,saint-philippe-de-neri
+13075,Saint-Pierre-de-Lamy,Municipalité,01,Bas-Saint-Laurent,Témiscouata,136,01,municipality,saint-pierre-de-lamy
+08035,Saint-René-de-Matane,Municipalité,01,Bas-Saint-Laurent,La Matanie,988,01,municipality,saint-rene-de-matane
+11055,Saint-Simon-de-Rimouski,Municipalité,01,Bas-Saint-Laurent,Les Basques,481,01,municipality,saint-simon-de-rimouski
+07070,Saint-Tharcisius,Paroisse,01,Bas-Saint-Laurent,La Matapédia,413,01,municipality,saint-tharcisius
+08073,Saint-Ulric,Municipalité,01,Bas-Saint-Laurent,La Matanie,1655,01,municipality,saint-ulric
+10060,Saint-Valérien,Paroisse,01,Bas-Saint-Laurent,Rimouski-Neigette,988,01,municipality,saint-valerien
+07075,Saint-Vianney,Municipalité,01,Bas-Saint-Laurent,La Matapédia,428,01,municipality,saint-vianney
+07035,Saint-Zénon-du-Lac-Humqui,Paroisse,01,Bas-Saint-Laurent,La Matapédia,364,01,municipality,saint-zenon-du-lac-humqui
+11035,Saint-Éloi,Paroisse,01,Bas-Saint-Laurent,Les Basques,322,01,municipality,saint-eloi
+12030,Saint-Épiphane,Municipalité,01,Bas-Saint-Laurent,Rivière-du-Loup,830,01,municipality,saint-epiphane
+09035,Sainte-Angèle-de-Mérici,Municipalité,01,Bas-Saint-Laurent,La Mitis,1007,01,municipality,sainte-angele-de-merici
+09085,Sainte-Flavie,Paroisse,01,Bas-Saint-Laurent,La Mitis,942,01,municipality,sainte-flavie
+07010,Sainte-Florence,Municipalité,01,Bas-Saint-Laurent,La Matapédia,387,01,municipality,sainte-florence
+11030,Sainte-Françoise,Paroisse,01,Bas-Saint-Laurent,Les Basques,426,01,municipality,sainte-francoise-bas-saint-laurent
+08023,Sainte-Félicité,Municipalité,01,Bas-Saint-Laurent,La Matanie,1050,01,municipality,sainte-felicite-bas-saint-laurent
+14025,Sainte-Hélène-de-Kamouraska,Municipalité,01,Bas-Saint-Laurent,Kamouraska,889,01,municipality,sainte-helene-de-kamouraska
+07040,Sainte-Irène,Paroisse,01,Bas-Saint-Laurent,La Matapédia,415,01,municipality,sainte-irene
+09020,Sainte-Jeanne-d'Arc-de-la-Mitis,Municipalité,01,Bas-Saint-Laurent,La Mitis,231,01,municipality,sainte-jeanne-d-arc-de-la-mitis
+09092,Sainte-Luce,Municipalité,01,Bas-Saint-Laurent,La Mitis,2809,01,municipality,sainte-luce
+07005,Sainte-Marguerite-Marie,Municipalité,01,Bas-Saint-Laurent,La Matapédia,175,01,municipality,sainte-marguerite-marie
+08040,Sainte-Paule,Municipalité,01,Bas-Saint-Laurent,La Matanie,248,01,municipality,sainte-paule
+11015,Sainte-Rita,Municipalité,01,Bas-Saint-Laurent,Les Basques,321,01,municipality,sainte-rita
+07085,Sayabec,Municipalité,01,Bas-Saint-Laurent,La Matapédia,1766,01,municipality,sayabec
+11040,Trois-Pistoles,Ville,01,Bas-Saint-Laurent,Les Basques,3117,01,municipality,trois-pistoles
+13073,Témiscouata-sur-le-Lac,Ville,01,Bas-Saint-Laurent,Témiscouata,5202,01,municipality,temiscouata-sur-le-lac
+07080,Val-Brillant,Municipalité,01,Bas-Saint-Laurent,La Matapédia,948,01,municipality,val-brillant
+92030,Albanel,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,2190,02,municipality,albanel
+93042,Alma,Ville,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,30734,02,municipality,alma
+94250,Bégin,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,883,02,municipality,begin
+91020,Chambord,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,1810,02,municipality,chambord
+93005,Desbiens,Ville,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,1029,02,municipality,desbiens
+92022,Dolbeau-Mistassini,Ville,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,13574,02,municipality,dolbeau-mistassini
+94220,Ferland-et-Boilleau,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,725,02,municipality,ferland-et-boilleau
+92055,Girardville,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,1043,02,municipality,girardville
+93022,Hébertville,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,6815,02,municipality,hebertville
+94210,L'Anse-Saint-Jean,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,1296,02,municipality,l-anse-saint-jean
+93065,L'Ascension-de-Notre-Seigneur,Paroisse,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,2285,02,municipality,l-ascension-de-notre-seigneur
+91050,La Doré,Paroisse,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,1388,02,municipality,la-dore
+93055,Labrecque,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,1369,02,municipality,labrecque
+91005,Lac-Bouchette,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,1201,02,municipality,lac-bouchette
+93060,Lamarche,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,521,02,municipality,lamarche
+94265,Larouche,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,1737,02,municipality,larouche
+93012,Métabetchouan–Lac-à-la-Croix,Ville,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,4229,02,municipality,metabetchouan-lac-a-la-croix
+92040,Normandin,Ville,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,3066,02,municipality,normandin
+92060,Notre-Dame-de-Lorette,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,160,02,municipality,notre-dame-de-lorette
+94205,Petit-Saguenay,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,622,02,municipality,petit-saguenay
+92010,Péribonka,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,583,02,municipality,peribonka
+94215,Rivière-Éternité,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,445,02,municipality,riviere-eternite
+91025,Roberval,Ville,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,9871,02,municipality,roberval
+94068,Saguenay,Ville,02,Saguenay–Lac-Saint-Jean,,151946,02,municipality,saguenay
+94255,Saint-Ambroise,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,4212,02,municipality,saint-ambroise
+91010,Saint-André-du-Lac-Saint-Jean,Village,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,481,02,municipality,saint-andre-du-lac-saint-jean
+92005,Saint-Augustin,Paroisse,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,320,02,municipality,saint-augustin-saguenay-lac-saint-jean
+94260,Saint-Charles-de-Bourget,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,862,02,municipality,saint-charles-de-bourget
+94245,Saint-David-de-Falardeau,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,3131,02,municipality,saint-david-de-falardeau
+92050,Saint-Edmond-les-Plaines,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,369,02,municipality,saint-edmond-les-plaines
+92065,Saint-Eugène-d'Argentenay,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,495,02,municipality,saint-eugene-d-argentenay
+91015,Saint-François-de-Sales,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,617,02,municipality,saint-francois-de-sales
+94235,Saint-Fulgence,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,2206,02,municipality,saint-fulgence
+91042,Saint-Félicien,Ville,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,10127,02,municipality,saint-felicien
+94225,Saint-Félix-d'Otis,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,1206,02,municipality,saint-felix-d-otis
+93035,Saint-Gédéon,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,2347,02,municipality,saint-gedeon
+93070,Saint-Henri-de-Taillon,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,827,02,municipality,saint-henri-de-taillon
+94240,Saint-Honoré,Ville,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,6989,02,municipality,saint-honore
+93080,Saint-Ludger-de-Milot,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,654,02,municipality,saint-ludger-de-milot
+93045,Saint-Nazaire,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,2164,02,municipality,saint-nazaire
+91035,Saint-Prime,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,2826,02,municipality,saint-prime
+92070,Saint-Stanislas,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,385,02,municipality,saint-stanislas-saguenay-lac-saint-jean
+92045,Saint-Thomas-Didyme,Municipalité,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,793,02,municipality,saint-thomas-didyme
+91030,Sainte-Hedwidge,Municipalité,02,Saguenay–Lac-Saint-Jean,Le Domaine-du-Roy,953,02,municipality,sainte-hedwidge
+92015,Sainte-Jeanne-d'Arc,Village,02,Saguenay–Lac-Saint-Jean,Maria-Chapdelaine,1109,02,municipality,sainte-jeanne-d-arc
+93075,Sainte-Monique,Municipalité,02,Saguenay–Lac-Saint-Jean,Lac-Saint-Jean-Est,882,02,municipality,sainte-monique-saguenay-lac-saint-jean
+94230,Sainte-Rose-du-Nord,Paroisse,02,Saguenay–Lac-Saint-Jean,Le Fjord-du-Saguenay,501,02,municipality,sainte-rose-du-nord
+16013,Baie-Saint-Paul,Ville,03,Capitale-Nationale,Charlevoix,7801,03,municipality,baie-saint-paul
+15065,Baie-Sainte-Catherine,Municipalité,03,Capitale-Nationale,Charlevoix-Est,165,03,municipality,baie-sainte-catherine
+21025,Beaupré,Ville,03,Capitale-Nationale,La Côte-de-Beaupré,4307,03,municipality,beaupre
+21045,Boischatel,Municipalité,03,Capitale-Nationale,La Côte-de-Beaupré,9298,03,municipality,boischatel
+34030,Cap-Santé,Ville,03,Capitale-Nationale,Portneuf,3888,03,municipality,cap-sante
+21035,Château-Richer,Ville,03,Capitale-Nationale,La Côte-de-Beaupré,4756,03,municipality,chateau-richer
+15035,Clermont,Ville,03,Capitale-Nationale,Charlevoix-Est,3147,03,municipality,clermont-capitale-nationale
+34058,Deschambault-Grondines,Municipalité,03,Capitale-Nationale,Portneuf,2255,03,municipality,deschambault-grondines
+34025,Donnacona,Ville,03,Capitale-Nationale,Portneuf,7809,03,municipality,donnacona
+22010,Fossambault-sur-le-Lac,Ville,03,Capitale-Nationale,La Jacques-Cartier,2505,03,municipality,fossambault-sur-le-lac
+23057,L'Ancienne-Lorette,Ville,03,Capitale-Nationale,,17916,03,municipality,l-ancienne-lorette
+21040,L'Ange-Gardien,Municipalité,03,Capitale-Nationale,La Côte-de-Beaupré,4125,03,municipality,l-ange-gardien-capitale-nationale
+16023,L'Isle-aux-Coudres,Municipalité,03,Capitale-Nationale,Charlevoix,1082,03,municipality,l-isle-aux-coudres
+15013,La Malbaie,Ville,03,Capitale-Nationale,Charlevoix-Est,8362,03,municipality,la-malbaie
+22040,Lac-Beauport,Municipalité,03,Capitale-Nationale,La Jacques-Cartier,8532,03,municipality,lac-beauport
+22030,Lac-Delage,Ville,03,Capitale-Nationale,La Jacques-Cartier,811,03,municipality,lac-delage
+22015,Lac-Saint-Joseph,Ville,03,Capitale-Nationale,La Jacques-Cartier,292,03,municipality,lac-saint-joseph
+34120,Lac-Sergent,Ville,03,Capitale-Nationale,Portneuf,630,03,municipality,lac-sergent
+16048,Les Éboulements,Municipalité,03,Capitale-Nationale,Charlevoix,1630,03,municipality,les-eboulements
+34007,Neuville,Ville,03,Capitale-Nationale,Portneuf,4597,03,municipality,neuville
+23015,Notre-Dame-des-Anges,Paroisse,03,Capitale-Nationale,,249,03,municipality,notre-dame-des-anges
+15025,Notre-Dame-des-Monts,Municipalité,03,Capitale-Nationale,Charlevoix-Est,804,03,municipality,notre-dame-des-monts
+16005,Petite-Rivière-Saint-François,Municipalité,03,Capitale-Nationale,Charlevoix,1120,03,municipality,petite-riviere-saint-francois
+34017,Pont-Rouge,Ville,03,Capitale-Nationale,Portneuf,11351,03,municipality,pont-rouge
+34048,Portneuf,Ville,03,Capitale-Nationale,Portneuf,3412,03,municipality,portneuf
+23027,Québec,Ville,03,Capitale-Nationale,,595190,03,municipality,quebec
+34135,Rivière-à-Pierre,Municipalité,03,Capitale-Nationale,Portneuf,620,03,municipality,riviere-a-pierre
+15030,Saint-Aimé-des-Lacs,Municipalité,03,Capitale-Nationale,Charlevoix-Est,1183,03,municipality,saint-aime-des-lacs
+34097,Saint-Alban,Municipalité,03,Capitale-Nationale,Portneuf,1268,03,municipality,saint-alban
+23072,Saint-Augustin-de-Desmaures,Ville,03,Capitale-Nationale,,20892,03,municipality,saint-augustin-de-desmaures
+34038,Saint-Basile,Ville,03,Capitale-Nationale,Portneuf,2922,03,municipality,saint-basile
+34078,Saint-Casimir,Municipalité,03,Capitale-Nationale,Portneuf,1511,03,municipality,saint-casimir
+21010,Saint-Ferréol-les-Neiges,Municipalité,03,Capitale-Nationale,La Côte-de-Beaupré,4075,03,municipality,saint-ferreol-les-neiges
+20005,Saint-François-de-l'Île-d'Orléans,Municipalité,03,Capitale-Nationale,L'Île-d'Orléans,530,03,municipality,saint-francois-de-l-ile-d-orleans
+22025,Saint-Gabriel-de-Valcartier,Municipalité,03,Capitale-Nationale,La Jacques-Cartier,3399,03,municipality,saint-gabriel-de-valcartier
+34060,Saint-Gilbert,Paroisse,03,Capitale-Nationale,Portneuf,293,03,municipality,saint-gilbert
+16050,Saint-Hilarion,Paroisse,03,Capitale-Nationale,Charlevoix,1222,03,municipality,saint-hilarion
+15005,Saint-Irénée,Municipalité,03,Capitale-Nationale,Charlevoix-Est,694,03,municipality,saint-irenee
+20015,Saint-Jean-de-l'Île-d'Orléans,Municipalité,03,Capitale-Nationale,L'Île-d'Orléans,1020,03,municipality,saint-jean-de-l-ile-d-orleans
+21020,Saint-Joachim,Paroisse,03,Capitale-Nationale,La Côte-de-Beaupré,1421,03,municipality,saint-joachim
+20020,Saint-Laurent-de-l'Île-d'Orléans,Municipalité,03,Capitale-Nationale,L'Île-d'Orléans,1718,03,municipality,saint-laurent-de-l-ile-d-orleans
+21015,Saint-Louis-de-Gonzague-du-Cap-Tourmente,Paroisse,03,Capitale-Nationale,La Côte-de-Beaupré,0,03,municipality,saint-louis-de-gonzague-du-cap-tourmente
+34115,Saint-Léonard-de-Portneuf,Municipalité,03,Capitale-Nationale,Portneuf,1213,03,municipality,saint-leonard-de-portneuf
+34065,Saint-Marc-des-Carrières,Ville,03,Capitale-Nationale,Portneuf,2968,03,municipality,saint-marc-des-carrieres
+20025,Saint-Pierre-de-l'Île-d'Orléans,Municipalité,03,Capitale-Nationale,L'Île-d'Orléans,1636,03,municipality,saint-pierre-de-l-ile-d-orleans
+34128,Saint-Raymond,Ville,03,Capitale-Nationale,Portneuf,11964,03,municipality,saint-raymond
+15058,Saint-Siméon,Municipalité,03,Capitale-Nationale,Charlevoix-Est,1126,03,municipality,saint-simeon-capitale-nationale
+34085,Saint-Thuribe,Paroisse,03,Capitale-Nationale,Portneuf,300,03,municipality,saint-thuribe
+21005,Saint-Tite-des-Caps,Municipalité,03,Capitale-Nationale,La Côte-de-Beaupré,1606,03,municipality,saint-tite-des-caps
+34090,Saint-Ubalde,Municipalité,03,Capitale-Nationale,Portneuf,1573,03,municipality,saint-ubalde
+16055,Saint-Urbain,Paroisse,03,Capitale-Nationale,Charlevoix,1432,03,municipality,saint-urbain
+21030,Sainte-Anne-de-Beaupré,Ville,03,Capitale-Nationale,La Côte-de-Beaupré,3167,03,municipality,sainte-anne-de-beaupre
+22045,Sainte-Brigitte-de-Laval,Ville,03,Capitale-Nationale,La Jacques-Cartier,9091,03,municipality,sainte-brigitte-de-laval
+22005,Sainte-Catherine-de-la-Jacques-Cartier,Ville,03,Capitale-Nationale,La Jacques-Cartier,9846,03,municipality,sainte-catherine-de-la-jacques-cartier
+34105,Sainte-Christine-d'Auvergne,Municipalité,03,Capitale-Nationale,Portneuf,714,03,municipality,sainte-christine-d-auvergne
+20010,Sainte-Famille-de-l'Île-d'Orléans,Municipalité,03,Capitale-Nationale,L'Île-d'Orléans,801,03,municipality,sainte-famille-de-l-ile-d-orleans
+20030,Sainte-Pétronille,Village,03,Capitale-Nationale,L'Île-d'Orléans,998,03,municipality,sainte-petronille
+22020,Shannon,Ville,03,Capitale-Nationale,La Jacques-Cartier,7088,03,municipality,shannon
+22035,Stoneham-et-Tewkesbury,Cantons unis,03,Capitale-Nationale,La Jacques-Cartier,10153,03,municipality,stoneham-et-tewkesbury
+37210,Batiscan,Municipalité,04,Mauricie,Des Chenaux,1008,04,municipality,batiscan
+37220,Champlain,Municipalité,04,Mauricie,Des Chenaux,1932,04,municipality,champlain
+51080,Charette,Municipalité,04,Mauricie,Maskinongé,1181,04,municipality,charette
+35040,Grandes-Piles,Village,04,Mauricie,Mékinac,628,04,municipality,grandes-piles
+35035,Hérouxville,Paroisse,04,Mauricie,Mékinac,1573,04,municipality,herouxville
+90017,La Bostonnais,Municipalité,04,Mauricie,,614,04,municipality,la-bostonnais
+90012,La Tuque,Ville,04,Mauricie,,11319,04,municipality,la-tuque
+35010,Lac-aux-Sables,Paroisse,04,Mauricie,Mékinac,1466,04,municipality,lac-aux-sables
+90027,Lac-Édouard,Municipalité,04,Mauricie,,227,04,municipality,lac-edouard
+51015,Louiseville,Ville,04,Mauricie,Maskinongé,7606,04,municipality,louiseville
+51008,Maskinongé,Municipalité,04,Mauricie,Maskinongé,2467,04,municipality,maskinonge
+35005,Notre-Dame-de-Montauban,Municipalité,04,Mauricie,Mékinac,824,04,municipality,notre-dame-de-montauban
+37235,Notre-Dame-du-Mont-Carmel,Paroisse,04,Mauricie,Des Chenaux,6634,04,municipality,notre-dame-du-mont-carmel
+35015,Saint-Adelphe,Paroisse,04,Mauricie,Mékinac,935,04,municipality,saint-adelphe
+51065,Saint-Alexis-des-Monts,Paroisse,04,Mauricie,Maskinongé,3197,04,municipality,saint-alexis-des-monts
+51025,Saint-Barnabé,Paroisse,04,Mauricie,Maskinongé,1236,04,municipality,saint-barnabe
+51085,Saint-Boniface,Municipalité,04,Mauricie,Maskinongé,5416,04,municipality,saint-boniface
+51045,Saint-Justin,Municipalité,04,Mauricie,Maskinongé,972,04,municipality,saint-justin
+37225,Saint-Luc-de-Vincennes,Municipalité,04,Mauricie,Des Chenaux,570,04,municipality,saint-luc-de-vincennes
+51035,Saint-Léon-le-Grand,Paroisse,04,Mauricie,Maskinongé,871,04,municipality,saint-leon-le-grand-mauricie
+51070,Saint-Mathieu-du-Parc,Municipalité,04,Mauricie,Maskinongé,1601,04,municipality,saint-mathieu-du-parc
+37230,Saint-Maurice,Paroisse,04,Mauricie,Des Chenaux,3752,04,municipality,saint-maurice
+37240,Saint-Narcisse,Paroisse,04,Mauricie,Des Chenaux,1853,04,municipality,saint-narcisse
+51060,Saint-Paulin,Municipalité,04,Mauricie,Maskinongé,1663,04,municipality,saint-paulin
+37250,Saint-Prosper-de-Champlain,Municipalité,04,Mauricie,Des Chenaux,482,04,municipality,saint-prosper-de-champlain
+35045,Saint-Roch-de-Mékinac,Paroisse,04,Mauricie,Mékinac,331,04,municipality,saint-roch-de-mekinac
+37245,Saint-Stanislas,Municipalité,04,Mauricie,Des Chenaux,1042,04,municipality,saint-stanislas-mauricie
+35020,Saint-Séverin,Paroisse,04,Mauricie,Mékinac,787,04,municipality,saint-severin-mauricie
+51030,Saint-Sévère,Paroisse,04,Mauricie,Maskinongé,337,04,municipality,saint-severe
+35027,Saint-Tite,Ville,04,Mauricie,Mékinac,3764,04,municipality,saint-tite
+51050,Saint-Édouard-de-Maskinongé,Municipalité,04,Mauricie,Maskinongé,805,04,municipality,saint-edouard-de-maskinonge
+51075,Saint-Élie-de-Caxton,Municipalité,04,Mauricie,Maskinongé,2069,04,municipality,saint-elie-de-caxton
+51090,Saint-Étienne-des-Grès,Paroisse,04,Mauricie,Maskinongé,4694,04,municipality,saint-etienne-des-gres
+51055,Sainte-Angèle-de-Prémont,Municipalité,04,Mauricie,Maskinongé,626,04,municipality,sainte-angele-de-premont
+37205,Sainte-Anne-de-la-Pérade,Municipalité,04,Mauricie,Des Chenaux,2043,04,municipality,sainte-anne-de-la-perade
+37215,Sainte-Geneviève-de-Batiscan,Paroisse,04,Mauricie,Des Chenaux,1141,04,municipality,sainte-genevieve-de-batiscan
+35050,Sainte-Thècle,Municipalité,04,Mauricie,Mékinac,2426,04,municipality,sainte-thecle
+51040,Sainte-Ursule,Municipalité,04,Mauricie,Maskinongé,1363,04,municipality,sainte-ursule
+36033,Shawinigan,Ville,04,Mauricie,,51820,04,municipality,shawinigan
+35055,Trois-Rives,Municipalité,04,Mauricie,Mékinac,448,04,municipality,trois-rives
+37067,Trois-Rivières,Ville,04,Mauricie,,149423,04,municipality,trois-rivieres
+51020,Yamachiche,Municipalité,04,Mauricie,Maskinongé,2776,04,municipality,yamachiche
+46005,Abercorn,Village,05,Estrie,Brome-Missisquoi,368,05,municipality,abercorn
+41055,Ascot Corner,Municipalité,05,Estrie,Le Haut-Saint-François,3649,05,municipality,ascot-corner
+30055,Audet,Municipalité,05,Estrie,Le Granit,707,05,municipality,audet
+45085,Austin,Municipalité,05,Estrie,Memphrémagog,1978,05,municipality,austin
+45035,Ayer's Cliff,Village,05,Estrie,Memphrémagog,1305,05,municipality,ayer-s-cliff
+44045,Barnston-Ouest,Municipalité,05,Estrie,Coaticook,553,05,municipality,barnston-ouest
+46035,Bedford,Ville,05,Estrie,Brome-Missisquoi,2852,05,municipality,bedford-estrie-ville
+46040,Bedford,Canton,05,Estrie,Brome-Missisquoi,722,05,municipality,bedford-estrie-canton
+45095,Bolton-Est,Municipalité,05,Estrie,Memphrémagog,1345,05,municipality,bolton-est
+46065,Bolton-Ouest,Municipalité,05,Estrie,Brome-Missisquoi,758,05,municipality,bolton-ouest
+42040,Bonsecours,Municipalité,05,Estrie,Le Val-Saint-François,667,05,municipality,bonsecours
+46090,Brigham,Municipalité,05,Estrie,Brome-Missisquoi,2387,05,municipality,brigham
+46070,Brome,Village,05,Estrie,Brome-Missisquoi,341,05,municipality,brome
+46078,Bromont,Ville,05,Estrie,Brome-Missisquoi,12428,05,municipality,bromont
+41070,Bury,Municipalité,05,Estrie,Le Haut-Saint-François,1243,05,municipality,bury
+41020,Chartierville,Municipalité,05,Estrie,Le Haut-Saint-François,323,05,municipality,chartierville
+42110,Cleveland,Canton,05,Estrie,Le Val-Saint-François,1634,05,municipality,cleveland
+44037,Coaticook,Ville,05,Estrie,Coaticook,9163,05,municipality,coaticook
+44071,Compton,Municipalité,05,Estrie,Coaticook,3306,05,municipality,compton
+41038,Cookshire-Eaton,Ville,05,Estrie,Le Haut-Saint-François,5501,05,municipality,cookshire-eaton
+46080,Cowansville,Ville,05,Estrie,Brome-Missisquoi,17318,05,municipality,cowansville
+40047,Danville,Ville,05,Estrie,Les Sources,3959,05,municipality,danville
+44023,Dixville,Municipalité,05,Estrie,Coaticook,796,05,municipality,dixville
+41117,Dudswell,Municipalité,05,Estrie,Le Haut-Saint-François,1852,05,municipality,dudswell
+46050,Dunham,Ville,05,Estrie,Brome-Missisquoi,3644,05,municipality,dunham
+41060,East Angus,Ville,05,Estrie,Le Haut-Saint-François,4267,05,municipality,east-angus
+46085,East Farnham,Municipalité,05,Estrie,Brome-Missisquoi,694,05,municipality,east-farnham
+44010,East Hereford,Municipalité,05,Estrie,Coaticook,318,05,municipality,east-hereford
+45093,Eastman,Municipalité,05,Estrie,Memphrémagog,2738,05,municipality,eastman
+46112,Farnham,Ville,05,Estrie,Brome-Missisquoi,11341,05,municipality,farnham
+46010,Frelighsburg,Municipalité,05,Estrie,Brome-Missisquoi,1179,05,municipality,frelighsburg
+30025,Frontenac,Municipalité,05,Estrie,Le Granit,1857,05,municipality,frontenac
+47017,Granby,Ville,05,Estrie,La Haute-Yamaska,72078,05,municipality,granby
+40005,Ham-Sud,Municipalité,05,Estrie,Les Sources,230,05,municipality,ham-sud
+41075,Hampden,Canton,05,Estrie,Le Haut-Saint-François,202,05,municipality,hampden
+45043,Hatley,Municipalité,05,Estrie,Memphrémagog,819,05,municipality,hatley-estrie-municipalite
+45055,Hatley,Canton,05,Estrie,Memphrémagog,2506,05,municipality,hatley-estrie-canton
+42070,Kingsbury,Village,05,Estrie,Le Val-Saint-François,141,05,municipality,kingsbury
+41027,La Patrie,Municipalité,05,Estrie,Le Haut-Saint-François,807,05,municipality,la-patrie
+46075,Lac-Brome,Ville,05,Estrie,Brome-Missisquoi,6317,05,municipality,lac-brome
+30080,Lac-Drolet,Municipalité,05,Estrie,Le Granit,1076,05,municipality,lac-drolet
+30030,Lac-Mégantic,Ville,05,Estrie,Le Granit,5970,05,municipality,lac-megantic
+30095,Lambton,Municipalité,05,Estrie,Le Granit,1722,05,municipality,lambton
+42045,Lawrenceville,Village,05,Estrie,Le Val-Saint-François,638,05,municipality,lawrenceville
+41085,Lingwick,Canton,05,Estrie,Le Haut-Saint-François,479,05,municipality,lingwick
+45072,Magog,Ville,05,Estrie,Memphrémagog,30644,05,municipality,magog
+42065,Maricourt,Municipalité,05,Estrie,Le Val-Saint-François,494,05,municipality,maricourt
+30035,Marston,Canton,05,Estrie,Le Granit,802,05,municipality,marston
+44060,Martinville,Municipalité,05,Estrie,Coaticook,458,05,municipality,martinville
+42075,Melbourne,Canton,05,Estrie,Le Val-Saint-François,1134,05,municipality,melbourne
+30040,Milan,Municipalité,05,Estrie,Le Granit,326,05,municipality,milan
+30045,Nantes,Municipalité,05,Estrie,Le Granit,1415,05,municipality,nantes
+41037,Newport,Municipalité,05,Estrie,Le Haut-Saint-François,704,05,municipality,newport
+45050,North Hatley,Village,05,Estrie,Memphrémagog,775,05,municipality,north-hatley
+46100,Notre-Dame-de-Stanbridge,Municipalité,05,Estrie,Brome-Missisquoi,707,05,municipality,notre-dame-de-stanbridge
+30010,Notre-Dame-des-Bois,Municipalité,05,Estrie,Le Granit,1207,05,municipality,notre-dame-des-bois
+45020,Ogden,Municipalité,05,Estrie,Memphrémagog,800,05,municipality,ogden
+45115,Orford,Canton,05,Estrie,Memphrémagog,5624,05,municipality,orford
+46025,Pike River,Municipalité,05,Estrie,Brome-Missisquoi,503,05,municipality,pike-river
+30020,Piopolis,Municipalité,05,Estrie,Le Granit,417,05,municipality,piopolis
+45030,Potton,Canton,05,Estrie,Memphrémagog,2211,05,municipality,potton
+42032,Racine,Municipalité,05,Estrie,Le Val-Saint-François,1451,05,municipality,racine
+42098,Richmond,Ville,05,Estrie,Le Val-Saint-François,3453,05,municipality,richmond
+47047,Roxton Pond,Municipalité,05,Estrie,La Haute-Yamaska,4881,05,municipality,roxton-pond
+40010,Saint-Adrien,Municipalité,05,Estrie,Les Sources,570,05,municipality,saint-adrien
+47010,Saint-Alphonse-de-Granby,Municipalité,05,Estrie,La Haute-Yamaska,3544,05,municipality,saint-alphonse-de-granby
+46017,Saint-Armand,Municipalité,05,Estrie,Brome-Missisquoi,1242,05,municipality,saint-armand
+30005,Saint-Augustin-de-Woburn,Paroisse,05,Estrie,Le Granit,677,05,municipality,saint-augustin-de-woburn
+45080,Saint-Benoît-du-Lac,Municipalité,05,Estrie,Memphrémagog,45,05,municipality,saint-benoit-du-lac
+40025,Saint-Camille,Canton,05,Estrie,Les Sources,574,05,municipality,saint-camille
+42100,Saint-Claude,Municipalité,05,Estrie,Le Val-Saint-François,1174,05,municipality,saint-claude
+42025,Saint-Denis-de-Brompton,Municipalité,05,Estrie,Le Val-Saint-François,5136,05,municipality,saint-denis-de-brompton
+42020,Saint-François-Xavier-de-Brompton,Municipalité,05,Estrie,Le Val-Saint-François,2664,05,municipality,saint-francois-xavier-de-brompton
+40032,Saint-Georges-de-Windsor,Municipalité,05,Estrie,Les Sources,1037,05,municipality,saint-georges-de-windsor
+44015,Saint-Herménégilde,Municipalité,05,Estrie,Coaticook,760,05,municipality,saint-hermenegilde
+46095,Saint-Ignace-de-Stanbridge,Municipalité,05,Estrie,Brome-Missisquoi,706,05,municipality,saint-ignace-de-stanbridge
+41012,Saint-Isidore-de-Clifton,Municipalité,05,Estrie,Le Haut-Saint-François,738,05,municipality,saint-isidore-de-clifton
+47040,Saint-Joachim-de-Shefford,Municipalité,05,Estrie,La Haute-Yamaska,1551,05,municipality,saint-joachim-de-shefford
+30072,Saint-Ludger,Municipalité,05,Estrie,Le Granit,1099,05,municipality,saint-ludger
+44003,Saint-Malo,Municipalité,05,Estrie,Coaticook,546,05,municipality,saint-malo
+30070,Saint-Robert-Bellarmin,Municipalité,05,Estrie,Le Granit,522,05,municipality,saint-robert-bellarmin
+30100,Saint-Romain,Municipalité,05,Estrie,Le Granit,722,05,municipality,saint-romain
+30085,Saint-Sébastien,Municipalité,05,Estrie,Le Granit,707,05,municipality,saint-sebastien-estrie
+44005,Saint-Venant-de-Paquette,Municipalité,05,Estrie,Coaticook,75,05,municipality,saint-venant-de-paquette
+45100,Saint-Étienne-de-Bolton,Municipalité,05,Estrie,Memphrémagog,902,05,municipality,saint-etienne-de-bolton
+42050,Sainte-Anne-de-la-Rochelle,Municipalité,05,Estrie,Le Val-Saint-François,603,05,municipality,sainte-anne-de-la-rochelle
+45060,Sainte-Catherine-de-Hatley,Municipalité,05,Estrie,Memphrémagog,2926,05,municipality,sainte-catherine-de-hatley
+47055,Sainte-Cécile-de-Milton,Municipalité,05,Estrie,La Haute-Yamaska,2266,05,municipality,sainte-cecile-de-milton
+30050,Sainte-Cécile-de-Whitton,Municipalité,05,Estrie,Le Granit,910,05,municipality,sainte-cecile-de-whitton
+44055,Sainte-Edwidge-de-Clifton,Canton,05,Estrie,Coaticook,542,05,municipality,sainte-edwidge-de-clifton
+46105,Sainte-Sabine,Municipalité,05,Estrie,Brome-Missisquoi,1126,05,municipality,sainte-sabine-estrie
+41080,Scotstown,Ville,05,Estrie,Le Haut-Saint-François,476,05,municipality,scotstown
+47035,Shefford,Canton,05,Estrie,La Haute-Yamaska,7703,05,municipality,shefford
+43027,Sherbrooke,Ville,05,Estrie,,184478,05,municipality,sherbrooke
+46045,Stanbridge East,Municipalité,05,Estrie,Brome-Missisquoi,855,05,municipality,stanbridge-east
+46030,Stanbridge Station,Municipalité,05,Estrie,Brome-Missisquoi,284,05,municipality,stanbridge-station
+45025,Stanstead,Canton,05,Estrie,Memphrémagog,1187,05,municipality,stanstead-estrie-canton
+45008,Stanstead,Ville,05,Estrie,Memphrémagog,3007,05,municipality,stanstead-estrie-ville
+44050,Stanstead-Est,Municipalité,05,Estrie,Coaticook,668,05,municipality,stanstead-est
+42005,Stoke,Municipalité,05,Estrie,Le Val-Saint-François,3220,05,municipality,stoke
+30105,Stornoway,Municipalité,05,Estrie,Le Granit,545,05,municipality,stornoway
+30110,Stratford,Canton,05,Estrie,Le Granit,1063,05,municipality,stratford
+45105,Stukely-Sud,Village,05,Estrie,Memphrémagog,1280,05,municipality,stukely-sud
+46058,Sutton,Ville,05,Estrie,Brome-Missisquoi,4782,05,municipality,sutton
+42078,Ulverton,Municipalité,05,Estrie,Le Val-Saint-François,454,05,municipality,ulverton
+42095,Val-Joli,Municipalité,05,Estrie,Le Val-Saint-François,1747,05,municipality,val-joli
+30015,Val-Racine,Municipalité,05,Estrie,Le Granit,191,05,municipality,val-racine
+40043,Val-des-Sources,Ville,05,Estrie,Les Sources,7327,05,municipality,val-des-sources
+42055,Valcourt,Ville,05,Estrie,Le Val-Saint-François,2220,05,municipality,valcourt-estrie-ville
+42060,Valcourt,Canton,05,Estrie,Le Val-Saint-François,1088,05,municipality,valcourt-estrie-canton
+47030,Warden,Village,05,Estrie,La Haute-Yamaska,410,05,municipality,warden
+47025,Waterloo,Ville,05,Estrie,La Haute-Yamaska,5713,05,municipality,waterloo
+44080,Waterville,Ville,05,Estrie,Coaticook,2603,05,municipality,waterville
+41098,Weedon,Municipalité,05,Estrie,Le Haut-Saint-François,2851,05,municipality,weedon
+41065,Westbury,Canton,05,Estrie,Le Haut-Saint-François,1209,05,municipality,westbury
+42088,Windsor,Ville,05,Estrie,Le Val-Saint-François,5400,05,municipality,windsor
+40017,Wotton,Municipalité,05,Estrie,Les Sources,1456,05,municipality,wotton
+66112,Baie-D'Urfé,Ville,06,Montréal,,3713,06,municipality,baie-d-urfe
+66107,Beaconsfield,Ville,06,Montréal,,19423,06,municipality,beaconsfield
+66058,Côte-Saint-Luc,Ville,06,Montréal,,37875,06,municipality,cote-saint-luc
+66142,Dollard-des-Ormeaux,Ville,06,Montréal,,50216,06,municipality,dollard-des-ormeaux
+66087,Dorval,Ville,06,Montréal,,21054,06,municipality,dorval
+66062,Hampstead,Ville,06,Montréal,,7466,06,municipality,hampstead
+66102,Kirkland,Ville,06,Montréal,,19689,06,municipality,kirkland
+66092,L'Île-Dorval,Ville,06,Montréal,,9,06,municipality,l-ile-dorval
+66072,Mont-Royal,Ville,06,Montréal,,22809,06,municipality,mont-royal
+66023,Montréal,Ville,06,Montréal,,1913561,06,municipality,montreal
+66007,Montréal-Est,Ville,06,Montréal,,5038,06,municipality,montreal-est
+66047,Montréal-Ouest,Ville,06,Montréal,,5204,06,municipality,montreal-ouest
+66097,Pointe-Claire,Ville,06,Montréal,,37413,06,municipality,pointe-claire
+66117,Sainte-Anne-de-Bellevue,Ville,06,Montréal,,5337,06,municipality,sainte-anne-de-bellevue
+66127,Senneville,Village,06,Montréal,,1052,06,municipality,senneville
+66032,Westmount,Ville,06,Montréal,,20369,06,municipality,westmount
+84050,Alleyn-et-Cawood,Municipalité,07,Outaouais,Pontiac,254,07,municipality,alleyn-et-cawood
+83090,Aumond,Canton,07,Outaouais,La Vallée-de-la-Gatineau,761,07,municipality,aumond
+83045,Blue Sea,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,715,07,municipality,blue-sea
+80115,Boileau,Municipalité,07,Outaouais,Papineau,414,07,municipality,boileau
+83085,Bois-Franc,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,420,07,municipality,bois-franc
+83050,Bouchette,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,773,07,municipality,bouchette
+80145,Bowman,Municipalité,07,Outaouais,Papineau,746,07,municipality,bowman
+84005,Bristol,Municipalité,07,Outaouais,Pontiac,1157,07,municipality,bristol
+84025,Bryson,Municipalité,07,Outaouais,Pontiac,649,07,municipality,bryson
+84030,Campbell's Bay,Municipalité,07,Outaouais,Pontiac,729,07,municipality,campbell-s-bay
+82020,Cantley,Municipalité,07,Outaouais,Les Collines-de-l'Outaouais,12390,07,municipality,cantley
+83040,Cayamant,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,983,07,municipality,cayamant
+82025,Chelsea,Municipalité,07,Outaouais,Les Collines-de-l'Outaouais,9070,07,municipality,chelsea
+84090,Chichester,Canton,07,Outaouais,Pontiac,360,07,municipality,chichester
+80103,Chénéville,Municipalité,07,Outaouais,Papineau,959,07,municipality,cheneville
+84015,Clarendon,Municipalité,07,Outaouais,Pontiac,1446,07,municipality,clarendon
+83005,Denholm,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,603,07,municipality,denholm
+80135,Duhamel,Municipalité,07,Outaouais,Papineau,574,07,municipality,duhamel
+83070,Déléage,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,2048,07,municipality,deleage
+83075,Egan-Sud,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,535,07,municipality,egan-sud
+80005,Fassett,Municipalité,07,Outaouais,Papineau,492,07,municipality,fassett
+84060,Fort-Coulonge,Village,07,Outaouais,Pontiac,1295,07,municipality,fort-coulonge
+81017,Gatineau,Ville,07,Outaouais,,305437,07,municipality,gatineau
+83032,Gracefield,Ville,07,Outaouais,La Vallée-de-la-Gatineau,2543,07,municipality,gracefield
+83095,Grand-Remous,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,1235,07,municipality,grand-remous
+83015,Kazabazua,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,1083,07,municipality,kazabazua
+82005,L'Ange-Gardien,Municipalité,07,Outaouais,Les Collines-de-l'Outaouais,7122,07,municipality,l-ange-gardien-outaouais
+84082,L'Isle-aux-Allumettes,Municipalité,07,Outaouais,Pontiac,1415,07,municipality,l-isle-aux-allumettes
+84035,L'Île-du-Grand-Calumet,Municipalité,07,Outaouais,Pontiac,685,07,municipality,l-ile-du-grand-calumet
+82035,La Pêche,Municipalité,07,Outaouais,Les Collines-de-l'Outaouais,9450,07,municipality,la-peche
+83020,Lac-Sainte-Marie,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,746,07,municipality,lac-sainte-marie
+80095,Lac-Simon,Municipalité,07,Outaouais,Papineau,1173,07,municipality,lac-simon
+80130,Lac-des-Plages,Municipalité,07,Outaouais,Papineau,553,07,municipality,lac-des-plages
+84040,Litchfield,Municipalité,07,Outaouais,Pontiac,512,07,municipality,litchfield
+80055,Lochaber,Canton,07,Outaouais,Papineau,504,07,municipality,lochaber
+80060,Lochaber-Partie-Ouest,Canton,07,Outaouais,Papineau,1044,07,municipality,lochaber-partie-ouest
+83010,Low,Canton,07,Outaouais,La Vallée-de-la-Gatineau,1064,07,municipality,low
+83065,Maniwaki,Ville,07,Outaouais,La Vallée-de-la-Gatineau,3808,07,municipality,maniwaki
+84065,Mansfield-et-Pontefract,Municipalité,07,Outaouais,Pontiac,2339,07,municipality,mansfield-et-pontefract
+80065,Mayo,Municipalité,07,Outaouais,Papineau,751,07,municipality,mayo
+83060,Messines,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,1693,07,municipality,messines
+83088,Montcerf-Lytton,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,687,07,municipality,montcerf-lytton
+80010,Montebello,Municipalité,07,Outaouais,Papineau,983,07,municipality,montebello
+80090,Montpellier,Municipalité,07,Outaouais,Papineau,1269,07,municipality,montpellier
+80085,Mulgrave-et-Derry,Municipalité,07,Outaouais,Papineau,519,07,municipality,mulgrave-et-derry
+80110,Namur,Municipalité,07,Outaouais,Papineau,654,07,municipality,namur
+80015,Notre-Dame-de-Bonsecours,Municipalité,07,Outaouais,Papineau,297,07,municipality,notre-dame-de-bonsecours
+80020,Notre-Dame-de-la-Paix,Municipalité,07,Outaouais,Papineau,729,07,municipality,notre-dame-de-la-paix
+80087,Notre-Dame-de-la-Salette,Municipalité,07,Outaouais,Papineau,925,07,municipality,notre-dame-de-la-salette
+84055,Otter Lake,Municipalité,07,Outaouais,Pontiac,980,07,municipality,otter-lake
+80037,Papineauville,Municipalité,07,Outaouais,Papineau,2359,07,municipality,papineauville
+80045,Plaisance,Municipalité,07,Outaouais,Papineau,1205,07,municipality,plaisance
+82030,Pontiac,Municipalité,07,Outaouais,Les Collines-de-l'Outaouais,6541,07,municipality,pontiac
+84020,Portage-du-Fort,Village,07,Outaouais,Pontiac,245,07,municipality,portage-du-fort
+84100,Rapides-des-Joachims,Municipalité,07,Outaouais,Pontiac,148,07,municipality,rapides-des-joachims
+80078,Ripon,Municipalité,07,Outaouais,Papineau,1857,07,municipality,ripon
+80027,Saint-André-Avellin,Municipalité,07,Outaouais,Papineau,3904,07,municipality,saint-andre-avellin
+80070,Saint-Sixte,Municipalité,07,Outaouais,Papineau,556,07,municipality,saint-sixte
+80125,Saint-Émile-de-Suffolk,Municipalité,07,Outaouais,Papineau,543,07,municipality,saint-emile-de-suffolk
+83055,Sainte-Thérèse-de-la-Gatineau,Municipalité,07,Outaouais,La Vallée-de-la-Gatineau,546,07,municipality,sainte-therese-de-la-gatineau
+84010,Shawville,Municipalité,07,Outaouais,Pontiac,1735,07,municipality,shawville
+84095,Sheenboro,Municipalité,07,Outaouais,Pontiac,118,07,municipality,sheenboro
+84045,Thorne,Municipalité,07,Outaouais,Pontiac,561,07,municipality,thorne
+80050,Thurso,Ville,07,Outaouais,Papineau,3530,07,municipality,thurso
+80140,Val-des-Bois,Municipalité,07,Outaouais,Papineau,1027,07,municipality,val-des-bois
+82015,Val-des-Monts,Municipalité,07,Outaouais,Les Collines-de-l'Outaouais,14593,07,municipality,val-des-monts
+84070,Waltham,Municipalité,07,Outaouais,Pontiac,394,07,municipality,waltham
+88057,Amos,Ville,08,Abitibi-Témiscamingue,Abitibi,13849,08,municipality,amos
+87050,Authier,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,278,08,municipality,authier
+87100,Authier-Nord,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,282,08,municipality,authier-nord
+88022,Barraute,Municipalité,08,Abitibi-Témiscamingue,Abitibi,1926,08,municipality,barraute
+89050,Belcourt,Municipalité,08,Abitibi-Témiscamingue,La Vallée-de-l'Or,209,08,municipality,belcourt
+85065,Belleterre,Ville,08,Abitibi-Témiscamingue,Témiscamingue,291,08,municipality,belleterre
+88070,Berry,Municipalité,08,Abitibi-Témiscamingue,Abitibi,551,08,municipality,berry
+85020,Béarn,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,737,08,municipality,bearn
+88005,Champneuf,Municipalité,08,Abitibi-Témiscamingue,Abitibi,93,08,municipality,champneuf
+87095,Chazel,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,268,08,municipality,chazel
+87110,Clermont,Canton,08,Abitibi-Témiscamingue,Abitibi-Ouest,466,08,municipality,clermont-abitibi-temiscamingue
+87075,Clerval,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,367,08,municipality,clerval
+85030,Duhamel-Ouest,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,948,08,municipality,duhamel-ouest
+87005,Duparquet,Ville,08,Abitibi-Témiscamingue,Abitibi-Ouest,726,08,municipality,duparquet
+87085,Dupuy,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,954,08,municipality,dupuy
+85055,Fugèreville,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,322,08,municipality,fugereville
+87020,Gallichan,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,502,08,municipality,gallichan
+85095,Guérin,Canton,08,Abitibi-Témiscamingue,Témiscamingue,325,08,municipality,guerin
+85010,Kipawa,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,416,08,municipality,kipawa
+88030,La Corne,Municipalité,08,Abitibi-Témiscamingue,Abitibi,829,08,municipality,la-corne
+88012,La Morandière-Rochebaucourt,Municipalité,08,Abitibi-Témiscamingue,Abitibi,343,08,municipality,la-morandiere-rochebaucourt
+88045,La Motte,Municipalité,08,Abitibi-Témiscamingue,Abitibi,523,08,municipality,la-motte
+87080,La Reine,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,304,08,municipality,la-reine
+87090,La Sarre,Ville,08,Abitibi-Témiscamingue,Abitibi-Ouest,7186,08,municipality,la-sarre
+85070,Laforce,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,587,08,municipality,laforce
+88035,Landrienne,Canton,08,Abitibi-Témiscamingue,Abitibi,898,08,municipality,landrienne
+85060,Latulipe-et-Gaboury,Cantons unis,08,Abitibi-Témiscamingue,Témiscamingue,313,08,municipality,latulipe-et-gaboury
+88080,Launay,Canton,08,Abitibi-Témiscamingue,Abitibi,203,08,municipality,launay
+85052,Laverlochère-Angliers,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,980,08,municipality,laverlochere-angliers
+85037,Lorrainville,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,1283,08,municipality,lorrainville
+87058,Macamic,Ville,08,Abitibi-Témiscamingue,Abitibi-Ouest,2696,08,municipality,macamic
+89015,Malartic,Ville,08,Abitibi-Témiscamingue,La Vallée-de-l'Or,3477,08,municipality,malartic
+85075,Moffet,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,211,08,municipality,moffet
+87115,Normétal,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,787,08,municipality,normetal
+85090,Notre-Dame-du-Nord,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,1091,08,municipality,notre-dame-du-nord
+85100,Nédélec,Canton,08,Abitibi-Témiscamingue,Témiscamingue,339,08,municipality,nedelec
+87025,Palmarolle,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,1423,08,municipality,palmarolle
+87035,Poularies,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,683,08,municipality,poularies
+88090,Preissac,Municipalité,08,Abitibi-Témiscamingue,Abitibi,971,08,municipality,preissac
+87010,Rapide-Danseur,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,378,08,municipality,rapide-danseur
+89010,Rivière-Héva,Municipalité,08,Abitibi-Témiscamingue,La Vallée-de-l'Or,1547,08,municipality,riviere-heva
+87015,Roquemaure,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,384,08,municipality,roquemaure
+86042,Rouyn-Noranda,Ville,08,Abitibi-Témiscamingue,,43077,08,municipality,rouyn-noranda
+85105,Rémigny,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,317,08,municipality,remigny
+85045,Saint-Bruno-de-Guigues,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,1209,08,municipality,saint-bruno-de-guigues
+88065,Saint-Dominique-du-Rosaire,Municipalité,08,Abitibi-Témiscamingue,Abitibi,452,08,municipality,saint-dominique-du-rosaire
+85085,Saint-Eugène-de-Guigues,Municipalité,08,Abitibi-Témiscamingue,Témiscamingue,453,08,municipality,saint-eugene-de-guigues
+87120,Saint-Lambert,Paroisse,08,Abitibi-Témiscamingue,Abitibi-Ouest,199,08,municipality,saint-lambert-abitibi-temiscamingue
+88040,Saint-Marc-de-Figuery,Paroisse,08,Abitibi-Témiscamingue,Abitibi,912,08,municipality,saint-marc-de-figuery
+88050,Saint-Mathieu-d'Harricana,Municipalité,08,Abitibi-Témiscamingue,Abitibi,822,08,municipality,saint-mathieu-d-harricana
+85015,Saint-Édouard-de-Fabre,Paroisse,08,Abitibi-Témiscamingue,Témiscamingue,675,08,municipality,saint-edouard-de-fabre
+87030,Sainte-Germaine-Boulé,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,953,08,municipality,sainte-germaine-boule
+88085,Sainte-Gertrude-Manneville,Municipalité,08,Abitibi-Témiscamingue,Abitibi,767,08,municipality,sainte-gertrude-manneville
+87070,Sainte-Hélène-de-Mancebourg,Paroisse,08,Abitibi-Témiscamingue,Abitibi-Ouest,404,08,municipality,sainte-helene-de-mancebourg
+89045,Senneterre,Paroisse,08,Abitibi-Témiscamingue,La Vallée-de-l'Or,1177,08,municipality,senneterre-abitibi-temiscamingue-paroisse
+89040,Senneterre,Ville,08,Abitibi-Témiscamingue,La Vallée-de-l'Or,2784,08,municipality,senneterre-abitibi-temiscamingue-ville
+87042,Taschereau,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,910,08,municipality,taschereau
+88075,Trécesson,Canton,08,Abitibi-Témiscamingue,Abitibi,1229,08,municipality,trecesson
+85005,Témiscaming,Ville,08,Abitibi-Témiscamingue,Témiscamingue,2310,08,municipality,temiscaming
+87105,Val-Saint-Gilles,Municipalité,08,Abitibi-Témiscamingue,Abitibi-Ouest,174,08,municipality,val-saint-gilles
+89008,Val-d'Or,Ville,08,Abitibi-Témiscamingue,La Vallée-de-l'Or,33193,08,municipality,val-d-or
+85025,Ville-Marie,Ville,08,Abitibi-Témiscamingue,Témiscamingue,2439,08,municipality,ville-marie-abitibi-temiscamingue
+98030,Aguanish,Municipalité,09,Côte-Nord,Minganie,213,09,municipality,aguanish
+96020,Baie-Comeau,Ville,09,Côte-Nord,Manicouagan,20609,09,municipality,baie-comeau
+98035,Baie-Johan-Beetz,Municipalité,09,Côte-Nord,Minganie,75,09,municipality,baie-johan-beetz
+96005,Baie-Trinité,Village,09,Côte-Nord,Manicouagan,393,09,municipality,baie-trinite
+98005,Blanc-Sablon,Municipalité,09,Côte-Nord,Le Golfe-du-Saint-Laurent,1090,09,municipality,blanc-sablon
+98010,Bonne-Espérance,Municipalité,09,Côte-Nord,Le Golfe-du-Saint-Laurent,665,09,municipality,bonne-esperance
+96035,Chute-aux-Outardes,Village,09,Côte-Nord,Manicouagan,1387,09,municipality,chute-aux-outardes
+95050,Colombier,Municipalité,09,Côte-Nord,La Haute-Côte-Nord,614,09,municipality,colombier
+98015,Côte-Nord-du-Golfe-du-Saint-Laurent,Municipalité,09,Côte-Nord,Le Golfe-du-Saint-Laurent,752,09,municipality,cote-nord-du-golfe-du-saint-laurent
+97035,Fermont,Ville,09,Côte-Nord,Caniapiscau,2125,09,municipality,fermont
+95045,Forestville,Ville,09,Côte-Nord,La Haute-Côte-Nord,2838,09,municipality,forestville
+96015,Franquelin,Municipalité,09,Côte-Nord,Manicouagan,285,09,municipality,franquelin
+96010,Godbout,Village,09,Côte-Nord,Manicouagan,271,09,municipality,godbout
+98014,Gros-Mécatina,Municipalité,09,Côte-Nord,Le Golfe-du-Saint-Laurent,351,09,municipality,gros-mecatina
+98040,Havre-Saint-Pierre,Municipalité,09,Côte-Nord,Minganie,3390,09,municipality,havre-saint-pierre
+98020,L'Île-d'Anticosti,Municipalité,09,Côte-Nord,Minganie,200,09,municipality,l-ile-d-anticosti
+95018,Les Bergeronnes,Municipalité,09,Côte-Nord,La Haute-Côte-Nord,620,09,municipality,les-bergeronnes
+95025,Les Escoumins,Municipalité,09,Côte-Nord,La Haute-Côte-Nord,1753,09,municipality,les-escoumins
+98045,Longue-Pointe-de-Mingan,Municipalité,09,Côte-Nord,Minganie,421,09,municipality,longue-pointe-de-mingan
+95032,Longue-Rive,Municipalité,09,Côte-Nord,La Haute-Côte-Nord,881,09,municipality,longue-rive
+98025,Natashquan,Municipalité,09,Côte-Nord,Minganie,269,09,municipality,natashquan
+96025,Pointe-Lebel,Village,09,Côte-Nord,Manicouagan,1778,09,municipality,pointe-lebel
+96030,Pointe-aux-Outardes,Village,09,Côte-Nord,Manicouagan,1416,09,municipality,pointe-aux-outardes
+97022,Port-Cartier,Ville,09,Côte-Nord,Sept-Rivières,6423,09,municipality,port-cartier
+95040,Portneuf-sur-Mer,Municipalité,09,Côte-Nord,La Haute-Côte-Nord,582,09,municipality,portneuf-sur-mer
+96040,Ragueneau,Paroisse,09,Côte-Nord,Manicouagan,1269,09,municipality,ragueneau
+98050,Rivière-Saint-Jean,Municipalité,09,Côte-Nord,Minganie,216,09,municipality,riviere-saint-jean
+98055,Rivière-au-Tonnerre,Municipalité,09,Côte-Nord,Minganie,282,09,municipality,riviere-au-tonnerre
+95010,Sacré-Coeur,Municipalité,09,Côte-Nord,La Haute-Côte-Nord,1685,09,municipality,sacre-coeur
+98012,Saint-Augustin,Municipalité,09,Côte-Nord,Le Golfe-du-Saint-Laurent,683,09,municipality,saint-augustin-cote-nord
+97040,Schefferville,Ville,09,Côte-Nord,Caniapiscau,256,09,municipality,schefferville
+97007,Sept-Îles,Ville,09,Côte-Nord,Sept-Rivières,24456,09,municipality,sept-iles
+95005,Tadoussac,Village,09,Côte-Nord,La Haute-Côte-Nord,789,09,municipality,tadoussac
+99125,Akulivik,Village nordique,10,Nord-du-Québec,,622,10,municipality,akulivik
+99105,Aupaluk,Village nordique,10,Nord-du-Québec,,244,10,municipality,aupaluk
+99020,Chapais,Ville,10,Nord-du-Québec,,1383,10,municipality,chapais
+99025,Chibougamau,Ville,10,Nord-du-Québec,,7244,10,municipality,chibougamau
+99055,Chisasibi,Village cri,10,Nord-du-Québec,,0,10,municipality,chisasibi
+99045,Eastmain,Village cri,10,Nord-du-Québec,,0,10,municipality,eastmain
+99085,Inukjuak,Village nordique,10,Nord-du-Québec,,1935,10,municipality,inukjuak
+99140,Ivujivik,Village nordique,10,Nord-du-Québec,,424,10,municipality,ivujivik
+99090,Kangiqsualujjuaq,Village nordique,10,Nord-du-Québec,,1029,10,municipality,kangiqsualujjuaq
+99130,Kangiqsujuaq,Village nordique,10,Nord-du-Québec,,867,10,municipality,kangiqsujuaq
+99110,Kangirsuk,Village nordique,10,Nord-du-Québec,,591,10,municipality,kangirsuk
+99065,Kawawachikamach,Village naskapi,10,Nord-du-Québec,,0,10,municipality,kawawachikamach
+99095,Kuujjuaq,Village nordique,10,Nord-du-Québec,,2750,10,municipality,kuujjuaq
+99075,Kuujjuarapik,Village nordique,10,Nord-du-Québec,,740,10,municipality,kuujjuarapik
+99005,Lebel-sur-Quévillon,Ville,10,Nord-du-Québec,,2208,10,municipality,lebel-sur-quevillon
+99015,Matagami,Ville,10,Nord-du-Québec,,1352,10,municipality,matagami
+99030,Mistissini,Village cri,10,Nord-du-Québec,,10,10,municipality,mistissini
+99040,Nemaska,Village cri,10,Nord-du-Québec,,0,10,municipality,nemaska
+99820,Oujé-Bougoumou,Village cri,10,Nord-du-Québec,,0,10,municipality,ouje-bougoumou
+99120,Puvirnituq,Village nordique,10,Nord-du-Québec,,2213,10,municipality,puvirnituq
+99115,Quaqtaq,Village nordique,10,Nord-du-Québec,,473,10,municipality,quaqtaq
+99135,Salluit,Village nordique,10,Nord-du-Québec,,1623,10,municipality,salluit
+99100,Tasiujaq,Village nordique,10,Nord-du-Québec,,465,10,municipality,tasiujaq
+99080,Umiujaq,Village nordique,10,Nord-du-Québec,,573,10,municipality,umiujaq
+99035,Waskaganish,Village cri,10,Nord-du-Québec,,0,10,municipality,waskaganish
+99010,Waswanipi,Village cri,10,Nord-du-Québec,,0,10,municipality,waswanipi
+99050,Wemindji,Village cri,10,Nord-du-Québec,,0,10,municipality,wemindji
+99070,Whapmagoostui,Village cri,10,Nord-du-Québec,,0,10,municipality,whapmagoostui
+05045,Bonaventure,Ville,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,2716,11,municipality,bonaventure
+04047,Cap-Chat,Ville,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,2525,11,municipality,cap-chat
+05060,Caplan,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,1958,11,municipality,caplan
+06013,Carleton-sur-Mer,Ville,11,Gaspésie–Îles-de-la-Madeleine,Avignon,4164,11,municipality,carleton-sur-mer
+05077,Cascapédia–Saint-Jules,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,765,11,municipality,cascapedia-saint-jules
+02028,Chandler,Ville,11,Gaspésie–Îles-de-la-Madeleine,Le Rocher-Percé,7299,11,municipality,chandler
+03010,Cloridorme,Canton,11,Gaspésie–Îles-de-la-Madeleine,La Côte-de-Gaspé,608,11,municipality,cloridorme
+06025,Escuminac,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,610,11,municipality,escuminac
+03005,Gaspé,Ville,11,Gaspésie–Îles-de-la-Madeleine,La Côte-de-Gaspé,15503,11,municipality,gaspe
+02015,Grande-Rivière,Ville,11,Gaspésie–Îles-de-la-Madeleine,Le Rocher-Percé,3307,11,municipality,grande-riviere
+03020,Grande-Vallée,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,La Côte-de-Gaspé,1082,11,municipality,grande-vallee
+01042,Grosse-Île,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,,456,11,municipality,grosse-ile
+05025,Hope,Canton,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,613,11,municipality,hope
+05020,Hope Town,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,330,11,municipality,hope-town
+06060,L'Ascension-de-Patapédia,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,157,11,municipality,l-ascension-de-patapedia
+04030,La Martre,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,191,11,municipality,la-martre
+01023,Les Îles-de-la-Madeleine,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,,12451,11,municipality,les-iles-de-la-madeleine
+06005,Maria,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,2760,11,municipality,maria
+04025,Marsoui,Village,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,280,11,municipality,marsoui
+06045,Matapédia,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,579,11,municipality,matapedia
+04015,Mont-Saint-Pierre,Village,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,201,11,municipality,mont-saint-pierre
+03025,Murdochville,Ville,11,Gaspésie–Îles-de-la-Madeleine,La Côte-de-Gaspé,615,11,municipality,murdochville
+05040,New Carlisle,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,1330,11,municipality,new-carlisle
+05070,New Richmond,Ville,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,3933,11,municipality,new-richmond
+06020,Nouvelle,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,1816,11,municipality,nouvelle
+05032,Paspébiac,Ville,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,3130,11,municipality,paspebiac
+02005,Percé,Ville,11,Gaspésie–Îles-de-la-Madeleine,Le Rocher-Percé,3129,11,municipality,perce
+03015,Petite-Vallée,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,La Côte-de-Gaspé,154,11,municipality,petite-vallee
+06030,Pointe-à-la-Croix,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,1293,11,municipality,pointe-a-la-croix
+02047,Port-Daniel–Gascons,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Le Rocher-Percé,2255,11,municipality,port-daniel-gascons
+06035,Ristigouche-Sud-Est,Canton,11,Gaspésie–Îles-de-la-Madeleine,Avignon,176,11,municipality,ristigouche-sud-est
+04020,Rivière-à-Claude,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,158,11,municipality,riviere-a-claude
+06050,Saint-Alexis-de-Matapédia,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,508,11,municipality,saint-alexis-de-matapedia
+05065,Saint-Alphonse,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,740,11,municipality,saint-alphonse
+06040,Saint-André-de-Restigouche,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,148,11,municipality,saint-andre-de-restigouche
+05050,Saint-Elzéar,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,484,11,municipality,saint-elzear-gaspesie-iles-de-la-madeleine
+06055,Saint-François-d'Assise,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Avignon,652,11,municipality,saint-francois-d-assise
+05015,Saint-Godefroi,Canton,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,358,11,municipality,saint-godefroi
+04010,Saint-Maxime-du-Mont-Louis,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,1032,11,municipality,saint-maxime-du-mont-louis
+05055,Saint-Siméon,Paroisse,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,1253,11,municipality,saint-simeon-gaspesie-iles-de-la-madeleine
+04037,Sainte-Anne-des-Monts,Ville,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,6134,11,municipality,sainte-anne-des-monts
+04005,Sainte-Madeleine-de-la-Rivière-Madeleine,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,La Haute-Gaspésie,274,11,municipality,sainte-madeleine-de-la-riviere-madeleine
+02010,Sainte-Thérèse-de-Gaspé,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Le Rocher-Percé,1000,11,municipality,sainte-therese-de-gaspe
+05010,Shigawake,Municipalité,11,Gaspésie–Îles-de-la-Madeleine,Bonaventure,328,11,municipality,shigawake
+31056,Adstock,Municipalité,12,Chaudière-Appalaches,Les Appalaches,3198,12,municipality,adstock
+19037,Armagh,Municipalité,12,Chaudière-Appalaches,Bellechasse,1434,12,municipality,armagh
+27028,Beauceville,Ville,12,Chaudière-Appalaches,Beauce-Centre,6255,12,municipality,beauceville
+31008,Beaulac-Garthby,Municipalité,12,Chaudière-Appalaches,Les Appalaches,963,12,municipality,beaulac-garthby
+19105,Beaumont,Municipalité,12,Chaudière-Appalaches,Bellechasse,3191,12,municipality,beaumont
+18065,Berthier-sur-Mer,Municipalité,12,Chaudière-Appalaches,Montmagny,1818,12,municipality,berthier-sur-mer
+18045,Cap-Saint-Ignace,Municipalité,12,Chaudière-Appalaches,Montmagny,3072,12,municipality,cap-saint-ignace
+29027,Courcelles–Saint-Évariste,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,1295,12,municipality,courcelles-saint-evariste
+31020,Disraeli,Paroisse,12,Chaudière-Appalaches,Les Appalaches,1167,12,municipality,disraeli-chaudiere-appalaches-paroisse
+31015,Disraeli,Ville,12,Chaudière-Appalaches,Les Appalaches,2386,12,municipality,disraeli-chaudiere-appalaches-ville
+33040,Dosquet,Municipalité,12,Chaudière-Appalaches,Lotbinière,927,12,municipality,dosquet
+31122,East Broughton,Municipalité,12,Chaudière-Appalaches,Les Appalaches,2307,12,municipality,east-broughton
+26005,Frampton,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,1373,12,municipality,frampton
+19070,Honfleur,Municipalité,12,Chaudière-Appalaches,Bellechasse,860,12,municipality,honfleur
+31040,Irlande,Municipalité,12,Chaudière-Appalaches,Les Appalaches,918,12,municipality,irlande
+31105,Kinnear's Mills,Municipalité,12,Chaudière-Appalaches,Les Appalaches,416,12,municipality,kinnear-s-mills
+17078,L'Islet,Municipalité,12,Chaudière-Appalaches,L'Islet,3873,12,municipality,l-islet
+19090,La Durantaye,Paroisse,12,Chaudière-Appalaches,Bellechasse,802,12,municipality,la-durantaye
+29030,La Guadeloupe,Village,12,Chaudière-Appalaches,Beauce-Sartigan,1932,12,municipality,la-guadeloupe
+28053,Lac-Etchemin,Municipalité,12,Chaudière-Appalaches,Les Etchemins,4120,12,municipality,lac-etchemin
+18010,Lac-Frontière,Municipalité,12,Chaudière-Appalaches,Montmagny,185,12,municipality,lac-frontiere
+29095,Lac-Poulin,Village,12,Chaudière-Appalaches,Beauce-Sartigan,173,12,municipality,lac-poulin
+33060,Laurier-Station,Village,12,Chaudière-Appalaches,Lotbinière,2841,12,municipality,laurier-station
+33123,Leclercville,Municipalité,12,Chaudière-Appalaches,Lotbinière,507,12,municipality,leclercville
+33115,Lotbinière,Municipalité,12,Chaudière-Appalaches,Lotbinière,897,12,municipality,lotbiniere
+25213,Lévis,Ville,12,Chaudière-Appalaches,,161582,12,municipality,levis
+18050,Montmagny,Ville,12,Chaudière-Appalaches,Montmagny,11319,12,municipality,montmagny
+19010,Notre-Dame-Auxiliatrice-de-Buckland,Paroisse,12,Chaudière-Appalaches,Bellechasse,826,12,municipality,notre-dame-auxiliatrice-de-buckland
+29120,Notre-Dame-des-Pins,Paroisse,12,Chaudière-Appalaches,Beauce-Sartigan,1934,12,municipality,notre-dame-des-pins
+18040,Notre-Dame-du-Rosaire,Municipalité,12,Chaudière-Appalaches,Montmagny,423,12,municipality,notre-dame-du-rosaire
+33085,Notre-Dame-du-Sacré-Coeur-d'Issoudun,Paroisse,12,Chaudière-Appalaches,Lotbinière,902,12,municipality,notre-dame-du-sacre-coeur-d-issoudun
+31130,Sacré-Coeur-de-Jésus,Paroisse,12,Chaudière-Appalaches,Les Appalaches,575,12,municipality,sacre-coeur-de-jesus
+17015,Saint-Adalbert,Municipalité,12,Chaudière-Appalaches,L'Islet,478,12,municipality,saint-adalbert
+31095,Saint-Adrien-d'Irlande,Municipalité,12,Chaudière-Appalaches,Les Appalaches,353,12,municipality,saint-adrien-d-irlande
+33045,Saint-Agapit,Municipalité,12,Chaudière-Appalaches,Lotbinière,4803,12,municipality,saint-agapit
+27015,Saint-Alfred,Municipalité,12,Chaudière-Appalaches,Beauce-Centre,559,12,municipality,saint-alfred
+19062,Saint-Anselme,Municipalité,12,Chaudière-Appalaches,Bellechasse,4532,12,municipality,saint-anselme
+33095,Saint-Antoine-de-Tilly,Municipalité,12,Chaudière-Appalaches,Lotbinière,1755,12,municipality,saint-antoine-de-tilly
+18070,Saint-Antoine-de-l'Isle-aux-Grues,Paroisse,12,Chaudière-Appalaches,Montmagny,109,12,municipality,saint-antoine-de-l-isle-aux-grues
+33090,Saint-Apollinaire,Municipalité,12,Chaudière-Appalaches,Lotbinière,9244,12,municipality,saint-apollinaire
+17055,Saint-Aubert,Municipalité,12,Chaudière-Appalaches,L'Islet,1387,12,municipality,saint-aubert
+28025,Saint-Benjamin,Municipalité,12,Chaudière-Appalaches,Les Etchemins,1282,12,municipality,saint-benjamin
+29100,Saint-Benoît-Labre,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,1656,12,municipality,saint-benoit-labre
+26055,Saint-Bernard,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,2694,12,municipality,saint-bernard
+28070,Saint-Camille-de-Lellis,Paroisse,12,Chaudière-Appalaches,Les Etchemins,753,12,municipality,saint-camille-de-lellis
+19097,Saint-Charles-de-Bellechasse,Municipalité,12,Chaudière-Appalaches,Bellechasse,2731,12,municipality,saint-charles-de-bellechasse
+28040,Saint-Cyprien,Paroisse,12,Chaudière-Appalaches,Les Etchemins,463,12,municipality,saint-cyprien-chaudiere-appalaches
+17045,Saint-Cyrille-de-Lessard,Paroisse,12,Chaudière-Appalaches,L'Islet,753,12,municipality,saint-cyrille-de-lessard
+29057,Saint-Côme–Linière,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,3430,12,municipality,saint-come-liniere
+17040,Saint-Damase-de-L'Islet,Municipalité,12,Chaudière-Appalaches,L'Islet,565,12,municipality,saint-damase-de-l-islet
+19030,Saint-Damien-de-Buckland,Paroisse,12,Chaudière-Appalaches,Bellechasse,1837,12,municipality,saint-damien-de-buckland
+26022,Saint-Elzéar,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,2845,12,municipality,saint-elzear-chaudiere-appalaches
+18015,Saint-Fabien-de-Panet,Paroisse,12,Chaudière-Appalaches,Montmagny,1023,12,municipality,saint-fabien-de-panet
+33052,Saint-Flavien,Municipalité,12,Chaudière-Appalaches,Lotbinière,1682,12,municipality,saint-flavien
+31030,Saint-Fortunat,Municipalité,12,Chaudière-Appalaches,Les Appalaches,267,12,municipality,saint-fortunat
+18060,Saint-François-de-la-Rivière-du-Sud,Municipalité,12,Chaudière-Appalaches,Montmagny,1547,12,municipality,saint-francois-de-la-riviere-du-sud
+27065,Saint-Frédéric,Paroisse,12,Chaudière-Appalaches,Beauce-Centre,1175,12,municipality,saint-frederic
+29073,Saint-Georges,Ville,12,Chaudière-Appalaches,Beauce-Sartigan,33895,12,municipality,saint-georges
+19075,Saint-Gervais,Municipalité,12,Chaudière-Appalaches,Bellechasse,2229,12,municipality,saint-gervais
+33035,Saint-Gilles,Municipalité,12,Chaudière-Appalaches,Lotbinière,3508,12,municipality,saint-gilles
+29013,Saint-Gédéon-de-Beauce,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,2138,12,municipality,saint-gedeon-de-beauce
+19068,Saint-Henri,Municipalité,12,Chaudière-Appalaches,Bellechasse,6060,12,municipality,saint-henri
+29020,Saint-Hilaire-de-Dorset,Paroisse,12,Chaudière-Appalaches,Beauce-Sartigan,101,12,municipality,saint-hilaire-de-dorset
+29038,Saint-Honoré-de-Shenley,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,1610,12,municipality,saint-honore-de-shenley
+26063,Saint-Isidore,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,3553,12,municipality,saint-isidore-chaudiere-appalaches
+31140,Saint-Jacques-de-Leeds,Municipalité,12,Chaudière-Appalaches,Les Appalaches,730,12,municipality,saint-jacques-de-leeds
+31025,Saint-Jacques-le-Majeur-de-Wolfestown,Paroisse,12,Chaudière-Appalaches,Les Appalaches,212,12,municipality,saint-jacques-le-majeur-de-wolfestown
+33065,Saint-Janvier-de-Joly,Municipalité,12,Chaudière-Appalaches,Lotbinière,1202,12,municipality,saint-janvier-de-joly
+17070,Saint-Jean-Port-Joli,Municipalité,12,Chaudière-Appalaches,L'Islet,3330,12,municipality,saint-jean-port-joli
+31100,Saint-Jean-de-Brébeuf,Municipalité,12,Chaudière-Appalaches,Les Appalaches,369,12,municipality,saint-jean-de-brebeuf
+27043,Saint-Joseph-de-Beauce,Ville,12,Chaudière-Appalaches,Beauce-Centre,5368,12,municipality,saint-joseph-de-beauce
+31045,Saint-Joseph-de-Coleraine,Municipalité,12,Chaudière-Appalaches,Les Appalaches,1920,12,municipality,saint-joseph-de-coleraine
+27050,Saint-Joseph-des-Érables,Municipalité,12,Chaudière-Appalaches,Beauce-Centre,399,12,municipality,saint-joseph-des-erables
+27055,Saint-Jules,Paroisse,12,Chaudière-Appalaches,Beauce-Centre,552,12,municipality,saint-jules
+31035,Saint-Julien,Municipalité,12,Chaudière-Appalaches,Les Appalaches,402,12,municipality,saint-julien
+18005,Saint-Just-de-Bretenières,Municipalité,12,Chaudière-Appalaches,Montmagny,637,12,municipality,saint-just-de-bretenieres
+26070,Saint-Lambert-de-Lauzon,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,7588,12,municipality,saint-lambert-de-lauzon
+19050,Saint-Lazare-de-Bellechasse,Municipalité,12,Chaudière-Appalaches,Bellechasse,1328,12,municipality,saint-lazare-de-bellechasse
+28035,Saint-Louis-de-Gonzague,Municipalité,12,Chaudière-Appalaches,Les Etchemins,387,12,municipality,saint-louis-de-gonzague-chaudiere-appalaches
+28060,Saint-Luc-de-Bellechasse,Municipalité,12,Chaudière-Appalaches,Les Etchemins,483,12,municipality,saint-luc-de-bellechasse
+19020,Saint-Léon-de-Standon,Paroisse,12,Chaudière-Appalaches,Bellechasse,1031,12,municipality,saint-leon-de-standon
+28075,Saint-Magloire,Municipalité,12,Chaudière-Appalaches,Les Etchemins,729,12,municipality,saint-magloire
+19025,Saint-Malachie,Paroisse,12,Chaudière-Appalaches,Bellechasse,1751,12,municipality,saint-malachie
+17020,Saint-Marcel,Municipalité,12,Chaudière-Appalaches,L'Islet,454,12,municipality,saint-marcel
+29045,Saint-Martin,Paroisse,12,Chaudière-Appalaches,Beauce-Sartigan,2688,12,municipality,saint-martin
+19110,Saint-Michel-de-Bellechasse,Municipalité,12,Chaudière-Appalaches,Bellechasse,1897,12,municipality,saint-michel-de-bellechasse
+33030,Saint-Narcisse-de-Beaurivage,Paroisse,12,Chaudière-Appalaches,Lotbinière,1305,12,municipality,saint-narcisse-de-beaurivage
+19015,Saint-Nazaire-de-Dorchester,Paroisse,12,Chaudière-Appalaches,Bellechasse,321,12,municipality,saint-nazaire-de-dorchester
+19045,Saint-Nérée-de-Bellechasse,Municipalité,12,Chaudière-Appalaches,Bellechasse,788,12,municipality,saint-neree-de-bellechasse
+27035,Saint-Odilon-de-Cranbourne,Municipalité,12,Chaudière-Appalaches,Beauce-Centre,1469,12,municipality,saint-odilon-de-cranbourne
+17005,Saint-Omer,Municipalité,12,Chaudière-Appalaches,L'Islet,304,12,municipality,saint-omer
+17010,Saint-Pamphile,Ville,12,Chaudière-Appalaches,L'Islet,2391,12,municipality,saint-pamphile
+33025,Saint-Patrice-de-Beaurivage,Municipalité,12,Chaudière-Appalaches,Lotbinière,1087,12,municipality,saint-patrice-de-beaurivage
+18030,Saint-Paul-de-Montminy,Municipalité,12,Chaudière-Appalaches,Montmagny,806,12,municipality,saint-paul-de-montminy
+29065,Saint-Philibert,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,365,12,municipality,saint-philibert
+19005,Saint-Philémon,Paroisse,12,Chaudière-Appalaches,Bellechasse,714,12,municipality,saint-philemon
+31135,Saint-Pierre-de-Broughton,Municipalité,12,Chaudière-Appalaches,Les Appalaches,928,12,municipality,saint-pierre-de-broughton
+18055,Saint-Pierre-de-la-Rivière-du-Sud,Paroisse,12,Chaudière-Appalaches,Montmagny,847,12,municipality,saint-pierre-de-la-riviere-du-sud
+28020,Saint-Prosper,Municipalité,12,Chaudière-Appalaches,Les Etchemins,4029,12,municipality,saint-prosper
+19082,Saint-Raphaël,Municipalité,12,Chaudière-Appalaches,Bellechasse,2481,12,municipality,saint-raphael
+29050,Saint-René,Paroisse,12,Chaudière-Appalaches,Beauce-Sartigan,1032,12,municipality,saint-rene
+17065,Saint-Roch-des-Aulnaies,Municipalité,12,Chaudière-Appalaches,L'Islet,943,12,municipality,saint-roch-des-aulnaies
+29125,Saint-Simon-les-Mines,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,633,12,municipality,saint-simon-les-mines
+33007,Saint-Sylvestre,Municipalité,12,Chaudière-Appalaches,Lotbinière,1067,12,municipality,saint-sylvestre
+27070,Saint-Séverin,Paroisse,12,Chaudière-Appalaches,Beauce-Centre,309,12,municipality,saint-severin-chaudiere-appalaches
+29005,Saint-Théophile,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,718,12,municipality,saint-theophile
+19117,Saint-Vallier,Municipalité,12,Chaudière-Appalaches,Bellechasse,1022,12,municipality,saint-vallier
+27008,Saint-Victor,Municipalité,12,Chaudière-Appalaches,Beauce-Centre,2351,12,municipality,saint-victor
+28005,Saint-Zacharie,Municipalité,12,Chaudière-Appalaches,Les Etchemins,1694,12,municipality,saint-zacharie
+33080,Saint-Édouard-de-Lotbinière,Paroisse,12,Chaudière-Appalaches,Lotbinière,1293,12,municipality,saint-edouard-de-lotbiniere
+29112,Saint-Éphrem-de-Beauce,Municipalité,12,Chaudière-Appalaches,Beauce-Sartigan,2580,12,municipality,saint-ephrem-de-beauce
+33017,Sainte-Agathe-de-Lotbinière,Municipalité,12,Chaudière-Appalaches,Lotbinière,1037,12,municipality,sainte-agathe-de-lotbiniere
+18025,Sainte-Apolline-de-Patton,Paroisse,12,Chaudière-Appalaches,Montmagny,543,12,municipality,sainte-apolline-de-patton
+28015,Sainte-Aurélie,Municipalité,12,Chaudière-Appalaches,Les Etchemins,905,12,municipality,sainte-aurelie
+19055,Sainte-Claire,Municipalité,12,Chaudière-Appalaches,Bellechasse,3715,12,municipality,sainte-claire
+31060,Sainte-Clotilde-de-Beauce,Municipalité,12,Chaudière-Appalaches,Les Appalaches,574,12,municipality,sainte-clotilde-de-beauce
+33102,Sainte-Croix,Municipalité,12,Chaudière-Appalaches,Lotbinière,2614,12,municipality,sainte-croix
+18035,Sainte-Euphémie-sur-Rivière-du-Sud,Municipalité,12,Chaudière-Appalaches,Montmagny,349,12,municipality,sainte-euphemie-sur-riviere-du-sud
+17025,Sainte-Félicité,Municipalité,12,Chaudière-Appalaches,L'Islet,359,12,municipality,sainte-felicite-chaudiere-appalaches
+26040,Sainte-Hénédine,Paroisse,12,Chaudière-Appalaches,La Nouvelle-Beauce,1549,12,municipality,sainte-henedine
+28045,Sainte-Justine,Municipalité,12,Chaudière-Appalaches,Les Etchemins,1831,12,municipality,sainte-justine
+17060,Sainte-Louise,Paroisse,12,Chaudière-Appalaches,L'Islet,712,12,municipality,sainte-louise
+18020,Sainte-Lucie-de-Beauregard,Municipalité,12,Chaudière-Appalaches,Montmagny,291,12,municipality,sainte-lucie-de-beauregard
+26035,Sainte-Marguerite,Paroisse,12,Chaudière-Appalaches,La Nouvelle-Beauce,1299,12,municipality,sainte-marguerite
+26030,Sainte-Marie,Ville,12,Chaudière-Appalaches,La Nouvelle-Beauce,13938,12,municipality,sainte-marie
+17030,Sainte-Perpétue,Municipalité,12,Chaudière-Appalaches,L'Islet,1700,12,municipality,sainte-perpetue-chaudiere-appalaches
+31050,Sainte-Praxède,Paroisse,12,Chaudière-Appalaches,Les Appalaches,392,12,municipality,sainte-praxede
+28030,Sainte-Rose-de-Watford,Municipalité,12,Chaudière-Appalaches,Les Etchemins,737,12,municipality,sainte-rose-de-watford
+28065,Sainte-Sabine,Paroisse,12,Chaudière-Appalaches,Les Etchemins,352,12,municipality,sainte-sabine-chaudiere-appalaches
+26010,Saints-Anges,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,1369,12,municipality,saints-anges
+26048,Scott,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,2947,12,municipality,scott
+31084,Thetford Mines,Ville,12,Chaudière-Appalaches,Les Appalaches,27075,12,municipality,thetford-mines
+17035,Tourville,Municipalité,12,Chaudière-Appalaches,L'Islet,567,12,municipality,tourville
+27060,Tring-Jonction,Village,12,Chaudière-Appalaches,Beauce-Centre,1634,12,municipality,tring-jonction
+33070,Val-Alain,Municipalité,12,Chaudière-Appalaches,Lotbinière,1080,12,municipality,val-alain
+26015,Vallée-Jonction,Municipalité,12,Chaudière-Appalaches,La Nouvelle-Beauce,2044,12,municipality,vallee-jonction
+65005,Laval,Ville,13,Laval,,459650,13,municipality,laval
+52035,Berthierville,Ville,14,Lanaudière,D'Autray,4601,14,municipality,berthierville
+60005,Charlemagne,Ville,14,Lanaudière,L'Assomption,6658,14,municipality,charlemagne
+62047,Chertsey,Municipalité,14,Lanaudière,Matawinie,5683,14,municipality,chertsey
+61013,Crabtree,Ville,14,Lanaudière,Joliette,4233,14,municipality,crabtree
+62053,Entrelacs,Municipalité,14,Lanaudière,Matawinie,1124,14,municipality,entrelacs
+61025,Joliette,Ville,14,Lanaudière,Joliette,22401,14,municipality,joliette
+60028,L'Assomption,Ville,14,Lanaudière,L'Assomption,25050,14,municipality,l-assomption
+60037,L'Épiphanie,Ville,14,Lanaudière,L'Assomption,9222,14,municipality,l-epiphanie
+52050,La Visitation-de-l'Île-Dupas,Municipalité,14,Lanaudière,D'Autray,715,14,municipality,la-visitation-de-l-ile-dupas
+52017,Lanoraie,Municipalité,14,Lanaudière,D'Autray,5699,14,municipality,lanoraie
+52007,Lavaltrie,Ville,14,Lanaudière,D'Autray,16016,14,municipality,lavaltrie
+52095,Mandeville,Municipalité,14,Lanaudière,D'Autray,2510,14,municipality,mandeville
+64015,Mascouche,Ville,14,Lanaudière,Les Moulins,56649,14,municipality,mascouche
+61045,Notre-Dame-de-Lourdes,Municipalité,14,Lanaudière,Joliette,3326,14,municipality,notre-dame-de-lourdes-lanaudiere
+62055,Notre-Dame-de-la-Merci,Municipalité,14,Lanaudière,Matawinie,1156,14,municipality,notre-dame-de-la-merci
+61030,Notre-Dame-des-Prairies,Ville,14,Lanaudière,Joliette,9627,14,municipality,notre-dame-des-prairies
+62037,Rawdon,Municipalité,14,Lanaudière,Matawinie,13124,14,municipality,rawdon
+60013,Repentigny,Ville,14,Lanaudière,L'Assomption,90815,14,municipality,repentigny
+63023,Saint-Alexis,Municipalité,14,Lanaudière,Montcalm,1467,14,municipality,saint-alexis
+62025,Saint-Alphonse-Rodriguez,Municipalité,14,Lanaudière,Matawinie,3640,14,municipality,saint-alphonse-rodriguez
+61040,Saint-Ambroise-de-Kildare,Municipalité,14,Lanaudière,Joliette,4611,14,municipality,saint-ambroise-de-kildare
+52055,Saint-Barthélemy,Paroisse,14,Lanaudière,D'Autray,2114,14,municipality,saint-barthelemy
+63055,Saint-Calixte,Municipalité,14,Lanaudière,Montcalm,7628,14,municipality,saint-calixte
+61035,Saint-Charles-Borromée,Ville,14,Lanaudière,Joliette,16904,14,municipality,saint-charles-borromee
+52075,Saint-Cléophas-de-Brandon,Municipalité,14,Lanaudière,D'Autray,297,14,municipality,saint-cleophas-de-brandon
+52062,Saint-Cuthbert,Municipalité,14,Lanaudière,D'Autray,1867,14,municipality,saint-cuthbert
+62065,Saint-Côme,Municipalité,14,Lanaudière,Matawinie,2814,14,municipality,saint-come
+62075,Saint-Damien,Paroisse,14,Lanaudière,Matawinie,2573,14,municipality,saint-damien
+52090,Saint-Didace,Paroisse,14,Lanaudière,D'Autray,748,14,municipality,saint-didace
+62060,Saint-Donat,Municipalité,14,Lanaudière,Matawinie,5099,14,municipality,saint-donat-lanaudiere
+63030,Saint-Esprit,Municipalité,14,Lanaudière,Montcalm,2317,14,municipality,saint-esprit
+62007,Saint-Félix-de-Valois,Municipalité,14,Lanaudière,Matawinie,7690,14,municipality,saint-felix-de-valois
+52080,Saint-Gabriel,Ville,14,Lanaudière,D'Autray,3098,14,municipality,saint-gabriel
+52085,Saint-Gabriel-de-Brandon,Municipalité,14,Lanaudière,D'Autray,2916,14,municipality,saint-gabriel-de-brandon
+52045,Saint-Ignace-de-Loyola,Municipalité,14,Lanaudière,D'Autray,2169,14,municipality,saint-ignace-de-loyola
+63013,Saint-Jacques,Municipalité,14,Lanaudière,Montcalm,4837,14,municipality,saint-jacques
+62015,Saint-Jean-de-Matha,Municipalité,14,Lanaudière,Matawinie,5426,14,municipality,saint-jean-de-matha
+63065,Saint-Liguori,Municipalité,14,Lanaudière,Montcalm,2270,14,municipality,saint-liguori
+63048,Saint-Lin–Laurentides,Ville,14,Lanaudière,Montcalm,26715,14,municipality,saint-lin-laurentides
+62085,Saint-Michel-des-Saints,Municipalité,14,Lanaudière,Matawinie,2860,14,municipality,saint-michel-des-saints
+52070,Saint-Norbert,Paroisse,14,Lanaudière,D'Autray,1143,14,municipality,saint-norbert
+61005,Saint-Paul,Municipalité,14,Lanaudière,Joliette,7205,14,municipality,saint-paul
+61020,Saint-Pierre,Village,14,Lanaudière,Joliette,291,14,municipality,saint-pierre
+63040,Saint-Roch-Ouest,Municipalité,14,Lanaudière,Montcalm,278,14,municipality,saint-roch-ouest
+63035,Saint-Roch-de-l'Achigan,Municipalité,14,Lanaudière,Montcalm,5685,14,municipality,saint-roch-de-l-achigan
+60020,Saint-Sulpice,Paroisse,14,Lanaudière,L'Assomption,3671,14,municipality,saint-sulpice
+61027,Saint-Thomas,Municipalité,14,Lanaudière,Joliette,3501,14,municipality,saint-thomas
+62080,Saint-Zénon,Municipalité,14,Lanaudière,Matawinie,1435,14,municipality,saint-zenon
+62020,Sainte-Béatrix,Municipalité,14,Lanaudière,Matawinie,2391,14,municipality,sainte-beatrix
+52040,Sainte-Geneviève-de-Berthier,Municipalité,14,Lanaudière,D'Autray,2297,14,municipality,sainte-genevieve-de-berthier
+63060,Sainte-Julienne,Municipalité,14,Lanaudière,Montcalm,12996,14,municipality,sainte-julienne
+62030,Sainte-Marcelline-de-Kildare,Municipalité,14,Lanaudière,Matawinie,1939,14,municipality,sainte-marcelline-de-kildare
+63005,Sainte-Marie-Salomé,Municipalité,14,Lanaudière,Montcalm,1297,14,municipality,sainte-marie-salome
+61050,Sainte-Mélanie,Municipalité,14,Lanaudière,Joliette,3412,14,municipality,sainte-melanie
+52030,Sainte-Élisabeth,Municipalité,14,Lanaudière,D'Autray,1474,14,municipality,sainte-elisabeth
+62070,Sainte-Émélie-de-l'Énergie,Municipalité,14,Lanaudière,Matawinie,1858,14,municipality,sainte-emelie-de-l-energie
+64008,Terrebonne,Ville,14,Lanaudière,Les Moulins,126199,14,municipality,terrebonne
+78070,Amherst,Canton,15,Laurentides,Les Laurentides,1707,15,municipality,amherst
+78060,Arundel,Canton,15,Laurentides,Les Laurentides,601,15,municipality,arundel
+78050,Barkmere,Ville,15,Laurentides,Les Laurentides,84,15,municipality,barkmere
+73015,Blainville,Ville,15,Laurentides,Thérèse-De Blainville,61742,15,municipality,blainville
+73030,Bois-des-Filion,Ville,15,Laurentides,Thérèse-De Blainville,10657,15,municipality,bois-des-filion
+73005,Boisbriand,Ville,15,Laurentides,Thérèse-De Blainville,29814,15,municipality,boisbriand
+76043,Brownsburg-Chatham,Ville,15,Laurentides,Argenteuil,8491,15,municipality,brownsburg-chatham
+78075,Brébeuf,Municipalité,15,Laurentides,Les Laurentides,1014,15,municipality,brebeuf
+79065,Chute-Saint-Philippe,Municipalité,15,Laurentides,Antoine-Labelle,1155,15,municipality,chute-saint-philippe
+72010,Deux-Montagnes,Ville,15,Laurentides,Deux-Montagnes,18482,15,municipality,deux-montagnes
+77011,Estérel,Ville,15,Laurentides,Les Pays-d'en-Haut,307,15,municipality,esterel
+79097,Ferme-Neuve,Municipalité,15,Laurentides,Antoine-Labelle,2816,15,municipality,ferme-neuve
+76025,Gore,Canton,15,Laurentides,Argenteuil,2765,15,municipality,gore
+76055,Grenville,Village,15,Laurentides,Argenteuil,1896,15,municipality,grenville-laurentides
+76052,Grenville-sur-la-Rouge,Municipalité,15,Laurentides,Argenteuil,3051,15,municipality,grenville-sur-la-rouge
+76065,Harrington,Canton,15,Laurentides,Argenteuil,979,15,municipality,harrington
+78065,Huberdeau,Municipalité,15,Laurentides,Les Laurentides,859,15,municipality,huberdeau
+78042,Ivry-sur-le-Lac,Municipalité,15,Laurentides,Les Laurentides,386,15,municipality,ivry-sur-le-lac
+79025,Kiamika,Municipalité,15,Laurentides,Antoine-Labelle,832,15,municipality,kiamika
+79050,L'Ascension,Municipalité,15,Laurentides,Antoine-Labelle,981,15,municipality,l-ascension
+78115,La Conception,Municipalité,15,Laurentides,Les Laurentides,1694,15,municipality,la-conception
+79047,La Macaza,Municipalité,15,Laurentides,Antoine-Labelle,1138,15,municipality,la-macaza
+78130,La Minerve,Municipalité,15,Laurentides,Les Laurentides,1494,15,municipality,la-minerve
+78120,Labelle,Municipalité,15,Laurentides,Les Laurentides,2868,15,municipality,labelle
+79060,Lac-Saguay,Village,15,Laurentides,Antoine-Labelle,599,15,municipality,lac-saguay
+79105,Lac-Saint-Paul,Municipalité,15,Laurentides,Antoine-Labelle,567,15,municipality,lac-saint-paul
+78095,Lac-Supérieur,Municipalité,15,Laurentides,Les Laurentides,2128,15,municipality,lac-superieur
+78127,Lac-Tremblant-Nord,Municipalité,15,Laurentides,Les Laurentides,83,15,municipality,lac-tremblant-nord
+77055,Lac-des-Seize-Îles,Municipalité,15,Laurentides,Les Pays-d'en-Haut,198,15,municipality,lac-des-seize-iles
+79078,Lac-des-Écorces,Municipalité,15,Laurentides,Antoine-Labelle,3019,15,municipality,lac-des-ecorces
+79015,Lac-du-Cerf,Municipalité,15,Laurentides,Antoine-Labelle,499,15,municipality,lac-du-cerf
+76020,Lachute,Ville,15,Laurentides,Argenteuil,15508,15,municipality,lachute
+78015,Lantier,Municipalité,15,Laurentides,Les Laurentides,974,15,municipality,lantier
+73025,Lorraine,Ville,15,Laurentides,Thérèse-De Blainville,9730,15,municipality,lorraine
+76030,Mille-Isles,Municipalité,15,Laurentides,Argenteuil,1893,15,municipality,mille-isles
+74005,Mirabel,Ville,15,Laurentides,,68402,15,municipality,mirabel
+78047,Mont-Blanc,Municipalité,15,Laurentides,Les Laurentides,4030,15,municipality,mont-blanc
+79088,Mont-Laurier,Ville,15,Laurentides,Antoine-Labelle,14602,15,municipality,mont-laurier
+79110,Mont-Saint-Michel,Municipalité,15,Laurentides,Antoine-Labelle,597,15,municipality,mont-saint-michel
+78102,Mont-Tremblant,Ville,15,Laurentides,Les Laurentides,12026,15,municipality,mont-tremblant
+78055,Montcalm,Municipalité,15,Laurentides,Les Laurentides,671,15,municipality,montcalm
+77050,Morin-Heights,Municipalité,15,Laurentides,Les Pays-d'en-Haut,5047,15,municipality,morin-heights
+79030,Nominingue,Municipalité,15,Laurentides,Antoine-Labelle,2288,15,municipality,nominingue
+79010,Notre-Dame-de-Pontmain,Municipalité,15,Laurentides,Antoine-Labelle,884,15,municipality,notre-dame-de-pontmain
+79005,Notre-Dame-du-Laus,Municipalité,15,Laurentides,Antoine-Labelle,1910,15,municipality,notre-dame-du-laus
+72032,Oka,Municipalité,15,Laurentides,Deux-Montagnes,6124,15,municipality,oka
+77030,Piedmont,Municipalité,15,Laurentides,Les Pays-d'en-Haut,3653,15,municipality,piedmont
+72020,Pointe-Calumet,Municipalité,15,Laurentides,Deux-Montagnes,6422,15,municipality,pointe-calumet
+75040,Prévost,Ville,15,Laurentides,La Rivière-du-Nord,14286,15,municipality,prevost
+79037,Rivière-Rouge,Ville,15,Laurentides,Antoine-Labelle,4883,15,municipality,riviere-rouge
+73020,Rosemère,Ville,15,Laurentides,Thérèse-De Blainville,14204,15,municipality,rosemere
+77065,Saint-Adolphe-d'Howard,Municipalité,15,Laurentides,Les Pays-d'en-Haut,4009,15,municipality,saint-adolphe-d-howard
+79022,Saint-Aimé-du-Lac-des-Îles,Municipalité,15,Laurentides,Antoine-Labelle,842,15,municipality,saint-aime-du-lac-des-iles
+76008,Saint-André-d'Argenteuil,Municipalité,15,Laurentides,Argenteuil,3309,15,municipality,saint-andre-d-argenteuil
+75005,Saint-Colomban,Ville,15,Laurentides,La Rivière-du-Nord,19127,15,municipality,saint-colomban
+72005,Saint-Eustache,Ville,15,Laurentides,Deux-Montagnes,47448,15,municipality,saint-eustache
+75045,Saint-Hippolyte,Municipalité,15,Laurentides,La Rivière-du-Nord,12563,15,municipality,saint-hippolyte
+72025,Saint-Joseph-du-Lac,Municipalité,15,Laurentides,Deux-Montagnes,7368,15,municipality,saint-joseph-du-lac
+75017,Saint-Jérôme,Ville,15,Laurentides,La Rivière-du-Nord,85366,15,municipality,saint-jerome
+72043,Saint-Placide,Municipalité,15,Laurentides,Deux-Montagnes,1747,15,municipality,saint-placide
+77043,Saint-Sauveur,Ville,15,Laurentides,Les Pays-d'en-Haut,12145,15,municipality,saint-sauveur
+77022,Sainte-Adèle,Ville,15,Laurentides,Les Pays-d'en-Haut,15286,15,municipality,sainte-adele
+78032,Sainte-Agathe-des-Monts,Ville,15,Laurentides,Les Laurentides,12213,15,municipality,sainte-agathe-des-monts
+77035,Sainte-Anne-des-Lacs,Paroisse,15,Laurentides,Les Pays-d'en-Haut,4100,15,municipality,sainte-anne-des-lacs
+73035,Sainte-Anne-des-Plaines,Ville,15,Laurentides,Thérèse-De Blainville,15874,15,municipality,sainte-anne-des-plaines
+79115,Sainte-Anne-du-Lac,Municipalité,15,Laurentides,Antoine-Labelle,572,15,municipality,sainte-anne-du-lac
+78020,Sainte-Lucie-des-Laurentides,Municipalité,15,Laurentides,Les Laurentides,1653,15,municipality,sainte-lucie-des-laurentides
+77012,Sainte-Marguerite-du-Lac-Masson,Ville,15,Laurentides,Les Pays-d'en-Haut,3875,15,municipality,sainte-marguerite-du-lac-masson
+72015,Sainte-Marthe-sur-le-Lac,Ville,15,Laurentides,Deux-Montagnes,21914,15,municipality,sainte-marthe-sur-le-lac
+75028,Sainte-Sophie,Municipalité,15,Laurentides,La Rivière-du-Nord,19478,15,municipality,sainte-sophie
+73010,Sainte-Thérèse,Ville,15,Laurentides,Thérèse-De Blainville,27230,15,municipality,sainte-therese
+78010,Val-David,Village,15,Laurentides,Les Laurentides,5932,15,municipality,val-david
+78005,Val-Morin,Municipalité,15,Laurentides,Les Laurentides,3235,15,municipality,val-morin
+78100,Val-des-Lacs,Municipalité,15,Laurentides,Les Laurentides,802,15,municipality,val-des-lacs
+76035,Wentworth,Canton,15,Laurentides,Argenteuil,689,15,municipality,wentworth
+77060,Wentworth-Nord,Municipalité,15,Laurentides,Les Pays-d'en-Haut,1815,15,municipality,wentworth-nord
+48028,Acton Vale,Ville,16,Montérégie,Acton,7996,16,municipality,acton-vale
+55008,Ange-Gardien,Municipalité,16,Montérégie,Rouville,3068,16,municipality,ange-gardien
+70022,Beauharnois,Ville,16,Montérégie,Beauharnois-Salaberry,15313,16,municipality,beauharnois
+57040,Beloeil,Ville,16,Montérégie,La Vallée-du-Richelieu,25318,16,municipality,beloeil
+58033,Boucherville,Ville,16,Montérégie,,42067,16,municipality,boucherville
+58007,Brossard,Ville,16,Montérégie,,98240,16,municipality,brossard
+48005,Béthanie,Municipalité,16,Montérégie,Acton,335,16,municipality,bethanie
+59030,Calixa-Lavallée,Municipalité,16,Montérégie,Marguerite-D'Youville,527,16,municipality,calixa-lavallee
+67020,Candiac,Ville,16,Montérégie,Roussillon,24919,16,municipality,candiac
+57010,Carignan,Ville,16,Montérégie,La Vallée-du-Richelieu,12657,16,municipality,carignan
+57005,Chambly,Ville,16,Montérégie,La Vallée-du-Richelieu,31966,16,municipality,chambly
+67050,Châteauguay,Ville,16,Montérégie,Roussillon,53484,16,municipality,chateauguay
+56010,Clarenceville,Municipalité,16,Montérégie,Le Haut-Richelieu,1273,16,municipality,clarenceville
+59035,Contrecoeur,Ville,16,Montérégie,Marguerite-D'Youville,10695,16,municipality,contrecoeur
+71040,Coteau-du-Lac,Ville,16,Montérégie,Vaudreuil-Soulanges,7846,16,municipality,coteau-du-lac
+67025,Delson,Ville,16,Montérégie,Roussillon,8802,16,municipality,delson
+69075,Dundee,Canton,16,Montérégie,Le Haut-Saint-Laurent,383,16,municipality,dundee
+69050,Elgin,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,393,16,municipality,elgin
+69010,Franklin,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,1771,16,municipality,franklin
+69060,Godmanchester,Canton,16,Montérégie,Le Haut-Saint-Laurent,1596,16,municipality,godmanchester
+69005,Havelock,Canton,16,Montérégie,Le Haut-Saint-Laurent,749,16,municipality,havelock
+68015,Hemmingford,Canton,16,Montérégie,Les Jardins-de-Napierville,2198,16,municipality,hemmingford-monteregie-canton
+68010,Hemmingford,Village,16,Montérégie,Les Jardins-de-Napierville,914,16,municipality,hemmingford-monteregie-village
+56042,Henryville,Municipalité,16,Montérégie,Le Haut-Richelieu,1664,16,municipality,henryville
+69045,Hinchinbrooke,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,2358,16,municipality,hinchinbrooke
+69025,Howick,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,871,16,municipality,howick
+71100,Hudson,Ville,16,Montérégie,Vaudreuil-Soulanges,5540,16,municipality,hudson
+69055,Huntingdon,Ville,16,Montérégie,Le Haut-Saint-Laurent,3016,16,municipality,huntingdon
+71095,L'Île-Cadieux,Ville,16,Montérégie,Vaudreuil-Soulanges,119,16,municipality,l-ile-cadieux
+71060,L'Île-Perrot,Ville,16,Montérégie,Vaudreuil-Soulanges,11924,16,municipality,l-ile-perrot
+67015,La Prairie,Ville,16,Montérégie,Roussillon,27145,16,municipality,la-prairie
+54035,La Présentation,Municipalité,16,Montérégie,Les Maskoutains,2695,16,municipality,la-presentation
+56023,Lacolle,Municipalité,16,Montérégie,Le Haut-Richelieu,2804,16,municipality,lacolle
+71033,Les Coteaux,Municipalité,16,Montérégie,Vaudreuil-Soulanges,6295,16,municipality,les-coteaux
+71050,Les Cèdres,Municipalité,16,Montérégie,Vaudreuil-Soulanges,7150,16,municipality,les-cedres
+58227,Longueuil,Ville,16,Montérégie,,268546,16,municipality,longueuil
+67055,Léry,Ville,16,Montérégie,Roussillon,2820,16,municipality,lery
+55048,Marieville,Ville,16,Montérégie,Rouville,11947,16,municipality,marieville
+53010,Massueville,Village,16,Montérégie,Pierre-De Saurel,556,16,municipality,massueville
+57025,McMasterville,Ville,16,Montérégie,La Vallée-du-Richelieu,6134,16,municipality,mcmasterville
+67045,Mercier,Ville,16,Montérégie,Roussillon,16032,16,municipality,mercier
+56097,Mont-Saint-Grégoire,Municipalité,16,Montérégie,Le Haut-Richelieu,3158,16,municipality,mont-saint-gregoire
+57035,Mont-Saint-Hilaire,Ville,16,Montérégie,La Vallée-du-Richelieu,19501,16,municipality,mont-saint-hilaire
+68030,Napierville,Municipalité,16,Montérégie,Les Jardins-de-Napierville,4177,16,municipality,napierville
+71065,Notre-Dame-de-l'Île-Perrot,Ville,16,Montérégie,Vaudreuil-Soulanges,11727,16,municipality,notre-dame-de-l-ile-perrot
+56015,Noyan,Municipalité,16,Montérégie,Le Haut-Richelieu,1576,16,municipality,noyan
+69037,Ormstown,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,4277,16,municipality,ormstown
+57030,Otterburn Park,Ville,16,Montérégie,La Vallée-du-Richelieu,9487,16,municipality,otterburn-park
+71070,Pincourt,Ville,16,Montérégie,Vaudreuil-Soulanges,15233,16,municipality,pincourt
+71140,Pointe-Fortune,Municipalité,16,Montérégie,Vaudreuil-Soulanges,641,16,municipality,pointe-fortune
+71055,Pointe-des-Cascades,Village,16,Montérégie,Vaudreuil-Soulanges,1870,16,municipality,pointe-des-cascades
+55057,Richelieu,Ville,16,Montérégie,Rouville,6070,16,municipality,richelieu
+71133,Rigaud,Ville,16,Montérégie,Vaudreuil-Soulanges,8167,16,municipality,rigaud
+71005,Rivière-Beaudette,Municipalité,16,Montérégie,Vaudreuil-Soulanges,2801,16,municipality,riviere-beaudette
+55037,Rougemont,Municipalité,16,Montérégie,Rouville,2821,16,municipality,rougemont
+48015,Roxton,Canton,16,Montérégie,Acton,1186,16,municipality,roxton
+48010,Roxton Falls,Village,16,Montérégie,Acton,1405,16,municipality,roxton-falls
+53015,Saint-Aimé,Municipalité,16,Montérégie,Pierre-De Saurel,446,16,municipality,saint-aime
+56055,Saint-Alexandre,Municipalité,16,Montérégie,Le Haut-Richelieu,2684,16,municipality,saint-alexandre
+59015,Saint-Amable,Ville,16,Montérégie,Marguerite-D'Youville,14129,16,municipality,saint-amable
+69070,Saint-Anicet,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,2868,16,municipality,saint-anicet
+57075,Saint-Antoine-sur-Richelieu,Municipalité,16,Montérégie,La Vallée-du-Richelieu,1875,16,municipality,saint-antoine-sur-richelieu
+54105,Saint-Barnabé-Sud,Municipalité,16,Montérégie,Les Maskoutains,1051,16,municipality,saint-barnabe-sud
+57020,Saint-Basile-le-Grand,Ville,16,Montérégie,La Vallée-du-Richelieu,17196,16,municipality,saint-basile-le-grand
+68005,Saint-Bernard-de-Lacolle,Municipalité,16,Montérégie,Les Jardins-de-Napierville,1648,16,municipality,saint-bernard-de-lacolle
+54115,Saint-Bernard-de-Michaudville,Municipalité,16,Montérégie,Les Maskoutains,649,16,municipality,saint-bernard-de-michaudville
+56065,Saint-Blaise-sur-Richelieu,Municipalité,16,Montérégie,Le Haut-Richelieu,2162,16,municipality,saint-blaise-sur-richelieu
+58037,Saint-Bruno-de-Montarville,Ville,16,Montérégie,,26887,16,municipality,saint-bruno-de-montarville
+57057,Saint-Charles-sur-Richelieu,Municipalité,16,Montérégie,La Vallée-du-Richelieu,1863,16,municipality,saint-charles-sur-richelieu
+69017,Saint-Chrysostome,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,2653,16,municipality,saint-chrysostome
+71045,Saint-Clet,Municipalité,16,Montérégie,Vaudreuil-Soulanges,1779,16,municipality,saint-clet
+67035,Saint-Constant,Ville,16,Montérégie,Roussillon,32108,16,municipality,saint-constant
+68035,Saint-Cyprien-de-Napierville,Municipalité,16,Montérégie,Les Jardins-de-Napierville,1777,16,municipality,saint-cyprien-de-napierville
+55023,Saint-Césaire,Ville,16,Montérégie,Rouville,6157,16,municipality,saint-cesaire
+54017,Saint-Damase,Municipalité,16,Montérégie,Les Maskoutains,2391,16,municipality,saint-damase-monteregie
+53005,Saint-David,Municipalité,16,Montérégie,Pierre-De Saurel,870,16,municipality,saint-david
+57068,Saint-Denis-sur-Richelieu,Municipalité,16,Montérégie,La Vallée-du-Richelieu,2436,16,municipality,saint-denis-sur-richelieu
+54060,Saint-Dominique,Municipalité,16,Montérégie,Les Maskoutains,3062,16,municipality,saint-dominique
+53085,Saint-Gérard-Majella,Paroisse,16,Montérégie,Pierre-De Saurel,250,16,municipality,saint-gerard-majella
+54100,Saint-Hugues,Municipalité,16,Montérégie,Les Maskoutains,1414,16,municipality,saint-hugues
+54048,Saint-Hyacinthe,Ville,16,Montérégie,Les Maskoutains,60881,16,municipality,saint-hyacinthe
+67040,Saint-Isidore,Paroisse,16,Montérégie,Roussillon,2879,16,municipality,saint-isidore-monteregie
+68040,Saint-Jacques-le-Mineur,Municipalité,16,Montérégie,Les Jardins-de-Napierville,1900,16,municipality,saint-jacques-le-mineur
+57033,Saint-Jean-Baptiste,Municipalité,16,Montérégie,La Vallée-du-Richelieu,3335,16,municipality,saint-jean-baptiste
+56083,Saint-Jean-sur-Richelieu,Ville,16,Montérégie,Le Haut-Richelieu,100967,16,municipality,saint-jean-sur-richelieu
+53050,Saint-Joseph-de-Sorel,Ville,16,Montérégie,Pierre-De Saurel,1592,16,municipality,saint-joseph-de-sorel
+54110,Saint-Jude,Municipalité,16,Montérégie,Les Maskoutains,1402,16,municipality,saint-jude
+58012,Saint-Lambert,Ville,16,Montérégie,,23472,16,municipality,saint-lambert-monteregie
+71105,Saint-Lazare,Ville,16,Montérégie,Vaudreuil-Soulanges,22917,16,municipality,saint-lazare
+54072,Saint-Liboire,Municipalité,16,Montérégie,Les Maskoutains,3124,16,municipality,saint-liboire
+54120,Saint-Louis,Municipalité,16,Montérégie,Les Maskoutains,746,16,municipality,saint-louis
+70035,Saint-Louis-de-Gonzague,Paroisse,16,Montérégie,Beauharnois-Salaberry,2541,16,municipality,saint-louis-de-gonzague-monteregie
+57050,Saint-Marc-sur-Richelieu,Municipalité,16,Montérégie,La Vallée-du-Richelieu,2281,16,municipality,saint-marc-sur-richelieu
+54125,Saint-Marcel-de-Richelieu,Municipalité,16,Montérégie,Les Maskoutains,497,16,municipality,saint-marcel-de-richelieu
+55065,Saint-Mathias-sur-Richelieu,Municipalité,16,Montérégie,Rouville,4626,16,municipality,saint-mathias-sur-richelieu
+67005,Saint-Mathieu,Municipalité,16,Montérégie,Roussillon,2643,16,municipality,saint-mathieu
+57045,Saint-Mathieu-de-Beloeil,Municipalité,16,Montérégie,La Vallée-du-Richelieu,3019,16,municipality,saint-mathieu-de-beloeil
+68050,Saint-Michel,Municipalité,16,Montérégie,Les Jardins-de-Napierville,3658,16,municipality,saint-michel
+48050,Saint-Nazaire-d'Acton,Paroisse,16,Montérégie,Acton,915,16,municipality,saint-nazaire-d-acton
+53032,Saint-Ours,Ville,16,Montérégie,Pierre-De Saurel,1809,16,municipality,saint-ours
+68025,Saint-Patrice-de-Sherrington,Municipalité,16,Montérégie,Les Jardins-de-Napierville,2039,16,municipality,saint-patrice-de-sherrington
+55015,Saint-Paul-d'Abbotsford,Municipalité,16,Montérégie,Rouville,2872,16,municipality,saint-paul-d-abbotsford
+56035,Saint-Paul-de-l'Île-aux-Noix,Municipalité,16,Montérégie,Le Haut-Richelieu,2320,16,municipality,saint-paul-de-l-ile-aux-noix
+67010,Saint-Philippe,Ville,16,Montérégie,Roussillon,8674,16,municipality,saint-philippe
+54008,Saint-Pie,Ville,16,Montérégie,Les Maskoutains,6084,16,municipality,saint-pie
+71020,Saint-Polycarpe,Municipalité,16,Montérégie,Vaudreuil-Soulanges,2542,16,municipality,saint-polycarpe
+53020,Saint-Robert,Municipalité,16,Montérégie,Pierre-De Saurel,1841,16,municipality,saint-robert
+53040,Saint-Roch-de-Richelieu,Municipalité,16,Montérégie,Pierre-De Saurel,2978,16,municipality,saint-roch-de-richelieu
+68055,Saint-Rémi,Ville,16,Montérégie,Les Jardins-de-Napierville,9532,16,municipality,saint-remi
+54090,Saint-Simon,Municipalité,16,Montérégie,Les Maskoutains,1473,16,municipality,saint-simon
+70040,Saint-Stanislas-de-Kostka,Municipalité,16,Montérégie,Beauharnois-Salaberry,2164,16,municipality,saint-stanislas-de-kostka
+56050,Saint-Sébastien,Municipalité,16,Montérégie,Le Haut-Richelieu,706,16,municipality,saint-sebastien-monteregie
+48045,Saint-Théodore-d'Acton,Municipalité,16,Montérégie,Acton,1658,16,municipality,saint-theodore-d-acton
+71015,Saint-Télesphore,Municipalité,16,Montérégie,Vaudreuil-Soulanges,822,16,municipality,saint-telesphore
+70005,Saint-Urbain-Premier,Municipalité,16,Montérégie,Beauharnois-Salaberry,1382,16,municipality,saint-urbain-premier
+56030,Saint-Valentin,Municipalité,16,Montérégie,Le Haut-Richelieu,467,16,municipality,saint-valentin
+54065,Saint-Valérien-de-Milton,Municipalité,16,Montérégie,Les Maskoutains,1793,16,municipality,saint-valerien-de-milton
+71025,Saint-Zotique,Ville,16,Montérégie,Vaudreuil-Soulanges,10452,16,municipality,saint-zotique
+68045,Saint-Édouard,Municipalité,16,Montérégie,Les Jardins-de-Napierville,1431,16,municipality,saint-edouard
+70030,Saint-Étienne-de-Beauharnois,Municipalité,16,Montérégie,Beauharnois-Salaberry,1151,16,municipality,saint-etienne-de-beauharnois
+55030,Sainte-Angèle-de-Monnoir,Municipalité,16,Montérégie,Rouville,1873,16,municipality,sainte-angele-de-monnoir
+56060,Sainte-Anne-de-Sabrevois,Paroisse,16,Montérégie,Le Haut-Richelieu,2307,16,municipality,sainte-anne-de-sabrevois
+53065,Sainte-Anne-de-Sorel,Municipalité,16,Montérégie,Pierre-De Saurel,2766,16,municipality,sainte-anne-de-sorel
+69065,Sainte-Barbe,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,1999,16,municipality,sainte-barbe
+56105,Sainte-Brigide-d'Iberville,Municipalité,16,Montérégie,Le Haut-Richelieu,1540,16,municipality,sainte-brigide-d-iberville
+67030,Sainte-Catherine,Ville,16,Montérégie,Roussillon,17780,16,municipality,sainte-catherine
+48020,Sainte-Christine,Paroisse,16,Montérégie,Acton,827,16,municipality,sainte-christine
+68020,Sainte-Clotilde,Municipalité,16,Montérégie,Les Jardins-de-Napierville,3278,16,municipality,sainte-clotilde
+54095,Sainte-Hélène-de-Bagot,Municipalité,16,Montérégie,Les Maskoutains,1885,16,municipality,sainte-helene-de-bagot
+59010,Sainte-Julie,Ville,16,Montérégie,Marguerite-D'Youville,30987,16,municipality,sainte-julie
+71115,Sainte-Justine-de-Newton,Municipalité,16,Montérégie,Vaudreuil-Soulanges,987,16,municipality,sainte-justine-de-newton
+54025,Sainte-Madeleine,Village,16,Montérégie,Les Maskoutains,2387,16,municipality,sainte-madeleine
+54030,Sainte-Marie-Madeleine,Paroisse,16,Montérégie,Les Maskoutains,2939,16,municipality,sainte-marie-madeleine
+71110,Sainte-Marthe,Municipalité,16,Montérégie,Vaudreuil-Soulanges,1063,16,municipality,sainte-marthe
+70012,Sainte-Martine,Municipalité,16,Montérégie,Beauharnois-Salaberry,5891,16,municipality,sainte-martine
+53025,Sainte-Victoire-de-Sorel,Municipalité,16,Montérégie,Pierre-De Saurel,2593,16,municipality,sainte-victoire-de-sorel
+70052,Salaberry-de-Valleyfield,Ville,16,Montérégie,Beauharnois-Salaberry,47098,16,municipality,salaberry-de-valleyfield
+53052,Sorel-Tracy,Ville,16,Montérégie,Pierre-De Saurel,36386,16,municipality,sorel-tracy
+71075,Terrasse-Vaudreuil,Municipalité,16,Montérégie,Vaudreuil-Soulanges,1887,16,municipality,terrasse-vaudreuil
+71125,Très-Saint-Rédempteur,Municipalité,16,Montérégie,Vaudreuil-Soulanges,1160,16,municipality,tres-saint-redempteur
+69030,Très-Saint-Sacrement,Municipalité,16,Montérégie,Le Haut-Saint-Laurent,1230,16,municipality,tres-saint-sacrement
+48038,Upton,Municipalité,16,Montérégie,Acton,2169,16,municipality,upton
+59020,Varennes,Ville,16,Montérégie,Marguerite-D'Youville,21505,16,municipality,varennes
+71083,Vaudreuil-Dorion,Ville,16,Montérégie,Vaudreuil-Soulanges,46423,16,municipality,vaudreuil-dorion
+71090,Vaudreuil-sur-le-Lac,Village,16,Montérégie,Vaudreuil-Soulanges,1342,16,municipality,vaudreuil-sur-le-lac
+56005,Venise-en-Québec,Municipalité,16,Montérégie,Le Haut-Richelieu,2251,16,municipality,venise-en-quebec
+59025,Verchères,Municipalité,16,Montérégie,Marguerite-D'Youville,5823,16,municipality,vercheres
+53072,Yamaska,Municipalité,16,Montérégie,Pierre-De Saurel,1810,16,municipality,yamaska
+50013,Aston-Jonction,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,437,17,municipality,aston-jonction
+50100,Baie-du-Febvre,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,1024,17,municipality,baie-du-febvre
+38010,Bécancour,Ville,17,Centre-du-Québec,Bécancour,14788,17,municipality,becancour
+39030,Chesterville,Municipalité,17,Centre-du-Québec,Arthabaska,883,17,municipality,chesterville
+39152,Daveluyville,Ville,17,Centre-du-Québec,Arthabaska,2479,17,municipality,daveluyville
+38070,Deschaillons-sur-Saint-Laurent,Municipalité,17,Centre-du-Québec,Bécancour,947,17,municipality,deschaillons-sur-saint-laurent
+49058,Drummondville,Ville,17,Centre-du-Québec,Drummond,85601,17,municipality,drummondville
+49015,Durham-Sud,Municipalité,17,Centre-du-Québec,Drummond,1045,17,municipality,durham-sud
+38047,Fortierville,Municipalité,17,Centre-du-Québec,Bécancour,681,17,municipality,fortierville
+50065,Grand-Saint-Esprit,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,475,17,municipality,grand-saint-esprit
+39010,Ham-Nord,Canton,17,Centre-du-Québec,Arthabaska,977,17,municipality,ham-nord
+32058,Inverness,Municipalité,17,Centre-du-Québec,L'Érable,972,17,municipality,inverness
+39097,Kingsey Falls,Ville,17,Centre-du-Québec,Arthabaska,2069,17,municipality,kingsey-falls
+49025,L'Avenir,Municipalité,17,Centre-du-Québec,Drummond,1454,17,municipality,l-avenir
+50085,La Visitation-de-Yamaska,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,307,17,municipality,la-visitation-de-yamaska
+32072,Laurierville,Municipalité,17,Centre-du-Québec,L'Érable,1366,17,municipality,laurierville
+49020,Lefebvre,Municipalité,17,Centre-du-Québec,Drummond,918,17,municipality,lefebvre
+38020,Lemieux,Municipalité,17,Centre-du-Québec,Bécancour,289,17,municipality,lemieux
+32065,Lyster,Municipalité,17,Centre-du-Québec,L'Érable,1684,17,municipality,lyster
+39165,Maddington Falls,Municipalité,17,Centre-du-Québec,Arthabaska,445,17,municipality,maddington-falls
+38028,Manseau,Municipalité,17,Centre-du-Québec,Bécancour,875,17,municipality,manseau
+50072,Nicolet,Ville,17,Centre-du-Québec,Nicolet-Yamaska,8746,17,municipality,nicolet
+39015,Notre-Dame-de-Ham,Municipalité,17,Centre-du-Québec,Arthabaska,408,17,municipality,notre-dame-de-ham
+32080,Notre-Dame-de-Lourdes,Paroisse,17,Centre-du-Québec,L'Érable,817,17,municipality,notre-dame-de-lourdes-centre-du-quebec
+49075,Notre-Dame-du-Bon-Conseil,Village,17,Centre-du-Québec,Drummond,1952,17,municipality,notre-dame-du-bon-conseil-centre-du-quebec-village
+49080,Notre-Dame-du-Bon-Conseil,Paroisse,17,Centre-du-Québec,Drummond,998,17,municipality,notre-dame-du-bon-conseil-centre-du-quebec-paroisse
+38055,Parisville,Paroisse,17,Centre-du-Québec,Bécancour,523,17,municipality,parisville
+50113,Pierreville,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,2164,17,municipality,pierreville
+32043,Plessisville,Ville,17,Centre-du-Québec,L'Érable,9548,17,municipality,plessisville
+32033,Princeville,Ville,17,Centre-du-Québec,L'Érable,6416,17,municipality,princeville
+39085,Saint-Albert,Municipalité,17,Centre-du-Québec,Arthabaska,1743,17,municipality,saint-albert
+49125,Saint-Bonaventure,Municipalité,17,Centre-du-Québec,Drummond,1085,17,municipality,saint-bonaventure
+39060,Saint-Christophe-d'Arthabaska,Paroisse,17,Centre-du-Québec,Arthabaska,3304,17,municipality,saint-christophe-d-arthabaska
+49070,Saint-Cyrille-de-Wendover,Municipalité,17,Centre-du-Québec,Drummond,5244,17,municipality,saint-cyrille-de-wendover
+50035,Saint-Célestin,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,607,17,municipality,saint-celestin-centre-du-quebec-municipalite
+50030,Saint-Célestin,Village,17,Centre-du-Québec,Nicolet-Yamaska,915,17,municipality,saint-celestin-centre-du-quebec-village
+49100,Saint-Edmond-de-Grantham,Municipalité,17,Centre-du-Québec,Drummond,829,17,municipality,saint-edmond-de-grantham
+50095,Saint-Elphège,Paroisse,17,Centre-du-Québec,Nicolet-Yamaska,249,17,municipality,saint-elphege
+49105,Saint-Eugène,Municipalité,17,Centre-du-Québec,Drummond,1184,17,municipality,saint-eugene
+32013,Saint-Ferdinand,Municipalité,17,Centre-du-Québec,L'Érable,2080,17,municipality,saint-ferdinand
+50128,Saint-François-du-Lac,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,1927,17,municipality,saint-francois-du-lac
+49005,Saint-Félix-de-Kingsey,Municipalité,17,Centre-du-Québec,Drummond,1557,17,municipality,saint-felix-de-kingsey
+49048,Saint-Germain-de-Grantham,Municipalité,17,Centre-du-Québec,Drummond,5055,17,municipality,saint-germain-de-grantham
+49113,Saint-Guillaume,Municipalité,17,Centre-du-Québec,Drummond,1495,17,municipality,saint-guillaume
+39170,Saint-Louis-de-Blandford,Municipalité,17,Centre-du-Québec,Arthabaska,1065,17,municipality,saint-louis-de-blandford
+49030,Saint-Lucien,Municipalité,17,Centre-du-Québec,Drummond,1944,17,municipality,saint-lucien
+50042,Saint-Léonard-d'Aston,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,2666,17,municipality,saint-leonard-d-aston
+49095,Saint-Majorique-de-Grantham,Paroisse,17,Centre-du-Québec,Drummond,1372,17,municipality,saint-majorique-de-grantham
+39043,Saint-Norbert-d'Arthabaska,Municipalité,17,Centre-du-Québec,Arthabaska,1290,17,municipality,saint-norbert-d-arthabaska
+49130,Saint-Pie-de-Guire,Paroisse,17,Centre-du-Québec,Drummond,463,17,municipality,saint-pie-de-guire
+32050,Saint-Pierre-Baptiste,Paroisse,17,Centre-du-Québec,L'Érable,623,17,municipality,saint-pierre-baptiste
+38065,Saint-Pierre-les-Becquets,Municipalité,17,Centre-du-Québec,Bécancour,1200,17,municipality,saint-pierre-les-becquets
+39145,Saint-Rosaire,Paroisse,17,Centre-du-Québec,Arthabaska,943,17,municipality,saint-rosaire
+39020,Saint-Rémi-de-Tingwick,Municipalité,17,Centre-du-Québec,Arthabaska,458,17,municipality,saint-remi-de-tingwick
+39130,Saint-Samuel,Municipalité,17,Centre-du-Québec,Arthabaska,782,17,municipality,saint-samuel
+38005,Saint-Sylvère,Municipalité,17,Centre-du-Québec,Bécancour,790,17,municipality,saint-sylvere
+39135,Saint-Valère,Municipalité,17,Centre-du-Québec,Arthabaska,1185,17,municipality,saint-valere
+50023,Saint-Wenceslas,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,1207,17,municipality,saint-wenceslas
+50090,Saint-Zéphirin-de-Courval,Paroisse,17,Centre-du-Québec,Nicolet-Yamaska,748,17,municipality,saint-zephirin-de-courval
+49085,Sainte-Brigitte-des-Saults,Paroisse,17,Centre-du-Québec,Drummond,830,17,municipality,sainte-brigitte-des-saults
+39117,Sainte-Clotilde-de-Horton,Municipalité,17,Centre-du-Québec,Arthabaska,1645,17,municipality,sainte-clotilde-de-horton
+38060,Sainte-Cécile-de-Lévrard,Paroisse,17,Centre-du-Québec,Bécancour,343,17,municipality,sainte-cecile-de-levrard
+50005,Sainte-Eulalie,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,1064,17,municipality,sainte-eulalie
+38035,Sainte-Françoise,Municipalité,17,Centre-du-Québec,Bécancour,470,17,municipality,sainte-francoise-centre-du-quebec
+39035,Sainte-Hélène-de-Chester,Municipalité,17,Centre-du-Québec,Arthabaska,411,17,municipality,sainte-helene-de-chester
+38015,Sainte-Marie-de-Blandford,Municipalité,17,Centre-du-Québec,Bécancour,480,17,municipality,sainte-marie-de-blandford
+50057,Sainte-Monique,Municipalité,17,Centre-du-Québec,Nicolet-Yamaska,524,17,municipality,sainte-monique-centre-du-quebec
+50050,Sainte-Perpétue,Paroisse,17,Centre-du-Québec,Nicolet-Yamaska,965,17,municipality,sainte-perpetue-centre-du-quebec
+32023,Sainte-Sophie-d'Halifax,Municipalité,17,Centre-du-Québec,L'Érable,607,17,municipality,sainte-sophie-d-halifax
+38040,Sainte-Sophie-de-Lévrard,Paroisse,17,Centre-du-Québec,Bécancour,770,17,municipality,sainte-sophie-de-levrard
+39105,Sainte-Séraphine,Paroisse,17,Centre-du-Québec,Arthabaska,459,17,municipality,sainte-seraphine
+39090,Sainte-Élizabeth-de-Warwick,Municipalité,17,Centre-du-Québec,Arthabaska,398,17,municipality,sainte-elizabeth-de-warwick
+39005,Saints-Martyrs-Canadiens,Paroisse,17,Centre-du-Québec,Arthabaska,316,17,municipality,saints-martyrs-canadiens
+39025,Tingwick,Municipalité,17,Centre-du-Québec,Arthabaska,1565,17,municipality,tingwick
+39062,Victoriaville,Ville,17,Centre-du-Québec,Arthabaska,49854,17,municipality,victoriaville
+32085,Villeroy,Municipalité,17,Centre-du-Québec,L'Érable,512,17,municipality,villeroy
+39077,Warwick,Ville,17,Centre-du-Québec,Arthabaska,4937,17,municipality,warwick
+49040,Wickham,Municipalité,17,Centre-du-Québec,Drummond,2746,17,municipality,wickham
+REC01,MacNider,Arrondissement,01,Bas-Saint-Laurent,La Mitis,,09048,borough,macnider
+REQ05,Beauport,Arrondissement,03,Capitale-Nationale,,,23027,borough,beauport
+REQ04,Charlesbourg,Arrondissement,03,Capitale-Nationale,,,23027,borough,charlesbourg
+REQ01,La Cité-Limoilou,Arrondissement,03,Capitale-Nationale,,,23027,borough,la-cite-limoilou
+REQ06,La Haute-Saint-Charles,Arrondissement,03,Capitale-Nationale,,,23027,borough,la-haute-saint-charles
+REQ02,Les Rivières,Arrondissement,03,Capitale-Nationale,,,23027,borough,les-rivieres
+REQ03,Sainte-Foy–Sillery–Cap-Rouge,Arrondissement,03,Capitale-Nationale,,,23027,borough,sainte-foy-sillery-cap-rouge
+REA01,Desjardins,Arrondissement,12,Chaudière-Appalaches,,,25213,borough,desjardins
+REA02,Les Chutes-de-la-Chaudière-Est,Arrondissement,12,Chaudière-Appalaches,,,25213,borough,les-chutes-de-la-chaudiere-est
+REA03,Les Chutes-de-la-Chaudière-Ouest,Arrondissement,12,Chaudière-Appalaches,,,25213,borough,les-chutes-de-la-chaudiere-ouest
+REB01,Brompton–Rock Forest–Saint-Élie–Deauville,Arrondissement,05,Estrie,,,43027,borough,brompton-rock-forest-saint-elie-deauville
+REB02,Fleurimont,Arrondissement,05,Estrie,,,43027,borough,fleurimont
+REB03,Lennoxville,Arrondissement,05,Estrie,,,43027,borough,lennoxville
+REB04,Les Nations,Arrondissement,05,Estrie,,,43027,borough,les-nations
+REL03,Greenfield Park,Arrondissement,16,Montérégie,,,58227,borough,greenfield-park
+REL01,Le Vieux-Longueuil,Arrondissement,16,Montérégie,,,58227,borough,le-vieux-longueuil
+REL06,Saint-Hubert,Arrondissement,16,Montérégie,,,58227,borough,saint-hubert
+REM23,Ahuntsic-Cartierville,Arrondissement,06,Montréal,,,66023,borough,ahuntsic-cartierville
+REM09,Anjou,Arrondissement,06,Montréal,,,66023,borough,anjou
+REM34,Côte-des-Neiges–Notre-Dame-de-Grâce,Arrondissement,06,Montréal,,,66023,borough,cote-des-neiges-notre-dame-de-grace
+REM32,L'Île-Bizard–Sainte-Geneviève,Arrondissement,06,Montréal,,,66023,borough,l-ile-bizard-sainte-genevieve
+REM17,LaSalle,Arrondissement,06,Montréal,,,66023,borough,lasalle
+REM27,Lachine,Arrondissement,06,Montréal,,,66023,borough,lachine
+REM21,Le Plateau-Mont-Royal,Arrondissement,06,Montréal,,,66023,borough,le-plateau-mont-royal
+REM20,Le Sud-Ouest,Arrondissement,06,Montréal,,,66023,borough,le-sud-ouest
+REM22,Mercier–Hochelaga-Maisonneuve,Arrondissement,06,Montréal,,,66023,borough,mercier-hochelaga-maisonneuve
+REM16,Montréal-Nord,Arrondissement,06,Montréal,,,66023,borough,montreal-nord
+REM05,Outremont,Arrondissement,06,Montréal,,,66023,borough,outremont
+REM31,Pierrefonds-Roxboro,Arrondissement,06,Montréal,,,66023,borough,pierrefonds-roxboro
+REM33,Rivière-des-Prairies–Pointe-aux-Trembles,Arrondissement,06,Montréal,,,66023,borough,riviere-des-prairies-pointe-aux-trembles
+REM24,Rosemont–La Petite-Patrie,Arrondissement,06,Montréal,,,66023,borough,rosemont-la-petite-patrie
+REM15,Saint-Laurent,Arrondissement,06,Montréal,,,66023,borough,saint-laurent
+REM14,Saint-Léonard,Arrondissement,06,Montréal,,,66023,borough,saint-leonard
+REM12,Verdun,Arrondissement,06,Montréal,,,66023,borough,verdun
+REM19,Ville-Marie,Arrondissement,06,Montréal,,,66023,borough,ville-marie-montreal
+REM25,Villeray–Saint-Michel–Parc-Extension,Arrondissement,06,Montréal,,,66023,borough,villeray-saint-michel-parc-extension
+REG01,Calumet,Arrondissement,15,Laurentides,Argenteuil,,76052,borough,calumet
+REG02,Grenville,Arrondissement,15,Laurentides,Argenteuil,,76052,borough,grenville-grenville-sur-la-rouge
+RES01,Chicoutimi,Arrondissement,02,Saguenay–Lac-Saint-Jean,,,94068,borough,chicoutimi
+RES02,Jonquière,Arrondissement,02,Saguenay–Lac-Saint-Jean,,,94068,borough,jonquiere
+RES03,La Baie,Arrondissement,02,Saguenay–Lac-Saint-Jean,,,94068,borough,la-baie

@@ -1,0 +1,185 @@
+province,municipality,kind,slug
+Pinar del Río,,province,pinar-del-rio-province
+Artemisa,,province,artemisa-province
+La Habana,,province,la-habana
+Mayabeque,,province,mayabeque
+Matanzas,,province,matanzas-province
+Cienfuegos,,province,cienfuegos-province
+Villa Clara,,province,villa-clara
+Sancti Spíritus,,province,sancti-spiritus-province
+Ciego de Ávila,,province,ciego-de-avila-province
+Camagüey,,province,camaguey-province
+Las Tunas,,province,las-tunas-province
+Holguín,,province,holguin-province
+Granma,,province,granma
+Santiago de Cuba,,province,santiago-de-cuba-province
+Guantánamo,,province,guantanamo-province
+Isla de la Juventud,,province,isla-de-la-juventud-province
+Pinar del Río,Consolación del Sur,municipality,consolacion-del-sur
+Pinar del Río,Guane,municipality,guane
+Pinar del Río,La Palma,municipality,la-palma
+Pinar del Río,Los Palacios,municipality,los-palacios
+Pinar del Río,Mantua,municipality,mantua
+Pinar del Río,Minas de Matahambre,municipality,minas-de-matahambre
+Pinar del Río,Pinar del Río,municipality,pinar-del-rio
+Pinar del Río,San Juan y Martínez,municipality,san-juan-y-martinez
+Pinar del Río,San Luis,municipality,san-luis-pinar-del-rio
+Pinar del Río,Sandino,municipality,sandino
+Pinar del Río,Viñales,municipality,vinales
+Artemisa,Alquízar,municipality,alquizar
+Artemisa,Artemisa,municipality,artemisa
+Artemisa,Bahía Honda,municipality,bahia-honda
+Artemisa,Bauta,municipality,bauta
+Artemisa,Caimito,municipality,caimito
+Artemisa,Candelaria,municipality,candelaria
+Artemisa,Guanajay,municipality,guanajay
+Artemisa,Güira de Melena,municipality,guira-de-melena
+Artemisa,Mariel,municipality,mariel
+Artemisa,San Antonio de los Baños,municipality,san-antonio-de-los-banos
+Artemisa,San Cristóbal,municipality,san-cristobal
+La Habana,Arroyo Naranjo,municipality,arroyo-naranjo
+La Habana,Boyeros,municipality,boyeros
+La Habana,Centro Habana,municipality,centro-habana
+La Habana,Cerro,municipality,cerro
+La Habana,Cotorro,municipality,cotorro
+La Habana,Diez de Octubre,municipality,diez-de-octubre
+La Habana,Guanabacoa,municipality,guanabacoa
+La Habana,La Habana del Este,municipality,la-habana-del-este
+La Habana,La Habana Vieja,municipality,la-habana-vieja
+La Habana,La Lisa,municipality,la-lisa
+La Habana,Marianao,municipality,marianao
+La Habana,Playa,municipality,playa
+La Habana,Plaza de la Revolución,municipality,plaza-de-la-revolucion
+La Habana,Regla,municipality,regla
+La Habana,San Miguel del Padrón,municipality,san-miguel-del-padron
+Mayabeque,Batabanó,municipality,batabano
+Mayabeque,Bejucal,municipality,bejucal
+Mayabeque,Güines,municipality,guines
+Mayabeque,Jaruco,municipality,jaruco
+Mayabeque,Madruga,municipality,madruga
+Mayabeque,Melena del Sur,municipality,melena-del-sur
+Mayabeque,Nueva Paz,municipality,nueva-paz
+Mayabeque,Quivicán,municipality,quivican
+Mayabeque,San José de las Lajas,municipality,san-jose-de-las-lajas
+Mayabeque,San Nicolás,municipality,san-nicolas
+Mayabeque,Santa Cruz del Norte,municipality,santa-cruz-del-norte
+Matanzas,Calimete,municipality,calimete
+Matanzas,Cárdenas,municipality,cardenas
+Matanzas,Ciénaga de Zapata,municipality,cienaga-de-zapata
+Matanzas,Colón,municipality,colon
+Matanzas,Jagüey Grande,municipality,jaguey-grande
+Matanzas,Jovellanos,municipality,jovellanos
+Matanzas,Limonar,municipality,limonar
+Matanzas,Los Arabos,municipality,los-arabos
+Matanzas,Martí,municipality,marti
+Matanzas,Matanzas,municipality,matanzas
+Matanzas,Pedro Betancourt,municipality,pedro-betancourt
+Matanzas,Perico,municipality,perico
+Matanzas,Unión de Reyes,municipality,union-de-reyes
+Cienfuegos,Abreus,municipality,abreus
+Cienfuegos,Aguada de Pasajeros,municipality,aguada-de-pasajeros
+Cienfuegos,Cienfuegos,municipality,cienfuegos
+Cienfuegos,Cruces,municipality,cruces
+Cienfuegos,Cumanayagua,municipality,cumanayagua
+Cienfuegos,Lajas,municipality,lajas
+Cienfuegos,Palmira,municipality,palmira
+Cienfuegos,Rodas,municipality,rodas
+Villa Clara,Caibarién,municipality,caibarien
+Villa Clara,Camajuaní,municipality,camajuani
+Villa Clara,Cifuentes,municipality,cifuentes
+Villa Clara,Corralillo,municipality,corralillo
+Villa Clara,Encrucijada,municipality,encrucijada
+Villa Clara,Manicaragua,municipality,manicaragua
+Villa Clara,Placetas,municipality,placetas
+Villa Clara,Quemado de Güines,municipality,quemado-de-guines
+Villa Clara,Ranchuelo,municipality,ranchuelo
+Villa Clara,Remedios,municipality,remedios
+Villa Clara,Sagua la Grande,municipality,sagua-la-grande
+Villa Clara,Santa Clara,municipality,santa-clara
+Villa Clara,Santo Domingo,municipality,santo-domingo
+Sancti Spíritus,Cabaiguán,municipality,cabaiguan
+Sancti Spíritus,Fomento,municipality,fomento
+Sancti Spíritus,Jatibonico,municipality,jatibonico
+Sancti Spíritus,La Sierpe,municipality,la-sierpe
+Sancti Spíritus,Sancti Spíritus,municipality,sancti-spiritus
+Sancti Spíritus,Taguasco,municipality,taguasco
+Sancti Spíritus,Trinidad,municipality,trinidad
+Sancti Spíritus,Yaguajay,municipality,yaguajay
+Ciego de Ávila,Baraguá,municipality,baragua
+Ciego de Ávila,Bolivia,municipality,bolivia
+Ciego de Ávila,Chambas,municipality,chambas
+Ciego de Ávila,Ciego de Ávila,municipality,ciego-de-avila
+Ciego de Ávila,Ciro Redondo,municipality,ciro-redondo
+Ciego de Ávila,Florencia,municipality,florencia
+Ciego de Ávila,Majagua,municipality,majagua
+Ciego de Ávila,Morón,municipality,moron
+Ciego de Ávila,Primero de Enero,municipality,primero-de-enero
+Ciego de Ávila,Venezuela,municipality,venezuela
+Camagüey,Camagüey,municipality,camaguey
+Camagüey,Carlos Manuel de Céspedes,municipality,carlos-manuel-de-cespedes
+Camagüey,Esmeralda,municipality,esmeralda
+Camagüey,Florida,municipality,florida
+Camagüey,Guáimaro,municipality,guaimaro
+Camagüey,Jimaguayú,municipality,jimaguayu
+Camagüey,Minas,municipality,minas
+Camagüey,Najasa,municipality,najasa
+Camagüey,Nuevitas,municipality,nuevitas
+Camagüey,Santa Cruz del Sur,municipality,santa-cruz-del-sur
+Camagüey,Sibanicú,municipality,sibanicu
+Camagüey,Sierra de Cubitas,municipality,sierra-de-cubitas
+Camagüey,Vertientes,municipality,vertientes
+Las Tunas,Amancio,municipality,amancio
+Las Tunas,Colombia,municipality,colombia
+Las Tunas,Jesús Menéndez,municipality,jesus-menendez
+Las Tunas,Jobabo,municipality,jobabo
+Las Tunas,Las Tunas,municipality,las-tunas
+Las Tunas,Majibacoa,municipality,majibacoa
+Las Tunas,Manatí,municipality,manati
+Las Tunas,Puerto Padre,municipality,puerto-padre
+Holguín,Antilla,municipality,antilla
+Holguín,Báguanos,municipality,baguanos
+Holguín,Banes,municipality,banes
+Holguín,Cacocum,municipality,cacocum
+Holguín,Calixto García,municipality,calixto-garcia
+Holguín,Cueto,municipality,cueto
+Holguín,Frank País,municipality,frank-pais
+Holguín,Gibara,municipality,gibara
+Holguín,Holguín,municipality,holguin
+Holguín,Mayarí,municipality,mayari
+Holguín,Moa,municipality,moa
+Holguín,Rafael Freyre,municipality,rafael-freyre
+Holguín,Sagua de Tánamo,municipality,sagua-de-tanamo
+Holguín,Urbano Noris,municipality,urbano-noris
+Granma,Bartolomé Masó,municipality,bartolome-maso
+Granma,Bayamo,municipality,bayamo
+Granma,Buey Arriba,municipality,buey-arriba
+Granma,Campechuela,municipality,campechuela
+Granma,Cauto Cristo,municipality,cauto-cristo
+Granma,Guisa,municipality,guisa
+Granma,Jiguaní,municipality,jiguani
+Granma,Manzanillo,municipality,manzanillo
+Granma,Media Luna,municipality,media-luna
+Granma,Niquero,municipality,niquero
+Granma,Pilón,municipality,pilon
+Granma,Río Cauto,municipality,rio-cauto
+Granma,Yara,municipality,yara
+Santiago de Cuba,Contramaestre,municipality,contramaestre
+Santiago de Cuba,Guamá,municipality,guama
+Santiago de Cuba,Mella,municipality,mella
+Santiago de Cuba,Palma Soriano,municipality,palma-soriano
+Santiago de Cuba,San Luis,municipality,san-luis-santiago-de-cuba
+Santiago de Cuba,Santiago de Cuba,municipality,santiago-de-cuba
+Santiago de Cuba,Segundo Frente,municipality,segundo-frente
+Santiago de Cuba,Songo-La Maya,municipality,songo-la-maya
+Santiago de Cuba,Tercer Frente,municipality,tercer-frente
+Guantánamo,Baracoa,municipality,baracoa
+Guantánamo,Caimanera,municipality,caimanera
+Guantánamo,El Salvador,municipality,el-salvador
+Guantánamo,Guantánamo,municipality,guantanamo
+Guantánamo,Imías,municipality,imias
+Guantánamo,Maisí,municipality,maisi
+Guantánamo,Manuel Tames,municipality,manuel-tames
+Guantánamo,Niceto Pérez,municipality,niceto-perez
+Guantánamo,San Antonio del Sur,municipality,san-antonio-del-sur
+Guantánamo,Yateras,municipality,yateras
+Isla de la Juventud,Isla de la Juventud,municipality,isla-de-la-juventud
