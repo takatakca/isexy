@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { MotionConfig } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -137,14 +138,16 @@ function RouteErrorBoundary({ children }: { children: ReactNode }) {
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background" aria-busy="true">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3 brand-ambient" aria-busy="true">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <span className="eyebrow-muted">ISEXY</span>
     </div>
   );
 }
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <MotionConfig reducedMotion="user">
     <TooltipProvider>
       <Toaster />
       {/* Phones: keep toasts above the bottom nav and bottom form buttons instead of covering them. */}
@@ -287,6 +290,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </MotionConfig>
   </QueryClientProvider>
 );
 

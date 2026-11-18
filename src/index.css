@@ -77,7 +77,7 @@
     --sidebar-ring: 211.1 100% 56.1%;
 
     /* Layout */
-    --nav-height: 4.25rem;                   /* mobile tab bar, without the safe area */
+    --nav-height: 4rem;                      /* mobile tab bar, without the safe area */
     --rail-width: 5.5rem;                    /* desktop navigation rail (lg and up) */
   }
 

@@ -114,7 +114,7 @@ function AdSlotBody({ placement, className }: { placement: AdPlacement; classNam
       aria-label={label}
       data-ad-placement={placement}
       data-ad-source={stage}
-      className={cn("relative w-full overflow-hidden rounded-2xl border border-border/70 bg-card/80", className)}
+      className={cn("relative w-full overflow-hidden rounded-2xl border border-foreground/10 bg-card/70 shadow-soft", className)}
       style={{ height: spec.height }}
     >
       {stage === "loading" && <SlotSkeleton format={spec.format} label={label} />}
@@ -137,7 +137,7 @@ function AdSlotBody({ placement, className }: { placement: AdPlacement; classNam
 
 function AdLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cn("block text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none", className)}>
+    <span className={cn("block w-fit rounded-full border border-foreground/15 bg-background/60 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground leading-none", className)}>
       {children}
     </span>
   );
@@ -219,12 +219,12 @@ function TakatakCreative({ ad, format, label, learn, context }: {
   if (format === "card") {
     return (
       <a {...common} className="flex h-full flex-col text-left hover:bg-muted/30 transition-colors">
-        {image ?? <div className="w-full h-[140px] shrink-0 bg-gradient-to-br from-primary/40 via-secondary to-card" aria-hidden />}
+        {image ?? <div className="w-full h-[140px] shrink-0 bg-gradient-to-br from-primary/40 via-secondary to-accent/20" aria-hidden />}
         <div className="flex-1 min-h-0 p-3 flex flex-col">
           <AdLabel className="mb-1.5">{label}</AdLabel>
           <p className="font-bold text-foreground leading-snug line-clamp-2">{ad.headline}</p>
           {ad.body && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{ad.body}</p>}
-          <span className="mt-auto self-start rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground">{cta}</span>
+          <span className="mt-auto self-start rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">{cta}</span>
         </div>
       </a>
     );
@@ -239,7 +239,7 @@ function TakatakCreative({ ad, format, label, learn, context }: {
           <p className={cn("text-xs text-muted-foreground", format === "slim" ? "truncate" : "line-clamp-2")}>{ad.body}</p>
         )}
       </div>
-      <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground max-w-[7.5rem] truncate">{cta}</span>
+      <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground max-w-[7.5rem] truncate">{cta}</span>
     </a>
   );
 }
@@ -305,7 +305,7 @@ function HouseAd({ format, t }: { format: AdFormat; t: (typeof COPY)[Lang] }) {
         {icon}
         <p className="text-lg font-extrabold text-foreground leading-tight">{t.houseTitle}</p>
         <p className="text-sm text-muted-foreground">{t.houseBody}</p>
-        <span className="rounded-full gradient-primary px-5 py-2 text-sm font-bold text-white">{t.houseCta}</span>
+        <span className="rounded-full gradient-primary px-5 py-2 text-sm font-semibold text-primary-foreground">{t.houseCta}</span>
       </Link>
     );
   }
@@ -317,7 +317,7 @@ function HouseAd({ format, t }: { format: AdFormat; t: (typeof COPY)[Lang] }) {
         <p className="text-sm font-bold text-foreground truncate">{t.houseTitle}</p>
         <p className={cn("text-xs text-muted-foreground", format === "slim" ? "truncate" : "line-clamp-2")}>{t.houseBody}</p>
       </div>
-      <span className="shrink-0 rounded-full gradient-primary px-3 py-1.5 text-xs font-bold text-white">{t.houseCta}</span>
+      <span className="shrink-0 rounded-full gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">{t.houseCta}</span>
     </Link>
   );
 }

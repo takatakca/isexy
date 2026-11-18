@@ -88,27 +88,27 @@ export function ConsentBanner() {
       className="fixed inset-x-0 bottom-0 z-[60] p-3 sm:p-4 pointer-events-none"
       style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
-      <div className="pointer-events-auto mx-auto max-w-2xl rounded-3xl border border-border bg-card/95 backdrop-blur shadow-2xl p-5 animate-fade-in">
+      <div className="pointer-events-auto mx-auto max-w-2xl rounded-[1.75rem] glass-card bg-card/95 p-5 sm:p-6 animate-slide-up">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30 flex items-center justify-center shrink-0">
             <Cookie className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 id="consent-title" className="font-bold text-foreground">{t.title}</h2>
+            <h2 id="consent-title" className="font-display text-lg font-bold leading-tight text-foreground">{t.title}</h2>
             <p className="text-sm text-muted-foreground mt-1">
               {t.body}{" "}
-              <Link to="/cookie-policy" className="text-primary underline underline-offset-2">{t.policy}</Link>
+              <Link to="/cookie-policy" className="font-medium text-link underline underline-offset-2">{t.policy}</Link>
             </p>
           </div>
           {customizing && (
-            <button onClick={() => setCustomizing(false)} className="p-1 text-muted-foreground hover:text-foreground" aria-label="Back">
+            <button onClick={() => setCustomizing(false)} className="-m-1 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground" aria-label="Back">
               <X className="w-5 h-5" />
             </button>
           )}
         </div>
 
         {customizing && (
-          <div className="mt-4 divide-y divide-border rounded-2xl border border-border">
+          <div className="mt-4 divide-y divide-border rounded-2xl border border-border bg-background/40">
             <ConsentRow title={t.necessary} description={t.necessaryDesc} badge={t.always} />
             <ConsentRow title={t.analytics} description={t.analyticsDesc} checked={analytics} onChange={setAnalytics} />
             <ConsentRow title={t.marketing} description={t.marketingDesc} checked={marketing} onChange={setMarketing} />
@@ -119,32 +119,32 @@ export function ConsentBanner() {
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
           {customizing ? (
             <>
-              <button onClick={() => decide({ analytics: false, marketing: false, advertising: false })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
+              <button onClick={() => decide({ analytics: false, marketing: false, advertising: false })} className="h-11 rounded-full border border-input/70 font-semibold text-sm text-foreground hover:border-primary/60 hover:bg-secondary transition-colors">
                 {t.reject}
               </button>
-              <button onClick={() => decide({ analytics, marketing, advertising })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
+              <button onClick={() => decide({ analytics, marketing, advertising })} className="h-11 rounded-full border border-input/70 font-semibold text-sm text-foreground hover:border-primary/60 hover:bg-secondary transition-colors">
                 {t.save}
               </button>
             </>
           ) : (
             <>
-              <button onClick={() => decide({ analytics: false, marketing: false, advertising: false })} className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted">
+              <button onClick={() => decide({ analytics: false, marketing: false, advertising: false })} className="h-11 rounded-full border border-input/70 font-semibold text-sm text-foreground hover:border-primary/60 hover:bg-secondary transition-colors">
                 {t.reject}
               </button>
               <button
                 onClick={() => { setMarketing(!noTracking && marketing); setAdvertising(!noTracking && advertising); setCustomizing(true); }}
-                className="h-11 rounded-full border border-border font-semibold text-sm text-foreground hover:bg-muted"
+                className="h-11 rounded-full border border-input/70 font-semibold text-sm text-foreground hover:border-primary/60 hover:bg-secondary transition-colors"
               >
                 {t.customize}
               </button>
             </>
           )}
-          <button onClick={() => decide({ analytics: true, marketing: true, advertising: true })} className="h-11 rounded-full gradient-primary text-white font-bold text-sm">
+          <button onClick={() => decide({ analytics: true, marketing: true, advertising: true })} className="h-11 rounded-full gradient-primary text-primary-foreground font-semibold text-sm shadow-button hover:brightness-110 transition-[filter]">
             {t.accept}
           </button>
         </div>
 
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+        <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground">
           <ShieldCheck className="w-3.5 h-3.5" /> Law 25 (Québec) · PIPEDA · GDPR
         </p>
       </div>
@@ -168,7 +168,7 @@ function ConsentRow({
         <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
       </span>
       {badge ? (
-        <span className="text-xs font-semibold text-primary whitespace-nowrap">{badge}</span>
+        <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-semibold text-success whitespace-nowrap">{badge}</span>
       ) : (
         <Switch checked={!!checked} onCheckedChange={(v) => onChange?.(v)} aria-label={title} />
       )}
