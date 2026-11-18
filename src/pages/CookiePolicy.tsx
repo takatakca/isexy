@@ -93,7 +93,7 @@ export default function CookiePolicy() {
                     <h3 className="font-semibold text-foreground m-0">Essential Cookies</h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Required</span>
+                    <span className="whitespace-nowrap text-xs bg-success/15 text-success px-2 py-1 rounded">Required</span>
                     <Switch checked={essentialCookies} disabled />
                   </div>
                 </div>
@@ -247,25 +247,25 @@ export default function CookiePolicy() {
                       <td className="p-2 sm:p-3 text-muted-foreground">sb-access-token</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Authentication session</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Session</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-success/15 text-success px-2 py-1 rounded">Essential</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">sb-refresh-token</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Token refresh</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">7 days</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-success/15 text-success px-2 py-1 rounded">Essential</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">_ga</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Google Analytics ID</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">2 years</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Analytics</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-accent/15 text-accent px-2 py-1 rounded">Analytics</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">_gid</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Google Analytics session</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">24 hours</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Analytics</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-accent/15 text-accent px-2 py-1 rounded">Analytics</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">theme</td>
@@ -289,7 +289,7 @@ export default function CookiePolicy() {
                       <td className="p-2 sm:p-3 text-muted-foreground">isexy_consent</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Your cookie choices (local storage)</td>
                       <td className="p-2 sm:p-3 text-muted-foreground">Until changed</td>
-                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Essential</span></td>
+                      <td className="p-2 sm:p-3"><span className="whitespace-nowrap text-xs bg-success/15 text-success px-2 py-1 rounded">Essential</span></td>
                     </tr>
                     <tr>
                       <td className="p-2 sm:p-3 text-muted-foreground">__gads, __gpi</td>

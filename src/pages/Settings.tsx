@@ -342,10 +342,10 @@ export default function Settings() {
               onClick={() => navigate("/get-super-likes")}
               className="w-full flex flex-col items-center gap-2"
             >
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Star className="w-6 h-6 text-blue-500" />
+              <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center">
+                <Star className="w-6 h-6 text-primary" />
               </div>
-              <span className="text-sm font-medium text-blue-500">Get Super Likes</span>
+              <span className="text-sm font-medium text-primary">Get Super Likes</span>
             </button>
           </SettingCard>
 

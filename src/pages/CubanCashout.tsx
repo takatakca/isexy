@@ -263,8 +263,8 @@ export default function CubanCashout() {
             <div key={item.id} className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  item.status === "completed" ? "bg-green-100" : 
-                  item.status === "pending" ? "bg-amber-100" : "bg-red-100"
+                  item.status === "completed" ? "bg-success/15" : 
+                  item.status === "pending" ? "bg-warning/15" : "bg-destructive/15"
                 }`}>
                   {item.status === "completed" ? (
                     <Check className="w-5 h-5 text-green-600" />

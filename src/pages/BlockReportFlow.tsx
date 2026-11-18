@@ -147,7 +147,7 @@ export default function BlockReportFlow() {
         </header>
 
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+          <div className="w-20 h-20 rounded-full bg-success/15 flex items-center justify-center mb-6">
             <Check className="w-10 h-10 text-green-500" />
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Report Submitted</h1>
