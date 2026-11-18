@@ -711,12 +711,12 @@ export default function Chat() {
   const locale = language.code;
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden bg-[radial-gradient(40rem_20rem_at_50%_-10%,hsl(var(--primary)/0.12),transparent_70%)]">
       {/* Header */}
-      <header className="shrink-0 z-20 flex items-center gap-2 px-3 py-2.5 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+      <header className="shrink-0 z-20 flex items-center gap-1.5 px-2 py-1.5 border-b border-foreground/[0.06] bg-background/80 backdrop-blur-xl" style={{ paddingTop: "max(0.375rem, env(safe-area-inset-top))" }}>
         <button
           onClick={() => navigate("/matches")}
-          className="p-2 rounded-full hover:bg-muted/60 transition-colors"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-secondary transition-colors"
           aria-label="Back"
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -724,7 +724,7 @@ export default function Chat() {
 
         {otherProfile ? (
           <div className="flex items-center gap-2.5 flex-1 min-w-0 px-1 py-1 text-left">
-            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/30 flex-shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/60 ring-offset-2 ring-offset-background flex-shrink-0">
               {otherProfile.photo_url ? (
                 <img
                   src={otherProfile.photo_url}
@@ -740,11 +740,11 @@ export default function Chat() {
               )}
             </div>
             <div className="min-w-0">
-              <span className="font-bold text-foreground block truncate">{otherProfile.first_name}</span>
+              <span className="font-display font-bold text-foreground block truncate">{otherProfile.first_name}</span>
               {otherIsTyping ? (
-                <span className="block text-xs text-primary whitespace-nowrap">typing…</span>
+                <span className="block text-xs font-medium text-accent whitespace-nowrap">typing…</span>
               ) : otherHere ? (
-                <span className="block text-xs text-muted-foreground whitespace-nowrap">In this chat now</span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap"><span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />In this chat now</span>
               ) : null}
             </div>
           </div>
@@ -757,7 +757,7 @@ export default function Chat() {
             variant="ghost"
             size="icon"
             onClick={handlePhoneCall}
-            className="text-foreground hover:text-primary h-9 w-9"
+            className="text-foreground hover:text-primary h-11 w-11 rounded-full"
             aria-label="Phone call"
           >
             <Phone className="w-5 h-5" />
@@ -766,7 +766,7 @@ export default function Chat() {
             variant="ghost"
             size="icon"
             onClick={handleVideoCall}
-            className="text-foreground hover:text-primary h-9 w-9"
+            className="text-foreground hover:text-primary h-11 w-11 rounded-full"
             aria-label="Video call"
           >
             <Video className="w-5 h-5" />
@@ -775,7 +775,7 @@ export default function Chat() {
             variant="ghost"
             size="icon"
             onClick={() => setShowGiftModal(true)}
-            className="text-foreground hover:text-primary h-9 w-9"
+            className="text-foreground hover:text-primary h-11 w-11 rounded-full"
             aria-label="Send gift"
           >
             <Gift className="w-5 h-5" />
@@ -783,7 +783,7 @@ export default function Chat() {
           <LanguageSelector variant="icon" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-foreground hover:text-primary h-9 w-9" aria-label="More options">
+              <Button variant="ghost" size="icon" className="text-foreground hover:text-primary h-11 w-11 rounded-full" aria-label="More options">
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -806,7 +806,7 @@ export default function Chat() {
 
       {/* Translation indicator */}
       {translationsEnabled && autoTranslate && (
-        <div className="shrink-0 px-4 py-1.5 bg-primary/10 text-primary text-xs text-center">
+        <div className="shrink-0 px-4 py-1.5 bg-primary/10 border-b border-primary/15 text-primary text-xs font-medium text-center">
           {translationDown
             ? "Translation is unavailable right now"
             : <>Auto-translating to {language.flag} {language.nativeName}</>}
@@ -822,37 +822,38 @@ export default function Chat() {
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" aria-label="Loading" />
           </div>
         ) : loadError && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-16 px-6">
-            <p className="font-semibold text-foreground mb-1">Couldn't load this conversation</p>
+            <p className="type-heading text-foreground mb-1">Couldn't load this conversation</p>
             <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
             <button
               onClick={() => { setLoading(true); void fetchMessages(); }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm"
+              className="cta-primary"
             >
               <RefreshCw className="w-4 h-4" /> Retry
             </button>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-16 px-6">
-            <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
+            <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-glow mb-5">
               <span className="text-3xl">👋</span>
             </div>
-            <h3 className="font-bold text-foreground mb-1">You matched!</h3>
+            <p className="eyebrow mb-2">New connection</p>
+            <h3 className="type-heading text-foreground mb-1">You matched!</h3>
             <p className="text-sm text-muted-foreground">
               Say hi to {otherProfile?.first_name} — break the ice.
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 mx-auto max-w-3xl">
             {hasOlder ? (
               <div className="flex justify-center">
                 <button
                   onClick={() => void loadOlder()}
                   disabled={loadingOlder}
-                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-muted/60 text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+                  className="inline-flex min-h-9 items-center gap-2 px-4 rounded-full border border-foreground/10 bg-card/70 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-60"
                 >
                   {loadingOlder && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   {loadingOlder ? "Loading…" : "Load earlier messages"}
@@ -872,20 +873,20 @@ export default function Chat() {
                 <div key={message.id}>
                   {newDay && (
                     <div className="flex justify-center py-1">
-                      <span className="px-3 py-0.5 rounded-full bg-muted/50 text-[11px] font-medium text-muted-foreground">
+                      <span className="px-3 py-1 rounded-full bg-card/80 ring-1 ring-foreground/[0.06] text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         {dayLabel(message.created_at, locale)}
                       </span>
                     </div>
                   )}
                   <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                     <div
-                      className={`max-w-[78%] px-4 py-2 rounded-2xl ${
+                      className={`max-w-[78%] px-4 py-2.5 rounded-[1.25rem] shadow-soft ${
                         isMe
-                          ? `bg-primary text-primary-foreground rounded-br-md ${message.failed ? "opacity-60" : ""}`
-                          : "bg-muted text-foreground rounded-bl-md"
+                          ? `gradient-primary text-primary-foreground rounded-br-md shadow-[0_10px_24px_-14px_hsl(var(--primary)/0.9)] ${message.failed ? "opacity-60" : ""}`
+                          : "bg-card text-foreground ring-1 ring-foreground/[0.07] rounded-bl-md"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{message.content}</p>
+                      <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed">{message.content}</p>
 
                       {message.isTranslating && (
                         <div className="flex items-center gap-1 mt-2 pt-2 border-t border-foreground/10">
@@ -901,7 +902,7 @@ export default function Chat() {
                       )}
 
                       <div className={`flex items-center gap-1 mt-1 ${isMe ? "justify-end" : ""}`}>
-                        <p className={`text-xs ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        <p className={`text-[11px] ${isMe ? "text-primary-foreground" : "text-muted-foreground"}`}>
                           {timeLabel(message.created_at, locale)}
                         </p>
                         {renderReadReceipt(message)}
@@ -930,7 +931,7 @@ export default function Chat() {
         {/* Typing indicator at bottom */}
         {otherIsTyping && otherProfile && (
           <div className="flex justify-start mt-3">
-            <div className="bg-muted px-4 py-2 rounded-2xl rounded-bl-md">
+            <div className="bg-card ring-1 ring-foreground/[0.07] px-4 py-2 rounded-[1.25rem] rounded-bl-md">
               <TypingIndicator name={otherProfile.first_name} />
             </div>
           </div>
@@ -941,7 +942,7 @@ export default function Chat() {
         <div className="relative shrink-0 h-0">
           <button
             onClick={scrollToBottom}
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-1 px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg shadow-primary/30"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 inline-flex min-h-10 items-center gap-1 px-4 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-button animate-slide-up"
           >
             <ChevronDown className="w-4 h-4" /> {newBelow === 1 ? "New message" : `${newBelow} new messages`}
           </button>
@@ -957,8 +958,8 @@ export default function Chat() {
       )}
 
       {/* Input */}
-      <footer className="shrink-0 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-border/60 bg-background/90 backdrop-blur-xl">
-        <div className="flex items-end gap-2">
+      <footer className="shrink-0 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-foreground/[0.06] bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-end gap-2">
           <textarea
             ref={inputRef}
             rows={1}
@@ -970,12 +971,12 @@ export default function Chat() {
             aria-label="Message"
             placeholder={isBanned ? "Messaging restricted…" : `Message ${otherProfile?.first_name ?? ""}…`}
             disabled={isBanned || locked}
-            className="flex-1 resize-none max-h-32 px-5 py-3 bg-muted/60 border border-border/60 rounded-3xl outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground placeholder:text-muted-foreground disabled:opacity-50 transition-all leading-6"
+            className="flex-1 resize-none max-h-32 px-5 py-3 bg-card border border-foreground/10 rounded-3xl outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary text-foreground placeholder:text-muted-foreground disabled:opacity-50 transition-all leading-6"
           />
           <button
             onClick={() => void handleSend()}
             disabled={!newMessage.trim() || isBanned || locked}
-            className="w-12 h-12 shrink-0 flex items-center justify-center gradient-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none enabled:active:scale-95 transition-all"
+            className="w-12 h-12 shrink-0 flex items-center justify-center gradient-primary text-primary-foreground rounded-full shadow-button disabled:opacity-40 disabled:shadow-none enabled:hover:brightness-110 enabled:active:scale-95 transition-all"
             aria-label="Send message"
           >
             <Send className="w-5 h-5" />
