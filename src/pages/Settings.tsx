@@ -5,6 +5,7 @@ import { useStaffRole } from "@/lib/staff";
 import { supabase } from "@/integrations/supabase/client";
 import { openConsentSettings } from "@/lib/consent";
 import { AuthLayout } from "@/components/AuthLayout";
+import { TakatakByline } from "@/components/SiteFooter";
 import { AdSlot } from "@/components/AdSlot";
 import { AuthButton } from "@/components/AuthButton";
 import { Slider } from "@/components/ui/slider";
@@ -15,7 +16,7 @@ import {
   EyeOff, Plane, MapPin, Globe, Users, Eye, MessageCircle, 
   Bell, Mail, Moon, Video, Link2, HelpCircle, Phone, CreditCard,
   Languages, GraduationCap, Heart, MessageSquare, PawPrint, Wine, Cigarette, Dumbbell, Baby, AtSign,
-  Gift, Coins, type LucideIcon
+  Gift, Coins, Flame, type LucideIcon
 } from "lucide-react";
 import { BoostsModal } from "@/components/BoostsModal";
 import { PreferenceDrawer } from "@/components/PreferenceDrawer";
@@ -239,7 +240,7 @@ export default function Settings() {
   };
 
   const SettingCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <div className={`bg-card border border-border rounded-xl ${className}`}>
+    <div className={`bg-card/70 border border-foreground/[0.08] rounded-2xl overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -274,7 +275,7 @@ export default function Settings() {
     return (
       <button
         onClick={onClick}
-        className="w-full flex items-center justify-between gap-3 p-4 hover:bg-muted/30 transition-colors text-left"
+        className="w-full min-h-14 flex items-center justify-between gap-3 p-4 hover:bg-secondary/60 transition-colors text-left"
       >
         {content}
       </button>
@@ -284,7 +285,8 @@ export default function Settings() {
   return (
     <AuthLayout showBack variant="white">
       <div className="flex-1 flex flex-col pb-20">
-        <h1 className="text-2xl font-bold text-foreground mb-6">Settings</h1>
+        <p className="eyebrow mb-2">Account · privacy · app</p>
+        <h1 className="type-title text-foreground mb-6">Settings</h1>
 
         {/* Premium Tier Upsells */}
         <section className="mb-6 space-y-3">
@@ -294,8 +296,8 @@ export default function Settings() {
               className="w-full p-4 text-center"
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-xl font-bold">🔥 ISEXY</span>
-                <span className="bg-gradient-to-r from-slate-600 to-slate-800 text-white text-xs px-2 py-0.5 rounded font-bold">PLATINUM</span>
+                <span className="font-display text-xl font-extrabold">🔥 ISEXY</span>
+                <span className="bg-gradient-to-r from-[#3B4A63] to-[#1A2540] ring-1 ring-foreground/20 text-white text-xs px-2 py-0.5 rounded-md font-bold tracking-wider">PLATINUM</span>
               </div>
               <p className="text-sm text-muted-foreground">Priority Likes, See who Likes you & More</p>
             </button>
@@ -307,8 +309,8 @@ export default function Settings() {
               className="w-full p-4 text-center"
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-xl font-bold">🔥 ISEXY</span>
-                <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-navy text-xs px-2 py-0.5 rounded font-bold">GOLD</span>
+                <span className="font-display text-xl font-extrabold">🔥 ISEXY</span>
+                <span className="bg-gradient-to-r from-yellow-400 to-amber-500 text-navy text-xs px-2 py-0.5 rounded-md font-bold tracking-wider">GOLD</span>
               </div>
               <p className="text-sm text-muted-foreground">See who Likes You & More!</p>
             </button>
@@ -320,8 +322,8 @@ export default function Settings() {
               className="w-full p-4 text-center"
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-xl font-bold">🔥 ISEXY</span>
-                <span className="text-primary text-lg font-bold">+</span>
+                <span className="font-display text-xl font-extrabold">🔥 ISEXY</span>
+                <span className="gradient-primary text-primary-foreground text-xs px-2 py-0.5 rounded-md font-bold tracking-wider">PLUS</span>
               </div>
               <p className="text-sm text-muted-foreground">Unlimited Likes & More!</p>
             </button>
@@ -329,7 +331,7 @@ export default function Settings() {
 
           <button 
             onClick={() => navigate("/compare-plans")}
-            className="w-full text-center text-primary font-semibold mt-2 hover:underline"
+            className="w-full min-h-11 text-center text-link font-semibold mt-1 hover:underline"
           >
             Compare all plans →
           </button>
@@ -388,7 +390,7 @@ export default function Settings() {
 
         {/* Account Settings */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Account Settings</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Account Settings</h2>
           <SettingCard className="divide-y divide-border">
             {/* Read-only: both come from the member's TAKATAK account (Takatak Auth). */}
             <SettingRow
@@ -413,7 +415,7 @@ export default function Settings() {
 
         {/* Discovery Settings */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Discovery Settings</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Discovery Settings</h2>
           
           <SettingCard className="divide-y divide-border">
             {/* Location */}
@@ -425,7 +427,7 @@ export default function Settings() {
                   <p className="text-foreground">{[profile?.city, profile?.country].filter(Boolean).join(", ") || "Not set"}</p>
                 </div>
               </div>
-              <button onClick={() => navigate("/passport-mode")} className="text-primary text-sm font-medium mt-1">Add a new location</button>
+              <button onClick={() => navigate("/passport-mode")} className="min-h-10 text-link text-sm font-semibold mt-1">Add a new location</button>
             </div>
             <p className="px-4 pb-3 text-sm text-muted-foreground">
               Change locations to find matches anywhere.
@@ -558,7 +560,7 @@ export default function Settings() {
         {/* Control Who You See */}
         <section className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-foreground">Control Who You See</h2>
+            <h2 className="eyebrow-muted pl-1">Control Who You See</h2>
             <span className="text-xs bg-primary text-white px-2 py-0.5 rounded font-bold">Plus™</span>
           </div>
           <SettingCard className="divide-y divide-border">
@@ -587,7 +589,7 @@ export default function Settings() {
 
         {/* Control My Visibility */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Control My Visibility</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Control My Visibility</h2>
           <SettingCard className="divide-y divide-border">
             <button
               onClick={() => setVisibility("standard")}
@@ -619,7 +621,7 @@ export default function Settings() {
 
         {/* Enable Discovery */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Enable Discovery</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Enable Discovery</h2>
           <SettingCard className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-foreground">Enable Discovery</span>
@@ -633,7 +635,7 @@ export default function Settings() {
 
         {/* Control Who Messages You */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Control Who Messages You</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Control Who Messages You</h2>
           <SettingCard className="p-4">
             <div className="mb-2">
               <span className="text-xs bg-primary text-white px-2 py-0.5 rounded font-bold">Must be verified</span>
@@ -652,7 +654,7 @@ export default function Settings() {
 
         {/* Read Receipts */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Read Receipts</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Read Receipts</h2>
           <SettingCard className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-foreground">Send Read Receipts</span>
@@ -673,7 +675,7 @@ export default function Settings() {
 
         {/* Appearance */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Appearance</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Appearance</h2>
           <SettingCard>
             <SettingRow icon={Moon} label="Dark mode" value="On" onClick={() => navigate("/dark-mode")} iconColor="text-muted-foreground" />
           </SettingCard>
@@ -681,7 +683,7 @@ export default function Settings() {
 
         {/* Data Usage */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Data Usage</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Data Usage</h2>
           <SettingCard>
             <SettingRow icon={Video} label="Autoplay Videos" onClick={() => navigate("/autoplay-videos")} iconColor="text-muted-foreground" />
           </SettingCard>
@@ -727,7 +729,7 @@ export default function Settings() {
 
         {/* Active Status */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Active Status</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Active Status</h2>
           <SettingCard>
             <div className="p-4">
               <p className="font-semibold text-foreground mb-1">Manage Active Status</p>
@@ -738,7 +740,7 @@ export default function Settings() {
 
         {/* Connections */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Connections</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Connections</h2>
           <SettingCard>
             <SettingRow label="Friends in Common" onClick={() => navigate("/friends-in-common")} />
           </SettingCard>
@@ -749,7 +751,7 @@ export default function Settings() {
 
         {/* App Settings */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">App Settings</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">App Settings</h2>
           <SettingCard className="divide-y divide-border">
             <div className="p-4">
               <p className="font-semibold text-foreground mb-3">Notifications</p>
@@ -796,7 +798,7 @@ export default function Settings() {
 
         {/* Payment Account */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Payment Account</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Payment Account</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow icon={CreditCard} label="Manage Payment Account" onClick={() => navigate("/manage-payment-account")} iconColor="text-muted-foreground" />
             <SettingRow label="Restore Purchase" onClick={() => navigate("/restore-purchase")} />
@@ -805,7 +807,7 @@ export default function Settings() {
 
         {/* Contact Us */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Contact Us</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Contact Us</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Help & Support" onClick={() => navigate("/help-support")} />
             <SettingRow label="FAQ" onClick={() => navigate("/faq")} />
@@ -818,7 +820,7 @@ export default function Settings() {
 
         {/* Rewards & Loyalty */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Rewards & Loyalty</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Rewards & Loyalty</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow 
               icon={Gift} 
@@ -840,7 +842,7 @@ export default function Settings() {
 
         {/* Community */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Community</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Community</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Community Guidelines" onClick={() => navigate("/community-guidelines")} />
             <SettingRow label="Safety Tips" onClick={() => navigate("/safety-tips")} />
@@ -857,7 +859,7 @@ export default function Settings() {
 
         {/* Privacy */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Privacy</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Privacy</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Privacy & cookie choices" onClick={openConsentSettings} />
             <SettingRow label="Cookie Policy" onClick={() => navigate("/cookie-policy")} />
@@ -868,7 +870,7 @@ export default function Settings() {
 
         {/* Legal */}
         <section className="mb-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">Legal</h2>
+          <h2 className="eyebrow-muted mb-3 pl-1">Legal</h2>
           <SettingCard className="divide-y divide-border">
             <SettingRow label="Licenses" onClick={() => navigate("/licenses")} />
             <SettingRow label="Terms of Service" onClick={() => navigate("/terms")} />
@@ -886,7 +888,7 @@ export default function Settings() {
           <SettingCard>
             <button
               onClick={handleSignOut}
-              className="w-full p-4 text-center font-semibold text-foreground"
+              className="w-full min-h-14 p-4 text-center font-semibold text-foreground hover:bg-secondary/60 transition-colors"
             >
               Logout
             </button>
@@ -894,9 +896,12 @@ export default function Settings() {
         </section>
 
         {/* App Logo & Version */}
-        <div className="flex flex-col items-center py-8">
-          <div className="text-4xl mb-2">🔥</div>
+        <div className="flex flex-col items-center gap-2 py-8">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl gradient-glow shadow-glow" aria-hidden>
+            <Flame className="h-5 w-5 text-white" strokeWidth={2.4} />
+          </span>
           <p className="text-sm text-muted-foreground">Version 1.0.0</p>
+          <TakatakByline />
         </div>
 
         {/* Delete Account */}
@@ -904,7 +909,7 @@ export default function Settings() {
           <SettingCard>
             <button
               onClick={() => navigate("/delete-account")}
-              className="w-full p-4 text-center font-semibold text-destructive"
+              className="w-full min-h-14 p-4 text-center font-semibold text-destructive hover:bg-destructive/10 transition-colors"
             >
               Delete Account
             </button>
@@ -916,13 +921,13 @@ export default function Settings() {
 
       {/* Unsaved changes: keep Save in reach on a long page (phones especially). */}
       {isDirty && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-foreground/10 bg-background/90 backdrop-blur-xl px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-slide-up">
           <div className="max-w-md mx-auto flex items-center gap-3">
             <p className="flex-1 text-sm text-muted-foreground">You have unsaved changes</p>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-50"
+              className="min-h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-button disabled:opacity-50"
             >
               {isSaving ? "Saving..." : "Save"}
             </button>

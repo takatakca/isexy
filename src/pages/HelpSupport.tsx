@@ -5,11 +5,9 @@ import { AdSlot } from "@/components/AdSlot";
 import { Input } from "@/components/ui/input";
 import {
   Search, HelpCircle, MessageCircle, BookOpen, Shield, AlertTriangle,
-  CreditCard, ChevronRight, Phone, Mail, Flag, MessageSquare
-} from "lucide-react";
+  CreditCard, ChevronRight, Phone, Mail, Flag, MessageSquare, LifeBuoy } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/Logo";
 
 const HelpSupport = () => {
   const navigate = useNavigate();
@@ -38,10 +36,12 @@ const HelpSupport = () => {
 
   return (
     <AuthLayout showBack variant="white">
-      <div className="p-4 flex flex-col items-center">
-        <Logo size="lg" showText={false} variant="dark" />
-
-        <h1 className="text-3xl font-bold text-foreground mb-2 text-center">Get help</h1>
+      <div className="p-2 flex flex-col items-center">
+        <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-[1.25rem] gradient-glow shadow-glow" aria-hidden>
+          <LifeBuoy className="h-8 w-8 text-white" />
+        </span>
+        <p className="eyebrow mb-2">Help Centre · EN / FR</p>
+        <h1 className="type-title text-foreground mb-2 text-center">Get help</h1>
         <p className="text-muted-foreground text-sm mb-6 text-center">How can we help you today?</p>
 
         {/* Search: opens the Help Centre with the results */}
@@ -54,7 +54,7 @@ const HelpSupport = () => {
             navigate(q ? `/knowledge-base?q=${encodeURIComponent(q)}` : "/knowledge-base");
           }}
         >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search for help..."
@@ -62,23 +62,23 @@ const HelpSupport = () => {
             enterKeyHint="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-12 h-12 rounded-full bg-card"
           />
         </form>
 
         {/* Main Categories — Airbnb style list */}
-        <div className="w-full max-w-md space-y-0 bg-card rounded-xl border border-border overflow-hidden mb-6">
+        <div className="w-full max-w-md space-y-0 bg-card/70 rounded-2xl border border-foreground/[0.08] overflow-hidden mb-6">
           {helpCategories.map((cat, i) => (
             <button
               key={cat.label}
               onClick={() => handleAction(cat)}
-              className={`w-full p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors text-left ${
-                i < helpCategories.length - 1 ? "border-b border-border" : ""
+              className={`w-full min-h-[4.25rem] p-4 flex items-center gap-4 hover:bg-secondary/60 transition-colors text-left ${
+                i < helpCategories.length - 1 ? "border-b border-foreground/[0.07]" : ""
               }`}
             >
-              <span className="text-primary flex-shrink-0">{cat.icon}</span>
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/30 text-primary flex-shrink-0 [&_svg]:h-5 [&_svg]:w-5">{cat.icon}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground text-sm">{cat.label}</p>
+                <p className="font-semibold text-foreground text-sm">{cat.label}</p>
                 <p className="text-xs text-muted-foreground">{cat.description}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
@@ -92,27 +92,27 @@ const HelpSupport = () => {
             <button
               key={link.label}
               onClick={() => navigate(link.path)}
-              className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
+              className="bg-card/70 border border-foreground/[0.08] rounded-2xl p-4 min-h-[5.5rem] flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-secondary/60 transition-colors"
             >
-              <span className="text-primary">{link.icon}</span>
-              <span className="font-medium text-foreground text-xs text-center">{link.label}</span>
+              <span className="text-accent">{link.icon}</span>
+              <span className="font-semibold text-foreground text-xs text-center">{link.label}</span>
             </button>
           ))}
         </div>
 
         {/* Contact Info */}
-        <div className="w-full max-w-md bg-card border border-border rounded-xl p-4 mb-6">
-          <h3 className="font-semibold text-foreground text-sm mb-3">Contact Support Directly</h3>
+        <div className="w-full max-w-md panel p-4 mb-6">
+          <h3 className="eyebrow-muted mb-3">Contact Support Directly</h3>
           <div className="space-y-3">
-            <a href="mailto:cubaresort.ca@gmail.com" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary">
+            <a href="mailto:cubaresort.ca@gmail.com" className="flex min-h-10 items-center gap-3 text-sm text-muted-foreground hover:text-primary">
               <Mail className="w-4 h-4" />
               cubaresort.ca@gmail.com
             </a>
-            <a href="tel:+14509994999" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary">
+            <a href="tel:+14509994999" className="flex min-h-10 items-center gap-3 text-sm text-muted-foreground hover:text-primary">
               <Phone className="w-4 h-4" />
               +1 450 999 4999 (Canada)
             </a>
-            <a href="tel:+5353071185" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary">
+            <a href="tel:+5353071185" className="flex min-h-10 items-center gap-3 text-sm text-muted-foreground hover:text-primary">
               <Phone className="w-4 h-4" />
               +53 5307 1185 (Cuba)
             </a>
@@ -122,13 +122,13 @@ const HelpSupport = () => {
         <AdSlot placement="isexy-content-inline" className="max-w-md mb-6" />
 
         {/* Ticket Tracking */}
-        <Button variant="outline" className="w-full max-w-md" onClick={() => navigate("/ticket-tracking")}>
+        <Button variant="outline" className="w-full max-w-md h-12 rounded-full" onClick={() => navigate("/ticket-tracking")}>
           Track My Support Tickets
         </Button>
 
         <div className="flex gap-6 mt-6">
-          <button className="text-primary text-sm" onClick={() => navigate("/privacy")}>Privacy</button>
-          <button className="text-primary text-sm" onClick={() => navigate("/terms")}>Terms</button>
+          <button className="min-h-11 px-2 text-link text-sm font-medium" onClick={() => navigate("/privacy")}>Privacy</button>
+          <button className="min-h-11 px-2 text-link text-sm font-medium" onClick={() => navigate("/terms")}>Terms</button>
         </div>
       </div>
 
